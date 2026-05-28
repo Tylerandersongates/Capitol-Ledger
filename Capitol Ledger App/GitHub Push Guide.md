@@ -29,10 +29,10 @@ Do not manually upload `.env.local` to GitHub.
 
 ## First Push Commands
 
-Replace `YOUR-GITHUB-REPO-URL` with the GitHub repo URL, usually shaped like:
+Replace `YOUR-GITHUB-REPO-URL` with the GitHub repo URL. For the current Capitol Ledger repo, use:
 
 ```text
-https://github.com/your-user-or-org/capitol-ledger.git
+https://github.com/Tylerandersongates/Capitol-Ledger.git
 ```
 
 Then run:
@@ -55,6 +55,12 @@ Use:
 ```bash
 git remote set-url origin YOUR-GITHUB-REPO-URL
 git push -u origin main
+```
+
+For this project, the current GitHub location is:
+
+```bash
+git remote set-url origin https://github.com/Tylerandersongates/Capitol-Ledger.git
 ```
 
 ## After The Push

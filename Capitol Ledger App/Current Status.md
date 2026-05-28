@@ -6,6 +6,8 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Pushed the local Capitol Ledger app to GitHub on `main`, giving Vercel a deployable repository source for Phase 1.
+- Vercel deployments are now populating from the GitHub-connected Capitol Ledger project; Phase 1 is ready for deployed smoke testing.
 - Reorganized the remaining work into a phased roadmap and started Phase 1: Web Beta Readiness.
 - Added `Phase 1 Web Beta Launch Checklist.md` so the Vercel/Neon beta setup, terminal checks, tester invite route, and Phase 1 exit criteria are in one place.
 - Local `beta:check` passes the Phase 1 file/core environment checks; the remaining beta setup is setting `BETA_REVIEWER_EMAILS`, using the deployed Vercel URL for `NEXT_PUBLIC_APP_URL`, and running the database-backed production beta checks from the normal Terminal.

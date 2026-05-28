@@ -21,6 +21,19 @@ const severities: Array<{ label: string; value: FeedbackSeverity }> = [
   { label: "High", value: "high" }
 ];
 
+const feedbackAreas = [
+  { label: "Dashboard", value: "/dashboard" },
+  { label: "Search / discovery", value: "/search" },
+  { label: "Bill detail", value: "/bills" },
+  { label: "Representative profile", value: "/members" },
+  { label: "Notifications", value: "/alerts" },
+  { label: "Badges / impact", value: "/badges" },
+  { label: "Subscription", value: "/upgrade" },
+  { label: "Account / sign-in", value: "/account" },
+  { label: "Beta feedback", value: "/feedback" },
+  { label: "Other", value: "/other" }
+];
+
 type SubmissionState = "idle" | "submitting" | "sent" | "error";
 
 export function BetaFeedbackForm() {
@@ -37,7 +50,9 @@ export function BetaFeedbackForm() {
     const params = new URLSearchParams(window.location.search);
     const source = params.get("source");
     const referrerPath = document.referrer ? safePath(document.referrer) : "";
-    setPageUrl(source ? `/${source}` : referrerPath || "/dashboard");
+    const nextPage = source ? `/${source}` : referrerPath || "/dashboard";
+    const matchedArea = feedbackAreas.find((area) => nextPage.startsWith(area.value));
+    setPageUrl(matchedArea?.value ?? "/other");
   }, []);
 
   const canSubmit = useMemo(() => title.trim().length > 2 && message.trim().length > 8 && state !== "submitting", [message, state, title]);
@@ -138,12 +153,18 @@ export function BetaFeedbackForm() {
 
         <div className="mt-5">
           <FieldLabel label="Where did it happen?" />
-          <input
+          <select
             value={pageUrl}
             onChange={(event) => setPageUrl(event.target.value)}
-            placeholder="/dashboard"
-            className="mt-3 h-12 w-full rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70"
-          />
+            className="mt-3 h-12 w-full appearance-none rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none focus:border-[#ffb12b]/70"
+          >
+            {feedbackAreas.map((area) => (
+              <option key={area.value} value={area.value} className="bg-[#061126] text-white">
+                {area.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-[13px] leading-5 text-white/42">Choose the closest app area so reports are easier to sort during beta review.</p>
         </div>
 
         <div className="mt-5">

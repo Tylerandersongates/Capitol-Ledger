@@ -121,6 +121,11 @@ export function BetaFeedbackReviewQueue({
             <p className="mt-2 text-[14px] leading-snug text-white/56">
               {initialMode === "database" ? "Reading from the beta feedback database queue." : "Demo-mode reports are stored in this preview session."}
             </p>
+            {initialMode === "database" && metrics.total === 0 ? (
+              <p className="mt-2 text-[13px] leading-snug text-white/42">
+                If a submitted report is missing, confirm this signed-in email is listed in `BETA_REVIEWER_EMAILS` and that the report was sent from this deployed app.
+              </p>
+            ) : null}
           </div>
           <span className="rounded-full bg-white/8 px-3 py-1.5 text-[13px] font-medium text-white/52">{initialMode}</span>
         </div>
