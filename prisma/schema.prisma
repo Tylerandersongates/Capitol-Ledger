@@ -1,0 +1,360 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Chamber {
+  HOUSE
+  SENATE
+}
+
+enum Party {
+  DEMOCRAT
+  REPUBLICAN
+  INDEPENDENT
+  UNKNOWN
+}
+
+enum VotePosition {
+  YES
+  NO
+  PRESENT
+  NOT_VOTING
+}
+
+enum FollowTargetType {
+  MEMBER
+  BILL
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  name                    String?
+  passwordHash            String?
+  emailVerifiedAt         DateTime?
+  partyAffiliation        String?
+  districtLabel           String?
+  districtState           String?
+  districtCode            String?
+  notificationPreferences Json?
+  authSessions            AuthSession[]
+  emailVerificationTokens EmailVerificationToken[]
+  follows                 Follow[]
+  passwordResetTokens     PasswordResetToken[]
+  readAlerts              ReadAlert[]
+  savedAlerts             SavedAlert[]
+  issueInterests          IssueInterest[]
+  gamification            AccountGamification?
+  subscription            AccountSubscription?
+  updateEvents            UpdateEvent[]
+  weeklyBriefDeliveries   WeeklyBriefDelivery[]
+  betaFeedback            BetaFeedback[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+}
+
+model AuthSession {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Member {
+  id               String       @id @default(cuid())
+  bioguideId       String       @unique
+  firstName        String
+  lastName         String
+  fullName         String
+  party            Party        @default(UNKNOWN)
+  state            String
+  district         String?
+  chamber          Chamber
+  active           Boolean      @default(true)
+  photoUrl         String?
+  officialUrl      String?
+  sourceUrl        String?
+  rawJson          Json?
+  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime     @default(now())
+  sponsoredBills   Bill[]       @relation("SponsoredBills")
+  cosponsoredBills Cosponsor[]
+  memberVotes      MemberVote[]
+
+  @@index([state, chamber, party])
+}
+
+model Bill {
+  id               String       @id @default(cuid())
+  congress         Int
+  billType         String
+  billNumber       String
+  title            String
+  shortTitle       String?
+  sponsorBioguideId String?
+  sponsor          Member?      @relation("SponsoredBills", fields: [sponsorBioguideId], references: [bioguideId])
+  policyArea       String?
+  latestActionText String?
+  latestActionDate DateTime?
+  summary          String?
+  sourceUrl        String?
+  rawJson          Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  cosponsors       Cosponsor[]
+  votes            Vote[]
+
+  @@unique([congress, billType, billNumber])
+  @@index([sponsorBioguideId])
+}
+
+model Cosponsor {
+  id              String    @id @default(cuid())
+  billId          String
+  memberBioguideId String
+  joinedAt        DateTime?
+  withdrawnAt     DateTime?
+  bill            Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  member          Member    @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
+
+  @@unique([billId, memberBioguideId])
+  @@index([memberBioguideId])
+}
+
+model Vote {
+  id          String       @id @default(cuid())
+  congress    Int
+  chamber     Chamber
+  rollCall    String
+  session     String?
+  question    String
+  result      String?
+  voteDate    DateTime
+  sourceUrl   String?
+  billId      String?
+  bill        Bill?        @relation(fields: [billId], references: [id])
+  rawJson     Json?
+  memberVotes MemberVote[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([congress, chamber, rollCall])
+  @@index([billId])
+}
+
+model MemberVote {
+  id              String       @id @default(cuid())
+  voteId          String
+  memberBioguideId String
+  position        VotePosition
+  vote            Vote         @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  member          Member       @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
+
+  @@unique([voteId, memberBioguideId])
+  @@index([memberBioguideId])
+}
+
+model Committee {
+  id         String   @id
+  name       String
+  chamber    Chamber?
+  systemCode String?
+  sourceUrl  String?
+  rawJson    Json?
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  @@index([chamber])
+  @@index([systemCode])
+}
+
+model OfficialSourceLink {
+  id         String   @id
+  targetType String
+  targetId   String
+  label      String
+  url        String
+  source     String
+  sourceKind String
+  verifiedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([targetType, targetId])
+  @@index([source])
+}
+
+model Follow {
+  id         String           @id @default(cuid())
+  userId     String
+  targetType FollowTargetType
+  targetId   String
+  createdAt  DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+model SavedAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  alertId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alertId])
+  @@index([alertId])
+}
+
+model ReadAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  alertId   String
+  readAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alertId])
+  @@index([alertId])
+}
+
+model IssueInterest {
+  id        String   @id @default(cuid())
+  userId    String
+  interest  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, interest])
+  @@index([interest])
+}
+
+model AccountSubscription {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  plan                   String
+  cycle                  String
+  provider               String
+  providerCustomerId     String?
+  providerEntitlementId  String?
+  providerSubscriptionId String?
+  status                 String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccountGamification {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  civicScore      Int
+  dayStreak       Int
+  monthlyGain     Int
+  level           Int
+  levelTitle      String
+  nextLevelScore  Int
+  eventCounts     Json
+  earnedBadgeIds  Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyBriefDelivery {
+  id                String   @id @default(cuid())
+  userId            String
+  status            String
+  deliveryMode      String
+  summary           String?
+  recipient         String?
+  plan              String
+  trackedBillCount  Int      @default(0)
+  unreadAlertCount  Int      @default(0)
+  issueCount        Int      @default(0)
+  savedRecordCount  Int      @default(0)
+  preparedAt        DateTime?
+  sentAt            DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model BetaFeedback {
+  id           String   @id
+  userId       String?
+  category     String
+  severity     String
+  status       String   @default("new")
+  releaseDecision String?
+  title        String
+  message      String
+  pageUrl      String?
+  contactEmail String?
+  context      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([category])
+  @@index([releaseDecision])
+  @@index([userId])
+}
+
+model UpdateEvent {
+  id         String           @id @default(cuid())
+  userId     String?
+  targetType FollowTargetType
+  targetId   String
+  title      String
+  body       String
+  sourceUrl  String?
+  occurredAt DateTime
+  seenAt     DateTime?
+  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+
+  @@index([targetType, targetId])
+  @@index([userId])
+}

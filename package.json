@@ -1,0 +1,62 @@
+{
+  "name": "capitol-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:wasm": "NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next dev",
+    "build": "next build",
+    "build:wasm": "NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "production-auth:check": "node scripts/check-production-auth.mjs",
+    "production-auth:qa": "node scripts/qa-production-auth.mjs",
+    "auth-email:check": "node scripts/check-auth-email-delivery.mjs",
+    "weekly-brief:check": "node scripts/check-weekly-brief-delivery.mjs",
+    "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
+    "billing:check": "node scripts/check-billing-readiness.mjs",
+    "backend:check": "node scripts/check-backend-readiness.mjs",
+    "beta:check": "node scripts/check-beta-readiness.mjs",
+    "beta:triage": "node scripts/check-beta-triage.mjs",
+    "congress:check": "node scripts/check-congress-readiness.mjs",
+    "db:seed": "prisma db seed",
+    "sync:congress": "tsx scripts/sync-congress.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.3",
+    "prisma": "^5.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.0",
+    "@next/swc-wasm-nodejs": "14.2.33",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "unrs-resolver"
+    ]
+  }
+}

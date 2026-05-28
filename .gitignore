@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.local
+.next
+.tools
+node_modules
+dist
+coverage
+*.log
+.pnpm-debug.log

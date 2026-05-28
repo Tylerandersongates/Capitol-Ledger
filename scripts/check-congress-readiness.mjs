@@ -1,0 +1,210 @@
+import { readFileSync } from "fs";
+
+const productionMode = process.env.NODE_ENV === "production";
+const requireLive = process.env.CONGRESS_REQUIRE_LIVE === "true";
+const checkLive = process.env.CONGRESS_CHECK_LIVE === "true";
+const results = [];
+
+function record(kind, name, ok, detail = "") {
+  results.push({ detail, kind, name, ok });
+  const marker = kind === "warn" ? "WARN" : ok ? "PASS" : "FAIL";
+  console.log(`${marker} ${name}${detail ? ` - ${detail}` : ""}`);
+}
+
+function pass(name, detail = "") {
+  record("pass", name, true, detail);
+}
+
+function fail(name, detail = "") {
+  record("error", name, false, detail);
+}
+
+function warn(name, detail = "") {
+  record("warn", name, true, detail);
+}
+
+function shouldFailRequired() {
+  return requireLive || productionMode;
+}
+
+function isSet(value) {
+  return typeof value === "string" && value.trim().length > 0 && value !== "replace_me";
+}
+
+function isValidUrl(value) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || (!productionMode && url.protocol === "http:");
+  } catch {
+    return false;
+  }
+}
+
+function readIntegerEnv(name, fallback, { max, min }) {
+  const raw = process.env[name];
+  const value = Number(raw ?? fallback);
+
+  if (!Number.isInteger(value) || value < min || value > max) {
+    fail(`${name} is valid`, `Use an integer from ${min} to ${max}.`);
+    return fallback;
+  }
+
+  pass(`${name} is valid`, String(value));
+  return value;
+}
+
+function checkBooleanEnv(name, fallback) {
+  const raw = process.env[name];
+  const value = raw ?? String(fallback);
+
+  if (value !== "true" && value !== "false") {
+    fail(`${name} is valid`, "Use true or false.");
+    return;
+  }
+
+  pass(`${name} is valid`, value);
+}
+
+function checkApiKey() {
+  if (isSet(process.env.CONGRESS_API_KEY)) {
+    pass("CONGRESS_API_KEY is configured");
+    return;
+  }
+
+  if (shouldFailRequired()) {
+    fail("CONGRESS_API_KEY is configured", "Needed for live federal bill, member, committee, and summary sync.");
+  } else {
+    warn("CONGRESS_API_KEY is configured", "Needed before live Congress.gov sync can run.");
+  }
+}
+
+function checkDatabase() {
+  if (isSet(process.env.DATABASE_URL)) {
+    pass("DATABASE_URL is configured");
+    return;
+  }
+
+  if (shouldFailRequired()) {
+    fail("DATABASE_URL is configured", "Needed before normalized Congress.gov records can be persisted.");
+  } else {
+    warn("DATABASE_URL is configured", "API previews can run without it, but real sync needs persistence.");
+  }
+}
+
+function checkAppUrl() {
+  if (isValidUrl(process.env.NEXT_PUBLIC_APP_URL)) {
+    pass("NEXT_PUBLIC_APP_URL is configured", process.env.NEXT_PUBLIC_APP_URL);
+    return;
+  }
+
+  warn("NEXT_PUBLIC_APP_URL is configured", "Set deployed app URL before scheduler QA and public links.");
+}
+
+function checkSchema() {
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  const requiredModels = ["model Member", "model Bill", "model Committee", "model OfficialSourceLink", "model Cosponsor", "model Vote", "model MemberVote"];
+  const missing = requiredModels.filter((model) => !schema.includes(model));
+
+  if (missing.length) {
+    fail("Prisma civic-data models exist", `Missing ${missing.join(", ")}.`);
+  } else {
+    pass("Prisma civic-data models exist", "Member, Bill, Committee, OfficialSourceLink, Cosponsor, Vote, and MemberVote models are present.");
+  }
+
+  if (schema.includes("@@unique([congress, billType, billNumber])")) {
+    pass("Bill upsert key is available", "congress + billType + billNumber");
+  } else {
+    fail("Bill upsert key is available", "Bill model needs a stable unique key before live sync.");
+  }
+
+  if (schema.includes("@@unique([congress, chamber, rollCall])")) {
+    pass("Vote upsert key is available", "congress + chamber + rollCall");
+  } else {
+    warn("Vote upsert key is available", "Vote sync will need a stable unique key.");
+  }
+
+  if (schema.includes("model OfficialSourceLink") && schema.includes("@@index([targetType, targetId])")) {
+    pass("Official source-link lookup is available", "targetType + targetId");
+  } else {
+    fail("Official source-link lookup is available", "OfficialSourceLink needs target indexes before source-map sync.");
+  }
+}
+
+async function checkLiveCongressApi(congress, limit) {
+  if (!checkLive) {
+    warn("Live Congress.gov request check", "Skipped; set CONGRESS_CHECK_LIVE=true to make a live API request.");
+    return;
+  }
+
+  if (!isSet(process.env.CONGRESS_API_KEY)) {
+    fail("Live Congress.gov request check", "CONGRESS_API_KEY is required.");
+    return;
+  }
+
+  const url = new URL(`https://api.congress.gov/v3/bill/${congress}`);
+  url.searchParams.set("api_key", process.env.CONGRESS_API_KEY);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", String(Math.min(limit, 5)));
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      fail("Live Congress.gov request check", `Request failed with status ${response.status}.`);
+      return;
+    }
+
+    const data = await response.json();
+    const count = Array.isArray(data.bills) ? data.bills.length : 0;
+    pass("Live Congress.gov request check", `Fetched ${count} bill record${count === 1 ? "" : "s"}.`);
+  } catch (error) {
+    fail("Live Congress.gov request check", error instanceof Error ? error.message : "Request failed.");
+  }
+}
+
+async function main() {
+  console.log("Checking Capitol Ledger Congress.gov live-data readiness");
+
+  const congress = readIntegerEnv("CONGRESS_SYNC_CONGRESS", 119, { min: 1, max: 999 });
+  const limit = readIntegerEnv("CONGRESS_SYNC_LIMIT", 25, { min: 1, max: 250 });
+  if (process.env.CONGRESS_SYNC_WRITE === "true") {
+    pass("CONGRESS_SYNC_WRITE mode", "Write mode enabled for sync:congress.");
+  } else {
+    warn("CONGRESS_SYNC_WRITE mode", "Dry-run mode; set CONGRESS_SYNC_WRITE=true to persist members, bills, committees, official source links, and resolved summaries.");
+  }
+  checkBooleanEnv("CONGRESS_SYNC_SUMMARIES", true);
+  checkBooleanEnv("CONGRESS_SYNC_COSPONSORS", true);
+  readIntegerEnv("CONGRESS_SYNC_COSPONSOR_LIMIT", 50, { min: 1, max: 250 });
+  checkBooleanEnv("CONGRESS_SYNC_HOUSE_VOTES", false);
+  readIntegerEnv("CONGRESS_SYNC_HOUSE_SESSION", 1, { min: 1, max: 2 });
+  readIntegerEnv("CONGRESS_SYNC_HOUSE_VOTE_LIMIT", 5, { min: 1, max: 100 });
+  checkBooleanEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTES", true);
+  readIntegerEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT", 500, { min: 1, max: 500 });
+
+  checkApiKey();
+  checkDatabase();
+  checkAppUrl();
+  checkSchema();
+  await checkLiveCongressApi(congress, limit);
+
+  const failures = results.filter((result) => result.kind === "error" && !result.ok);
+  if (failures.length) {
+    console.error(`Congress.gov readiness has ${failures.length} blocking issue(s).`);
+    process.exit(1);
+  }
+
+  if (!requireLive) {
+    console.log("Congress.gov readiness check passed for demo-safe mode. Use CONGRESS_REQUIRE_LIVE=true for production sync readiness.");
+    return;
+  }
+
+  console.log("Congress.gov readiness check passed for production sync readiness.");
+}
+
+main();
