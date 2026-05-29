@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Eye,
+  EyeOff,
   Fingerprint,
   KeyRound,
   LockKeyhole,
@@ -111,6 +112,8 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [allowAccountCreation, setAllowAccountCreation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [verificationHandled, setVerificationHandled] = useState(false);
 
   const heading = useMemo(() => {
@@ -133,9 +136,9 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
 
   useEffect(() => {
     const created = hasBrowserAccountCreated();
-    setAccountCreated(created);
-    if (created && mode === "create") setMode("signIn");
-  }, [mode]);
+    setAccountCreated(created && !allowAccountCreation);
+    if (created && !allowAccountCreation && mode === "create") setMode("signIn");
+  }, [allowAccountCreation, mode]);
 
   useEffect(() => {
     if (resetToken) setMode("reset");
@@ -178,6 +181,13 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
 
   function selectMode(nextMode: AuthMode) {
     setMode(nextMode);
+    setStatus("");
+  }
+
+  function useDifferentAccount() {
+    setAllowAccountCreation(true);
+    setAccountCreated(false);
+    setMode("create");
     setStatus("");
   }
 
@@ -231,6 +241,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
     }
 
     markBrowserAccountCreated();
+    setAllowAccountCreation(false);
     setAccountCreated(true);
     void syncLocalAccountData();
 
@@ -270,6 +281,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       }
 
       markBrowserAccountCreated();
+      setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth();
       return;
@@ -313,6 +325,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       }
 
       markBrowserAccountCreated();
+      setAllowAccountCreation(false);
       setAccountCreated(true);
       await syncLocalAccountData();
       setMode("verify");
@@ -376,6 +389,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       }
 
       markBrowserAccountCreated();
+      setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth();
       return;
@@ -419,7 +433,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       </section>
 
       <MobileCard className="mt-8 px-5 py-5">
-        {(mode === "signIn" || mode === "create") && !accountCreated ? (
+        {(mode === "signIn" || mode === "create") && (!accountCreated || allowAccountCreation) ? (
           <div className="grid grid-cols-2 rounded-2xl border border-white/10 bg-white/5 p-1">
             <button
               type="button"
@@ -449,9 +463,15 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
             <Field
               icon={<KeyRound />}
               label={mode === "reset" ? "New password" : "Password"}
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder={mode === "reset" ? "New password" : "Password"}
-              trailing={<Eye />}
+              trailing={
+                <PasswordVisibilityButton
+                  active={showPassword}
+                  label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((current) => !current)}
+                />
+              }
               value={form.password}
               onChange={(value) => updateField("password", value)}
             />
@@ -461,7 +481,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
             <Field
               icon={<LockKeyhole />}
               label="Confirm password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder={mode === "reset" ? "Confirm new password" : "Confirm password"}
               value={form.confirmPassword}
               onChange={(value) => updateField("confirmPassword", value)}
@@ -558,7 +578,13 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
           <span className="h-px bg-white/10" />
         </div>
 
-        <div className={`mt-5 grid gap-3 ${accountCreated ? "grid-cols-1" : "grid-cols-2"}`}>
+        {accountCreated && mode === "signIn" ? (
+          <button type="button" onClick={useDifferentAccount} className="mt-5 w-full text-center text-[14px] font-semibold text-[#ffb12b]">
+            Use a different account
+          </button>
+        ) : null}
+
+        <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
           <button
             type="button"
             onClick={() => void startDemoAccount(returnTo)}
@@ -568,7 +594,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
             <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
             Face ID
           </button>
-          {!accountCreated ? (
+          {(!accountCreated || allowAccountCreation) ? (
             <button
               type="button"
               onClick={() => selectMode("create")}
@@ -639,8 +665,16 @@ function Field({
           onChange={(event) => onChange(event.target.value)}
           className="min-w-0 flex-1 bg-transparent text-[16px] text-white outline-none placeholder:text-white/38"
         />
-        {trailing ? <span className="text-white/42 [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{trailing}</span> : null}
+        {trailing ? trailing : null}
       </span>
     </label>
+  );
+}
+
+function PasswordVisibilityButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/54 transition hover:bg-white/8 hover:text-white">
+      {active ? <EyeOff className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" /> : <Eye className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
+    </button>
   );
 }

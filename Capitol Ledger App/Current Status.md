@@ -6,6 +6,8 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Fixed the Vercel Prisma deployment issue by adding `prisma generate` to the production build path, so account creation/sign-in can use the generated Prisma client after Vercel dependency caching.
+- Restored the sign-in password visibility control so the eye button toggles password fields between hidden and visible.
 - Pushed the local Capitol Ledger app to GitHub on `main`, giving Vercel a deployable repository source for Phase 1.
 - Vercel deployments are now populating from the GitHub-connected Capitol Ledger project; Phase 1 is ready for deployed smoke testing.
 - Reorganized the remaining work into a phased roadmap and started Phase 1: Web Beta Readiness.

@@ -31,6 +31,7 @@ Current Phase 1 status:
 
 - GitHub has the initial Capitol Ledger app push on `main`.
 - Vercel deployments are now populating from the GitHub-connected project.
+- Vercel production build now needs the latest push with `prisma generate` in the build script before production account creation is retested.
 - Local `beta:check` passes the file and core environment checks.
 - The next Phase 1 step is the deployed smoke test: open the Vercel URL, submit one `/feedback` report, and confirm it appears in `/feedback/review`.
 - Local `.env.local` can stay pointed at the local preview; Vercel owns the deployed `NEXT_PUBLIC_APP_URL` value.
