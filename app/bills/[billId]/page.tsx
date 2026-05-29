@@ -5,7 +5,7 @@ import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -59,6 +59,7 @@ type ProgressStep = {
 
 type AiBillAnalysis = {
   cons: string[];
+  context: string;
   pros: string[];
 };
 
@@ -79,81 +80,205 @@ function tabHref(billId: string, tab: BillTab) {
   return tab === "overview" ? `/bills/${billId}` : `/bills/${billId}?tab=${tab}`;
 }
 
-function buildAiBillAnalysis(bill: Bill): AiBillAnalysis {
-  const area = bill.policyArea.toLowerCase();
+function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
+  const text = [bill.policyArea, bill.title, bill.shortTitle, bill.summary, summaryText, bill.latestActionText, bill.committeeName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const statusLine = getPersonalStatusLine(bill);
+  const billName = bill.shortTitle || bill.title;
 
-  if (area.includes("government") || area.includes("operations")) {
+  if (matchesAny(text, ["child", "childcare", "family", "families", "care", "health", "provider"])) {
     return {
+      context: `${billName} could reach people through household budgets, family care decisions, and the local providers families rely on. ${statusLine}`,
       pros: [
-        "Could make public records easier to audit, compare, and search.",
-        "May improve accountability by standardizing congressional data publication.",
-        "Could reduce friction for journalists, researchers, and civic tools that rely on public records."
+        "If you pay for child care or help relatives who do, the upside could be lower bills, more available slots, or fewer hard choices between work and care.",
+        "Public reporting on access and costs could make it easier to see whether your area is being left behind instead of guessing from waitlists and word of mouth.",
+        "Support for workforce stability could help providers keep staff, which can mean fewer sudden closures and less disruption for parents."
       ],
       cons: [
-        "Implementation could create new technology and compliance costs for agencies or offices.",
-        "Sensitive operational details may need careful privacy and security review.",
-        "Benefits depend on consistent data standards and long-term maintenance funding."
+        "You may see little benefit if eligibility rules, income limits, state rollout, or waitlists leave your household outside the program.",
+        "If funding is too small or temporary, families could get paperwork and promises while prices keep rising.",
+        "Providers may face more reporting work, and that can pull staff time away from care unless the program is simple to use."
       ]
     };
   }
 
-  if (area.includes("homeland") || area.includes("security")) {
+  if (matchesAny(text, ["transparency", "public record", "machine-readable", "data", "records", "accountability", "government operations"])) {
     return {
+      context: `${billName} matters if you have ever tried to figure out what Congress did, who changed a bill, or whether your representative followed through. ${statusLine}`,
       pros: [
-        "Could improve oversight of infrastructure spending, timelines, and project outcomes.",
-        "May give lawmakers clearer data for identifying delays or cost overruns.",
-        "Could create a more consistent review process across border-related projects."
+        "You could spend less time digging through scattered government sites and more time seeing what changed, who voted, and what it means for your district.",
+        "Cleaner public records can help local reporters, watchdogs, and civic apps catch mistakes faster, which protects voters and taxpayers.",
+        "If an official promises action on an issue you care about, better records make it easier to compare the promise with the vote."
       ],
       cons: [
-        "Additional reporting requirements may slow project execution if not scoped carefully.",
-        "Metrics could become politicized without transparent methodology.",
-        "Oversight benefits depend on timely, complete, and comparable data from agencies."
+        "If the data is incomplete or hard to explain, it can look transparent while still leaving regular people confused.",
+        "Congressional offices may need money and staff time to comply, and that can compete with other constituent service work.",
+        "More public data still needs privacy and security guardrails so transparency does not expose details that should stay protected."
       ]
     };
   }
 
-  if (area.includes("health")) {
+  if (matchesAny(text, ["border", "homeland", "security", "infrastructure review", "review act"])) {
     return {
+      context: `${billName} could affect people through public safety, travel, local construction, property impacts, trade, and taxpayer spending. ${statusLine}`,
       pros: [
-        "Could expand visibility into access, affordability, and service availability.",
-        "May help direct resources toward communities with measurable gaps.",
-        "Reporting requirements could improve oversight of program outcomes."
+        "If you live near affected infrastructure, clearer reviews could mean more predictable timelines, safer projects, and fewer surprise disruptions.",
+        "Cost and timeline reporting can help taxpayers see whether major security projects are actually delivering what was promised.",
+        "Local businesses and communities may be able to plan better when project delays, spending, and next steps are easier to see."
       ],
       cons: [
-        "Grant and reporting requirements may add administrative burden for providers.",
-        "Funding levels and eligibility rules could affect how broadly benefits reach families.",
-        "Implementation may vary across states and local service networks."
+        "Reviews can slow projects if they add paperwork without fixing the bottlenecks that caused delays in the first place.",
+        "Border and security projects can affect property, commutes, civil liberties, and local economies very differently depending on where you live.",
+        "The bill may identify cost overruns without guaranteeing they get fixed, so taxpayers could still carry the burden."
       ]
     };
   }
 
-  if (area.includes("transportation") || area.includes("public works")) {
+  if (matchesAny(text, ["transportation", "public works", "port", "ports", "supply chain", "resilience", "maritime"])) {
     return {
+      context: `${billName} may sound distant at first, but infrastructure bills can show up later in prices, jobs, shipping delays, emergency response, and local taxes. ${statusLine}`,
       pros: [
-        "Could support long-term infrastructure resilience and supply-chain planning.",
-        "May focus attention on regions with strategic transportation vulnerabilities.",
-        "Project data could help compare funding needs across ports and corridors."
+        "Stronger ports and transportation planning could reduce supply-chain disruptions that eventually hit store shelves and household prices.",
+        "Local workers and contractors could benefit if planning money turns into real projects in affected communities.",
+        "Better resilience planning can matter during storms, emergencies, or shipping interruptions when everyday services depend on working infrastructure."
       ],
       cons: [
-        "Large infrastructure programs can carry high upfront costs and long timelines.",
-        "Permitting, environmental review, and local coordination may slow delivery.",
-        "Benefits may depend on sustained funding beyond initial planning phases."
+        "Large infrastructure plans can take years, so families may pay or wait long before seeing a visible benefit.",
+        "Permitting, environmental review, and local opposition can delay projects and make costs climb.",
+        "If funding is spread too thin, communities may get studies and planning documents instead of finished improvements."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["education", "school", "student", "teacher", "college", "learning"])) {
+    return {
+      context: `${billName} could affect families through schools, student costs, classroom resources, and local education choices. ${statusLine}`,
+      pros: [
+        "If you have children in school or are paying for training or college, the upside could be more support, clearer rules, or lower pressure on family budgets.",
+        "More reporting can help parents and students see whether money is reaching classrooms instead of disappearing into layers of administration.",
+        "Local districts may get better guidance or funding if the bill targets gaps that already affect your community."
+      ],
+      cons: [
+        "Benefits can depend heavily on state and district decisions, so families in different ZIP codes may feel very different results.",
+        "New rules can create paperwork for schools and teachers if the bill does not keep implementation simple.",
+        "If funding is limited or temporary, schools may start programs that families come to rely on and then lose later."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["veteran", "veterans", "military", "servicemember", "va benefits", "health care for veterans"])) {
+    return {
+      context: `${billName} matters for veterans, military families, caregivers, and communities that depend on timely benefits and services. ${statusLine}`,
+      pros: [
+        "Veterans and caregivers could see faster access, clearer eligibility, or better tracking of benefits that already affect daily life.",
+        "If the bill improves reporting, families may have an easier time proving where delays or service gaps are happening.",
+        "Community providers could coordinate better with federal programs if the bill creates clearer responsibilities."
+      ],
+      cons: [
+        "If eligibility is narrow, some veterans may hear about a new benefit but still be left out.",
+        "More oversight does not automatically mean faster appointments, claims, or payments unless agencies are staffed to act.",
+        "Families may still face confusing handoffs between federal, state, and local systems."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["energy", "climate", "environment", "water", "emissions", "utility", "conservation"])) {
+    return {
+      context: `${billName} could show up through utility bills, local jobs, land use, air or water quality, and how fast communities adapt to risk. ${statusLine}`,
+      pros: [
+        "If the bill supports cleaner or more reliable systems, your household could eventually benefit through healthier neighborhoods or steadier service.",
+        "Local workers may see new projects or training if funding reaches communities instead of staying in planning mode.",
+        "Better environmental data can help residents prove whether their area is carrying more risk than others."
+      ],
+      cons: [
+        "Costs can show up before benefits through rates, taxes, compliance expenses, or higher prices passed to consumers.",
+        "Projects can create local conflict if communities feel decisions are being made over them instead of with them.",
+        "If timelines are vague, households may hear big promises while daily problems like bills or pollution stay the same."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["tax", "taxes", "budget", "appropriation", "spending", "deficit", "revenue", "fiscal"])) {
+    return {
+      context: `${billName} matters because budget choices eventually decide who pays, which services are funded, and what gets delayed. ${statusLine}`,
+      pros: [
+        "If money is targeted well, your community could see better services without having to fight for attention every year.",
+        "Clear spending rules can make it easier for taxpayers to see whether funds are reaching the promised people or places.",
+        "A well-designed fiscal plan can reduce uncertainty for families, small businesses, and local governments."
+      ],
+      cons: [
+        "The cost may come back to households through taxes, fees, reduced services, or future budget pressure.",
+        "If oversight is weak, money can be spent without proving that people actually benefited.",
+        "Short-term funding can create programs that disappear just as families or local agencies begin depending on them."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["housing", "rent", "mortgage", "homeless", "zoning", "labor", "worker", "wage", "employment"])) {
+    return {
+      context: `${billName} could affect everyday stability through rent, jobs, wages, workplace rules, or the cost of staying in your community. ${statusLine}`,
+      pros: [
+        "If the bill reaches people directly, it could ease pressure on rent, paychecks, benefits, or the ability to keep steady work.",
+        "Better standards can help workers or tenants understand what they are owed and where to go when rules are ignored.",
+        "Local programs may become easier to compare if the bill requires clearer reporting on outcomes."
+      ],
+      cons: [
+        "Costs may be passed along through prices, rents, hiring decisions, or reduced local services if the bill is not funded carefully.",
+        "People most affected may still miss out if eligibility rules are complicated or enforcement is weak.",
+        "A bill can sound protective but still leave gaps for part-time workers, contractors, renters, or people between systems."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["crime", "police", "public safety", "justice", "court", "firearm", "emergency", "disaster"])) {
+    return {
+      context: `${billName} could affect safety, trust in institutions, emergency response, and how rules are enforced where you live. ${statusLine}`,
+      pros: [
+        "If it improves response or accountability, you may see clearer standards for agencies that directly affect safety and rights.",
+        "Local communities could get better tools or funding for problems they are already dealing with.",
+        "Transparent reporting can help residents see whether enforcement is fair and whether outcomes are improving."
+      ],
+      cons: [
+        "More enforcement power can affect communities unevenly if guardrails and civil-rights protections are weak.",
+        "New rules may not improve safety if local agencies do not have staffing, training, or trust from residents.",
+        "Funding choices can pull money toward one safety approach while leaving prevention, mental health, or community services behind."
       ]
     };
   }
 
   return {
+    context: `${billName} matters if it touches your work, school, bills, health, safety, rights, or local services. ${statusLine}`,
     pros: [
-      "Could clarify policy intent and create a record for public accountability.",
-      "May help lawmakers and constituents track measurable outcomes.",
-      "Could improve coordination across related agencies, committees, or programs."
+      "The upside is clearer rules and a public record you can use to judge whether elected officials delivered.",
+      "If the bill targets a problem your household already feels, it could bring attention, funding, or coordination to that issue.",
+      "Better reporting can help you compare what lawmakers say with what the program actually does."
     ],
     cons: [
-      "Implementation details may determine whether the bill achieves its stated goals.",
-      "New requirements could create costs or administrative complexity.",
-      "The public impact may be hard to judge until funding, rules, and oversight are defined."
+      "The benefit may miss you if eligibility, geography, timing, or agency rules do not line up with your real life.",
+      "New programs can create costs that show up later through taxes, fees, paperwork, or stretched public budgets.",
+      "The final impact may change as amendments, funding decisions, and agency rules are written."
     ]
   };
+}
+
+function matchesAny(text: string, terms: string[]) {
+  return terms.some((term) => text.includes(term));
+}
+
+function getPersonalStatusLine(bill: Bill) {
+  const action = bill.latestActionText.toLowerCase();
+
+  if (action.includes("committee") || action.includes("hearing") || action.includes("referred")) {
+    return "Because it is still moving through committee, nothing changes for you today, but this is where details can decide who qualifies, who pays, and how fast anything reaches people.";
+  }
+
+  if (action.includes("passed") || action.includes("reported") || action.includes("calendar")) {
+    return "Because it has moved further along, the practical question is what survives the next vote and whether the rollout is clear enough to matter outside Washington.";
+  }
+
+  return "Because the bill is still in the legislative process, the real-life impact depends on amendments, funding, and implementation rules.";
 }
 
 function buildVoteDots(totals: { yes: number; no: number; notVoting: number }) {
@@ -263,7 +388,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
           <>
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens">
-              <AiPolicyLensCard analysis={buildAiBillAnalysis(bill)} />
+              <AiPolicyLensCard analysis={buildAiBillAnalysis(bill, billSummary.text)} />
             </PlanFeatureGate>
             <KeyDetailsCard bill={bill} introducedDate={introducedDate} sponsor={sponsor} />
             <PlanFeatureGate feature="sourceMap">
@@ -356,7 +481,9 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
           <FileText className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <p className="mt-5 whitespace-pre-line text-[16px] leading-6 text-white/64">{summary.text}</p>
+      <ScrollableTextBox className="text-[16px] text-white/64">
+        {summary.text}
+      </ScrollableTextBox>
       <div className="mt-5 flex flex-wrap gap-2">
         <span className="rounded-full border border-rust/30 bg-rust/10 px-3 py-1.5 text-[12px] font-medium text-[#ffb12b]">
           {bill.policyArea}
@@ -383,16 +510,19 @@ function AiPolicyLensCard({ analysis }: { analysis: AiBillAnalysis }) {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
           <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">AI Policy Lens</div>
-          <h2 className="mt-2 text-[23px] font-medium leading-tight">Pros & Cons</h2>
-          <p className="mt-2 text-[13px] leading-5 text-white/50">Generated from bill metadata and summary. Not official analysis or a recommendation.</p>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Personal Impact</h2>
+          <p className="mt-2 text-[13px] leading-5 text-white/50">An easy read on how this bill could show up in your household, community, wallet, or rights.</p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#ffb12b]/12 text-[#ffb12b]">
           <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
+      <ScrollableTextBox className="text-[15px] text-white/68">
+        {analysis.context}
+      </ScrollableTextBox>
       <div className="mt-5 grid gap-4">
-        <AiPointGroup title="Potential Upsides" tone="pro" points={analysis.pros} />
-        <AiPointGroup title="Tradeoffs To Watch" tone="con" points={analysis.cons} />
+        <AiPointGroup title="How It Could Help You" tone="pro" points={analysis.pros} />
+        <AiPointGroup title="What Could Work Against You" tone="con" points={analysis.cons} />
       </div>
     </MobileCard>
   );
@@ -415,6 +545,14 @@ function AiPointGroup({ points, title, tone }: { points: string[]; title: string
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ScrollableTextBox({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`mt-5 max-h-32 overflow-y-auto overscroll-contain rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 leading-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
+      <p className="whitespace-pre-line">{children}</p>
     </div>
   );
 }

@@ -1,12 +1,11 @@
 import { MobileShell } from "@/components/mobile-shell";
-import { NotificationPreferencesEditor, OnboardingDistrictSetup } from "@/components/account-profile-controls";
+import { NotificationPreferencesEditor, OnboardingDistrictSetup, OnboardingMatchedOfficials } from "@/components/account-profile-controls";
 import { GamificationEventLink } from "@/components/gamification-actions";
 import { MobileCard } from "@/components/mobile-ui";
 import Link from "next/link";
 import {
   Bell,
   Check,
-  ChevronRight,
   Landmark,
   LocateFixed,
   MapPin,
@@ -27,17 +26,6 @@ const issueSignals = ["Healthcare", "Education", "Infrastructure", "Veterans", "
 
 export default function OnboardingPage() {
   const allMembers = getAllMembers();
-  const officials = [
-    ...allMembers.filter((member) => member.state === "TX"),
-    ...allMembers.filter((member) => member.state !== "TX")
-  ]
-    .slice(0, 3)
-    .map((member) => ({
-      role: `U.S. ${member.chamber === "Senate" ? "Senator" : "Representative"}`,
-      name: member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, ""),
-      district: member.district ? `TX-${member.district}` : "Texas",
-      party: member.party
-    }));
 
   return (
     <MobileShell
@@ -102,7 +90,7 @@ export default function OnboardingPage() {
               <MobileCard className="px-5 py-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-[21px] font-medium leading-none">Setup Flow</h2>
-                  <span className="text-[13px] font-semibold text-[#ffb12b]">2 complete</span>
+                  <span className="text-[13px] font-semibold text-[#ffb12b]">State matched</span>
                 </div>
                 <div className="mt-5 grid gap-3">
                   {setupSteps.map((step, index) => (
@@ -125,22 +113,7 @@ export default function OnboardingPage() {
                   <Landmark className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
                   <h2 className="text-[21px] font-medium leading-none">Your Officials</h2>
                 </div>
-                <div className="mt-5 divide-y divide-white/8">
-                  {officials.map((official) => (
-                    <Link key={`${official.role}-${official.name}`} href="/search?type=members&state=TX" className="grid grid-cols-[44px_1fr_auto] items-center gap-3 py-4">
-                      <span className="grid h-11 w-11 place-items-center rounded-full border border-rust/35 bg-white/5 text-[#ffb12b]">
-                        <UserRound className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[16px] font-semibold text-white">{official.name}</span>
-                        <span className="mt-1 block truncate text-[13px] text-white/52">
-                          {official.role} · {official.district} · {official.party}
-                        </span>
-                      </span>
-                      <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
-                    </Link>
-                  ))}
-                </div>
+                <OnboardingMatchedOfficials members={allMembers} />
               </MobileCard>
 
               <MobileCard className="px-5 py-5">

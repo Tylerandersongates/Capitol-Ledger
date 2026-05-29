@@ -18,6 +18,128 @@ export const members: Member[] = [
     description: "House member from New York with committee, sponsorship, and roll-call records ready for source review."
   },
   {
+    bioguideId: "S000148",
+    firstName: "Charles",
+    lastName: "Schumer",
+    fullName: "Sen. Charles E. Schumer",
+    party: "Democrat",
+    state: "NY",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/s000148_200.jpg",
+    officialUrl: "https://www.schumer.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/charles-schumer/S000148",
+    description: "Senator from New York included for beta testers reviewing state-based federal representation."
+  },
+  {
+    bioguideId: "G000555",
+    firstName: "Kirsten",
+    lastName: "Gillibrand",
+    fullName: "Sen. Kirsten E. Gillibrand",
+    party: "Democrat",
+    state: "NY",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/g000555_200.jpg",
+    officialUrl: "https://www.gillibrand.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/kirsten-gillibrand/G000555",
+    description: "Senator from New York included for district-personalized beta search and profile testing."
+  },
+  {
+    bioguideId: "P000145",
+    firstName: "Alex",
+    lastName: "Padilla",
+    fullName: "Sen. Alex Padilla",
+    party: "Democrat",
+    state: "CA",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/p000145_200.jpg",
+    officialUrl: "https://www.padilla.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/alex-padilla/P000145",
+    description: "Senator from California included for beta testers reviewing local federal representation."
+  },
+  {
+    bioguideId: "S001150",
+    firstName: "Adam",
+    lastName: "Schiff",
+    fullName: "Sen. Adam B. Schiff",
+    party: "Democrat",
+    state: "CA",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/s001150_200.jpg",
+    officialUrl: "https://www.schiff.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/adam-schiff/S001150",
+    description: "Senator from California included for state-based tester onboarding and search filtering."
+  },
+  {
+    bioguideId: "G000585",
+    firstName: "Jimmy",
+    lastName: "Gomez",
+    fullName: "Rep. Jimmy Gomez",
+    party: "Democrat",
+    state: "CA",
+    district: "34",
+    chamber: "House",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/g000585_200.jpg",
+    officialUrl: "https://gomez.house.gov/",
+    sourceUrl: "https://www.congress.gov/member/jimmy-gomez/G000585",
+    description: "House member from California's 34th District included for Los Angeles beta district matching."
+  },
+  {
+    bioguideId: "W000817",
+    firstName: "Elizabeth",
+    lastName: "Warren",
+    fullName: "Sen. Elizabeth Warren",
+    party: "Democrat",
+    state: "MA",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/w000817_200.jpg",
+    officialUrl: "https://www.warren.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/elizabeth-warren/W000817",
+    description: "Senator from Massachusetts included for beta testers reviewing state-based federal representation."
+  },
+  {
+    bioguideId: "M000133",
+    firstName: "Edward",
+    lastName: "Markey",
+    fullName: "Sen. Edward J. Markey",
+    party: "Democrat",
+    state: "MA",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/m000133_200.jpg",
+    officialUrl: "https://www.markey.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/edward-markey/M000133",
+    description: "Senator from Massachusetts included for Boston-area beta onboarding and search testing."
+  },
+  {
+    bioguideId: "P000617",
+    firstName: "Ayanna",
+    lastName: "Pressley",
+    fullName: "Rep. Ayanna Pressley",
+    party: "Democrat",
+    state: "MA",
+    district: "7",
+    chamber: "House",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/p000617_200.jpg",
+    officialUrl: "https://pressley.house.gov/",
+    sourceUrl: "https://www.congress.gov/member/ayanna-pressley/P000617",
+    description: "House member from Massachusetts's 7th District included for Boston-area beta district matching."
+  },
+  {
     bioguideId: "C001098",
     firstName: "Ted",
     lastName: "Cruz",
@@ -31,6 +153,37 @@ export const members: Member[] = [
     officialUrl: "https://www.cruz.senate.gov/",
     sourceUrl: "https://www.congress.gov/member/ted-cruz/C001098",
     description: "Senator from Texas with recent votes, sponsored legislation, and public record links grouped for inspection."
+  },
+  {
+    bioguideId: "C001056",
+    firstName: "John",
+    lastName: "Cornyn",
+    fullName: "Sen. John Cornyn",
+    party: "Republican",
+    state: "TX",
+    chamber: "Senate",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/c001056_200.jpg",
+    officialUrl: "https://www.cornyn.senate.gov/",
+    sourceUrl: "https://www.congress.gov/member/john-cornyn/C001056",
+    description: "Senator from Texas included for Austin, Dallas, and Houston beta tester representation."
+  },
+  {
+    bioguideId: "M001157",
+    firstName: "Michael",
+    lastName: "McCaul",
+    fullName: "Rep. Michael McCaul",
+    party: "Republican",
+    state: "TX",
+    district: "10",
+    chamber: "House",
+    active: true,
+    term: "119th Congress",
+    photoUrl: "https://www.congress.gov/img/member/m001157_200.jpg",
+    officialUrl: "https://mccaul.house.gov/",
+    sourceUrl: "https://www.congress.gov/member/michael-mccaul/M001157",
+    description: "House member from Texas's 10th District included for Austin beta district matching."
   },
   {
     bioguideId: "S000033",
@@ -80,7 +233,7 @@ export const bills: Bill[] = [
     latestActionText: "Referred to committee for review.",
     latestActionDate: "2026-04-21",
     summary:
-      "Generated demo summary: would require machine-readable publication of selected congressional records and status updates.",
+      "The Civic Data Transparency Act would require selected congressional records and bill status updates to be published in a standard digital format so the public can more easily track legislative changes, official actions, and government records.",
     sourceUrl: "https://www.congress.gov/"
   },
   {
@@ -98,7 +251,7 @@ export const bills: Bill[] = [
     latestActionText: "Placed on Senate legislative calendar.",
     latestActionDate: "2026-03-17",
     summary:
-      "Generated demo summary: would direct an annual review of border infrastructure projects, costs, and implementation timelines.",
+      "The Border Infrastructure Review Act would require an annual review of border infrastructure projects, including project costs, timelines, delays, and implementation progress.",
     sourceUrl: "https://www.congress.gov/"
   },
   {
@@ -116,7 +269,7 @@ export const bills: Bill[] = [
     latestActionText: "Committee hearings held.",
     latestActionDate: "2026-02-06",
     summary:
-      "Generated demo summary: would expand childcare affordability grants and require public reporting on access, costs, and workforce stability.",
+      "The Affordable Childcare Act would expand child care affordability grants and require public reporting on access, family costs, provider availability, and workforce stability.",
     sourceUrl: "https://www.congress.gov/"
   },
   {
@@ -134,7 +287,7 @@ export const bills: Bill[] = [
     latestActionText: "Reported by committee with amendments.",
     latestActionDate: "2026-04-02",
     summary:
-      "Generated demo summary: would authorize planning funds for Arctic port resilience, safety, and supply chain projects.",
+      "The Arctic Resilience and Ports Act would authorize planning funds for Arctic port resilience, maritime safety, supply-chain reliability, and related infrastructure projects.",
     sourceUrl: "https://www.congress.gov/"
   }
 ];

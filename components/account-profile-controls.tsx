@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CheckCircle2, ChevronRight, LocateFixed, LockKeyhole, MapPin, Search } from "lucide-react";
+import { CheckCircle2, ChevronRight, LocateFixed, LockKeyhole, MapPin, Search, UserRound } from "lucide-react";
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
@@ -15,8 +15,9 @@ import {
   type LocalDistrictProfile
 } from "@/lib/browser-account-profile";
 import { useSubscriptionState } from "@/components/subscription-controls";
+import { betaDistrictPresets, betaTesterStateOptions, getMatchedOfficials } from "@/lib/beta-district-presets";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
-import type { AccountNotificationPreferences } from "@/types/capitol";
+import type { AccountNotificationPreferences, Member } from "@/types/capitol";
 
 type NotificationPreferenceKey = keyof AccountNotificationPreferences;
 
@@ -38,18 +39,10 @@ const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: s
   }
 ];
 
-const demoDistrictMatches: { code: string; input: string[]; label: string; state: string }[] = [
-  { code: "TX-10", input: ["austin", "travis"], label: "Austin, Texas - TX-10", state: "Texas" },
-  { code: "TX-18", input: ["houston"], label: "Houston, Texas - TX-18", state: "Texas" },
-  { code: "TX-32", input: ["dallas"], label: "Dallas, Texas - TX-32", state: "Texas" },
-  { code: "CA-34", input: ["los angeles", "la,"], label: "Los Angeles, California - CA-34", state: "California" },
-  { code: "NY-14", input: ["bronx", "queens", "new york"], label: "New York, New York - NY-14", state: "New York" }
-];
-
 function buildDistrictProfile(input: string): Required<LocalDistrictProfile> {
   const value = input.trim() || "Austin, Texas";
   const normalized = value.toLowerCase();
-  const matched = demoDistrictMatches.find((district) => district.input.some((term) => normalized.includes(term)));
+  const matched = betaDistrictPresets.find((district) => district.input.some((term) => normalized.includes(term)));
 
   if (matched) {
     return {
@@ -144,6 +137,15 @@ export function OnboardingDistrictSetup() {
     saveDistrict(nextDistrict);
   }
 
+  function choosePreset(preset: (typeof betaTesterStateOptions)[number]) {
+    setDistrictInput(preset.label.replace(/\s+-\s+[A-Z]{2}-\d{1,2}$/i, ""));
+    saveDistrict({
+      districtCode: preset.code,
+      districtLabel: preset.label,
+      districtState: preset.state
+    });
+  }
+
   return (
     <>
       <form
@@ -171,6 +173,22 @@ export function OnboardingDistrictSetup() {
             <LocateFixed className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
           </button>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {betaTesterStateOptions.map((preset) => (
+            <button
+              key={preset.code}
+              type="button"
+              onClick={() => choosePreset(preset)}
+              className={`rounded-full border px-3 py-2 text-[12px] font-semibold transition ${
+                matchedDistrict.districtCode === preset.code
+                  ? "border-[#ffb12b]/60 bg-[#ffb12b]/16 text-[#ffb12b]"
+                  : "border-white/10 bg-white/5 text-white/58"
+              }`}
+            >
+              {preset.state}
+            </button>
+          ))}
+        </div>
       </form>
 
       <div className="mt-5 rounded-2xl border border-[#43ed74]/30 bg-[#43ed74]/10 p-4">
@@ -183,6 +201,40 @@ export function OnboardingDistrictSetup() {
         </div>
       </div>
     </>
+  );
+}
+
+export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
+  const district = useDistrictProfile();
+  const officials = getMatchedOfficials(members, district.districtCode).slice(0, 4);
+  const stateCode = district.districtCode?.slice(0, 2) ?? "TX";
+
+  return (
+    <div className="mt-5 divide-y divide-white/8">
+      {officials.map((official) => (
+        <Link key={official.bioguideId} href={`/members/${official.bioguideId}`} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 py-4">
+          {official.photoUrl ? (
+            <img src={official.photoUrl} alt="" className="h-11 w-11 rounded-full border border-rust/35 object-cover" />
+          ) : (
+            <span className="grid h-11 w-11 place-items-center rounded-full border border-rust/35 bg-white/5 text-[#ffb12b]">
+              <UserRound className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+          )}
+          <span className="min-w-0">
+            <span className="block truncate text-[16px] font-semibold text-white">{official.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</span>
+            <span className="mt-1 block truncate text-[13px] text-white/52">
+              U.S. {official.chamber === "Senate" ? "Senator" : "Representative"} · {official.state}
+              {official.district ? `-${official.district}` : ""} · {official.party}
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
+        </Link>
+      ))}
+      <Link href={`/search?type=members&state=${stateCode}`} className="flex items-center justify-between py-4 text-[14px] font-semibold text-[#ffb12b]">
+        View all matched officials
+        <ChevronRight className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+      </Link>
+    </div>
   );
 }
 

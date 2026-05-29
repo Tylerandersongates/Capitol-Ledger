@@ -33,6 +33,8 @@ type AuthFormState = {
   confirmPassword: string;
   consent: boolean;
   email: string;
+  firstName: string;
+  lastName: string;
   name: string;
   password: string;
 };
@@ -45,7 +47,9 @@ type AuthApiResponse = {
   mode?: string;
   user?: {
     email: string;
+    firstName?: string;
     id: string;
+    lastName?: string;
     name?: string;
   };
   verificationLink?: string;
@@ -57,6 +61,8 @@ const defaultForm: AuthFormState = {
   confirmPassword: "",
   consent: true,
   email: "",
+  firstName: "",
+  lastName: "",
   name: "",
   password: ""
 };
@@ -288,8 +294,12 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
     }
 
     if (mode === "create") {
-      if (form.name.trim().length < 2) {
-        setStatus("Add your name for the account profile.");
+      if (form.firstName.trim().length < 1) {
+        setStatus("Add your first name for the account profile.");
+        return;
+      }
+      if (form.lastName.trim().length < 1) {
+        setStatus("Add your last name for the account profile.");
         return;
       }
       if (!isEmail(form.email)) {
@@ -311,7 +321,9 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       setPending(true);
       const result = await postJson<AuthApiResponse>("/api/auth/register", {
         email: form.email,
-        name: form.name,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        name: `${form.firstName} ${form.lastName}`.trim(),
         password: form.password
       }).catch((error: unknown) => ({
         data: { error: error instanceof Error ? error.message : "Account creation failed." },
@@ -453,7 +465,12 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
         ) : null}
 
         <div className="mt-6 space-y-4">
-          {mode === "create" ? <Field icon={<UserRound />} label="Full name" type="text" placeholder="Your name" value={form.name} onChange={(value) => updateField("name", value)} /> : null}
+          {mode === "create" ? (
+            <>
+              <Field icon={<UserRound />} label="First name" type="text" placeholder="First name" value={form.firstName} onChange={(value) => updateField("firstName", value)} />
+              <Field icon={<UserRound />} label="Last name" type="text" placeholder="Last name" value={form.lastName} onChange={(value) => updateField("lastName", value)} />
+            </>
+          ) : null}
 
           {mode !== "success" && mode !== "reset" ? (
             <Field icon={<Mail />} label="Email" type="email" placeholder="you@example.com" value={form.email} onChange={(value) => updateField("email", value)} />

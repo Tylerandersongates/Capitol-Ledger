@@ -6,6 +6,9 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Added beta tester district presets for California, Massachusetts, New York, and Texas so onboarding/search can quickly show relevant federal senators and district representatives for the first tester group.
+- Added separate first-name and last-name account creation fields, while preserving the combined display name, so future database exports are easier to sort in spreadsheets.
+- Fixed `/search?type=bills`, `/search?type=members`, and `/search?type=votes` so category-specific views show the fuller result set instead of only the three-card homepage preview.
 - Fixed the Vercel Prisma deployment issue by adding `prisma generate` to the production build path, so account creation/sign-in can use the generated Prisma client after Vercel dependency caching.
 - Restored the sign-in password visibility control so the eye button toggles password fields between hidden and visible.
 - Pushed the local Capitol Ledger app to GitHub on `main`, giving Vercel a deployable repository source for Phase 1.
@@ -163,3 +166,5 @@ Last checked build passed with:
 - Search/discovery, dashboard, and bill detail pages now read synced Neon civic records first and keep demo records as fallback. The next live-data UI move is extending that pattern into member detail, vote detail, alerts, and Weekly Brief inputs.
 - Smart Filters are now useful as a high-volume discovery pattern. The live-data version should add broader facets such as policy area, bill status, committee, vote result, and source availability after Congress.gov records are fully synced.
 - Beta testing now has an in-app tester checklist, feedback intake path, actionable filtered review queue, and readiness check. The next beta-readiness step is to deploy a web beta, give testers the `/beta` route, triage `BetaFeedback` records after each session, and only then package the Apple/TestFlight build.
+- Bill details now separate the formal bill summary from the AI Policy Lens personal-impact read. Both longer description areas use fixed-height scroll boxes so cards stay visually consistent as bill text changes.
+- `/bills` now routes to the searchable bills list instead of relying only on individual bill detail URLs.

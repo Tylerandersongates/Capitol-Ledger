@@ -10,7 +10,7 @@ const requiredColumns = {
   PasswordResetToken: ["userId", "tokenHash", "expiresAt", "usedAt"],
   ReadAlert: ["userId", "alertId", "readAt"],
   SavedAlert: ["userId", "alertId"],
-  User: ["email", "name", "passwordHash", "emailVerifiedAt", "partyAffiliation", "districtLabel", "districtState", "districtCode", "notificationPreferences"],
+  User: ["email", "name", "firstName", "lastName", "passwordHash", "emailVerifiedAt", "partyAffiliation", "districtLabel", "districtState", "districtCode", "notificationPreferences"],
   WeeklyBriefDelivery: ["userId", "status", "deliveryMode", "plan", "preparedAt", "sentAt", "failedAt"]
 };
 

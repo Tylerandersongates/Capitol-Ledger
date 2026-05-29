@@ -31,6 +31,9 @@ Current Phase 1 status:
 
 - GitHub has the initial Capitol Ledger app push on `main`.
 - Vercel deployments are now populating from the GitHub-connected project.
+- The first beta tester states are now supported in the demo data and onboarding flow: California, Massachusetts, New York, and Texas.
+- Account creation now captures first name and last name separately for cleaner tester export and future customer records.
+- Search category views now show the fuller list for Bills, Officials, and Votes instead of only preview cards.
 - Vercel production build now needs the latest push with `prisma generate` in the build script before production account creation is retested.
 - Local `beta:check` passes the file and core environment checks.
 - The next Phase 1 step is the deployed smoke test: open the Vercel URL, submit one `/feedback` report, and confirm it appears in `/feedback/review`.
@@ -138,6 +141,9 @@ Estimated time: 2 to 5 days after beta feedback is stable.
 25. Added `/account` sign-out functionality that clears the demo account session and routes back to `/sign-in`.
 26. Connected `/sign-in` to production-shaped auth APIs with password hashing, HTTP-only auth sessions, session lookup, sign out, email verification token support, password reset token support, and demo fallback.
 27. Added account profile persistence through `/api/account/profile`, including party affiliation, district metadata, display name, notification preference fields, database fallback, and party-affiliation sync from `/account`.
+28. Added beta-state personalization for the first tester group with California, Massachusetts, New York, and Texas district presets plus matched senators/representatives in onboarding and search.
+29. Updated account creation to collect first name and last name separately while keeping a combined display name for the profile UI.
+30. Fixed search category views so `View All` pages for bills, officials, and votes show the full available list instead of a three-record preview.
 28. Connected district setup and notification preference controls to account profile persistence, including browser fallback, account API sync, and sign-in/demo migration.
 29. Connected core app actions to gamification event recording, including tracked bills, saved officials, read alerts, reviewed vote records, opened official sources, watched speech/video links, onboarding completion, and alert-detail action.
 30. Updated `/account`, `/impact`, and `/badges` to use live gamification snapshots and added sign-in/demo migration for gamification state.
@@ -201,6 +207,8 @@ Estimated time: 2 to 5 days after beta feedback is stable.
 14. Removed the redundant notification settings icon from `/alerts` so notification preferences stay centralized in account settings.
 15. Removed the redundant top-right profile settings icon from `/account` because the visible Account Settings section already owns those controls.
 16. Completed the final low-token dead-control sweep: search submit/export, map district and level controls, bill source action, member header actions, impact period label, account privacy actions, and public pricing CTAs now either navigate or read as non-interactive.
+17. Reworked the bill detail AI Policy Lens into a Personal Impact read, kept bill summaries in a cleaner bill-description voice, and put long summary/impact copy inside fixed-height scroll boxes.
+18. Added a safe `/bills` route that sends users to the bills discovery list.
 
 ## Notes For Continuing
 

@@ -39,7 +39,14 @@ const searchTabs = [
   { label: "Votes", value: "votes" }
 ];
 
-const discoveryChips = ["Healthcare", "Education", "Infrastructure", "Texas", "Rural clinics"];
+const discoveryChips = ["Healthcare", "Education", "Infrastructure", "California", "Massachusetts", "New York", "Texas"];
+
+const discoveryStateLinks: Record<string, string> = {
+  California: "/search?type=members&state=CA",
+  Massachusetts: "/search?type=members&state=MA",
+  "New York": "/search?type=members&state=NY",
+  Texas: "/search?type=members&state=TX"
+};
 
 const smartFilterGroups: Array<{
   key: SmartFilterKey;
@@ -70,8 +77,10 @@ const smartFilterGroups: Array<{
     label: "State",
     options: [
       { label: "All" },
-      { label: "TX", value: "TX" },
+      { label: "CA", value: "CA" },
+      { label: "MA", value: "MA" },
       { label: "NY", value: "NY" },
+      { label: "TX", value: "TX" },
       { label: "VT", value: "VT" },
       { label: "AK", value: "AK" }
     ]
@@ -117,7 +126,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   {discoveryChips.map((chip) => (
                     <Link
                       key={chip}
-                      href={`/search?q=${encodeURIComponent(chip)}&type=all`}
+                      href={discoveryStateLinks[chip] ?? `/search?q=${encodeURIComponent(chip)}&type=all`}
                       className="rounded-full border border-rust/30 bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/68"
                     >
                       {chip}
@@ -198,9 +207,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 </MobileCard>
               </PlanFeatureGate>
 
-              <ResultSection title="Representatives" href="/search?type=members" count={results.members.length}>
+              <ResultSection title="Representatives" href="/search?type=members" count={results.members.length} expanded={activeType === "members"}>
                 {results.members.length ? (
-                  results.members.slice(0, 3).map((member) => (
+                  results.members.slice(0, activeType === "members" ? 30 : 3).map((member) => (
                     <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} className="flex items-center gap-4 rounded-2xl border border-white/8 bg-white/4 p-4">
                       {member.photoUrl ? <img src={member.photoUrl} alt="" className="h-14 w-14 rounded-full border border-rust/35 object-cover" /> : null}
                       <div className="min-w-0 flex-1">
@@ -218,9 +227,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 )}
               </ResultSection>
 
-              <ResultSection title="Bills" href="/search?type=bills" count={results.bills.length}>
+              <ResultSection title="Bills" href="/search?type=bills" count={results.bills.length} expanded={activeType === "bills"}>
                 {results.bills.length ? (
-                  results.bills.slice(0, 3).map((bill) => {
+                  results.bills.slice(0, activeType === "bills" ? 30 : 3).map((bill) => {
                     const sponsor = getBillSponsor(bill);
                     return (
                       <Link key={bill.id} href={`/bills/${bill.id}`} className="block rounded-2xl border border-white/8 bg-white/4 p-4">
@@ -244,9 +253,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 )}
               </ResultSection>
 
-              <ResultSection title="Votes" href="/search?type=votes" count={results.votes.length}>
+              <ResultSection title="Votes" href="/search?type=votes" count={results.votes.length} expanded={activeType === "votes"}>
                 {results.votes.length ? (
-                  results.votes.slice(0, 2).map((vote) => (
+                  results.votes.slice(0, activeType === "votes" ? 30 : 2).map((vote) => (
                     <Link key={vote.id} href={`/votes/${vote.id}`} className="flex items-start gap-4 rounded-2xl border border-white/8 bg-white/4 p-4">
                       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#ffb12b]/12 text-[#ffb12b]">
                         <Vote className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -347,7 +356,7 @@ function FilterChip({ active, href, label }: { active?: boolean; href: string; l
   );
 }
 
-function ResultSection({ children, count, href, title }: { children: ReactNode; count: number; href: string; title: string }) {
+function ResultSection({ children, count, expanded = false, href, title }: { children: ReactNode; count: number; expanded?: boolean; href: string; title: string }) {
   return (
     <MobileCard className="px-5 py-5">
       <div className="mb-5 flex items-center justify-between">
@@ -355,9 +364,23 @@ function ResultSection({ children, count, href, title }: { children: ReactNode; 
           <h2 className="text-[22px] font-medium leading-none">{title}</h2>
           <div className="mt-2 text-[13px] text-white/46">{count} records</div>
         </div>
-        <Link href={href} className={mobileViewAllClass}>View All</Link>
+        {expanded ? <span className="text-[13px] font-medium text-white/48">Showing all</span> : <Link href={href} className={mobileViewAllClass}>View All</Link>}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div
+        className={`space-y-3 ${
+          expanded && count > 2
+            ? "max-h-[19rem] overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : ""
+        }`}
+      >
+        {children}
+      </div>
+      {expanded && count > 2 ? (
+        <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
+          <span>Scroll records</span>
+          <span>{count} total</span>
+        </div>
+      ) : null}
     </MobileCard>
   );
 }

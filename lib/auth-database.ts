@@ -9,7 +9,9 @@ const tokenHours = 24;
 type DbAuthUser = {
   email: string;
   emailVerifiedAt: Date | null;
+  firstName: string | null;
   id: string;
+  lastName: string | null;
   name: string | null;
   passwordHash: string | null;
 };
@@ -17,7 +19,9 @@ type DbAuthUser = {
 export type AuthUser = {
   email: string;
   emailVerifiedAt?: string;
+  firstName?: string;
   id: string;
+  lastName?: string;
   name?: string;
 };
 
@@ -54,9 +58,15 @@ function toAuthUser(user: DbAuthUser): AuthUser {
   return {
     email: user.email,
     emailVerifiedAt: user.emailVerifiedAt?.toISOString(),
+    firstName: user.firstName ?? undefined,
     id: user.id,
+    lastName: user.lastName ?? undefined,
     name: user.name ?? undefined
   };
+}
+
+function normalizeName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 function tokenHash(token: string) {
@@ -98,6 +108,8 @@ export async function ensureProductionAuthSchema() {
 
     await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordHash" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP(3)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "firstName" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastName" TEXT`);
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "AuthSession" (
         "id" TEXT PRIMARY KEY,
@@ -144,7 +156,7 @@ export async function ensureProductionAuthSchema() {
 async function readUserByEmail(email: string) {
   const prisma = getPrisma();
   const users = await prisma.$queryRaw<DbAuthUser[]>`
-    SELECT "id", "email", "name", "passwordHash", "emailVerifiedAt"
+    SELECT "id", "email", "name", "firstName", "lastName", "passwordHash", "emailVerifiedAt"
     FROM "User"
     WHERE "email" = ${normalizeEmail(email)}
     LIMIT 1
@@ -156,7 +168,7 @@ async function readUserByEmail(email: string) {
 async function readUserById(userId: string) {
   const prisma = getPrisma();
   const users = await prisma.$queryRaw<DbAuthUser[]>`
-    SELECT "id", "email", "name", "passwordHash", "emailVerifiedAt"
+    SELECT "id", "email", "name", "firstName", "lastName", "passwordHash", "emailVerifiedAt"
     FROM "User"
     WHERE "id" = ${userId}
     LIMIT 1
@@ -198,10 +210,14 @@ async function createVerificationToken(userId: string) {
 
 export async function createCredentialAccount({
   email,
+  firstName,
+  lastName,
   name,
   password
 }: {
   email: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
   password: string;
 }): Promise<AuthResult> {
@@ -213,8 +229,16 @@ export async function createCredentialAccount({
     return { configured: true, error: "Enter a valid email address.", status: 400 };
   }
 
-  if (name.trim().length < 2) {
-    return { configured: true, error: "Add your name for the account profile.", status: 400 };
+  const cleanFirstName = normalizeName(firstName ?? name.split(" ")[0] ?? "");
+  const cleanLastName = normalizeName(lastName ?? name.split(" ").slice(1).join(" ") ?? "");
+  const displayName = normalizeName(`${cleanFirstName} ${cleanLastName}`.trim() || name);
+
+  if (cleanFirstName.length < 1) {
+    return { configured: true, error: "Add your first name for the account profile.", status: 400 };
+  }
+
+  if (cleanLastName.length < 1) {
+    return { configured: true, error: "Add your last name for the account profile.", status: 400 };
   }
 
   if (password.length < 8) {
@@ -232,8 +256,8 @@ export async function createCredentialAccount({
   const passwordHash = await hashPassword(password);
 
   await prisma.$executeRaw`
-    INSERT INTO "User" ("id", "email", "name", "passwordHash", "createdAt", "updatedAt")
-    VALUES (${userId}, ${cleanEmail}, ${name.trim()}, ${passwordHash}, NOW(), NOW())
+    INSERT INTO "User" ("id", "email", "name", "firstName", "lastName", "passwordHash", "createdAt", "updatedAt")
+    VALUES (${userId}, ${cleanEmail}, ${displayName}, ${cleanFirstName}, ${cleanLastName}, ${passwordHash}, NOW(), NOW())
   `;
 
   const user = await readUserById(userId);
@@ -271,7 +295,7 @@ export async function readProductionSession(sessionToken: string): Promise<{ use
 
   const prisma = getPrisma();
   const users = await prisma.$queryRaw<DbAuthUser[]>`
-    SELECT "User"."id", "User"."email", "User"."name", "User"."passwordHash", "User"."emailVerifiedAt"
+    SELECT "User"."id", "User"."email", "User"."name", "User"."firstName", "User"."lastName", "User"."passwordHash", "User"."emailVerifiedAt"
     FROM "AuthSession"
     JOIN "User" ON "User"."id" = "AuthSession"."userId"
     WHERE "AuthSession"."tokenHash" = ${tokenHash(sessionToken)}

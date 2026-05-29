@@ -7,12 +7,18 @@ import { guardMutationRequest } from "@/lib/request-security";
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     email?: string;
+    firstName?: string;
+    lastName?: string;
     name?: string;
     password?: string;
   };
 
-  if (!body.email || !body.name || !body.password) {
-    return NextResponse.json({ error: "Name, email, and password are required." }, { status: 400 });
+  const firstName = body.firstName?.trim() ?? "";
+  const lastName = body.lastName?.trim() ?? "";
+  const name = body.name?.trim() || `${firstName} ${lastName}`.trim();
+
+  if (!body.email || !firstName || !lastName || !body.password) {
+    return NextResponse.json({ error: "First name, last name, email, and password are required." }, { status: 400 });
   }
 
   const guard = guardMutationRequest(request, "auth-register", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
@@ -20,7 +26,9 @@ export async function POST(request: NextRequest) {
 
   const result = await createCredentialAccount({
     email: body.email,
-    name: body.name,
+    firstName,
+    lastName,
+    name,
     password: body.password
   }).catch((error: unknown) => ({
     configured: true as const,
