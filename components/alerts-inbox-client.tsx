@@ -29,6 +29,7 @@ export type AlertsInboxItem = {
 const readAlertKey = "capitol-ledger:read-alerts";
 const accountLedgerEndpoint = "/api/account/ledger";
 const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
+let readAlertsHydrationPromise: Promise<string[]> | null = null;
 
 const notificationFilters: Array<{ label: string; value: AlertsInboxFilter }> = [
   { label: "All", value: "all" },
@@ -75,6 +76,12 @@ function mergeReadAlertIds(local: string[], account: string[] = []) {
   return uniqueStrings([...local, ...account]);
 }
 
+function sameStringSet(left: string[], right: string[]) {
+  if (left.length !== right.length) return false;
+  const rightSet = new Set(right);
+  return left.every((value) => rightSet.has(value));
+}
+
 async function syncReadAlertsToAccount(ids = readAlertIds()) {
   const response = await fetch(accountLedgerEndpoint, {
     body: JSON.stringify({ readAlerts: uniqueStrings(ids) }),
@@ -88,20 +95,33 @@ async function syncReadAlertsToAccount(ids = readAlertIds()) {
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   const merged = mergeReadAlertIds(ids, data?.ledger?.readAlerts);
-  writeAlertIds(merged);
+  readAlertsHydrationPromise = Promise.resolve(merged);
+  if (!sameStringSet(ids, merged)) writeAlertIds(merged);
   return merged;
 }
 
 async function hydrateReadAlertsFromAccount() {
+  if (readAlertsHydrationPromise) return readAlertsHydrationPromise;
+
+  readAlertsHydrationPromise = hydrateReadAlertsFromApi();
+  return readAlertsHydrationPromise;
+}
+
+async function hydrateReadAlertsFromApi() {
   const response = await fetch(accountLedgerEndpoint, { cache: "no-store" }).catch(() => null);
   const local = readAlertIds();
 
-  if (!response?.ok) return local;
+  if (!response?.ok) {
+    readAlertsHydrationPromise = null;
+    return local;
+  }
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   const merged = mergeReadAlertIds(local, data?.ledger?.readAlerts);
-  writeAlertIds(merged);
-  void syncReadAlertsToAccount(merged);
+  if (!sameStringSet(local, merged)) {
+    writeAlertIds(merged);
+    void syncReadAlertsToAccount(merged);
+  }
   return merged;
 }
 
@@ -112,6 +132,7 @@ export function markAlertIdRead(id: string) {
   if (current.includes(id)) return;
   const next = [...current, id];
   writeAlertIds(next);
+  readAlertsHydrationPromise = Promise.resolve(next);
   void syncReadAlertsToAccount(next);
   recordGamificationEvent("read-alert", id);
 }

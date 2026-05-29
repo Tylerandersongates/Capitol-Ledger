@@ -4,7 +4,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Link from "next/link";
-import { Bell, ChevronRight, FileText, Home, Sparkles, UserRound, UsersRound } from "lucide-react";
+import { Bell, CalendarClock, ChevronRight, FileText, Home, Sparkles, UserRound, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { getDashboardData } from "@/lib/data";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
@@ -82,7 +82,6 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     <MobileShell
       minHeight="min-h-[844px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_22%_10%,rgba(34,141,255,0.24),transparent_32%),radial-gradient(circle_at_82%_24%,rgba(246,216,75,0.13),transparent_27%),linear-gradient(155deg,#061a33_0%,#020916_54%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
             <header className="mt-11 flex items-center justify-between">
@@ -105,7 +104,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <div className="mt-12 flex items-end justify-between">
               <div>
                 <div className="text-[18px] uppercase tracking-wide text-white/54">Dashboard</div>
-                <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Overview</h1>
+                <h1 className="mt-1 text-[26px] font-medium leading-none text-white">Overview</h1>
               </div>
               <Link href="/search" className={mobileViewAllClass}>
                 View All
@@ -168,8 +167,24 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </PlanFeatureGate>
             </div>
 
+            <MobileCard variant="dashboard" className="mt-5 px-5 py-5">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[13px] font-medium uppercase tracking-wide text-white/50">
+                    <CalendarClock className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                    Weekly Brief
+                  </div>
+                  <h2 className="mt-2 text-[21px] font-medium leading-tight">Monday civic summary</h2>
+                  <p className="mt-2 text-[14px] leading-snug text-white/54">Delivery status, recent history, and your district watchlist.</p>
+                </div>
+                <Link href="/brief" className={mobileViewAllClass}>
+                  Open
+                </Link>
+              </div>
+            </MobileCard>
+
             <div className="mt-9 flex items-center justify-between">
-              <h2 className="text-[28px] font-medium leading-none">Recent Votes</h2>
+              <h2 className="text-[25px] font-medium leading-none">Recent Votes</h2>
               <Link href="/search?type=votes" className={mobileViewAllClass}>
                 View All
               </Link>
@@ -211,7 +226,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </MobileCard>
 
             <div className="mt-9 flex items-center justify-between">
-              <h2 className="text-[28px] font-medium leading-none">Bill Tracker</h2>
+              <h2 className="text-[25px] font-medium leading-none">Bill Tracker</h2>
               <Link href="/search?type=bills" className={mobileViewAllClass}>
                 View All
               </Link>

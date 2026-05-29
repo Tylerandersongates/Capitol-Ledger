@@ -13,6 +13,7 @@ export const gamificationChangedEvent = "capitol-ledger:gamification-changed";
 const gamificationKey = "capitol-ledger:gamification";
 const gamificationDedupeKey = "capitol-ledger:gamification-dedupe";
 const gamificationStreakKey = "capitol-ledger:gamification-streak-date";
+let gamificationHydrationPromise: Promise<AccountGamificationSnapshot> | null = null;
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined" || !window.localStorage) return fallback;
@@ -72,6 +73,19 @@ function mergeGamificationSnapshots(local: AccountGamificationSnapshot, account:
   });
 }
 
+function gamificationSignature(snapshot: AccountGamificationSnapshot) {
+  const normalized = normalizeAccountGamification(snapshot);
+  return JSON.stringify({
+    ...normalized,
+    earnedBadgeIds: [...normalized.earnedBadgeIds].sort(),
+    eventCounts: [...normalized.eventCounts].sort((left, right) => left.event.localeCompare(right.event))
+  });
+}
+
+function gamificationSnapshotsMatch(left: AccountGamificationSnapshot, right: AccountGamificationSnapshot) {
+  return gamificationSignature(left) === gamificationSignature(right);
+}
+
 export function readLocalGamificationSnapshot() {
   return normalizeAccountGamification(readJson<Partial<AccountGamificationSnapshot>>(gamificationKey, getDefaultAccountGamification()));
 }
@@ -99,20 +113,41 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
   if (!data?.gamification) return null;
 
   const merged = mergeGamificationSnapshots(readLocalGamificationSnapshot(), data.gamification);
-  writeLocalGamificationSnapshot(merged);
+  gamificationHydrationPromise = Promise.resolve(merged);
+  if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), merged)) {
+    writeLocalGamificationSnapshot(merged);
+  }
   return merged;
 }
 
 export async function hydrateGamificationFromAccount() {
+  if (typeof window === "undefined") return readLocalGamificationSnapshot();
+  if (gamificationHydrationPromise) return gamificationHydrationPromise;
+
+  gamificationHydrationPromise = hydrateGamificationFromApi();
+  return gamificationHydrationPromise;
+}
+
+async function hydrateGamificationFromApi() {
+  const local = readLocalGamificationSnapshot();
   const response = await fetch("/api/account/gamification", { cache: "no-store" }).catch(() => null);
-  if (!response?.ok) return readLocalGamificationSnapshot();
+  if (!response?.ok) {
+    gamificationHydrationPromise = null;
+    return local;
+  }
 
   const data = (await response.json().catch(() => null)) as { gamification?: AccountGamificationSnapshot } | null;
-  if (!data?.gamification) return readLocalGamificationSnapshot();
+  if (!data?.gamification) {
+    gamificationHydrationPromise = null;
+    return local;
+  }
 
-  const merged = mergeGamificationSnapshots(readLocalGamificationSnapshot(), data.gamification);
-  writeLocalGamificationSnapshot(merged);
-  void syncGamificationToAccount(merged);
+  const merged = mergeGamificationSnapshots(local, data.gamification);
+  if (!gamificationSnapshotsMatch(local, merged)) {
+    writeLocalGamificationSnapshot(merged);
+    void syncGamificationToAccount(merged);
+  }
+
   return merged;
 }
 
@@ -157,6 +192,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   });
 
   writeLocalGamificationSnapshot(next);
+  gamificationHydrationPromise = Promise.resolve(next);
   void syncGamificationToAccount(next);
   return true;
 }

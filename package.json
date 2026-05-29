@@ -19,6 +19,7 @@
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
     "billing:check": "node scripts/check-billing-readiness.mjs",
     "backend:check": "node scripts/check-backend-readiness.mjs",
+    "video-links:check": "node scripts/check-video-links.mjs",
     "beta:check": "node scripts/check-beta-readiness.mjs",
     "beta:triage": "node scripts/check-beta-triage.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",

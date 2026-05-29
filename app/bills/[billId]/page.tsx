@@ -329,7 +329,6 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
     <MobileShell
       minHeight="min-h-[1080px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_22%_12%,rgba(34,141,255,0.25),transparent_32%),radial-gradient(circle_at_78%_20%,rgba(246,216,75,0.11),transparent_27%),linear-gradient(155deg,#061a33_0%,#020916_54%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
       <header className="mt-10 flex items-center justify-between">

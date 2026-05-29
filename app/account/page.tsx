@@ -6,13 +6,13 @@ import { AccountGamificationStats } from "@/components/gamification-live-stats";
 import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PartyAffiliationDisplay, PartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { PolicyInterestsEditor, SavedLedgerSummary } from "@/components/saved-ledger-controls";
-import { AccountSubscriptionSummary, SubscriptionBadge, SubscriptionDemoSwitcher } from "@/components/subscription-controls";
-import { WeeklyBriefDeliveryCard } from "@/components/weekly-brief-delivery";
+import { SubscriptionBadge } from "@/components/subscription-controls";
 import { requireAccountSession } from "@/lib/route-guards";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import {
   Bell,
+  CalendarClock,
   CheckCircle2,
   ChevronRight,
   CreditCard,
@@ -53,6 +53,12 @@ const settingRows = [
     value: "Manage active plan",
     href: "/upgrade",
     icon: <CreditCard />
+  },
+  {
+    label: "Weekly Brief",
+    value: "Delivery and history",
+    href: "/brief",
+    icon: <CalendarClock />
   }
 ];
 
@@ -63,14 +69,13 @@ export default async function AccountPage() {
     <MobileShell
       minHeight="min-h-[1080px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_22%_10%,rgba(34,141,255,0.24),transparent_32%),radial-gradient(circle_at_82%_24%,rgba(246,216,75,0.13),transparent_27%),linear-gradient(155deg,#061a33_0%,#020916_54%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
             <GamificationSync />
             <header className="mt-12">
               <div>
                 <div className="text-[18px] uppercase tracking-wide text-white/54">Account</div>
-                <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Profile</h1>
+                <h1 className="mt-1 text-[26px] font-medium leading-none text-white">Profile</h1>
               </div>
             </header>
 
@@ -94,14 +99,6 @@ export default async function AccountPage() {
               </MobileCard>
 
               <MobileCard variant="dashboard" className="px-5 py-5">
-                <AccountSubscriptionSummary />
-              </MobileCard>
-
-              <MobileCard variant="dashboard" className="px-5 py-5">
-                <SubscriptionDemoSwitcher />
-              </MobileCard>
-
-              <MobileCard variant="dashboard" className="px-5 py-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Saved Ledger</div>
@@ -115,29 +112,38 @@ export default async function AccountPage() {
               </MobileCard>
 
               <MobileCard variant="dashboard" className="px-5 py-5">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                  <h2 className="text-[21px] font-medium leading-none">Account Settings</h2>
-                </div>
-                <div className="mt-5 divide-y divide-white/8">
-                  <PartyAffiliationSelector />
-                  <AccountDistrictSettingRow />
-                  {settingRows.map((row) => (
-                    <SettingRow key={row.label} {...row} />
-                  ))}
-                  <DemoSignOutButton
-                    className="grid w-full grid-cols-[34px_1fr_auto] items-center gap-3 py-4 text-left transition disabled:opacity-60"
-                  >
-                    <span className="text-[#ffb12b]">
-                      <LogOut className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                    <span className="flex items-center gap-2">
+                      <SlidersHorizontal className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                      <span className="text-[20px] font-medium leading-none">Account Settings</span>
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-[16px] font-semibold text-white">Sign out</span>
-                      <span className="mt-1 block truncate text-[13px] text-white/52">Return to login screen</span>
+                    <span className="flex items-center gap-2 text-[13px] font-medium text-white/46">
+                      <span className="group-open:hidden">Expand</span>
+                      <span className="hidden group-open:inline">Collapse</span>
+                      <ChevronRight className="h-5 w-5 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
                     </span>
-                    <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
-                  </DemoSignOutButton>
-                </div>
+                  </summary>
+                  <div className="mt-5 divide-y divide-white/8">
+                    <PartyAffiliationSelector />
+                    <AccountDistrictSettingRow />
+                    {settingRows.map((row) => (
+                      <SettingRow key={row.label} {...row} />
+                    ))}
+                    <DemoSignOutButton
+                      className="grid w-full grid-cols-[34px_1fr_auto] items-center gap-3 py-4 text-left transition disabled:opacity-60"
+                    >
+                      <span className="text-[#ffb12b]">
+                        <LogOut className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[16px] font-semibold text-white">Sign out</span>
+                        <span className="mt-1 block truncate text-[13px] text-white/52">Return to login screen</span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
+                    </DemoSignOutButton>
+                  </div>
+                </details>
               </MobileCard>
 
               <MobileCard variant="dashboard" className="px-5 py-5">
@@ -150,10 +156,6 @@ export default async function AccountPage() {
                   <h2 className="text-[21px] font-medium leading-none">Alert Preferences</h2>
                 </div>
                 <NotificationPreferencesEditor />
-              </MobileCard>
-
-              <MobileCard variant="dashboard" className="px-5 py-5">
-                <WeeklyBriefDeliveryCard />
               </MobileCard>
 
               <MobileCard variant="dashboard" className="px-5 py-5">

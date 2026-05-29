@@ -4,7 +4,7 @@ import type { ReactElement, ReactNode } from "react";
 type MobileCardVariant = "default" | "rust" | "dashboard" | "compact";
 
 export const mobileViewAllClass =
-  "rounded-full border border-white/10 bg-white/8 px-5 py-2 text-[18px] font-medium leading-none text-[#ffb62e] shadow-[inset_0_0_18px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl";
+  "rounded-full border border-white/10 bg-white/8 px-5 py-2 text-[16px] font-medium leading-none text-[#ffb62e] shadow-[inset_0_0_18px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl";
 
 export const mobileIconButtonClass =
   "grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/8 text-[#ffb12b] shadow-[inset_0_0_18px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl";

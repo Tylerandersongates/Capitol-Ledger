@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import {
   Bell,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   Download,
   FileText,
@@ -98,13 +97,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <MobileShell
       minHeight="min-h-[1080px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_18%_9%,rgba(34,141,255,0.24),transparent_31%),radial-gradient(circle_at_80%_16%,rgba(246,216,75,0.12),transparent_28%),linear-gradient(155deg,#061a33_0%,#020916_55%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
     >
             <header className="mt-10 flex items-center justify-between">
               <div>
                 <div className="text-[13px] font-semibold uppercase tracking-wide text-white/50">Discovery</div>
-                <h1 className="mt-2 text-[28px] font-medium leading-none text-white">Search</h1>
+                <h1 className="mt-2 text-[26px] font-medium leading-none text-white">Search</h1>
               </div>
             </header>
 
@@ -122,70 +120,83 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <button type="submit" className="rounded-xl bg-[#ffb12b] px-4 py-2 text-[14px] font-semibold text-[#061126]">Go</button>
                 </form>
 
-                <div className="mt-5 flex flex-wrap gap-2">
+                <nav className="mt-5 grid grid-cols-4 rounded-2xl border border-white/10 bg-white/[0.035] p-1 text-center">
+                  {searchTabs.map((tab) => (
+                    <Link
+                      key={tab.value}
+                      href={`/search?type=${tab.value}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                      className={`h-10 rounded-xl pt-3 text-[13px] font-medium leading-none ${
+                        activeType === tab.value || (!searchParams.type && tab.value === "all") ? "bg-[#ffb12b] text-[#061126]" : "text-white/52"
+                      }`}
+                    >
+                      {tab.label}
+                    </Link>
+                  ))}
+                </nav>
+
+                <div className="mt-4 flex flex-wrap gap-2">
                   {discoveryChips.map((chip) => (
                     <Link
                       key={chip}
                       href={discoveryStateLinks[chip] ?? `/search?q=${encodeURIComponent(chip)}&type=all`}
-                      className="rounded-full border border-rust/30 bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/68"
+                      className="rounded-full border border-rust/25 bg-white/[0.035] px-3 py-2 text-[12px] font-medium text-white/62"
                     >
                       {chip}
                     </Link>
                   ))}
                 </div>
-              </MobileCard>
 
-              <nav className="grid grid-cols-4 rounded-2xl border border-white/10 bg-white/5 p-1 text-center">
-                {searchTabs.map((tab) => (
-                  <Link
-                    key={tab.value}
-                    href={`/search?type=${tab.value}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
-                    className={`h-11 rounded-xl pt-3 text-[14px] font-semibold leading-none ${
-                      activeType === tab.value || (!searchParams.type && tab.value === "all") ? "bg-[#ffb12b] text-[#061126]" : "text-white/55"
-                    }`}
+                <PlanFeatureGate
+                  feature="advancedSearch"
+                  fallback={
+                    <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.025] px-4 py-3">
+                      <span className="flex items-center gap-2 text-[13px] font-medium text-white/56">
+                        <Filter className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                        Refine results
+                      </span>
+                      <Link href="/upgrade" className="rounded-full border border-rust/25 bg-rust/10 px-2.5 py-1 text-[11px] font-medium text-[#ffb12b]">
+                        Pro
+                      </Link>
+                    </div>
+                  }
+                >
+                  <details
+                    className="mt-4 rounded-2xl border border-white/8 bg-white/[0.025] px-4 py-3"
+                    open={hasSmartFilters}
                   >
-                    {tab.label}
-                  </Link>
-                ))}
-              </nav>
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-medium text-white/64 [&::-webkit-details-marker]:hidden">
+                      <span className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                        Refine results
+                      </span>
+                      <span className="rounded-full border border-rust/25 bg-rust/10 px-2.5 py-1 text-[11px] font-medium text-[#ffb12b]">
+                        {hasSmartFilters ? "Active" : "Optional"}
+                      </span>
+                    </summary>
+                    <div className="mt-4 space-y-4 border-t border-white/8 pt-4">
+                      {smartFilterGroups.map((group) => (
+                        <SmartFilterRow key={group.key} group={group} searchParams={searchParams} />
+                      ))}
+                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-[12px] font-medium text-white/48">
+                        <span>{results.members.length} officials match</span>
+                        {hasSmartFilters ? (
+                          <Link href={searchHref(searchParams, { type: "members", chamber: undefined, party: undefined, state: undefined })} className="text-[#ffb12b]">
+                            Clear filters
+                          </Link>
+                        ) : (
+                          <span>Pro refine</span>
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                </PlanFeatureGate>
+              </MobileCard>
 
               <div className="grid grid-cols-3 gap-3">
                 <MiniMetric value={String(resultCount)} label="Records" />
                 <MiniMetric value={String(results.members.length)} label="Officials" />
                 <MiniMetric value={String(results.bills.length)} label="Bills" />
               </div>
-
-              <PlanFeatureGate feature="advancedSearch">
-                <MobileCard className="px-5 py-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                      <div>
-                        <h2 className="text-[21px] font-medium leading-none">Smart Filters</h2>
-                        <div className="mt-1 text-[12px] font-medium uppercase tracking-wide text-white/42">Official records</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasSmartFilters ? (
-                        <Link href={searchHref(searchParams, { type: "members", chamber: undefined, party: undefined, state: undefined })} className="rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[12px] font-semibold text-white/62">
-                          Reset
-                        </Link>
-                      ) : null}
-                      <span className="rounded-full border border-rust/30 bg-rust/10 px-3 py-1 text-[12px] font-semibold text-[#ffb12b]">Pro</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-4">
-                    {smartFilterGroups.map((group) => (
-                      <SmartFilterRow key={group.key} group={group} searchParams={searchParams} />
-                    ))}
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-[13px] font-medium text-white/54">
-                    {results.members.length} officials match the current filters
-                  </div>
-                </MobileCard>
-              </PlanFeatureGate>
 
               <PlanFeatureGate feature="exportReports">
                 <MobileCard className="px-5 py-5">
@@ -195,7 +206,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         <Sparkles className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
                         Pro report builder
                       </div>
-                      <h2 className="mt-2 text-[21px] font-medium leading-tight">Export this search as a civic report</h2>
+                      <h2 className="mt-2 text-[19px] font-medium leading-tight">Export this search as a civic report</h2>
                       <p className="mt-3 text-[14px] leading-snug text-white/56">
                         Package matched bills, officials, votes, and source links into a shareable accountability brief.
                       </p>
@@ -213,7 +224,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} className="flex items-center gap-4 rounded-2xl border border-white/8 bg-white/4 p-4">
                       {member.photoUrl ? <img src={member.photoUrl} alt="" className="h-14 w-14 rounded-full border border-rust/35 object-cover" /> : null}
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[17px] font-semibold text-white">{member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</div>
+                        <div className="truncate text-[16px] font-medium text-white">{member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</div>
                         <div className="mt-1 text-[13px] text-white/55">
                           {member.chamber} · {member.state}
                           {member.district ? `-${member.district}` : ""} · {member.party}
@@ -236,7 +247,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="text-[16px] font-semibold text-[#ffb12b]">{bill.displayNumber}</div>
-                            <div className="mt-1 line-clamp-2 text-[17px] font-semibold leading-snug text-white">{bill.shortTitle}</div>
+                            <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
                             <div className="mt-2 text-[13px] text-white/52">{sponsor?.fullName ?? "Congress"} · {bill.policyArea}</div>
                           </div>
                           <FileText className="h-7 w-7 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
@@ -261,7 +272,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         <Vote className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[16px] font-semibold text-white">{vote.question}</div>
+                        <div className="text-[15px] font-medium text-white">{vote.question}</div>
                         <div className="mt-2 text-[13px] text-white/52">
                           {vote.chamber} roll call {vote.rollCall} · {formatDate(vote.voteDate)}
                         </div>
@@ -291,7 +302,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-center">
-      <div className="text-[23px] font-medium leading-none text-[#ffb12b]">{value}</div>
+      <div className="text-[21px] font-medium leading-none text-[#ffb12b]">{value}</div>
       <div className="mt-2 text-[12px] text-white/50">{label}</div>
     </div>
   );
@@ -328,7 +339,7 @@ function SmartFilterRow({
 
   return (
     <div>
-      <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-white/42">{group.label}</div>
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/42">{group.label}</div>
       <div className="flex flex-wrap gap-2">
         {group.options.map((option) => (
           <FilterChip
@@ -348,7 +359,7 @@ function FilterChip({ active, href, label }: { active?: boolean; href: string; l
     <Link
       href={href}
       className={`flex h-9 items-center justify-center rounded-full border px-3 text-[12px] font-semibold ${
-        active ? "border-[#ffb12b]/60 bg-[#ffb12b]/16 text-[#ffb12b]" : "border-white/10 bg-white/5 text-white/58"
+        active ? "border-[#ffb12b]/55 bg-[#ffb12b]/14 text-[#ffb12b]" : "border-white/10 bg-white/[0.035] text-white/58"
       }`}
     >
       {label}
@@ -361,7 +372,7 @@ function ResultSection({ children, count, expanded = false, href, title }: { chi
     <MobileCard className="px-5 py-5">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-[22px] font-medium leading-none">{title}</h2>
+          <h2 className="text-[20px] font-medium leading-none">{title}</h2>
           <div className="mt-2 text-[13px] text-white/46">{count} records</div>
         </div>
         {expanded ? <span className="text-[13px] font-medium text-white/48">Showing all</span> : <Link href={href} className={mobileViewAllClass}>View All</Link>}

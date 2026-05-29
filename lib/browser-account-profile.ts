@@ -5,6 +5,7 @@ export const accountProfileChangedEvent = "capitol-ledger:account-profile-change
 const districtProfileKey = "capitol-ledger:district-profile";
 const notificationPreferencesKey = "capitol-ledger:notification-preferences";
 const partyAffiliationKey = "capitol-ledger:party-affiliation";
+let accountProfileFetchPromise: Promise<AccountProfileSnapshot | null> | null = null;
 
 export type LocalDistrictProfile = Pick<AccountProfileSnapshot, "districtCode" | "districtLabel" | "districtState">;
 
@@ -98,6 +99,17 @@ export function writeLocalAccountProfile(profile: Partial<AccountProfileSnapshot
 }
 
 export async function fetchAccountProfile() {
+  if (typeof window === "undefined") return null;
+  if (accountProfileFetchPromise) return accountProfileFetchPromise;
+
+  accountProfileFetchPromise = fetchAccountProfileFromApi().then((profile) => {
+    if (!profile) accountProfileFetchPromise = null;
+    return profile;
+  });
+  return accountProfileFetchPromise;
+}
+
+async function fetchAccountProfileFromApi() {
   const response = await fetch("/api/account/profile", { cache: "no-store" }).catch(() => null);
   if (!response?.ok) return null;
 
@@ -117,6 +129,9 @@ export async function syncAccountProfile(profile: Partial<AccountProfileSnapshot
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
-  if (data?.profile) writeLocalAccountProfile(data.profile);
+  if (data?.profile) {
+    accountProfileFetchPromise = Promise.resolve(data.profile);
+    writeLocalAccountProfile(data.profile);
+  }
   return data?.profile ?? null;
 }

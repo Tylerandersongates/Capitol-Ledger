@@ -6,6 +6,13 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Tightened client-side hydration so account profile, party affiliation, gamification, and read-alert state reuse shared browser/account requests instead of asking the same API endpoints multiple times on one page.
+- Added `pnpm video-links:check` as a lightweight readiness check for the speech/video selling point, confirming bill video records, bill-detail rendering, subscription gating, and gamification hooks are still wired.
+- Confirmed speech/video links do not need a special Vercel environment variable in the current demo build. They ship from Capitol Ledger bill/video data and work once the latest code is deployed; live video ingestion remains a later data-expansion step.
+- Removed the bright page-level mobile gradients and returned the shared phone shell to a darker navy foundation so the glass cards, white type, and gold controls feel cleaner and more iPhone-native.
+- Reworked `/search` into one unified discovery card: search, result type, quick chips, and Pro refine controls now live together, with the advanced filters collapsed instead of sitting as a separate dated Smart Filters card.
+- Condensed `/account` by removing the full subscription demo and Weekly Brief delivery cards from the profile feed, linking the plan badge to `/upgrade`, adding Weekly Brief to settings, making Account Settings collapsible, and adding a compact Weekly Brief entry on `/dashboard`.
+- Reduced the most prominent dashboard/search/profile heading sizes and the shared View All pill text so the mobile UI returns to a lighter, less heavy visual rhythm.
 - Added beta tester district presets for California, Massachusetts, New York, and Texas so onboarding/search can quickly show relevant federal senators and district representatives for the first tester group.
 - Added separate first-name and last-name account creation fields, while preserving the combined display name, so future database exports are easier to sort in spreadsheets.
 - Fixed `/search?type=bills`, `/search?type=members`, and `/search?type=votes` so category-specific views show the fuller result set instead of only the three-card homepage preview.
@@ -138,12 +145,16 @@ Useful pages:
 
 ## Build Status
 
-Last checked build passed with:
+Last checked passes:
 
-`pnpm run build:wasm`
+- `pnpm run video-links:check`
+- `pnpm exec tsc --noEmit --pretty false`
+- `NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next build`
 
 ## Product Notes
 
+- Speech/video links are demo-ready and subscription-gated on bill detail pages through the `speechVideo` entitlement. Vercel only needs the latest deployment for the current source-backed demo links. A future production layer should ingest or verify live committee hearing, floor video, and member statement feeds before this becomes fully automated.
+- The app has no polling loops in the current mobile flow. Shared hydration now avoids several duplicate profile/gamification/read-alert requests, which keeps the app lighter as we add more civic data.
 - Subscription demo mode can now be switched from `/account` or `/upgrade`, and those plan states visibly affect dashboard, bill details, alerts, search, and map. The switcher and locked previews have been polished for investor walkthroughs, the demo script lives in `Subscription Demo Guide.md`, and live billing readiness can be checked with `pnpm billing:check`.
 - Production auth routes now exist and are wired to `/sign-in`. Real accounts require `DATABASE_URL`; deployed HTTPS should set `AUTH_COOKIE_SECURE=true`; the checked-in migration can be applied with `pnpm prisma:migrate:deploy`; `pnpm production-auth:check` verifies the required tables; password reset completion is ready for `/sign-in?resetToken=...` links; verification is ready for `/sign-in?verifyToken=...` links; auth email delivery can use `AUTH_EMAIL_DELIVERY=webhook` once a provider bridge is chosen. Use `pnpm auth-email:check` before production email QA. See `Auth Integration Notes.md`.
 - Demo sign-in now avoids blocking on account sync. This keeps local/investor previews usable even when `DATABASE_URL` is present but the production database is not running.
@@ -168,3 +179,6 @@ Last checked build passed with:
 - Beta testing now has an in-app tester checklist, feedback intake path, actionable filtered review queue, and readiness check. The next beta-readiness step is to deploy a web beta, give testers the `/beta` route, triage `BetaFeedback` records after each session, and only then package the Apple/TestFlight build.
 - Bill details now separate the formal bill summary from the AI Policy Lens personal-impact read. Both longer description areas use fixed-height scroll boxes so cards stay visually consistent as bill text changes.
 - `/bills` now routes to the searchable bills list instead of relying only on individual bill detail URLs.
+- The mobile app now uses a darker shared navy background instead of page-level blue/gold gradients. If we later build a native iOS shell, this visual system should map cleanly into Apple-style Liquid Glass surfaces because cards already rely on translucent backgrounds, borders, and blur.
+- `/search` now treats advanced filtering as a collapsed refine layer inside the main discovery panel. Future high-volume filters should extend that refine area instead of adding another separate Smart Filters card.
+- `/account` is now more focused on identity, saved ledger, preferences, and privacy. Subscription management belongs on `/upgrade`, while Weekly Brief delivery/history belongs on `/brief` with a compact dashboard entry point.

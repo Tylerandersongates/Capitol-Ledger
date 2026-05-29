@@ -31,6 +31,9 @@ Current Phase 1 status:
 
 - GitHub has the initial Capitol Ledger app push on `main`.
 - Vercel deployments are now populating from the GitHub-connected project.
+- The latest design cleanup has darkened the shared mobile shell, simplified `/search`, shortened `/account`, and added a compact dashboard entry point for Weekly Brief; push/redeploy is needed before the Vercel beta reflects those changes.
+- A light performance pass removed duplicate account/profile, gamification, and read-alert hydration paths. No active polling loops were found in the current mobile flow.
+- Speech/video links are wired for the current demo through bill video data, bill detail cards, subscription gating, and gamification. Use `pnpm video-links:check` before demos; no Vercel video-link key is required yet.
 - The first beta tester states are now supported in the demo data and onboarding flow: California, Massachusetts, New York, and Texas.
 - Account creation now captures first name and last name separately for cleaner tester export and future customer records.
 - Search category views now show the fuller list for Bills, Officials, and Votes instead of only preview cards.
@@ -188,6 +191,8 @@ Estimated time: 2 to 5 days after beta feedback is stable.
 69. Added persistent launch-triage decisions to beta feedback so reports can be marked Launch blocker, Beta OK, or Later before each fix pass.
 70. Added launch-triage filters to `/feedback/review` for Blockers, Untriaged, Beta OK, and Later.
 71. Added `pnpm beta:triage` so database-backed beta feedback can be summarized before each fix pass, with optional blocker/untriaged failure gates.
+72. Tightened duplicate browser/account hydration for profile, party affiliation, gamification, and read-alert state so pages avoid unnecessary repeated background requests.
+73. Added `pnpm video-links:check` to verify the current speech/video demo layer before investor or beta walkthroughs.
 
 ## Completed Design Work
 
@@ -209,6 +214,9 @@ Estimated time: 2 to 5 days after beta feedback is stable.
 16. Completed the final low-token dead-control sweep: search submit/export, map district and level controls, bill source action, member header actions, impact period label, account privacy actions, and public pricing CTAs now either navigate or read as non-interactive.
 17. Reworked the bill detail AI Policy Lens into a Personal Impact read, kept bill summaries in a cleaner bill-description voice, and put long summary/impact copy inside fixed-height scroll boxes.
 18. Added a safe `/bills` route that sends users to the bills discovery list.
+19. Removed bright page-level gradients in favor of a darker shared navy mobile shell so the existing glass cards and gold/white controls read more like the desired iPhone Liquid Glass direction.
+20. Combined `/search` search, result type tabs, quick discovery chips, and Pro refine controls into one cohesive discovery panel, with advanced filters collapsed by default.
+21. Condensed `/account` by moving subscription management to `/upgrade`, moving Weekly Brief delivery/history to `/brief`, adding a compact dashboard entry point, and making Account Settings collapsible.
 
 ## Notes For Continuing
 

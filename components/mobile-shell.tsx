@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const defaultBackground =
-  "bg-[radial-gradient(circle_at_18%_9%,rgba(34,141,255,0.24),transparent_31%),radial-gradient(circle_at_82%_18%,rgba(246,216,75,0.13),transparent_28%),linear-gradient(155deg,#061a33_0%,#020916_55%,#06182d_100%)]";
+  "bg-[#041326]";
 
 type MobileShellProps = {
   backgroundClassName?: string;

@@ -47,7 +47,6 @@ export default function BetaTesterPage() {
     <MobileShell
       minHeight="min-h-[1080px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_22%_10%,rgba(34,141,255,0.24),transparent_32%),radial-gradient(circle_at_82%_24%,rgba(246,216,75,0.13),transparent_27%),linear-gradient(155deg,#061a33_0%,#020916_54%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
       <header className="mt-10 flex items-center justify-between">

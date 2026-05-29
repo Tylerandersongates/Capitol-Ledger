@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, Flag } from "lucide-react";
-import type { AccountProfileSnapshot } from "@/types/capitol";
-
-const partyAffiliationKey = "capitol-ledger:party-affiliation";
-const partyAffiliationEvent = "capitol-ledger:party-affiliation-changed";
+import {
+  accountProfileChangedEvent,
+  fetchAccountProfile,
+  readLocalAccountProfile,
+  syncAccountProfile,
+  writeLocalAccountProfile
+} from "@/lib/browser-account-profile";
 
 const partyOptions = [
   { value: "", label: "Not selected", display: "Not selected" },
@@ -23,31 +26,11 @@ function getPartyLabel(value: string) {
 }
 
 function readPartyAffiliation() {
-  if (typeof window === "undefined") return "";
-  return window.localStorage.getItem(partyAffiliationKey) ?? "";
+  return readLocalAccountProfile().partyAffiliation ?? "";
 }
 
 function writePartyAffiliation(value: string) {
-  window.localStorage.setItem(partyAffiliationKey, value);
-  window.dispatchEvent(new Event(partyAffiliationEvent));
-}
-
-async function fetchAccountProfile() {
-  const response = await fetch("/api/account/profile", { cache: "no-store" }).catch(() => null);
-  if (!response?.ok) return null;
-
-  const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
-  return data?.profile ?? null;
-}
-
-async function syncPartyAffiliation(value: string) {
-  await fetch("/api/account/profile", {
-    body: JSON.stringify({ partyAffiliation: value }),
-    headers: {
-      "Content-Type": "application/json"
-    },
-    method: "POST"
-  }).catch(() => null);
+  writeLocalAccountProfile({ partyAffiliation: value });
 }
 
 export function PartyAffiliationDisplay() {
@@ -65,11 +48,11 @@ export function PartyAffiliationDisplay() {
       setParty(profile.partyAffiliation);
     });
     window.addEventListener("storage", refreshParty);
-    window.addEventListener(partyAffiliationEvent, refreshParty);
+    window.addEventListener(accountProfileChangedEvent, refreshParty);
 
     return () => {
       window.removeEventListener("storage", refreshParty);
-      window.removeEventListener(partyAffiliationEvent, refreshParty);
+      window.removeEventListener(accountProfileChangedEvent, refreshParty);
     };
   }, []);
 
@@ -98,7 +81,7 @@ export function PartyAffiliationSelector() {
   function handleChange(value: string) {
     setParty(value);
     writePartyAffiliation(value);
-    void syncPartyAffiliation(value);
+    void syncAccountProfile({ partyAffiliation: value });
   }
 
   return (

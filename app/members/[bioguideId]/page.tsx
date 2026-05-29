@@ -47,7 +47,6 @@ export default function MemberPage({ params }: MemberPageProps) {
     <MobileShell
       minHeight="min-h-[932px]"
       contentClassName="px-8 pb-5 pt-8"
-      backgroundClassName="bg-[radial-gradient(circle_at_20%_12%,rgba(34,141,255,0.24),transparent_32%),radial-gradient(circle_at_78%_20%,rgba(246,216,75,0.12),transparent_28%),linear-gradient(155deg,#061a33_0%,#020916_55%,#06182d_100%)]"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
             <header className="mt-10 flex items-center justify-between">
