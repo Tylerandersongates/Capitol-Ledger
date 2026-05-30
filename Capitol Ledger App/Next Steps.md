@@ -193,6 +193,7 @@ Estimated time: 2 to 5 days after beta feedback is stable.
 71. Added `pnpm beta:triage` so database-backed beta feedback can be summarized before each fix pass, with optional blocker/untriaged failure gates.
 72. Tightened duplicate browser/account hydration for profile, party affiliation, gamification, and read-alert state so pages avoid unnecessary repeated background requests.
 73. Added `pnpm video-links:check` to verify the current speech/video demo layer before investor or beta walkthroughs.
+74. Added a visible Capitol Ledger Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
 
 ## Completed Design Work
 

@@ -43,5 +43,6 @@ Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civi
 - `/alerts` now behaves like an action-first inbox with `All`, `Action Needed`, and `Unread` filters.
 - Opening a notification marks it as read in demo browser storage, removes the unread dot, and removes the item from the `Unread` filter.
 - `/account` now includes optional party affiliation, displayed under city/district and controlled from Account Settings.
+- Official profile accountability now uses a visible nonpartisan methodology: the score is a weighted source-coverage model across voting records, public engagement, sponsored bills, and ethics/compliance evidence.
 - Next subscription step: restart the local preview, visually QA the plan states, and tune locked/unlocked card polish.
 - Next persistence step: move party affiliation and notification read state into account-backed API/database records, then wire real user actions into gamification scoring.

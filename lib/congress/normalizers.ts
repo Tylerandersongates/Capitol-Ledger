@@ -7,6 +7,7 @@ import type {
   CongressHouseVoteMemberItem,
   CongressMemberListItem
 } from "./client";
+import { currentCongressLabel } from "../utils";
 import type { Bill, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
 
 const VERIFIED_AT = "2026-05-19";
@@ -185,7 +186,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
     district: typeof raw.district === "number" ? String(raw.district) : undefined,
     chamber,
     active: Boolean(activeTerm && !activeTerm.endYear),
-    term: activeTerm?.startYear ? `${activeTerm.startYear}${activeTerm.endYear ? `-${activeTerm.endYear}` : "-present"}` : "Current Congress",
+    term: currentCongressLabel(),
     photoUrl: raw.depiction?.imageUrl,
     officialUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
@@ -308,7 +309,7 @@ export function normalizeCongressBillCosponsor(raw: CongressBillCosponsorItem, b
     photoUrl: undefined,
     sourceUrl: raw.url ?? memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
     state,
-    term: "Current Congress"
+    term: currentCongressLabel()
   };
 
   return {
@@ -371,7 +372,7 @@ export function normalizeCongressHouseMemberVote(
     photoUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId, firstName, lastName }),
     state,
-    term: "Current Congress"
+    term: currentCongressLabel()
   };
 
   return {

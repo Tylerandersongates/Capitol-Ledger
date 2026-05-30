@@ -7,11 +7,18 @@ import { ArrowRight, Bell, FileText, Home, Scale, Search, UserRound } from "luci
 import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
+import {
+  accountProfileChangedEvent,
+  fetchAccountProfile,
+  readLocalNotificationPreferences,
+  writeLocalNotificationPreferences
+} from "@/lib/browser-account-profile";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
 
 export type AlertsInboxFilter = "all" | "action" | "unread";
 export type AlertsInboxGroup = "today" | "yesterday" | "earlier";
 export type AlertsInboxIcon = "bell" | "file" | "scale" | "user";
+export type AlertsInboxPreference = "districtAlerts" | "voteReminders";
 export type AlertsInboxItem = {
   action: string;
   actionNeeded: boolean;
@@ -22,6 +29,7 @@ export type AlertsInboxItem = {
   href: string;
   icon: AlertsInboxIcon;
   id: string;
+  preference: AlertsInboxPreference;
   time: string;
   title: string;
 };
@@ -152,6 +160,31 @@ export function AlertsInboxClient({
   notifications: AlertsInboxItem[];
 }) {
   const [readIds, setReadIds] = useState<string[]>([]);
+  const [notificationPreferences, setNotificationPreferences] = useState(() => readLocalNotificationPreferences());
+
+  useEffect(() => {
+    function refreshPreferences() {
+      setNotificationPreferences(readLocalNotificationPreferences());
+    }
+
+    refreshPreferences();
+    void fetchAccountProfile().then((profile) => {
+      if (!profile) return;
+      writeLocalNotificationPreferences(profile.notificationPreferences);
+      setNotificationPreferences(readLocalNotificationPreferences());
+    });
+    window.addEventListener("storage", refreshPreferences);
+    window.addEventListener("focus", refreshPreferences);
+    window.addEventListener("pageshow", refreshPreferences);
+    window.addEventListener(accountProfileChangedEvent, refreshPreferences);
+
+    return () => {
+      window.removeEventListener("storage", refreshPreferences);
+      window.removeEventListener("focus", refreshPreferences);
+      window.removeEventListener("pageshow", refreshPreferences);
+      window.removeEventListener(accountProfileChangedEvent, refreshPreferences);
+    };
+  }, []);
 
   useEffect(() => {
     setReadIds(readAlertIds());
@@ -174,11 +207,12 @@ export function AlertsInboxClient({
   const filteredNotifications = useMemo(
     () =>
       notifications.filter((notification) => {
+        if (!notificationPreferences[notification.preference]) return false;
         if (activeFilter === "action") return notification.actionNeeded;
         if (activeFilter === "unread") return isUnread(notification);
         return true;
       }),
-    [activeFilter, notifications, readIds]
+    [activeFilter, notificationPreferences, notifications, readIds]
   );
 
   const groupedNotifications = useMemo(

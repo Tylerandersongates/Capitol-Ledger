@@ -58,7 +58,39 @@ function readReadAlerts() {
 }
 
 function readIssueInterests() {
-  return readJson<string[]>(interestsKey, []);
+  return readIssueInterestsState().interests;
+}
+
+function readIssueInterestsState() {
+  if (typeof window === "undefined") {
+    return {
+      hasStoredValue: false,
+      interests: [] as string[]
+    };
+  }
+
+  try {
+    const stored = window.localStorage.getItem(interestsKey);
+    if (stored === null) {
+      return {
+        hasStoredValue: false,
+        interests: [] as string[]
+      };
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+    const interests = Array.isArray(parsed) ? uniqueStrings(parsed.filter((value): value is string => typeof value === "string")) : [];
+
+    return {
+      hasStoredValue: true,
+      interests
+    };
+  } catch {
+    return {
+      hasStoredValue: false,
+      interests: [] as string[]
+    };
+  }
 }
 
 function uniqueStrings(values: string[]) {
@@ -253,11 +285,11 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
 
   useEffect(() => {
     function refreshInterests() {
-      const stored = readIssueInterests();
-      const initial = stored.length ? stored : interests.slice(0, 4);
+      const storedState = readIssueInterestsState();
+      const initial = storedState.hasStoredValue ? storedState.interests : interests.slice(0, 4);
 
       setSelected(initial);
-      if (!stored.length) writeJson(interestsKey, initial);
+      if (!storedState.hasStoredValue) writeJson(interestsKey, initial);
     }
 
     refreshInterests();
@@ -280,7 +312,7 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
   }
 
   function resetInterests() {
-    const next = interests.slice(0, 4);
+    const next: string[] = [];
     setSelected(next);
     writeJson(interestsKey, next);
   }

@@ -244,6 +244,32 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
 
   const prisma = getPrisma();
   const ledger = normalizeAccountLedger(value);
+  const hasIssueInterests = Array.isArray(value.issueInterests);
+  const providedIssueInterests = Array.isArray(value.issueInterests) ? value.issueInterests : [];
+  const issueInterests = hasIssueInterests
+    ? Array.from(new Set(providedIssueInterests.filter((interest): interest is string => typeof interest === "string" && interest.trim().length > 0)))
+    : ledger.issueInterests;
+  const issueInterestOperations = hasIssueInterests
+    ? [
+        prisma.$executeRaw`
+          DELETE FROM "IssueInterest"
+          WHERE "userId" = ${userId}
+        `,
+        ...issueInterests.map((interest) =>
+          prisma.$executeRaw`
+            INSERT INTO "IssueInterest" ("id", "userId", "interest", "createdAt")
+            VALUES (${randomUUID()}, ${userId}, ${interest}, NOW())
+            ON CONFLICT ("userId", "interest") DO NOTHING
+          `
+        )
+      ]
+    : issueInterests.map((interest) =>
+        prisma.$executeRaw`
+          INSERT INTO "IssueInterest" ("id", "userId", "interest", "createdAt")
+          VALUES (${randomUUID()}, ${userId}, ${interest}, NOW())
+          ON CONFLICT ("userId", "interest") DO NOTHING
+        `
+      );
 
   await prisma.$transaction([
     ...ledger.follows.map((record) =>
@@ -268,13 +294,7 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
         SET "readAt" = COALESCE("ReadAlert"."readAt", EXCLUDED."readAt")
       `
     ),
-    ...ledger.issueInterests.map((interest) =>
-      prisma.$executeRaw`
-        INSERT INTO "IssueInterest" ("id", "userId", "interest", "createdAt")
-        VALUES (${randomUUID()}, ${userId}, ${interest}, NOW())
-        ON CONFLICT ("userId", "interest") DO NOTHING
-      `
-    )
+    ...issueInterestOperations
   ]);
 
   return readLedgerFromDatabase(userId);

@@ -1,4 +1,10 @@
-import { AlertsInboxClient, type AlertsInboxFilter, type AlertsInboxIcon, type AlertsInboxItem } from "@/components/alerts-inbox-client";
+import {
+  AlertsInboxClient,
+  type AlertsInboxFilter,
+  type AlertsInboxIcon,
+  type AlertsInboxItem,
+  type AlertsInboxPreference
+} from "@/components/alerts-inbox-client";
 import { MobileShell } from "@/components/mobile-shell";
 import { getBill, getDashboardData, getMember, getRecentUpdates } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
@@ -24,6 +30,12 @@ function getNotificationGroup(index: number) {
   return "earlier";
 }
 
+function getNotificationPreference(event: ReturnType<typeof getRecentUpdates>[number]): AlertsInboxPreference {
+  const text = `${event.title} ${event.body}`.toLowerCase();
+  if (text.includes("vote") || text.includes("committee") || text.includes("hearing")) return "voteReminders";
+  return "districtAlerts";
+}
+
 export default function AlertsPage({ searchParams }: { searchParams?: { filter?: string } }) {
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
   const dashboardData = getDashboardData();
@@ -40,6 +52,7 @@ export default function AlertsPage({ searchParams }: { searchParams?: { filter?:
       title: event.title,
       body: `${targetLabel} - ${event.body}`,
       categoryLabel: eventCategoryLabel(event),
+      preference: getNotificationPreference(event),
       actionNeeded: index === 0,
       action: bill ? "View Bill" : member ? "View Profile" : "View Record",
       href,
@@ -56,6 +69,7 @@ export default function AlertsPage({ searchParams }: { searchParams?: { filter?:
           title: "Vote reminder",
           body: `${voteAlertBill.displayNumber} - ${voteAlertBill.shortTitle} has a tracked civic action pending.`,
           categoryLabel: "Vote Reminder",
+          preference: "voteReminders",
           actionNeeded: true,
           action: "View Alert",
           href: "/alerts/detail",

@@ -2,6 +2,7 @@ import { bills, billVideos, cosponsors, members, memberVotes, updateEvents, vote
 import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
+import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma, VotePosition as PrismaVotePosition } from "@prisma/client";
 import type { Bill, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
@@ -30,6 +31,13 @@ export type VoteMemberPositionRecord = {
   voteId: string;
 };
 
+export type MemberVoteRecord = {
+  memberBioguideId: string;
+  position: VotePosition;
+  vote?: Vote;
+  voteId: string;
+};
+
 export type BillDetailData = {
   bill: Bill;
   billVideos: BillVideo[];
@@ -37,6 +45,23 @@ export type BillDetailData = {
   sourceMatches: BillSourceMatch[];
   sponsor?: Member;
   voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>;
+};
+
+export type MemberDetailData = {
+  chamberMembers: Member[];
+  caucusMemberships: MemberCaucusMembership[];
+  cosponsoredBills: Bill[];
+  member: Member;
+  memberVotes: MemberVoteRecord[];
+  sponsoredBills: Bill[];
+};
+
+export type MemberCaucusMembership = {
+  caucusName: string;
+  role: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  verifiedAt: string;
 };
 
 type DatabaseSourceLinkRow = {
@@ -52,6 +77,151 @@ type DatabaseSourceLinkRow = {
 
 const pendingOfficialSummaryText =
   "Official CRS summary not yet published by Congress.gov. Capitol Ledger will display the official summary first when it becomes available.";
+
+const memberCaucusMemberships: Record<string, MemberCaucusMembership[]> = {
+  B001302: [
+    {
+      caucusName: "House Freedom Caucus",
+      role: "Former Chair",
+      sourceLabel: "Official House biography",
+      sourceUrl: "https://biggs.house.gov/about",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Border Security Caucus",
+      role: "Co-Chair",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Congressional Western Caucus",
+      role: "Vice Chair",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "War Powers Caucus",
+      role: "Co-Founder",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Algae Caucus",
+      role: "Co-Chair",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "ALS Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Autism Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Congressional Reformers Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Fertilizer Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Health Care Innovation Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "House Republican Israel Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Japan Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Missile Defense Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Recording Arts and Sciences Congressional Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Republican Hindu Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "School Choice Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Second Amendment Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Taiwan Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Traumatic Brain Injury Caucus",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    },
+    {
+      caucusName: "Values Action Team",
+      role: "Member",
+      sourceLabel: "Official committees and caucuses",
+      sourceUrl: "https://biggs.house.gov/about/committees-and-caucuses",
+      verifiedAt: "2026-05-29"
+    }
+  ]
+};
 
 const dbChamberMap = {
   HOUSE: "House",
@@ -135,22 +305,132 @@ function formatBillDisplay(type: string, number: string) {
   return `${normalizedType} ${number}`;
 }
 
+type RawMemberTermRecord = {
+  chamber?: string;
+  endYear?: number;
+  startYear?: number;
+};
+
+function parseYear(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function normalizeRawChamber(value: unknown): Chamber | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.toLowerCase();
+  if (normalized.includes("house")) return "House";
+  if (normalized.includes("senate")) return "Senate";
+  return undefined;
+}
+
+function readRawMemberTerms(rawJson: Prisma.JsonValue | null): RawMemberTermRecord[] {
+  if (!rawJson || typeof rawJson !== "object" || Array.isArray(rawJson)) return [];
+  const termsBlock = (rawJson as Record<string, Prisma.JsonValue>).terms;
+  if (!termsBlock || typeof termsBlock !== "object" || Array.isArray(termsBlock)) return [];
+  const items = (termsBlock as Record<string, Prisma.JsonValue>).item;
+  if (!Array.isArray(items)) return [];
+
+  const parsed: RawMemberTermRecord[] = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    parsed.push({
+      chamber: typeof record.chamber === "string" ? record.chamber : undefined,
+      endYear: parseYear(record.endYear),
+      startYear: parseYear(record.startYear)
+    });
+  }
+
+  return parsed;
+}
+
+function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber, fallbackTermLabel?: string) {
+  const chamberTerms = rawTerms.filter((term) => {
+    const rawChamber = normalizeRawChamber(term.chamber);
+    return !rawChamber || rawChamber === chamber;
+  });
+  const workingTerms = chamberTerms.length ? chamberTerms : rawTerms;
+  const starts = workingTerms.map((term) => term.startYear).filter((value): value is number => Number.isFinite(value));
+
+  if (!starts.length) return estimateTermsInOfficeFromCongressLabel(fallbackTermLabel, chamber);
+
+  const firstStart = Math.min(...starts);
+  const currentYear = new Date().getUTCFullYear();
+  const latestEnd = Math.max(
+    ...workingTerms.map((term) => {
+      if (Number.isFinite(term.endYear)) return term.endYear as number;
+      return currentYear;
+    })
+  );
+  const servedYears = Math.max(1, latestEnd - firstStart + 1);
+
+  if (chamber === "House") return Math.max(1, Math.ceil(servedYears / 2));
+  return Math.max(1, Math.ceil(servedYears / 6));
+}
+
+function deriveElectionDatesFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber) {
+  const chamberTerms = rawTerms.filter((term) => {
+    const rawChamber = normalizeRawChamber(term.chamber);
+    return !rawChamber || rawChamber === chamber;
+  });
+  const workingTerms = chamberTerms.length ? chamberTerms : rawTerms;
+  const starts = workingTerms.map((term) => term.startYear).filter((value): value is number => Number.isFinite(value));
+  if (!starts.length) return { firstElectedDate: undefined, nextElectionDate: undefined } as const;
+
+  const firstStart = Math.min(...starts);
+  const activeTerm =
+    workingTerms.find((term) => !Number.isFinite(term.endYear) && Number.isFinite(term.startYear)) ??
+    [...workingTerms]
+      .filter((term): term is RawMemberTermRecord & { endYear: number; startYear: number } => Number.isFinite(term.endYear) && Number.isFinite(term.startYear))
+      .sort((a, b) => b.startYear - a.startYear)[0];
+
+  const termLength = chamber === "Senate" ? 6 : 2;
+  const activeStart = Number.isFinite(activeTerm?.startYear) ? (activeTerm?.startYear as number) : firstStart;
+  const activeEnd = Number.isFinite(activeTerm?.endYear) ? (activeTerm?.endYear as number) : activeStart + termLength;
+  const firstElectionYear = firstStart % 2 === 0 ? firstStart : firstStart - 1;
+  let nextElectionYear = activeEnd - 1;
+  const currentYear = new Date().getUTCFullYear();
+
+  while (nextElectionYear < currentYear - 1) {
+    nextElectionYear += termLength;
+  }
+
+  return {
+    firstElectedDate: federalElectionDateIso(firstElectionYear),
+    nextElectionDate: federalElectionDateIso(nextElectionYear)
+  } as const;
+}
+
 function mapDatabaseMember(member: PrismaMember): Member {
+  const rawTerms = readRawMemberTerms(member.rawJson ?? null);
+  const chamber = dbChamberMap[member.chamber];
+  const termLabel = currentCongressLabel();
+  const termsInOffice = deriveTermsFromRaw(rawTerms, chamber, termLabel);
+  const { firstElectedDate, nextElectionDate } = deriveElectionDatesFromRaw(rawTerms, chamber);
+
   return {
     active: member.active,
     bioguideId: member.bioguideId,
-    chamber: dbChamberMap[member.chamber],
-    description: `${dbChamberMap[member.chamber]} member from ${member.state} synced from Congress.gov.`,
+    chamber,
+    description: `${chamber} member from ${member.state} synced from Congress.gov.`,
     district: member.district ?? undefined,
+    firstElectedDate,
     firstName: member.firstName,
     fullName: member.fullName,
     lastName: member.lastName,
+    nextElectionDate,
     officialUrl: member.officialUrl ?? undefined,
     party: dbPartyMap[member.party],
     photoUrl: member.photoUrl ?? undefined,
     sourceUrl: member.sourceUrl ?? `https://www.congress.gov/member/${member.bioguideId}`,
     state: member.state,
-    term: "Current Congress"
+    term: termLabel,
+    termsInOffice
   };
 }
 
@@ -294,6 +574,101 @@ export function getMemberVotes(bioguideId: string) {
       vote: votes.find((vote) => vote.id === memberVote.voteId)
     }))
     .filter((record) => Boolean(record.vote));
+}
+
+export function getMemberCaucusMemberships(bioguideId: string) {
+  return memberCaucusMemberships[bioguideId] ?? [];
+}
+
+function getDemoMemberDetailData(bioguideId: string): MemberDetailData | null {
+  const member = getMember(bioguideId);
+  if (!member) return null;
+
+  return {
+    chamberMembers: getAllMembers().filter((candidate) => candidate.chamber === member.chamber),
+    caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
+    cosponsoredBills: getCosponsoredBills(member.bioguideId),
+    member,
+    memberVotes: getMemberVotes(member.bioguideId) as MemberVoteRecord[],
+    sponsoredBills: getSponsoredBills(member.bioguideId)
+  };
+}
+
+async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDetailData | null> {
+  if (!hasDatabaseUrl()) return null;
+
+  try {
+    const prisma = getPrisma();
+    const memberRow = await prisma.member.findUnique({
+      include: {
+        cosponsoredBills: {
+          include: {
+            bill: true
+          },
+          orderBy: {
+            joinedAt: "desc"
+          },
+          take: 12
+        },
+        memberVotes: {
+          include: {
+            vote: {
+              include: {
+                memberVotes: {
+                  select: {
+                    position: true
+                  }
+                }
+              }
+            }
+          },
+          orderBy: {
+            vote: {
+              voteDate: "desc"
+            }
+          },
+          take: 20
+        },
+        sponsoredBills: {
+          orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
+          take: 12
+        }
+      },
+      where: {
+        bioguideId
+      }
+    });
+
+    if (!memberRow) return null;
+
+    const chamberRows = await prisma.member.findMany({
+      orderBy: [{ state: "asc" }, { lastName: "asc" }],
+      take: 600,
+      where: {
+        chamber: memberRow.chamber
+      }
+    });
+
+    return {
+      chamberMembers: chamberRows.map(mapDatabaseMember),
+      caucusMemberships: getMemberCaucusMemberships(memberRow.bioguideId),
+      cosponsoredBills: memberRow.cosponsoredBills.map((cosponsor) => mapDatabaseBill(cosponsor.bill)),
+      member: mapDatabaseMember(memberRow),
+      memberVotes: memberRow.memberVotes.map((memberVote) => ({
+        memberBioguideId: memberVote.memberBioguideId,
+        position: dbVotePositionMap[memberVote.position],
+        vote: mapDatabaseVote(memberVote.vote),
+        voteId: memberVote.voteId
+      })),
+      sponsoredBills: memberRow.sponsoredBills.map(mapDatabaseBill)
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
+  return (await getDatabaseMemberDetailData(bioguideId)) ?? getDemoMemberDetailData(bioguideId);
 }
 
 export function getBillVotes(billId: string) {

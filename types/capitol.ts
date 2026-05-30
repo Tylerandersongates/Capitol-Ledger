@@ -59,6 +59,9 @@ export type Member = {
   chamber: Chamber;
   active: boolean;
   term: string;
+  termsInOffice?: number;
+  firstElectedDate?: string;
+  nextElectionDate?: string;
   photoUrl?: string;
   officialUrl?: string;
   sourceUrl: string;

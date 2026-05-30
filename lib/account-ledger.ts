@@ -56,11 +56,12 @@ export function getAccountLedger(userId: string) {
 export function mergeAccountLedger(userId: string, value: Partial<AccountLedgerSnapshot>) {
   const current = getAccountLedger(userId);
   const incoming = normalizeAccountLedger(value);
+  const hasIssueInterests = Array.isArray(value.issueInterests);
   const merged = normalizeAccountLedger({
     follows: [...current.follows, ...incoming.follows],
     readAlerts: [...current.readAlerts, ...incoming.readAlerts],
     savedAlerts: [...current.savedAlerts, ...incoming.savedAlerts],
-    issueInterests: [...current.issueInterests, ...incoming.issueInterests]
+    issueInterests: hasIssueInterests ? incoming.issueInterests : [...current.issueInterests, ...incoming.issueInterests]
   });
 
   accountStore.set(userId, merged);
