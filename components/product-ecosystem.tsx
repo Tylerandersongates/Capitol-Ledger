@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Vote
 } from "lucide-react";
+import Image from "next/image";
 
 const intelligenceCards = [
   {
@@ -223,7 +224,7 @@ function PhoneMockup() {
           <Smartphone className="h-5 w-5 text-aurora" aria-hidden="true" />
         </div>
         <div className="orbital-mark mx-auto mt-6 grid h-40 w-40 place-items-center rounded-full bg-civic/10">
-          <img src="/capitol-ledger-logo.png" alt="" className="h-28 w-28 rounded-full object-cover shadow-glow" />
+          <Image src="/capitol-ledger-logo.png" alt="" width={112} height={112} className="h-28 w-28 rounded-full object-cover shadow-glow" />
         </div>
         <div className="mt-6 space-y-3">
           {["State", "Chamber", "Issues"].map((label) => (

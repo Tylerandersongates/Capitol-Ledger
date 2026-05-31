@@ -12,6 +12,7 @@ import {
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { getRecentAchievements } from "@/lib/gamification";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -57,11 +58,11 @@ export default function ImpactPage() {
           <div className="orbital-mark relative grid min-h-[178px] place-items-center">
             <div className="absolute h-44 w-44 rounded-full border border-rust/20" />
             <div className="absolute h-36 w-36 rounded-full border border-rust/20" />
-            <div className="grid h-32 w-32 place-items-center rounded-full bg-[conic-gradient(#ffca42_0_83%,rgba(255,255,255,0.07)_83%_100%)] shadow-[0_0_42px_rgba(255,177,43,0.28)]">
-              <div className="grid h-24 w-24 place-items-center rounded-full bg-[#06152b]">
-                <img src="/capitol-ledger-logo.png" alt="" className="h-20 w-20 rounded-full object-cover" />
+              <div className="grid h-32 w-32 place-items-center rounded-full bg-[conic-gradient(#ffca42_0_83%,rgba(255,255,255,0.07)_83%_100%)] shadow-[0_0_42px_rgba(255,177,43,0.28)]">
+                <div className="grid h-24 w-24 place-items-center rounded-full bg-[#06152b]">
+                <Image src="/capitol-ledger-logo.png" alt="" width={80} height={80} className="h-20 w-20 rounded-full object-cover" />
+                </div>
               </div>
-            </div>
           </div>
         </MobileCard>
 

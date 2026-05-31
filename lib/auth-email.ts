@@ -1,4 +1,5 @@
 import type { AuthUser } from "@/lib/auth-database";
+import { sendEmailWithResend } from "@/lib/resend-email";
 
 type AuthEmailKind = "password_reset" | "verify_email";
 
@@ -20,7 +21,7 @@ type AuthEmailUser = Pick<AuthUser, "email" | "name">;
 
 type AuthEmailDelivery =
   | { delivered: false; mode: "manual_demo" | "silent"; actionUrl?: string }
-  | { delivered: true; mode: "webhook" };
+  | { delivered: true; mode: "resend" | "webhook" };
 
 function appBaseUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -94,6 +95,19 @@ export async function deliverAuthEmail({
 
   const payload = buildEmailPayload({ kind, token, user });
   const deliveryMode = process.env.AUTH_EMAIL_DELIVERY;
+
+  if (deliveryMode === "resend") {
+    if (!payload.from) throw new Error("AUTH_EMAIL_FROM is required when AUTH_EMAIL_DELIVERY=resend.");
+
+    await sendEmailWithResend({
+      from: payload.from,
+      subject: payload.subject,
+      text: payload.text,
+      to: payload.to
+    });
+
+    return { delivered: true, mode: "resend" };
+  }
 
   if (deliveryMode === "webhook") {
     const webhookUrl = process.env.AUTH_EMAIL_WEBHOOK_URL;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { GamificationEventAnchor } from "@/components/gamification-actions";
 import type { Member } from "@/types/capitol";
@@ -8,9 +9,11 @@ export function MemberCard({ member }: { member: Member }) {
   return (
     <article className="glass-card rounded-lg p-4">
       <div className="flex gap-4">
-        <img
-          src={member.photoUrl}
+        <Image
+          src={member.photoUrl ?? "/capitol-ledger-logo.png"}
           alt=""
+          width={80}
+          height={80}
           className="h-20 w-20 shrink-0 rounded-md border border-brass/20 bg-paper object-cover"
         />
         <div className="min-w-0 flex-1">

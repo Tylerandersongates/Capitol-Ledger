@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -435,7 +436,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
     <main className="mt-8 flex flex-1 flex-col">
       <section className="text-center">
         <div className="mx-auto grid h-28 w-28 place-items-center rounded-full border border-rust/35 bg-[#ffb12b]/10 shadow-[0_0_44px_rgba(255,177,43,0.25)]">
-          <img src="/capitol-ledger-logo.png" alt="" className="h-24 w-24 rounded-full object-cover" />
+          <Image src="/capitol-ledger-logo.png" alt="" width={96} height={96} className="h-24 w-24 rounded-full object-cover" />
         </div>
         <div className="mt-6 text-[18px] font-semibold uppercase tracking-[0.24em] text-white">
           Capitol <span className="text-[#ffb12b]">Ledger</span>

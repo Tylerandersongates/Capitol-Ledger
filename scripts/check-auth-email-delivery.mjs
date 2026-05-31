@@ -1,4 +1,4 @@
-const allowedDeliveryModes = new Set(["disabled", "manual_demo", "webhook"]);
+const allowedDeliveryModes = new Set(["disabled", "manual_demo", "resend", "webhook"]);
 const deliveryMode = process.env.AUTH_EMAIL_DELIVERY || "disabled";
 const requireProvider = process.env.AUTH_EMAIL_REQUIRE_PROVIDER === "true";
 const productionMode = process.env.NODE_ENV === "production";
@@ -99,11 +99,16 @@ function checkCookieMode() {
 
 function checkDeliveryMode() {
   if (!allowedDeliveryModes.has(deliveryMode)) {
-    fail("AUTH_EMAIL_DELIVERY mode is valid", "Use disabled, manual_demo, or webhook.");
+    fail("AUTH_EMAIL_DELIVERY mode is valid", "Use disabled, manual_demo, resend, or webhook.");
     return;
   }
 
   pass("AUTH_EMAIL_DELIVERY mode is valid", deliveryMode);
+
+  if (deliveryMode === "resend") {
+    checkResend();
+    return;
+  }
 
   if (deliveryMode === "webhook") {
     checkWebhook();
@@ -111,7 +116,7 @@ function checkDeliveryMode() {
   }
 
   if (requireProvider) {
-    fail("Auth email provider is connected", "Set AUTH_EMAIL_DELIVERY=webhook and configure AUTH_EMAIL_WEBHOOK_URL.");
+    fail("Auth email provider is connected", "Set AUTH_EMAIL_DELIVERY=resend (with RESEND_API_KEY) or webhook (with AUTH_EMAIL_WEBHOOK_URL).");
   } else {
     warn(
       "Auth email provider is connected",
@@ -119,6 +124,14 @@ function checkDeliveryMode() {
         ? "Manual demo mode exposes verification/reset links locally but does not send email."
         : "Delivery is disabled; production users will not receive verification or reset emails."
     );
+  }
+}
+
+function checkResend() {
+  if (isUsableSecret(process.env.RESEND_API_KEY)) {
+    pass("RESEND_API_KEY is configured");
+  } else {
+    fail("RESEND_API_KEY is configured", "Resend delivery mode requires a valid API key.");
   }
 }
 

@@ -1,13 +1,13 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
   Building2,
   CheckCircle2,
   ChevronRight,
-  FileText,
   Home,
   Landmark,
   Map,
@@ -83,7 +83,7 @@ export default function MapPage({ searchParams }: { searchParams?: { level?: str
     >
             <header className="mt-10 flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-3">
-                <img src="/capitol-ledger-logo.png" alt="" className="h-10 w-10 rounded-full object-cover" />
+                <Image src="/capitol-ledger-logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                 <div className="whitespace-nowrap text-[17px] font-semibold uppercase tracking-[0.22em] text-white">
                   Capitol <span className="text-[#ffb12b]">Ledger</span>
                 </div>
@@ -216,7 +216,7 @@ export default function MapPage({ searchParams }: { searchParams?: { level?: str
                 <MobileCard className="px-5 py-5">
                   <h2 className="text-[20px] font-medium leading-none">Civic Score</h2>
                   <div className="mt-5 flex items-center gap-3">
-                    <img src="/capitol-ledger-logo.png" alt="" className="h-14 w-14 rounded-full object-cover" />
+                    <Image src="/capitol-ledger-logo.png" alt="" width={56} height={56} className="h-14 w-14 rounded-full object-cover" />
                     <div>
                       <div className="text-[28px] font-medium leading-none text-[#ffb12b]">1,250</div>
                       <div className="mt-1 text-[13px] text-[#43ed74]">↑ 75 this month</div>

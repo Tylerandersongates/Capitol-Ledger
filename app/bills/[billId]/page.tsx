@@ -3,6 +3,7 @@ import { GamificationEventAnchor } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import { PlanFeatureGate } from "@/components/subscription-controls";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactElement, ReactNode } from "react";
@@ -781,7 +782,7 @@ function TimelineRow({ active, step }: { active: boolean; step: ProgressStep }) 
 function MemberVoteRow({ member, position }: { member: Member; position: VotePosition }) {
   return (
     <Link href={`/members/${member.bioguideId}`} className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4">
-      {member.photoUrl ? <img src={member.photoUrl} alt="" className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
+      {member.photoUrl ? <Image src={member.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
       <span className="min-w-0">
         <span className="block truncate text-[16px] font-semibold text-white">{member.fullName}</span>
         <span className="mt-1 block text-[13px] text-white/52">{member.state} · {member.party}</span>
@@ -825,7 +826,7 @@ function DetailRow({
   const content = (
     <div className="flex items-center justify-between gap-3 py-4">
       <div className="flex min-w-0 items-center gap-4 text-white/60">
-        {image ? <img src={image} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="[&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.7]">{icon}</span>}
+        {image ? <Image src={image} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" /> : <span className="[&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.7]">{icon}</span>}
         <span className="text-[19px]">{label}</span>
       </div>
       <div className="flex min-w-0 items-center gap-2 text-right text-[19px] font-semibold text-white">

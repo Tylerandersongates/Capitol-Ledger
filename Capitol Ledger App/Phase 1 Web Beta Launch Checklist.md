@@ -1,5 +1,7 @@
 # Phase 1 Web Beta Launch Checklist
 
+Status: Phase 1 baseline is complete. Keep this checklist as the post-deploy smoke + tester intake maintenance runbook.
+
 ## Goal
 
 Get Capitol Ledger onto a controlled Vercel web beta, connected to Neon, so a small tester group can use the app and send feedback before App Store/TestFlight packaging.

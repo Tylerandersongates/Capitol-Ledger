@@ -33,7 +33,7 @@ Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civi
 
 ## Product Notes
 
-- Current focus: Phase 1 Web Beta Readiness. Use `Phase 1 Web Beta Launch Checklist.md` to deploy the controlled Vercel beta, verify Neon feedback storage, and invite the first small tester group.
+- Current focus: Phase 2 + Phase 3 overlap. Phase 1 web-beta baseline is complete; active work is now auth stability plus UI polish from tester annotations.
 - Free, Pro Intelligence, and Civic Team now share one subscription entitlement matrix, with demo mode switchers on `/account` and `/upgrade`.
 - Subscription modes now visibly affect the app: dashboard Pro policy lens, bill detail AI/source/video gates, search smart filters and export reports, alerts priority lane, and Civic Team map/workspace panel.
 - The subscription walkthrough, expected plan behavior, and QA checklist live in `Subscription Demo Guide.md`.
@@ -43,6 +43,6 @@ Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civi
 - `/alerts` now behaves like an action-first inbox with `All`, `Action Needed`, and `Unread` filters.
 - Opening a notification marks it as read in demo browser storage, removes the unread dot, and removes the item from the `Unread` filter.
 - `/account` now includes optional party affiliation, displayed under city/district and controlled from Account Settings.
+- Save/unsave star actions on official and bill profiles now provide immediate in-UI confirmation (`Saved to your ledger` / `Removed from your ledger`) while updating saved-ledger state.
 - Official profile accountability now uses a visible nonpartisan methodology: the score is a weighted source-coverage model across voting records, public engagement, sponsored bills, and ethics/compliance evidence.
-- Next subscription step: restart the local preview, visually QA the plan states, and tune locked/unlocked card polish.
-- Next persistence step: move party affiliation and notification read state into account-backed API/database records, then wire real user actions into gamification scoring.
+- Active next step: complete official-profile interaction polish (tab behavior, info affordances, score explanation clarity, and layout consistency) and then run a deployed smoke pass.

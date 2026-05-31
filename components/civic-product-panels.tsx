@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Award,
   Bell,
@@ -77,7 +78,7 @@ export function MockupReferenceGrid() {
         <div className="mt-7 grid gap-4 lg:grid-cols-5">
           {mockupAssets.map((asset) => (
             <article key={asset.href} className="glass-card overflow-hidden rounded-lg">
-              <img src={asset.href} alt="" className="aspect-video w-full object-cover" />
+              <Image src={asset.href} alt="" width={1200} height={675} className="aspect-video w-full object-cover" />
               <div className="p-4">
                 <h3 className="font-semibold text-white">{asset.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-blue-100/70">{asset.body}</p>

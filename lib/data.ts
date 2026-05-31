@@ -4,7 +4,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
-import { Chamber as PrismaChamber, Party as PrismaParty, Prisma, VotePosition as PrismaVotePosition } from "@prisma/client";
+import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
 import type { Bill, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
 
 export type SearchFilters = {

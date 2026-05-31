@@ -11,7 +11,7 @@ import {
   subscriptionPlans,
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
-import type { AccountSubscriptionSnapshot, BillingCycle, SubscriptionPlanId } from "@/types/capitol";
+import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 const storageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";

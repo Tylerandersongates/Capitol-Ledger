@@ -1,28 +1,26 @@
 import { MobileShell } from "@/components/mobile-shell";
-import { NotificationPreferencesEditor, OnboardingDistrictSetup, OnboardingMatchedOfficials } from "@/components/account-profile-controls";
+import {
+  NotificationPreferencesEditor,
+  OnboardingDistrictSetup,
+  OnboardingMatchedOfficials,
+  OnboardingSetupFlow
+} from "@/components/account-profile-controls";
 import { GamificationEventLink } from "@/components/gamification-actions";
 import { MobileCard } from "@/components/mobile-ui";
+import { IssueInterestChips } from "@/components/saved-ledger-controls";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
-  Check,
   Landmark,
   LocateFixed,
   MapPin,
   ShieldCheck,
-  UserRound,
   Vote
 } from "lucide-react";
 import { getAllMembers } from "@/lib/data";
 
-const setupSteps = [
-  { label: "District", detail: "TX-10 located", icon: <MapPin />, complete: true },
-  { label: "Officials", detail: "3 matched", icon: <UserRound />, complete: true },
-  { label: "Issues", detail: "Choose signals", icon: <Vote />, complete: false },
-  { label: "Alerts", detail: "Set reminders", icon: <Bell />, complete: false }
-];
-
-const issueSignals = ["Healthcare", "Education", "Infrastructure", "Veterans", "Environment", "Public Safety"];
+const issueSignals = ["Healthcare", "Education", "Infrastructure", "Veterans Affairs", "Environment", "Public Safety"];
 
 export default function OnboardingPage() {
   const allMembers = getAllMembers();
@@ -35,7 +33,7 @@ export default function OnboardingPage() {
     >
             <header className="mt-10 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/capitol-ledger-logo.png" alt="" className="h-11 w-11 rounded-full object-cover" />
+                <Image src="/capitol-ledger-logo.png" alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
                 <div>
                   <div className="text-[12px] font-semibold uppercase tracking-wide text-white/50">Setup</div>
                   <div className="text-[17px] font-semibold uppercase tracking-[0.2em] text-white">
@@ -87,24 +85,7 @@ export default function OnboardingPage() {
               </MobileCard>
 
               <MobileCard className="px-5 py-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[21px] font-medium leading-none">Setup Flow</h2>
-                  <span className="text-[13px] font-semibold text-[#ffb12b]">State matched</span>
-                </div>
-                <div className="mt-5 grid gap-3">
-                  {setupSteps.map((step, index) => (
-                    <div key={step.label} className="grid grid-cols-[42px_1fr_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <span className={`grid h-10 w-10 place-items-center rounded-full ${step.complete ? "bg-[#43ed74]/14 text-[#43ed74]" : "bg-[#ffb12b]/12 text-[#ffb12b]"}`}>
-                        {step.complete ? <Check className="h-5 w-5" strokeWidth={2.1} aria-hidden="true" /> : <span className="[&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{step.icon}</span>}
-                      </span>
-                      <div>
-                        <div className="text-[16px] font-semibold text-white">{step.label}</div>
-                        <div className="mt-1 text-[13px] text-white/50">{step.detail}</div>
-                      </div>
-                      <span className="text-[13px] font-semibold text-white/36">0{index + 1}</span>
-                    </div>
-                  ))}
-                </div>
+                <OnboardingSetupFlow members={allMembers} />
               </MobileCard>
 
               <MobileCard className="px-5 py-5">
@@ -120,18 +101,7 @@ export default function OnboardingPage() {
                   <Vote className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
                   <h2 className="text-[21px] font-medium leading-none">Issue Signals</h2>
                 </div>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {issueSignals.map((issue, index) => (
-                    <span
-                      key={issue}
-                      className={`rounded-full border px-3 py-2 text-[13px] font-semibold ${
-                        index < 4 ? "border-[#ffb12b]/38 bg-[#ffb12b]/12 text-[#ffb12b]" : "border-white/12 bg-white/5 text-white/58"
-                      }`}
-                    >
-                      {issue}
-                    </span>
-                  ))}
-                </div>
+                <IssueInterestChips interests={issueSignals} />
               </MobileCard>
 
               <MobileCard className="px-5 py-5">

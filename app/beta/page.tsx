@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Bell, CheckCircle2, ClipboardCheck, FileText, Flag, Home, MapPinned, MessageSquarePlus, Search, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, ClipboardCheck, FileText, Home, MessageSquarePlus, Search, ShieldCheck, UserRound } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 

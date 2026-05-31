@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CheckCircle2, ChevronRight, LocateFixed, LockKeyhole, MapPin, Search, UserRound } from "lucide-react";
+import { Bell, Check, CheckCircle2, ChevronRight, LocateFixed, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
@@ -38,6 +39,9 @@ const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: s
     label: "Weekly brief"
   }
 ];
+
+const issueInterestsKey = "capitol-ledger:issue-interests";
+const persistenceEvent = "capitol-ledger:persistence-changed";
 
 function buildDistrictProfile(input: string): Required<LocalDistrictProfile> {
   const value = input.trim() || "Austin, Texas";
@@ -86,6 +90,18 @@ function useDistrictProfile() {
   }, []);
 
   return district;
+}
+
+function readIssueInterestsForSetup() {
+  if (typeof window === "undefined") return [] as string[];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(issueInterestsKey) ?? "[]") as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return Array.from(new Set(parsed.filter((value): value is string => typeof value === "string" && value.trim().length > 0)));
+  } catch {
+    return [];
+  }
 }
 
 export function AccountDistrictDisplay() {
@@ -214,7 +230,7 @@ export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
       {officials.map((official) => (
         <Link key={official.bioguideId} href={`/members/${official.bioguideId}`} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 py-4">
           {official.photoUrl ? (
-            <img src={official.photoUrl} alt="" className="h-11 w-11 rounded-full border border-rust/35 object-cover" />
+            <Image src={official.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" />
           ) : (
             <span className="grid h-11 w-11 place-items-center rounded-full border border-rust/35 bg-white/5 text-[#ffb12b]">
               <UserRound className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
@@ -235,6 +251,88 @@ export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
         <ChevronRight className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
       </Link>
     </div>
+  );
+}
+
+export function OnboardingSetupFlow({ members }: { members: Member[] }) {
+  const district = useDistrictProfile();
+  const [issueCount, setIssueCount] = useState(0);
+  const [enabledAlertCount, setEnabledAlertCount] = useState(0);
+
+  const officialsCount = getMatchedOfficials(members, district.districtCode).length;
+
+  useEffect(() => {
+    function refreshSetupSignals() {
+      const interests = readIssueInterestsForSetup();
+      const preferences = readLocalNotificationPreferences();
+      const enabledCount = [preferences.voteReminders, preferences.districtAlerts, preferences.weeklyBrief].filter(Boolean).length;
+
+      setIssueCount(interests.length);
+      setEnabledAlertCount(enabledCount);
+    }
+
+    refreshSetupSignals();
+    void fetchAccountProfile().then(() => refreshSetupSignals());
+
+    window.addEventListener("storage", refreshSetupSignals);
+    window.addEventListener(accountProfileChangedEvent, refreshSetupSignals);
+    window.addEventListener(persistenceEvent, refreshSetupSignals);
+
+    return () => {
+      window.removeEventListener("storage", refreshSetupSignals);
+      window.removeEventListener(accountProfileChangedEvent, refreshSetupSignals);
+      window.removeEventListener(persistenceEvent, refreshSetupSignals);
+    };
+  }, []);
+
+  const steps = [
+    {
+      complete: Boolean(district.districtCode),
+      detail: district.districtCode ? `${district.districtCode} located` : "Locate district",
+      icon: <MapPin />,
+      label: "District"
+    },
+    {
+      complete: officialsCount > 0,
+      detail: officialsCount > 0 ? `${officialsCount} matched` : "Find officials",
+      icon: <UserRound />,
+      label: "Officials"
+    },
+    {
+      complete: issueCount > 0,
+      detail: issueCount > 0 ? `${issueCount} signals selected` : "Choose signals",
+      icon: <Vote />,
+      label: "Issues"
+    },
+    {
+      complete: enabledAlertCount > 0,
+      detail: enabledAlertCount > 0 ? `${enabledAlertCount} reminders active` : "Set reminders",
+      icon: <Bell />,
+      label: "Alerts"
+    }
+  ];
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[21px] font-medium leading-none">Setup Flow</h2>
+        <span className="text-[13px] font-semibold text-[#ffb12b]">{district.districtState} matched</span>
+      </div>
+      <div className="mt-5 grid gap-3">
+        {steps.map((step, index) => (
+          <div key={step.label} className="grid grid-cols-[42px_1fr_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/4 p-4">
+            <span className={`grid h-10 w-10 place-items-center rounded-full ${step.complete ? "bg-[#43ed74]/14 text-[#43ed74]" : "bg-[#ffb12b]/12 text-[#ffb12b]"}`}>
+              {step.complete ? <Check className="h-5 w-5" strokeWidth={2.1} aria-hidden="true" /> : <span className="[&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{step.icon}</span>}
+            </span>
+            <div>
+              <div className="text-[16px] font-semibold text-white">{step.label}</div>
+              <div className="mt-1 text-[13px] text-white/50">{step.detail}</div>
+            </div>
+            <span className="text-[13px] font-semibold text-white/36">0{index + 1}</span>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

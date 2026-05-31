@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
-import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, FollowTargetType, SavedFollowRecord } from "../types/capitol";
+import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, FollowTargetType } from "../types/capitol";
 import { normalizeAccountGamification, type AccountGamificationSnapshot } from "./account-gamification";
 import { normalizeAccountLedger } from "./account-ledger";
 import { normalizeAccountProfile } from "./account-profile";

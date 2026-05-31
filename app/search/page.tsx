@@ -1,6 +1,8 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
+import { DiscoverySearchForm } from "@/components/discovery-search-form";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -108,17 +110,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             <main className="mt-7 space-y-5 pb-8">
               <MobileCard className="px-5 py-5">
-                <form action="/search" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#031126]/88 px-4 py-3">
-                  <Search className="h-6 w-6 shrink-0 text-white/52" strokeWidth={1.8} aria-hidden="true" />
-                  <input
-                    name="q"
-                    defaultValue={query}
-                    placeholder="Search bills, officials, votes..."
-                    className="min-w-0 flex-1 bg-transparent text-[17px] text-white outline-none placeholder:text-white/42"
-                  />
-                  <input type="hidden" name="type" value={activeType} />
-                  <button type="submit" className="rounded-xl bg-[#ffb12b] px-4 py-2 text-[14px] font-semibold text-[#061126]">Go</button>
-                </form>
+                <DiscoverySearchForm
+                  activeType={activeType}
+                  chamber={searchParams.chamber}
+                  party={searchParams.party}
+                  query={query}
+                  state={searchParams.state}
+                />
 
                 <nav className="mt-5 grid grid-cols-4 rounded-2xl border border-white/10 bg-white/[0.035] p-1 text-center">
                   {searchTabs.map((tab) => (
@@ -222,7 +220,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 {results.members.length ? (
                   results.members.slice(0, activeType === "members" ? 30 : 3).map((member) => (
                     <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} className="flex items-center gap-4 rounded-2xl border border-white/8 bg-white/4 p-4">
-                      {member.photoUrl ? <img src={member.photoUrl} alt="" className="h-14 w-14 rounded-full border border-rust/35 object-cover" /> : null}
+                      {member.photoUrl ? <Image src={member.photoUrl} alt="" width={56} height={56} className="h-14 w-14 rounded-full border border-rust/35 object-cover" /> : null}
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[16px] font-medium text-white">{member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</div>
                         <div className="mt-1 text-[13px] text-white/55">

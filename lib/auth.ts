@@ -16,7 +16,7 @@ export const demoUser = {
   name: "Demo Citizen"
 };
 
-function useSecureCookies() {
+function shouldUseSecureCookies() {
   return process.env.AUTH_COOKIE_SECURE === "true" || process.env.VERCEL_ENV === "production";
 }
 
@@ -53,7 +53,7 @@ export function setAuthSessionCookie(response: NextResponse, sessionToken: strin
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
     sameSite: "lax",
-    secure: useSecureCookies()
+    secure: shouldUseSecureCookies()
   });
 }
 
@@ -63,7 +63,7 @@ export function setDemoSessionCookie(response: NextResponse) {
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
     sameSite: "lax",
-    secure: useSecureCookies()
+    secure: shouldUseSecureCookies()
   });
 }
 
@@ -73,14 +73,14 @@ export function clearAuthCookies(response: NextResponse) {
     maxAge: 0,
     path: "/",
     sameSite: "lax",
-    secure: useSecureCookies()
+    secure: shouldUseSecureCookies()
   });
   response.cookies.set(demoSessionCookie, "", {
     httpOnly: true,
     maxAge: 0,
     path: "/",
     sameSite: "lax",
-    secure: useSecureCookies()
+    secure: shouldUseSecureCookies()
   });
 }
 

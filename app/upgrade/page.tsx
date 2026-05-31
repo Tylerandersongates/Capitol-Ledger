@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Bell,
   Check,
-  CheckCircle2,
   Crown,
   FileText,
   Home,

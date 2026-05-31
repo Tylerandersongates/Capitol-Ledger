@@ -180,6 +180,7 @@ export function SaveTargetButton({
   className = mobileIconButtonClass,
   iconClassName = "h-7 w-7",
   label,
+  showFeedback = true,
   showLabel = false,
   targetId,
   targetType
@@ -187,11 +188,19 @@ export function SaveTargetButton({
   className?: string;
   iconClassName?: string;
   label: string;
+  showFeedback?: boolean;
   showLabel?: boolean;
   targetId: string;
   targetType: FollowTargetType;
 }) {
   const [saved, setSaved] = useState(false);
+  const [feedback, setFeedback] = useState<"saved" | "removed" | null>(null);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(null), 1800);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   useEffect(() => {
     function refreshSaved() {
@@ -221,13 +230,25 @@ export function SaveTargetButton({
       recordGamificationEvent(targetType === "bill" ? "track-bill" : "save-official", targetId);
     }
     setSaved(!exists);
+    setFeedback(exists ? "removed" : "saved");
   }
 
   return (
-    <button type="button" onClick={toggleSaved} className={className} aria-label={saved ? `Saved ${label}` : label} aria-pressed={saved}>
-      <Star className={`${iconClassName} ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.9} aria-hidden="true" />
-      {showLabel ? <span>{saved ? "Saved" : label}</span> : null}
-    </button>
+    <div className="relative">
+      <button type="button" onClick={toggleSaved} className={className} aria-label={saved ? `Saved ${label}` : label} aria-pressed={saved}>
+        <Star className={`${iconClassName} ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.9} aria-hidden="true" />
+        {showLabel ? <span>{saved ? "Saved" : label}</span> : null}
+      </button>
+      {showFeedback && feedback ? (
+        <span
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute -bottom-11 right-0 whitespace-nowrap rounded-full border border-white/12 bg-[#031126]/95 px-3 py-1 text-[12px] font-medium text-white/78 shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+        >
+          {feedback === "saved" ? "Saved to your ledger" : "Removed from your ledger"}
+        </span>
+      ) : null}
+    </div>
   );
 }
 

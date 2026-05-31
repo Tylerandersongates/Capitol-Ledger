@@ -95,15 +95,21 @@ function checkAuthEmail() {
   console.log("\nAuth email");
   const mode = process.env.AUTH_EMAIL_DELIVERY || "disabled";
 
-  if (["disabled", "manual_demo", "webhook"].includes(mode)) {
+  if (["disabled", "manual_demo", "resend", "webhook"].includes(mode)) {
     pass("AUTH_EMAIL_DELIVERY mode is valid", mode);
   } else {
-    fail("AUTH_EMAIL_DELIVERY mode is valid", "Use disabled, manual_demo, or webhook.");
+    fail("AUTH_EMAIL_DELIVERY mode is valid", "Use disabled, manual_demo, resend, or webhook.");
   }
 
   optional("AUTH_EMAIL_FROM", process.env.AUTH_EMAIL_FROM, "Set the visible sender identity before real email delivery.");
 
-  if (mode === "webhook" || shouldFailRequired()) {
+  if (mode === "resend") {
+    if (isSet(process.env.RESEND_API_KEY)) {
+      pass("RESEND_API_KEY is configured");
+    } else {
+      fail("RESEND_API_KEY is configured", "Required when auth email delivery uses Resend.");
+    }
+  } else if (mode === "webhook" || shouldFailRequired()) {
     if (isValidUrl(process.env.AUTH_EMAIL_WEBHOOK_URL)) {
       pass("AUTH_EMAIL_WEBHOOK_URL is configured", process.env.AUTH_EMAIL_WEBHOOK_URL);
     } else {
@@ -165,10 +171,10 @@ function checkWeeklyBrief() {
   console.log("\nWeekly Brief");
   const mode = process.env.WEEKLY_BRIEF_DELIVERY || "disabled";
 
-  if (["disabled", "manual_demo", "webhook"].includes(mode)) {
+  if (["disabled", "manual_demo", "resend", "webhook"].includes(mode)) {
     pass("WEEKLY_BRIEF_DELIVERY mode is valid", mode);
   } else {
-    fail("WEEKLY_BRIEF_DELIVERY mode is valid", "Use disabled, manual_demo, or webhook.");
+    fail("WEEKLY_BRIEF_DELIVERY mode is valid", "Use disabled, manual_demo, resend, or webhook.");
   }
 
   optional("WEEKLY_BRIEF_FROM", process.env.WEEKLY_BRIEF_FROM || process.env.AUTH_EMAIL_FROM, "Set sender identity before real brief delivery.");
@@ -181,7 +187,13 @@ function checkWeeklyBrief() {
     warn("Weekly Brief task secret is configured", "Needed before scheduling delivery.");
   }
 
-  if (mode === "webhook" || shouldFailRequired()) {
+  if (mode === "resend") {
+    if (isSet(process.env.RESEND_API_KEY)) {
+      pass("RESEND_API_KEY is configured");
+    } else {
+      fail("RESEND_API_KEY is configured", "Required when Weekly Brief delivery uses Resend.");
+    }
+  } else if (mode === "webhook" || shouldFailRequired()) {
     if (isValidUrl(process.env.WEEKLY_BRIEF_WEBHOOK_URL)) {
       pass("WEEKLY_BRIEF_WEBHOOK_URL is configured", process.env.WEEKLY_BRIEF_WEBHOOK_URL);
     } else {

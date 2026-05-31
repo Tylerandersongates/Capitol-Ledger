@@ -3,6 +3,7 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
+import Image from "next/image";
 import Link from "next/link";
 import { Bell, CalendarClock, ChevronRight, FileText, Home, Sparkles, UserRound, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -86,7 +87,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     >
             <header className="mt-11 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/capitol-ledger-logo.png" alt="" className="h-12 w-12 rounded-full object-cover" />
+                <Image src="/capitol-ledger-logo.png" alt="" width={48} height={48} className="h-12 w-12 rounded-full object-cover" />
                 <div className="whitespace-nowrap text-[19px] font-semibold uppercase tracking-[0.24em] text-white">
                   Capitol <span className="text-brass">Ledger</span>
                 </div>

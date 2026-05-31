@@ -6,6 +6,9 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Added clear save-state UI feedback on official and bill profile star actions: users now see `Saved to your ledger` / `Removed from your ledger` confirmation chips immediately after tapping.
+- Confirmed the profile star action is wired to saved-ledger persistence (local + account sync path), so save/unsave behavior now has both visible UI feedback and data-state impact.
+- Began the official-profile polish pass (layout balance + score explanation + interaction clarity) as the active design iteration track after beta plumbing stabilized.
 - Tightened client-side hydration so account profile, party affiliation, gamification, and read-alert state reuse shared browser/account requests instead of asking the same API endpoints multiple times on one page.
 - Added `pnpm video-links:check` as a lightweight readiness check for the speech/video selling point, confirming bill video records, bill-detail rendering, subscription gating, and gamification hooks are still wired.
 - Confirmed speech/video links do not need a special Vercel environment variable in the current demo build. They ship from Capitol Ledger bill/video data and work once the latest code is deployed; live video ingestion remains a later data-expansion step.

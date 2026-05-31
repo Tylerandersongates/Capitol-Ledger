@@ -3,6 +3,7 @@ import { GamificationEventLink } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { MarkAlertRead } from "@/components/mark-alert-read";
 import { SaveAlertButton } from "@/components/saved-ledger-controls";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import {
@@ -13,7 +14,6 @@ import {
   FileText,
   Home,
   Landmark,
-  Search,
   UserCircle,
   UserRound
 } from "lucide-react";
@@ -57,7 +57,7 @@ export default function AlertDetailPage() {
                 <div className="absolute left-1/2 top-[118px] h-[138px] w-[236px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-rust/24" />
                 <div className="absolute inset-x-7 top-[118px] h-px bg-gradient-to-r from-transparent via-rust/45 to-transparent" />
                 <div className="absolute bottom-2 right-6 h-28 w-28 opacity-20">
-                  <img src="/capitol-ledger-logo.png" alt="" className="h-full w-full rounded-full object-cover" />
+                  <Image src="/capitol-ledger-logo.png" alt="" fill sizes="112px" className="rounded-full object-cover" />
                 </div>
                 <div className="absolute left-1/2 top-[118px] grid h-40 w-40 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#ffb12b]/10 shadow-[0_0_60px_rgba(255,177,43,0.35)]">
                   <Bell className="h-32 w-32 fill-[#ffbf39] stroke-[#ffe07a] drop-shadow-[0_0_18px_rgba(255,177,43,0.78)]" strokeWidth={1.2} aria-hidden="true" />

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Crown, LayoutDashboard, Map, Search, UserRound } from "lucide-react";
@@ -38,9 +39,11 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-brass/20 bg-vault/80 text-mist backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-normal">
-          <img
+          <Image
             src="/capitol-ledger-logo.png"
             alt=""
+            width={40}
+            height={40}
             className="h-10 w-10 rounded-md border border-brass/40 bg-ink object-cover shadow-glow"
           />
           <span className="hidden text-sm tracking-wide sm:inline sm:text-base">Capitol Ledger</span>

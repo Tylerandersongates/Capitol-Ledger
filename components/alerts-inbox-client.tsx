@@ -209,7 +209,7 @@ export function AlertsInboxClient({
       notifications.filter((notification) => {
         if (!notificationPreferences[notification.preference]) return false;
         if (activeFilter === "action") return notification.actionNeeded;
-        if (activeFilter === "unread") return isUnread(notification);
+        if (activeFilter === "unread") return notification.defaultUnread && !readIds.includes(notification.id);
         return true;
       }),
     [activeFilter, notificationPreferences, notifications, readIds]

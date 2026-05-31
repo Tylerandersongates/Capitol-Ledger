@@ -2,7 +2,17 @@
 
 ## Phase Roadmap
 
-### Phase 1: Web Beta Readiness - Current Focus
+### Phase Status Snapshot
+
+1. Phase 1: Web Beta Readiness - Baseline complete, now in maintenance mode.
+2. Phase 2: Account and Auth Stability - In progress.
+3. Phase 3: Design QA and Beta Polish - In progress (current UI iteration lane).
+4. Phase 4: Subscription Demo Integration - Ready after Phase 3 visual freeze.
+5. Phase 5: Core Civic Data Expansion - Planned.
+6. Phase 6: External Production Services - Planned.
+7. Phase 7: App Store and TestFlight - Planned.
+
+### Phase 1: Web Beta Readiness - Baseline Complete
 
 Goal: get Capitol Ledger deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
 
@@ -31,15 +41,15 @@ Current Phase 1 status:
 
 - GitHub has the initial Capitol Ledger app push on `main`.
 - Vercel deployments are now populating from the GitHub-connected project.
-- The latest design cleanup has darkened the shared mobile shell, simplified `/search`, shortened `/account`, and added a compact dashboard entry point for Weekly Brief; push/redeploy is needed before the Vercel beta reflects those changes.
+- The latest design cleanup has darkened the shared mobile shell, simplified `/search`, shortened `/account`, and added a compact dashboard entry point for Weekly Brief.
 - A light performance pass removed duplicate account/profile, gamification, and read-alert hydration paths. No active polling loops were found in the current mobile flow.
 - Speech/video links are wired for the current demo through bill video data, bill detail cards, subscription gating, and gamification. Use `pnpm video-links:check` before demos; no Vercel video-link key is required yet.
 - The first beta tester states are now supported in the demo data and onboarding flow: California, Massachusetts, New York, and Texas.
 - Account creation now captures first name and last name separately for cleaner tester export and future customer records.
 - Search category views now show the fuller list for Bills, Officials, and Votes instead of only preview cards.
-- Vercel production build now needs the latest push with `prisma generate` in the build script before production account creation is retested.
+- Vercel production build path includes `prisma generate`, resolving prior Prisma-client deployment mismatches.
 - Local `beta:check` passes the file and core environment checks.
-- The next Phase 1 step is the deployed smoke test: open the Vercel URL, submit one `/feedback` report, and confirm it appears in `/feedback/review`.
+- Phase 1 ongoing maintenance step: run a deployed smoke test after each major push (submit one `/feedback` report and confirm visibility in `/feedback/review`).
 - Local `.env.local` can stay pointed at the local preview; Vercel owns the deployed `NEXT_PUBLIC_APP_URL` value.
 - The database-backed `beta:triage` check should be run from the normal Terminal against Neon because the Codex sandbox can hit local Prisma engine restrictions.
 

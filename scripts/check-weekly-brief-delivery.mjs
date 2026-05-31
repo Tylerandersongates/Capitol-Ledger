@@ -1,4 +1,4 @@
-const allowedDeliveryModes = new Set(["disabled", "manual_demo", "webhook"]);
+const allowedDeliveryModes = new Set(["disabled", "manual_demo", "resend", "webhook"]);
 const deliveryMode = process.env.WEEKLY_BRIEF_DELIVERY || "disabled";
 const requireProvider = process.env.WEEKLY_BRIEF_REQUIRE_PROVIDER === "true";
 const results = [];
@@ -66,11 +66,16 @@ function checkAppUrl() {
 
 function checkDeliveryMode() {
   if (!allowedDeliveryModes.has(deliveryMode)) {
-    fail("WEEKLY_BRIEF_DELIVERY mode is valid", "Use disabled, manual_demo, or webhook.");
+    fail("WEEKLY_BRIEF_DELIVERY mode is valid", "Use disabled, manual_demo, resend, or webhook.");
     return;
   }
 
   pass("WEEKLY_BRIEF_DELIVERY mode is valid", deliveryMode);
+
+  if (deliveryMode === "resend") {
+    checkResend();
+    return;
+  }
 
   if (deliveryMode === "webhook") {
     checkWebhook();
@@ -78,7 +83,7 @@ function checkDeliveryMode() {
   }
 
   if (requireProvider) {
-    fail("Weekly Brief provider is connected", "Set WEEKLY_BRIEF_DELIVERY=webhook and configure WEEKLY_BRIEF_WEBHOOK_URL.");
+    fail("Weekly Brief provider is connected", "Set WEEKLY_BRIEF_DELIVERY=resend (with RESEND_API_KEY) or webhook (with WEEKLY_BRIEF_WEBHOOK_URL).");
   } else {
     warn(
       "Weekly Brief provider is connected",
@@ -86,6 +91,14 @@ function checkDeliveryMode() {
         ? "Manual demo mode will queue records but will not send real email or push."
         : "Delivery is disabled; queued/sent provider behavior will not run until a provider is connected."
     );
+  }
+}
+
+function checkResend() {
+  if (isUsableSecret(process.env.RESEND_API_KEY)) {
+    pass("RESEND_API_KEY is configured");
+  } else {
+    fail("RESEND_API_KEY is configured", "Resend delivery mode requires a valid API key.");
   }
 }
 

@@ -49,7 +49,7 @@ export default async function WeeklyBriefPage() {
         </MobileCard>
 
         <MobileCard variant="dashboard" className="px-5 py-5">
-          <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">This Week's Civic Lens</div>
+          <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">This Week&apos;s Civic Lens</div>
           <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.lens.headline}</h2>
           <p className="mt-3 text-[16px] leading-snug text-white/62">{brief.lens.body}</p>
           <div className="mt-5 space-y-3">

@@ -2,6 +2,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { getWeeklyBriefForUser } from "@/lib/weekly-brief";
 import { buildWeeklyBriefDeliveryInput } from "@/lib/weekly-brief-history";
 import { writeWeeklyBriefDeliveryToDatabase } from "@/lib/account-database";
+import { sendEmailWithResend } from "@/lib/resend-email";
 import type { AuthUser } from "@/lib/auth-database";
 import type { WeeklyBriefSnapshot } from "@/lib/weekly-brief";
 import type { WeeklyBriefDeliveryStatus } from "@/lib/weekly-brief-history";
@@ -29,7 +30,7 @@ type WeeklyBriefWebhookPayload = {
 
 type DeliveryProviderResult =
   | { delivered: false; mode: "disabled" | "manual_demo" }
-  | { delivered: true; mode: "webhook" };
+  | { delivered: true; mode: "resend" | "webhook" };
 
 export type WeeklyBriefDeliveryRunResult = {
   configured: boolean;
@@ -103,6 +104,20 @@ function buildWebhookPayload({ brief, user }: { brief: WeeklyBriefSnapshot; user
 
 async function deliverWeeklyBrief({ brief, user }: { brief: WeeklyBriefSnapshot; user: AuthUser }): Promise<DeliveryProviderResult> {
   const deliveryMode = process.env.WEEKLY_BRIEF_DELIVERY;
+
+  if (deliveryMode === "resend") {
+    const from = sender();
+    if (!from) throw new Error("WEEKLY_BRIEF_FROM or AUTH_EMAIL_FROM is required when WEEKLY_BRIEF_DELIVERY=resend.");
+
+    await sendEmailWithResend({
+      from,
+      subject: `${appName()} Weekly Civic Brief`,
+      text: buildWeeklyBriefText(brief),
+      to: user.email
+    });
+
+    return { delivered: true, mode: "resend" };
+  }
 
   if (deliveryMode !== "webhook") {
     return {

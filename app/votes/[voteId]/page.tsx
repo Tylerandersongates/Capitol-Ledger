@@ -1,12 +1,12 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { GamificationEventAnchor, RecordGamificationEvent } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Bell,
-  CalendarDays,
   CheckCircle2,
   ChevronRight,
   ExternalLink,
@@ -148,7 +148,7 @@ export default function VoteDetailPage({ params }: VotePageProps) {
 
               return (
                 <Link key={record.member.bioguideId} href={`/members/${record.member.bioguideId}`} className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4">
-                  {record.member.photoUrl ? <img src={record.member.photoUrl} alt="" className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
+                  {record.member.photoUrl ? <Image src={record.member.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
                   <span className="min-w-0">
                     <span className="block truncate text-[16px] font-semibold text-white">{record.member.fullName}</span>
                     <span className="mt-1 block text-[13px] text-white/52">{record.member.state} · {record.member.party}</span>
