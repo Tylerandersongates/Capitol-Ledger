@@ -17,8 +17,10 @@ type SearchSuggestion = {
 type DiscoverySearchFormProps = {
   activeType: string;
   chamber?: string;
+  focus?: string;
   party?: string;
   query: string;
+  status?: string;
   state?: string;
 };
 
@@ -28,7 +30,7 @@ const suggestionKindLabel: Record<SuggestionKind, string> = {
   votes: "Vote"
 };
 
-export function DiscoverySearchForm({ activeType, chamber, party, query, state }: DiscoverySearchFormProps) {
+export function DiscoverySearchForm({ activeType, chamber, focus, party, query, status, state }: DiscoverySearchFormProps) {
   const [inputValue, setInputValue] = useState(query);
   const [isFocused, setIsFocused] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -122,6 +124,8 @@ export function DiscoverySearchForm({ activeType, chamber, party, query, state }
           spellCheck={false}
         />
         <input type="hidden" name="type" value={activeType} />
+        {focus ? <input type="hidden" name="focus" value={focus} /> : null}
+        {status ? <input type="hidden" name="status" value={status} /> : null}
         {chamber ? <input type="hidden" name="chamber" value={chamber} /> : null}
         {party ? <input type="hidden" name="party" value={party} /> : null}
         {state ? <input type="hidden" name="state" value={state} /> : null}

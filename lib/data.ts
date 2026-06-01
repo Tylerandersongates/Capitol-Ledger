@@ -9,6 +9,7 @@ import type { Bill, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLi
 
 export type SearchFilters = {
   q?: string;
+  status?: string;
   chamber?: string;
   party?: string;
   state?: string;
@@ -872,6 +873,22 @@ export function getBillStatus(bill: Bill) {
   return "In Progress";
 }
 
+type BillStatusFilter = "passed" | "in-committee" | "in-progress";
+
+function normalizeBillStatusFilter(value?: string): BillStatusFilter | undefined {
+  if (!value) return undefined;
+  if (value === "passed" || value === "in-committee" || value === "in-progress") return value;
+  return undefined;
+}
+
+function matchesBillStatusFilter(bill: Bill, filter?: BillStatusFilter) {
+  if (!filter) return true;
+  const status = getBillStatus(bill);
+  if (filter === "passed") return status === "Passed" || status === "Enacted";
+  if (filter === "in-committee") return status === "In Committee";
+  return status === "In Progress" || status === "On Floor";
+}
+
 export function getVoteTotals(vote?: Vote) {
   if (!vote) {
     return {
@@ -989,6 +1006,7 @@ export function getRecentUpdates() {
 
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
+  const statusFilter = normalizeBillStatusFilter(filters.status);
   const chamber = filters.chamber as Chamber | undefined;
   const party = filters.party as Party | undefined;
   const state = filters.state?.toUpperCase();
@@ -1017,6 +1035,7 @@ export function searchRecords(filters: SearchFilters) {
           ) {
             return false;
           }
+          if (!matchesBillStatusFilter(bill, statusFilter)) return false;
           return true;
         })
       : [];
@@ -1043,6 +1062,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
   try {
     const prisma = getPrisma();
     const q = filters.q?.trim();
+    const statusFilter = normalizeBillStatusFilter(filters.status);
     const chamber = filters.chamber && filters.chamber in filterChamberMap ? filterChamberMap[filters.chamber as Chamber] : undefined;
     const party = filters.party && filters.party in filterPartyMap ? filterPartyMap[filters.party as Party] : undefined;
     const state = filters.state?.toUpperCase();
@@ -1119,8 +1139,10 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
         : Promise.resolve([])
     ]);
 
+    const mappedBills = billRows.map(mapDatabaseBill);
+
     return {
-      bills: billRows.map(mapDatabaseBill),
+      bills: statusFilter ? mappedBills.filter((bill) => matchesBillStatusFilter(bill, statusFilter)) : mappedBills,
       members: memberRows.map(mapDatabaseMember),
       votes: voteRows.map(mapDatabaseVote)
     };

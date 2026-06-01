@@ -308,6 +308,37 @@ function normalizeTab(tab?: string): MemberTab {
   return tab === "votes" || tab === "bills" || tab === "committees" || tab === "finance" ? tab : "overview";
 }
 
+function sanitizeNameSegment(value: string) {
+  return value
+    .replace(/\[[^\]]+\]/g, " ")
+    .replace(/\b(?:Sen|Rep)\.\s*/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanMemberDisplayName(member: Member) {
+  const first = sanitizeNameSegment(member.firstName?.trim() ?? "");
+  const last = sanitizeNameSegment(member.lastName?.trim() ?? "");
+  const canonical = `${first} ${last}`.replace(/\s+/g, " ").trim();
+  if (canonical) return canonical;
+
+  return sanitizeNameSegment(member.fullName);
+}
+
+function memberDisplayNameClass(displayName: string) {
+  const length = displayName.length;
+  if (length >= 34) return "text-[24px] leading-[1.12]";
+  if (length >= 26) return "text-[26px] leading-[1.12]";
+  if (length >= 20) return "text-[28px] leading-[1.14]";
+  return "text-[30px] leading-tight";
+}
+
+function memberSeatTag(member: Member) {
+  const partyCode = member.party.trim().charAt(0).toUpperCase() || "U";
+  const districtCode = member.district ? `-${member.district}` : "";
+  return `[${partyCode}-${member.state}${districtCode}]`;
+}
+
 function tabHref(bioguideId: string, tab: MemberTab) {
   return tab === "overview" ? `/members/${bioguideId}` : `/members/${bioguideId}?tab=${tab}`;
 }
@@ -381,9 +412,11 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
     sponsoredBills
   });
   const role = member.chamber === "Senate" ? "Senator" : "Representative";
-  const displayName = member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "");
+  const displayName = cleanMemberDisplayName(member);
+  const displayNameClass = memberDisplayNameClass(displayName);
   const state = stateNames[member.state] ?? member.state;
   const districtLabel = member.district ? `${state} District ${member.district}` : state;
+  const seatTag = memberSeatTag(member);
   const nextElectionDate = member.nextElectionDate ?? fallbackNextElectionDate(member.chamber);
   const nextElection = formatDate(nextElectionDate);
   const firstElectedDate = member.firstElectedDate;
@@ -413,27 +446,24 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
               </div>
             </header>
 
-            <section className="mt-8 grid grid-cols-[150px_1fr] items-center gap-6">
+            <section className="mt-8 grid grid-cols-[144px_minmax(0,1fr)] items-start gap-6">
               <Image
                 src={member.photoUrl ?? "/capitol-ledger-logo.png"}
                 alt=""
                 width={144}
                 height={144}
-                className="h-36 w-36 rounded-full border-2 border-[#ffb12b] object-cover shadow-[0_0_38px_rgba(255,177,43,0.15)]"
+                className="h-36 w-36 self-start rounded-full border-2 border-[#ffb12b] object-cover shadow-[0_0_38px_rgba(255,177,43,0.15)]"
               />
-              <div>
+              <div className="min-w-0">
                 <div className="text-[20px] font-medium text-[#ffb12b]">{role}</div>
-                <h1 className="mt-3 text-[30px] font-medium leading-tight text-white">{displayName}</h1>
-                <p className="mt-3 text-[20px] leading-snug text-white/68">
-                  United States {role}
-                  <br />
-                  from {districtLabel}
+                <h1 className={`mt-3 break-words font-medium text-white ${displayNameClass}`}>{displayName}</h1>
+                <p className="mt-3 break-words text-[20px] leading-snug text-white/68">
+                  U.S. {role} {districtLabel} {seatTag}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span className="inline-flex rounded-xl bg-civic/35 px-4 py-2 text-[15px] text-blue-100">{member.party}</span>
                   <MemberEmailAction bioguideId={member.bioguideId} chamber={member.chamber} memberName={displayName} />
                 </div>
-                <CaucusRoleRail caucusMemberships={caucusMemberships} memberId={member.bioguideId} />
               </div>
             </section>
 
@@ -520,45 +550,6 @@ function ElectionProfileStat({ firstElected, nextElection }: { firstElected: str
           <div className="text-[13px] uppercase tracking-[0.06em] text-white/52">Next Election</div>
           <div className="mt-2 text-[17px] font-semibold leading-tight text-white">{nextElection}</div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function CaucusRoleRail({ caucusMemberships, memberId }: { caucusMemberships: MemberCaucusMembership[]; memberId: string }) {
-  if (!caucusMemberships.length) return null;
-
-  const leadershipRoles = caucusMemberships
-    .filter((membership) => membership.role !== "Member")
-    .concat(caucusMemberships.filter((membership) => membership.role === "Member"))
-    .slice(0, 3);
-  const remainingCount = Math.max(0, caucusMemberships.length - leadershipRoles.length);
-
-  return (
-    <div className="mt-4 max-w-full">
-      <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/40">Caucus roles</div>
-      <div className="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {leadershipRoles.map((membership) => (
-          <a
-            key={`${membership.caucusName}-${membership.role}`}
-            href={membership.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="min-w-[145px] max-w-[172px] shrink-0 rounded-2xl border border-[#ffb12b]/25 bg-[#ffb12b]/8 px-3 py-2"
-            title={`${membership.role}, ${membership.caucusName}`}
-          >
-            <span className="block truncate text-[12px] font-medium text-[#ffb12b]">{membership.role}</span>
-            <span className="mt-0.5 block truncate text-[12px] leading-tight text-white/70">{membership.caucusName}</span>
-          </a>
-        ))}
-        {remainingCount ? (
-          <Link
-            href={`/members/${memberId}?tab=committees`}
-            className="grid min-w-[76px] shrink-0 place-items-center rounded-2xl border border-white/12 bg-white/6 px-3 py-2 text-center text-[12px] font-medium text-white/64"
-          >
-            +{remainingCount} more
-          </Link>
-        ) : null}
       </div>
     </div>
   );
@@ -940,6 +931,28 @@ function CommitteesTab({
 
   return (
     <>
+      {committees.length ? (
+        <MobileCard variant="rust" className="px-6 py-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[23px] font-medium">Committee Activity</h2>
+            <span className="rounded-full bg-white/8 px-3 py-2 text-[13px] font-medium text-white/56">Linked bills</span>
+          </div>
+          <div className="mt-5 divide-y divide-white/10">
+            {committees.map((committee) => (
+              <div key={committee} className="grid grid-cols-[34px_1fr] gap-4 py-4">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-[#ffb12b]/10 text-[#ffb12b]">
+                  <Landmark className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="text-[18px] font-medium leading-tight text-white">{committee}</div>
+                  <div className="mt-2 text-[14px] leading-snug text-white/54">Connected through sponsored or cosponsored bill activity.</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </MobileCard>
+      ) : null}
+
       {caucusMemberships.length ? (
         <MobileCard variant="rust" className="px-6 py-6">
           <div className="flex items-center justify-between gap-4">
@@ -966,28 +979,6 @@ function CommitteesTab({
                   <ExternalLink className="h-4 w-4 text-white/34" strokeWidth={1.8} aria-hidden="true" />
                 </div>
               </a>
-            ))}
-          </div>
-        </MobileCard>
-      ) : null}
-
-      {committees.length ? (
-        <MobileCard variant="rust" className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[23px] font-medium">Committee Activity</h2>
-            <span className="rounded-full bg-white/8 px-3 py-2 text-[13px] font-medium text-white/56">Linked bills</span>
-          </div>
-          <div className="mt-5 divide-y divide-white/10">
-            {committees.map((committee) => (
-              <div key={committee} className="grid grid-cols-[34px_1fr] gap-4 py-4">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-[#ffb12b]/10 text-[#ffb12b]">
-                  <Landmark className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-[18px] font-medium leading-tight text-white">{committee}</div>
-                  <div className="mt-2 text-[14px] leading-snug text-white/54">Connected through sponsored or cosponsored bill activity.</div>
-                </div>
-              </div>
             ))}
           </div>
         </MobileCard>
