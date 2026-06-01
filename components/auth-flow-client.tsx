@@ -112,7 +112,17 @@ async function postJson<T>(url: string, body: unknown) {
   };
 }
 
-export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verifyToken = "" }: { resetToken?: string; returnTo?: string; verifyToken?: string }) {
+export function AuthFlowClient({
+  allowDemoMode = false,
+  resetToken = "",
+  returnTo = "/dashboard",
+  verifyToken = ""
+}: {
+  allowDemoMode?: boolean;
+  resetToken?: string;
+  returnTo?: string;
+  verifyToken?: string;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(resetToken ? "reset" : verifyToken ? "verify" : "signIn");
   const [form, setForm] = useState<AuthFormState>(defaultForm);
@@ -136,7 +146,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
     if (mode === "create") return "Set up a secure profile for district alerts, saved records, subscriptions, and civic impact.";
     if (mode === "forgot") return "Enter your email and we will prepare a password reset path for the production account system.";
     if (mode === "reset") return "Choose a new password for your Capitol Ledger account.";
-    if (mode === "verify") return `Enter the demo verification code sent to ${form.email || "your email"}.`;
+    if (mode === "verify") return `Open the secure verification link sent to ${form.email || "your email"}, or paste the link token below.`;
     if (mode === "success") return "Your demo account state is ready to carry saved records into onboarding.";
     return "Track representatives, bills, alerts, and civic impact with a secure profile.";
   }, [form.email, mode]);
@@ -233,6 +243,11 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
   }
 
   async function startDemoAccount(href = returnTo) {
+    if (!allowDemoMode) {
+      setStatus("Demo mode is disabled for this deployment.");
+      return;
+    }
+
     setPending(true);
     setStatus("Starting demo mode...");
 
@@ -283,7 +298,7 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       setPending(false);
 
       if (!result.ok) {
-        setStatus(result.data.error ?? "Production sign-in is not configured yet. Use demo mode for investor walkthroughs.");
+        setStatus(result.data.error ?? "Production sign-in is not configured yet.");
         return;
       }
 
@@ -344,11 +359,13 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
       setMode("verify");
       const authData = result.data as AuthApiResponse;
       setStatus(
-        authData.emailDelivery === "webhook"
-          ? "Verification link sent."
-          : authData.verificationLink
-            ? `Verification prepared. Demo link: ${authData.verificationLink}`
-            : "Verification prepared. Use 1234 for this demo build."
+        authData.emailDelivery === "resend"
+          ? "Verification email sent. Open the secure link in your inbox to continue."
+          : authData.emailDelivery === "webhook"
+            ? "Verification link sent."
+            : authData.verificationLink
+              ? `Verification prepared. Open this link: ${authData.verificationLink}`
+              : "Verification prepared. Open the secure verification link to continue."
       );
       return;
     }
@@ -409,13 +426,14 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
     }
 
     if (mode === "verify") {
-      if (form.code.trim().length < 4) {
-        setStatus("Enter the 4 digit demo code.");
+      const token = form.code.trim();
+      if (!token) {
+        setStatus("Open the verification link from your email, or paste its token.");
         return;
       }
       setPending(true);
       const result = await postJson<{ error?: string; verified?: boolean }>("/api/auth/verify-email", {
-        code: form.code
+        token
       }).catch((error: unknown) => ({
         data: { error: error instanceof Error ? error.message : "Verification failed." },
         ok: false
@@ -507,7 +525,14 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
           ) : null}
 
           {mode === "verify" ? (
-            <Field icon={<ShieldCheck />} label="Verification code" type="text" placeholder="1234" value={form.code} onChange={(value) => updateField("code", value)} />
+            <Field
+              icon={<ShieldCheck />}
+              label="Verification token"
+              type="text"
+              placeholder="Paste token from your email link"
+              value={form.code}
+              onChange={(value) => updateField("code", value)}
+            />
           ) : null}
 
           {mode === "signIn" ? (
@@ -542,7 +567,11 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
             <div className="rounded-2xl border border-[#43ed74]/25 bg-[#43ed74]/10 p-4 text-center">
               <CheckCircle2 className="mx-auto h-9 w-9 text-[#43ed74]" strokeWidth={1.9} aria-hidden="true" />
               <div className="mt-3 text-[18px] font-semibold text-white">Verification complete</div>
-              <p className="mt-2 text-[14px] leading-snug text-white/58">Finish district setup or jump into the demo dashboard with your saved records synced.</p>
+              <p className="mt-2 text-[14px] leading-snug text-white/58">
+                {allowDemoMode
+                  ? "Finish district setup or jump into the demo dashboard with your saved records synced."
+                  : "Finish district setup or open your dashboard with your saved records synced."}
+              </p>
             </div>
           ) : null}
 
@@ -602,27 +631,40 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
           </button>
         ) : null}
 
-        <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
-          <button
-            type="button"
-            onClick={() => void startDemoAccount(returnTo)}
-            disabled={pending}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
-          >
-            <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-            Face ID
-          </button>
-          {(!accountCreated || allowAccountCreation) ? (
+        {allowDemoMode ? (
+          <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
+            <button
+              type="button"
+              onClick={() => void startDemoAccount(returnTo)}
+              disabled={pending}
+              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
+            >
+              <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+              Face ID
+            </button>
+            {(!accountCreated || allowAccountCreation) ? (
+              <button
+                type="button"
+                onClick={() => selectMode("create")}
+                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
+              >
+                <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                New account
+              </button>
+            ) : null}
+          </div>
+        ) : (!accountCreated || allowAccountCreation) ? (
+          <div className="mt-5">
             <button
               type="button"
               onClick={() => selectMode("create")}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
             >
               <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
               New account
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </MobileCard>
 
       <MobileCard className="mt-5 px-5 py-5">
@@ -642,14 +684,16 @@ export function AuthFlowClient({ resetToken = "", returnTo = "/dashboard", verif
         </div>
       </MobileCard>
 
-      <div className="mt-6 flex flex-col items-center gap-3 text-center">
-        <button type="button" onClick={() => void startDemoAccount(returnTo)} disabled={pending} className="text-[15px] font-semibold text-[#ffb12b] disabled:opacity-60">
-          Continue in demo mode
-        </button>
-        <p className="max-w-xs text-[12px] leading-5 text-white/38">
-          Demo mode starts an account session and syncs browser-saved records for investor walkthroughs.
-        </p>
-      </div>
+      {allowDemoMode ? (
+        <div className="mt-6 flex flex-col items-center gap-3 text-center">
+          <button type="button" onClick={() => void startDemoAccount(returnTo)} disabled={pending} className="text-[15px] font-semibold text-[#ffb12b] disabled:opacity-60">
+            Continue in demo mode
+          </button>
+          <p className="max-w-xs text-[12px] leading-5 text-white/38">
+            Demo mode starts an account session and syncs browser-saved records for investor walkthroughs.
+          </p>
+        </div>
+      ) : null}
     </main>
   );
 }

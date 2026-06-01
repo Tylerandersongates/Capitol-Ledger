@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function SignInPage({ searchParams }: { searchParams?: { resetToken?: string; returnTo?: string; verifyToken?: string } }) {
   const returnTo = safeReturnPath(searchParams?.returnTo, "/dashboard");
+  const allowDemoMode = process.env.AUTH_DEMO_ENABLED === "true" && !process.env.VERCEL_ENV;
 
   return (
     <MobileShell
@@ -19,12 +20,19 @@ export default function SignInPage({ searchParams }: { searchParams?: { resetTok
               <Link href="/" className={mobileIconButtonClass} aria-label="Back to homepage">
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
               </Link>
-              <DemoAccountButton href={returnTo} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[14px] font-semibold text-white/60">
-                Demo
-              </DemoAccountButton>
+              {allowDemoMode ? (
+                <DemoAccountButton href={returnTo} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[14px] font-semibold text-white/60">
+                  Demo
+                </DemoAccountButton>
+              ) : null}
             </header>
 
-            <AuthFlowClient resetToken={searchParams?.resetToken} returnTo={returnTo} verifyToken={searchParams?.verifyToken} />
+            <AuthFlowClient
+              allowDemoMode={allowDemoMode}
+              resetToken={searchParams?.resetToken}
+              returnTo={returnTo}
+              verifyToken={searchParams?.verifyToken}
+            />
 
             <div className="mx-auto mb-4 mt-7 h-1.5 w-36 rounded-full bg-white/82" />
     </MobileShell>
