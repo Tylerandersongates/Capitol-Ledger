@@ -114,22 +114,24 @@ async function postJson<T>(url: string, body: unknown) {
 
 export function AuthFlowClient({
   allowDemoMode = false,
+  initialMode,
   resetToken = "",
   returnTo = "/dashboard",
   verifyToken = ""
 }: {
   allowDemoMode?: boolean;
+  initialMode?: AuthMode;
   resetToken?: string;
   returnTo?: string;
   verifyToken?: string;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>(resetToken ? "reset" : verifyToken ? "verify" : "signIn");
+  const [mode, setMode] = useState<AuthMode>(resetToken ? "reset" : verifyToken ? "verify" : initialMode ?? "signIn");
   const [form, setForm] = useState<AuthFormState>(defaultForm);
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
-  const [allowAccountCreation, setAllowAccountCreation] = useState(false);
+  const [allowAccountCreation, setAllowAccountCreation] = useState(initialMode === "create");
   const [showPassword, setShowPassword] = useState(false);
   const [verificationHandled, setVerificationHandled] = useState(false);
 

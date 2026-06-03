@@ -6,8 +6,9 @@ import { safeReturnPath } from "@/lib/route-guards";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function SignInPage({ searchParams }: { searchParams?: { resetToken?: string; returnTo?: string; verifyToken?: string } }) {
-  const returnTo = safeReturnPath(searchParams?.returnTo, "/dashboard");
+export default function SignInPage({ searchParams }: { searchParams?: { mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
+  const initialMode = searchParams?.mode === "create" ? "create" : undefined;
+  const returnTo = safeReturnPath(searchParams?.returnTo, initialMode === "create" ? "/onboarding" : "/dashboard");
   const allowDemoMode = process.env.AUTH_DEMO_ENABLED === "true" && !process.env.VERCEL_ENV;
 
   return (
@@ -29,6 +30,7 @@ export default function SignInPage({ searchParams }: { searchParams?: { resetTok
 
             <AuthFlowClient
               allowDemoMode={allowDemoMode}
+              initialMode={initialMode}
               resetToken={searchParams?.resetToken}
               returnTo={returnTo}
               verifyToken={searchParams?.verifyToken}
