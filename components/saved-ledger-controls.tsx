@@ -314,7 +314,7 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
   useEffect(() => {
     function refreshInterests() {
       const storedState = readIssueInterestsState();
-      const initial = storedState.hasStoredValue ? storedState.interests : interests.slice(0, 4);
+      const initial = storedState.hasStoredValue ? storedState.interests : [];
 
       setSelected(initial);
       if (!storedState.hasStoredValue) writeJson(interestsKey, initial);
@@ -400,7 +400,7 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
           <span>{selected.length} selected</span>
           {editing ? (
             <button type="button" onClick={resetInterests} className="font-medium text-[#ffb12b]">
-              Reset demo interests
+              Reset interests
             </button>
           ) : (
             <span>Saved to your civic ledger</span>

@@ -198,7 +198,7 @@ function readIssueInterestsForSetup() {
 export function AccountDistrictDisplay() {
   const district = useDistrictProfile();
 
-  return <p className="mt-2 text-[17px] text-white/52">{district.districtLabel}</p>;
+  return <p className="mt-2 text-[17px] text-white/52">{district.districtCode ? district.districtLabel : "Choose your district"}</p>;
 }
 
 export function AccountDistrictSettingRow() {
@@ -211,7 +211,7 @@ export function AccountDistrictSettingRow() {
       </span>
       <span className="min-w-0">
         <span className="block text-[16px] font-semibold text-white">District</span>
-        <span className="mt-1 block truncate text-[13px] text-white/52">{district.districtLabel}</span>
+        <span className="mt-1 block truncate text-[13px] text-white/52">{district.districtCode ? district.districtLabel : "Choose your district"}</span>
       </span>
       <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
     </Link>
@@ -271,7 +271,7 @@ export function OnboardingDistrictSetup() {
             <div className="mt-1 truncate text-[13px] text-white/56">City, demo ZIP, or district code</div>
           </div>
           <span className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[11px] font-semibold text-[#74f49a]">
-            {matchedDistrict.districtCode}
+            {matchedDistrict.districtCode || "Not set"}
           </span>
         </div>
 
@@ -310,18 +310,30 @@ export function OnboardingDistrictSetup() {
         ) : null}
 
         <div className="mt-4 border-t border-white/8 pt-4">
-          <div className="grid min-h-[84px] grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#43ed74]/24 bg-[linear-gradient(180deg,rgba(38,169,92,0.15)_0%,rgba(7,42,49,0.46)_100%)] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.24)]">
-            <span className="grid h-8 w-8 place-items-center rounded-full border border-[#43ed74]/28 bg-[#43ed74]/12 text-[#43ed74]">
-              <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[15px] font-semibold text-white">District matched</div>
-              <div className="mt-1 truncate text-[13px] text-white/58">{matchedDistrict.districtLabel}</div>
+          {matchedDistrict.districtCode ? (
+            <div className="grid min-h-[84px] grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#43ed74]/24 bg-[linear-gradient(180deg,rgba(38,169,92,0.15)_0%,rgba(7,42,49,0.46)_100%)] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.24)]">
+              <span className="grid h-8 w-8 place-items-center rounded-full border border-[#43ed74]/28 bg-[#43ed74]/12 text-[#43ed74]">
+                <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold text-white">District matched</div>
+                <div className="mt-1 truncate text-[13px] text-white/58">{matchedDistrict.districtLabel}</div>
+              </div>
+              <Link href={`/search?type=members&state=${matchedStateCode}&focus=results`} className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
+                Officials
+              </Link>
             </div>
-            <Link href={`/search?type=members&state=${matchedStateCode}&focus=results`} className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-              Officials
-            </Link>
-          </div>
+          ) : (
+            <div className="grid min-h-[84px] grid-cols-[34px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(1,8,24,0.2)]">
+              <span className="grid h-8 w-8 place-items-center rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
+                <MapPin className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold text-white">Choose your district</div>
+                <div className="mt-1 truncate text-[13px] text-white/58">Enter a city, demo ZIP, or district code to begin.</div>
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </>
@@ -330,8 +342,17 @@ export function OnboardingDistrictSetup() {
 
 export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
   const district = useDistrictProfile();
-  const officials = getMatchedOfficials(members, district.districtCode).slice(0, 4);
-  const stateCode = district.districtCode?.slice(0, 2) ?? "TX";
+  const hasDistrict = Boolean(district.districtCode);
+  const officials = hasDistrict ? getMatchedOfficials(members, district.districtCode).slice(0, 4) : [];
+  const stateCode = district.districtCode?.slice(0, 2) ?? "";
+
+  if (!hasDistrict) {
+    return (
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] leading-snug text-white/56">
+        Match your district first to see the officials tied to your profile.
+      </div>
+    );
+  }
 
   return (
     <div className="mt-5 divide-y divide-white/8">
@@ -367,7 +388,7 @@ function useSetupMetrics(members: Member[]) {
   const [issueCount, setIssueCount] = useState(0);
   const [enabledAlertCount, setEnabledAlertCount] = useState(0);
 
-  const officialsCount = getMatchedOfficials(members, district.districtCode).length;
+  const officialsCount = district.districtCode ? getMatchedOfficials(members, district.districtCode).length : 0;
 
   useEffect(() => {
     function refreshSetupSignals() {
@@ -468,7 +489,7 @@ export function OnboardingSetupFlow({ members }: { members: Member[] }) {
           <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Profile readiness</h2>
         </div>
         <span className="mt-1 shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-          {district.districtCode}
+          {district.districtCode || "Setup"}
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2.5">

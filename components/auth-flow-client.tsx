@@ -16,7 +16,7 @@ import {
   UserRound
 } from "lucide-react";
 import { MobileCard } from "@/components/mobile-ui";
-import { readLocalAccountProfile } from "@/lib/browser-account-profile";
+import { readLocalAccountProfile, resetLocalAccountSetupState } from "@/lib/browser-account-profile";
 import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
@@ -149,7 +149,7 @@ export function AuthFlowClient({
     if (mode === "forgot") return "Enter your email and we will prepare a password reset path for the production account system.";
     if (mode === "reset") return "Choose a new password for your Capitol Ledger account.";
     if (mode === "verify") return `Open the secure verification link sent to ${form.email || "your email"}, or paste the link token below.`;
-    if (mode === "success") return "Your demo account state is ready to carry saved records into onboarding.";
+    if (mode === "success") return "Your account is ready for first-run district setup.";
     return "Track representatives, bills, alerts, and civic impact with a secure profile.";
   }, [form.email, mode]);
 
@@ -184,7 +184,7 @@ export function AuthFlowClient({
         markBrowserAccountCreated();
         setBrowserSessionAuthenticated(true);
         setAccountCreated(true);
-        await syncLocalAccountData();
+        await prepareFreshAccountSetup();
         setMode("success");
         setStatus("Verified.");
       })
@@ -245,6 +245,18 @@ export function AuthFlowClient({
     }).catch(() => null);
   }
 
+  async function prepareFreshAccountSetup() {
+    resetLocalAccountSetupState();
+
+    await fetch("/api/account/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(readLocalAccountProfile())
+    }).catch(() => null);
+  }
+
   async function startDemoAccount(href = returnTo) {
     if (!allowDemoMode) {
       setStatus("Demo mode is disabled for this deployment.");
@@ -275,8 +287,8 @@ export function AuthFlowClient({
     router.refresh();
   }
 
-  async function finishProductionAuth(href = returnTo) {
-    await syncLocalAccountData();
+  async function finishProductionAuth(href = returnTo, syncLocalData = true) {
+    if (syncLocalData) await syncLocalAccountData();
     router.push(href);
     router.refresh();
   }
@@ -357,11 +369,11 @@ export function AuthFlowClient({
         return;
       }
 
+      resetLocalAccountSetupState();
       markBrowserAccountCreated();
       setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
-      await syncLocalAccountData();
       setMode("verify");
       const authData = result.data as AuthApiResponse;
       setStatus(
@@ -455,7 +467,7 @@ export function AuthFlowClient({
       markBrowserAccountCreated();
       setBrowserSessionAuthenticated(true);
       setAccountCreated(true);
-      await syncLocalAccountData();
+      await prepareFreshAccountSetup();
       setMode("success");
       setStatus("Verified.");
     }
@@ -588,8 +600,8 @@ export function AuthFlowClient({
               <div className="mt-3 text-[18px] font-semibold text-white">Verification complete</div>
               <p className="mt-2 text-[14px] leading-snug text-white/58">
                 {allowDemoMode
-                  ? "Finish district setup or jump into the demo dashboard with your saved records synced."
-                  : "Finish district setup or open your dashboard with your saved records synced."}
+                  ? "Finish district setup or jump into the demo dashboard."
+                  : "Finish district setup or open your dashboard."}
               </p>
             </div>
           ) : null}
@@ -604,7 +616,7 @@ export function AuthFlowClient({
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => void finishProductionAuth("/onboarding")}
+                onClick={() => void finishProductionAuth("/onboarding", false)}
                 disabled={pending}
                 className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[16px] font-semibold text-[#071225]"
               >
@@ -612,7 +624,7 @@ export function AuthFlowClient({
               </button>
               <button
                 type="button"
-                onClick={() => void finishProductionAuth(returnTo)}
+                onClick={() => void finishProductionAuth(returnTo, false)}
                 disabled={pending}
                 className="flex h-12 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[16px] font-semibold text-white/72"
               >

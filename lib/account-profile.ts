@@ -1,8 +1,8 @@
 import type { AccountNotificationPreferences, AccountProfileSnapshot } from "@/types/capitol";
 
 const defaultNotificationPreferences: AccountNotificationPreferences = {
-  districtAlerts: true,
-  voteReminders: true,
+  districtAlerts: false,
+  voteReminders: false,
   weeklyBrief: false
 };
 
@@ -29,9 +29,9 @@ export function normalizeNotificationPreferences(value: Partial<AccountNotificat
 export function normalizeAccountProfile(value: Partial<AccountProfileSnapshot> = {}): AccountProfileSnapshot {
   return {
     displayName: value.displayName?.trim() || undefined,
-    districtCode: value.districtCode?.trim() || "TX-10",
-    districtLabel: value.districtLabel?.trim() || "Austin, Texas - TX-10",
-    districtState: value.districtState?.trim() || "Texas",
+    districtCode: value.districtCode?.trim() || "",
+    districtLabel: value.districtLabel?.trim() || "Choose your district",
+    districtState: value.districtState?.trim() || "",
     notificationPreferences: normalizeNotificationPreferences(value.notificationPreferences),
     partyAffiliation: value.partyAffiliation?.trim() ?? "",
     updatedAt: new Date().toISOString()

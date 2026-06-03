@@ -6,20 +6,39 @@ export const accountProfileChangedEvent = "capitol-ledger:account-profile-change
 const districtProfileKey = "capitol-ledger:district-profile";
 const notificationPreferencesKey = "capitol-ledger:notification-preferences";
 const partyAffiliationKey = "capitol-ledger:party-affiliation";
+const localAccountStateKeys = [
+  districtProfileKey,
+  notificationPreferencesKey,
+  partyAffiliationKey,
+  "capitol-ledger:follows",
+  "capitol-ledger:gamification",
+  "capitol-ledger:gamification-dedupe",
+  "capitol-ledger:gamification-streak-date",
+  "capitol-ledger:issue-interests",
+  "capitol-ledger:read-alerts",
+  "capitol-ledger:saved-alerts",
+  "capitol-ledger:subscription"
+];
 let accountProfileFetchPromise: Promise<AccountProfileSnapshot | null> | null = null;
 
 export type LocalDistrictProfile = Pick<AccountProfileSnapshot, "districtCode" | "districtLabel" | "districtState">;
 
 export const defaultNotificationPreferences: AccountNotificationPreferences = {
-  districtAlerts: true,
-  voteReminders: true,
+  districtAlerts: false,
+  voteReminders: false,
+  weeklyBrief: false
+};
+
+const freshAccountNotificationPreferences: AccountNotificationPreferences = {
+  districtAlerts: false,
+  voteReminders: false,
   weeklyBrief: false
 };
 
 export const defaultDistrictProfile: Required<LocalDistrictProfile> = {
-  districtCode: "TX-10",
-  districtLabel: "Austin, Texas - TX-10",
-  districtState: "Texas"
+  districtCode: "",
+  districtLabel: "Choose your district",
+  districtState: ""
 };
 
 function readJson<T>(key: string, fallback: T): T {
@@ -97,6 +116,25 @@ export function writeLocalAccountProfile(profile: Partial<AccountProfileSnapshot
     window.localStorage.setItem(partyAffiliationKey, profile.partyAffiliation);
     window.dispatchEvent(new Event(accountProfileChangedEvent));
   }
+}
+
+export function resetLocalAccountSetupState() {
+  if (typeof window === "undefined") return;
+
+  try {
+    localAccountStateKeys.forEach((key) => {
+      window.localStorage.removeItem(key);
+    });
+    window.localStorage.setItem(notificationPreferencesKey, JSON.stringify(freshAccountNotificationPreferences));
+  } catch {
+    // Fresh account setup should continue even when browser storage is restricted.
+  }
+  accountProfileFetchPromise = null;
+  window.dispatchEvent(new Event(accountProfileChangedEvent));
+  window.dispatchEvent(new Event("capitol-ledger:follows-changed"));
+  window.dispatchEvent(new Event("capitol-ledger:gamification-changed"));
+  window.dispatchEvent(new Event("capitol-ledger:persistence-changed"));
+  window.dispatchEvent(new Event("capitol-ledger:subscription-changed"));
 }
 
 export async function fetchAccountProfile() {
