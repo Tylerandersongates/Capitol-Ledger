@@ -17,8 +17,10 @@ import { issueSignals } from "@/lib/issue-signals";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
 
 const issueInterestsKey = "capitol-ledger:issue-interests";
+const issueInterestsPendingSyncKey = "capitol-ledger:issue-interests-pending-sync";
 const persistenceEvent = "capitol-ledger:persistence-changed";
 const accountLedgerEndpoint = "/api/account/ledger";
+let issueInterestSyncVersion = 0;
 
 const stateCodeByName: Record<string, string> = {
   Alaska: "AK",
@@ -76,10 +78,14 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
   const selectedInterestSet = useMemo(() => new Set(interests), [interests]);
 
   function toggleInterest(interest: string) {
-    const next = selectedInterestSet.has(interest) ? interests.filter((item) => item !== interest) : uniqueStrings([...interests, interest]);
-    setInterests(next);
-    writeLocalIssueInterests(next);
-    void syncIssueInterestsToAccount(next);
+    setInterests((current) => {
+      const selected = new Set(current);
+      const next = selected.has(interest) ? current.filter((item) => item !== interest) : uniqueStrings([...current, interest]);
+
+      writeLocalIssueInterests(next, { pendingSync: true });
+      void syncIssueInterestsToAccount(next);
+      return next;
+    });
   }
 
   return (
@@ -169,15 +175,25 @@ function readLocalIssueInterests() {
   }
 }
 
-function writeLocalIssueInterests(interests: string[]) {
+function writeLocalIssueInterests(interests: string[], options: { pendingSync?: boolean } = {}) {
   if (typeof window === "undefined") return;
 
   try {
     window.localStorage.setItem(issueInterestsKey, JSON.stringify(uniqueStrings(interests)));
+    if (options.pendingSync === true) {
+      window.localStorage.setItem(issueInterestsPendingSyncKey, "1");
+    } else if (options.pendingSync === false) {
+      window.localStorage.removeItem(issueInterestsPendingSyncKey);
+    }
     window.dispatchEvent(new Event(persistenceEvent));
   } catch {
     // Search shortcuts can still render from in-memory state if local persistence is unavailable.
   }
+}
+
+function hasPendingIssueInterestSync() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(issueInterestsPendingSyncKey) === "1";
 }
 
 async function hydrateIssueInterestsFromAccount() {
@@ -189,7 +205,16 @@ async function hydrateIssueInterestsFromAccount() {
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   const accountInterests = uniqueStrings(data?.ledger?.issueInterests ?? []);
-  writeLocalIssueInterests(accountInterests);
+  const localInterests = readLocalIssueInterests();
+
+  if (hasPendingIssueInterestSync()) {
+    const mergedInterests = uniqueStrings([...accountInterests, ...localInterests]);
+    writeLocalIssueInterests(mergedInterests, { pendingSync: true });
+    void syncIssueInterestsToAccount(mergedInterests);
+    return mergedInterests;
+  }
+
+  writeLocalIssueInterests(accountInterests, { pendingSync: false });
   return accountInterests;
 }
 
@@ -197,6 +222,7 @@ async function syncIssueInterestsToAccount(interests: string[]) {
   if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
 
+  const syncVersion = ++issueInterestSyncVersion;
   const response = await fetch(accountLedgerEndpoint, {
     body: JSON.stringify({ issueInterests: uniqueStrings(interests) }),
     headers: {
@@ -208,7 +234,7 @@ async function syncIssueInterestsToAccount(interests: string[]) {
   if (!response?.ok) return;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  if (data?.ledger) writeLocalIssueInterests(data.ledger.issueInterests);
+  if (data?.ledger && syncVersion === issueInterestSyncVersion) writeLocalIssueInterests(data.ledger.issueInterests, { pendingSync: false });
 }
 
 function uniqueStrings(values: string[]) {
