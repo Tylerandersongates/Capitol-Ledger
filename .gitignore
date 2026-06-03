@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.local
+.next
+.tools
+.vercel
+.pnpm-store
+node_modules
+node_modules.partial
+dist
+coverage
+artifacts
+*.log
+.pnpm-debug.log
+*.tsbuildinfo
+__pycache__/
+*.py[cod]

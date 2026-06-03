@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { MobileCard } from "@/components/mobile-ui";
 import { readLocalAccountProfile } from "@/lib/browser-account-profile";
-import { hasBrowserAccountCreated, markBrowserAccountCreated } from "@/lib/browser-auth-state";
+import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
@@ -180,6 +180,7 @@ export function AuthFlowClient({
         }
 
         markBrowserAccountCreated();
+        setBrowserSessionAuthenticated(true);
         setAccountCreated(true);
         await syncLocalAccountData();
         setMode("success");
@@ -263,6 +264,7 @@ export function AuthFlowClient({
     }
 
     markBrowserAccountCreated();
+    setBrowserSessionAuthenticated(true);
     setAllowAccountCreation(false);
     setAccountCreated(true);
     void syncLocalAccountData();
@@ -303,6 +305,7 @@ export function AuthFlowClient({
       }
 
       markBrowserAccountCreated();
+      setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth();
@@ -353,6 +356,7 @@ export function AuthFlowClient({
       }
 
       markBrowserAccountCreated();
+      setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       await syncLocalAccountData();
@@ -419,6 +423,7 @@ export function AuthFlowClient({
       }
 
       markBrowserAccountCreated();
+      setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth();
@@ -445,18 +450,30 @@ export function AuthFlowClient({
         return;
       }
 
+      markBrowserAccountCreated();
+      setBrowserSessionAuthenticated(true);
+      setAccountCreated(true);
+      await syncLocalAccountData();
       setMode("success");
       setStatus("Verified.");
     }
   }
 
+  const showSecondaryCreateCta = mode !== "create" && (!accountCreated || allowAccountCreation);
+  const showDifferentAccountCta = accountCreated && mode === "signIn";
+  const showSecureAccessSection = showDifferentAccountCta || allowDemoMode || showSecondaryCreateCta;
+
   return (
     <main className="mt-8 flex flex-1 flex-col">
       <section className="text-center">
-        <div className="mx-auto grid h-28 w-28 place-items-center rounded-full border border-rust/35 bg-[#ffb12b]/10 shadow-[0_0_44px_rgba(255,177,43,0.25)]">
-          <Image src="/capitol-ledger-logo.png" alt="" width={96} height={96} className="h-24 w-24 rounded-full object-cover" />
+        <div className="relative mx-auto w-fit">
+          <span className="pointer-events-none absolute inset-0 rounded-full bg-[#ffb12b]/20 blur-3xl" aria-hidden="true" />
+          <span className="pointer-events-none absolute inset-0 rounded-full border border-[#ffb12b]/45" aria-hidden="true" />
+          <div className="relative grid h-36 w-36 place-items-center rounded-full border border-rust/45 bg-[#ffb12b]/12 shadow-[0_0_64px_rgba(255,177,43,0.35)]">
+            <Image src="/capitol-ledger-logo.png" alt="" width={128} height={128} className="h-32 w-32 rounded-full object-cover" />
+          </div>
         </div>
-        <div className="mt-6 text-[18px] font-semibold uppercase tracking-[0.24em] text-white">
+        <div className="mt-7 text-[19px] font-semibold uppercase tracking-[0.26em] text-white">
           Capitol <span className="text-[#ffb12b]">Ledger</span>
         </div>
         <h1 className="mt-7 text-[31px] font-medium leading-tight text-white">{heading}</h1>
@@ -619,51 +636,55 @@ export function AuthFlowClient({
           ) : null}
         </div>
 
-        <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[12px] uppercase tracking-wide text-white/38">
-          <span className="h-px bg-white/10" />
-          Secure access
-          <span className="h-px bg-white/10" />
-        </div>
+        {showSecureAccessSection ? (
+          <>
+            <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[12px] uppercase tracking-wide text-white/38">
+              <span className="h-px bg-white/10" />
+              Secure access
+              <span className="h-px bg-white/10" />
+            </div>
 
-        {accountCreated && mode === "signIn" ? (
-          <button type="button" onClick={useDifferentAccount} className="mt-5 w-full text-center text-[14px] font-semibold text-[#ffb12b]">
-            Use a different account
-          </button>
-        ) : null}
-
-        {allowDemoMode ? (
-          <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
-            <button
-              type="button"
-              onClick={() => void startDemoAccount(returnTo)}
-              disabled={pending}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
-            >
-              <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-              Face ID
-            </button>
-            {(!accountCreated || allowAccountCreation) ? (
-              <button
-                type="button"
-                onClick={() => selectMode("create")}
-                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
-              >
-                <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                New account
+            {showDifferentAccountCta ? (
+              <button type="button" onClick={useDifferentAccount} className="mt-5 w-full text-center text-[14px] font-semibold text-[#ffb12b]">
+                Use a different account
               </button>
             ) : null}
-          </div>
-        ) : (!accountCreated || allowAccountCreation) ? (
-          <div className="mt-5">
-            <button
-              type="button"
-              onClick={() => selectMode("create")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
-            >
-              <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-              New account
-            </button>
-          </div>
+
+            {allowDemoMode ? (
+              <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
+                <button
+                  type="button"
+                  onClick={() => void startDemoAccount(returnTo)}
+                  disabled={pending}
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
+                >
+                  <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                  Face ID
+                </button>
+                {showSecondaryCreateCta ? (
+                  <button
+                    type="button"
+                    onClick={() => selectMode("create")}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
+                  >
+                    <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                    New account
+                  </button>
+                ) : null}
+              </div>
+            ) : showSecondaryCreateCta ? (
+              <div className="mt-5">
+                <button
+                  type="button"
+                  onClick={() => selectMode("create")}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
+                >
+                  <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                  New account
+                </button>
+              </div>
+            ) : null}
+          </>
         ) : null}
       </MobileCard>
 

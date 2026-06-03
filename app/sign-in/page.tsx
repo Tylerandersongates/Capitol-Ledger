@@ -17,7 +17,7 @@ export default function SignInPage({ searchParams }: { searchParams?: { resetTok
       statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
     >
             <header className="mt-10 flex items-center justify-between">
-              <Link href="/" className={mobileIconButtonClass} aria-label="Back to homepage">
+              <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
               </Link>
               {allowDemoMode ? (
