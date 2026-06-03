@@ -8,6 +8,7 @@ import {
   gamificationChangedEvent,
   hydrateGamificationFromAccount
 } from "@/lib/browser-gamification";
+import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions } from "@/lib/gamification";
 import Image from "next/image";
@@ -16,7 +17,7 @@ import { Bell, CalendarClock, ChevronRight, FileText, Home, LockKeyhole, Sparkle
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 import type { getDashboardData } from "@/lib/data";
-import type { AccountLedgerSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
+import type { AccountLedgerSnapshot, AccountProfileSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
 
 type DashboardData = ReturnType<typeof getDashboardData>;
 type DashboardFavoriteItem = {
@@ -70,6 +71,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const [unreadAlertCount, setUnreadAlertCount] = useState(() => countUnreadAlertIds(defaultUnreadAlertIds, []));
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>([]);
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
+  const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
   const recentVoteBill = data.recentVote?.bill;
   const recentVote = data.recentVote?.vote;
   const recentVoteTotals = data.recentVote?.totals;
@@ -92,7 +94,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const impactCategories = useMemo(() => getImpactActions(gamificationSnapshot.eventCounts), [gamificationSnapshot.eventCounts]);
   const resolvedFavoriteItems = useMemo(() => resolveDashboardFavorites(favoriteRecords, data.favoriteTargets), [data.favoriteTargets, favoriteRecords]);
   const favoriteItems = resolvedFavoriteItems.slice(0, 3);
-  const suggestedFavorites = useMemo(() => getSuggestedDashboardFavorites(data.favoriteTargets, favoriteRecords).slice(0, 2), [data.favoriteTargets, favoriteRecords]);
+  const suggestedFavorites = useMemo(() => getSuggestedDashboardFavorites(data.favoriteTargets, favoriteRecords, accountProfile).slice(0, 2), [accountProfile, data.favoriteTargets, favoriteRecords]);
   const visibleFavorites = favoriteItems.length ? favoriteItems : suggestedFavorites;
   const showingSavedFavorites = favoriteItems.length > 0;
   const alertInboxHref = unreadAlertCount > 0 ? "/alerts?filter=unread" : "/alerts";
@@ -149,6 +151,26 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     const next = toggleDashboardFavoriteRecord({ id: item.id, type: item.type });
     setFavoriteRecords(next);
   }
+
+  useEffect(() => {
+    let active = true;
+
+    async function refreshAccountProfile() {
+      const profile = await fetchAccountProfile();
+      if (active) setAccountProfile(profile);
+    }
+
+    void refreshAccountProfile();
+
+    window.addEventListener(accountProfileChangedEvent, refreshAccountProfile);
+    window.addEventListener("focus", refreshAccountProfile);
+
+    return () => {
+      active = false;
+      window.removeEventListener(accountProfileChangedEvent, refreshAccountProfile);
+      window.removeEventListener("focus", refreshAccountProfile);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -302,30 +324,36 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                       {resolvedFavoriteItems.length} saved
                     </span>
                   </div>
-                  <div className="grid gap-1.5">
-                    {visibleFavorites.map((item) => {
-                      const saved = favoriteRecords.some((record) => record.type === item.type && record.id === item.id);
+                  {visibleFavorites.length ? (
+                    <div className="grid gap-1.5">
+                      {visibleFavorites.map((item) => {
+                        const saved = favoriteRecords.some((record) => record.type === item.type && record.id === item.id);
 
-                      return (
-                        <div key={`${item.type}-${item.id}`} className="grid min-h-[58px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleFavorite(item)}
-                            className="grid h-9 w-9 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b] transition hover:bg-[#ffb12b]/16"
-                            aria-label={`${saved ? "Remove favorite" : "Favorite"} ${item.label}`}
-                            aria-pressed={saved}
-                          >
-                            <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
-                          </button>
-                          <Link href={item.href} className="min-w-0 py-1">
-                            <span className="block truncate text-[15px] font-medium leading-tight text-white">{item.label}</span>
-                            <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
-                          </Link>
-                          <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />
-                        </div>
-                      );
-                    })}
-                  </div>
+                        return (
+                          <div key={`${item.type}-${item.id}`} className="grid min-h-[58px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleFavorite(item)}
+                              className="grid h-9 w-9 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b] transition hover:bg-[#ffb12b]/16"
+                              aria-label={`${saved ? "Remove favorite" : "Favorite"} ${item.label}`}
+                              aria-pressed={saved}
+                            >
+                              <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
+                            </button>
+                            <Link href={item.href} className="min-w-0 py-1">
+                              <span className="block truncate text-[15px] font-medium leading-tight text-white">{item.label}</span>
+                              <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
+                            </Link>
+                            <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3 text-[13px] leading-snug text-white/58">
+                      Finish district setup to see local official suggestions.
+                    </div>
+                  )}
                 </div>
               </div>
             </MobileCard>
@@ -791,6 +819,14 @@ function favoriteRecordsMatch(left: SavedFollowRecord[], right: SavedFollowRecor
   return left.every((record) => rightKeys.has(favoriteRecordKey(record)));
 }
 
+function stateCodeFromDistrictCode(code?: string) {
+  return code?.match(/^([A-Z]{2})-/i)?.[1]?.toUpperCase() ?? "";
+}
+
+function districtNumberFromCode(code?: string) {
+  return code?.match(/^[A-Z]{2}-0?(\d{1,2})$/i)?.[1] ?? "";
+}
+
 function readDashboardFavoriteRecords() {
   if (typeof window === "undefined") return [];
 
@@ -862,11 +898,31 @@ function resolveDashboardFavorites(records: SavedFollowRecord[], targets: Dashbo
   });
 }
 
-function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"], records: SavedFollowRecord[]) {
+function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"], records: SavedFollowRecord[], profile: AccountProfileSnapshot | null) {
   const savedKeys = new Set(uniqueFavoriteRecords(records).map(favoriteRecordKey));
   const suggestions: DashboardFavoriteItem[] = [];
+  const stateCode = stateCodeFromDistrictCode(profile?.districtCode);
+  const districtNumber = districtNumberFromCode(profile?.districtCode);
 
-  targets.members.slice(0, 1).forEach((member) => {
+  if (!stateCode) return suggestions;
+
+  const stateMembers = targets.members.filter((member) => member.state === stateCode);
+  const exactRepresentative = districtNumber
+    ? stateMembers.find((member) => member.chamber === "House" && member.district === districtNumber)
+    : undefined;
+  const suggestedMembers = [
+    ...(exactRepresentative ? [exactRepresentative] : []),
+    ...stateMembers
+      .filter((member) => member.chamber === "Senate")
+      .sort((left, right) => left.fullName.localeCompare(right.fullName)),
+    ...stateMembers
+      .filter((member) => member.chamber === "House" && member.bioguideId !== exactRepresentative?.bioguideId)
+      .sort((left, right) => left.fullName.localeCompare(right.fullName))
+  ];
+
+  suggestedMembers.forEach((member) => {
+    if (suggestions.length >= 2) return;
+
     const record: SavedFollowRecord = { id: member.bioguideId, type: "member" };
     if (savedKeys.has(favoriteRecordKey(record))) return;
 
@@ -878,6 +934,8 @@ function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"
       type: "member"
     });
   });
+
+  if (suggestions.length >= 2) return suggestions;
 
   targets.bills.slice(0, 2).forEach((bill) => {
     const record: SavedFollowRecord = { id: bill.id, type: "bill" };

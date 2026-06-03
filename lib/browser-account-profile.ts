@@ -142,9 +142,8 @@ export async function fetchAccountProfile() {
   if (!(await hasActiveBrowserSession())) return null;
   if (accountProfileFetchPromise) return accountProfileFetchPromise;
 
-  accountProfileFetchPromise = fetchAccountProfileFromApi().then((profile) => {
-    if (!profile) accountProfileFetchPromise = null;
-    return profile;
+  accountProfileFetchPromise = fetchAccountProfileFromApi().finally(() => {
+    accountProfileFetchPromise = null;
   });
   return accountProfileFetchPromise;
 }
@@ -172,7 +171,7 @@ export async function syncAccountProfile(profile: Partial<AccountProfileSnapshot
 
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
   if (data?.profile) {
-    accountProfileFetchPromise = Promise.resolve(data.profile);
+    accountProfileFetchPromise = null;
     writeLocalAccountProfile(data.profile);
   }
   return data?.profile ?? null;

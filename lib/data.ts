@@ -972,6 +972,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
       members: members.map((member) => ({
         bioguideId: member.bioguideId,
         chamber: member.chamber,
+        district: member.district,
         fullName: member.fullName,
         party: member.party,
         state: member.state
