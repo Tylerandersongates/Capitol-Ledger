@@ -72,9 +72,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>([]);
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
-  const recentVoteBill = data.recentVote?.bill;
-  const recentVote = data.recentVote?.vote;
-  const recentVoteTotals = data.recentVote?.totals;
+  const selectedVoteFeed = useMemo(
+    () => resolveDashboardVoteFeed(data.voteFeed, favoriteRecords, data.favoriteTargets, accountProfile),
+    [accountProfile, data.favoriteTargets, data.voteFeed, favoriteRecords]
+  );
+  const recentVoteBill = selectedVoteFeed?.bill;
+  const recentVote = selectedVoteFeed?.vote;
+  const recentVoteTotals = selectedVoteFeed?.totals;
+  const recentVoteSourceLabel = selectedVoteFeed?.sourceLabel ?? "Congress feed";
   const trackedBill = useMemo(() => {
     const savedBill = favoriteRecords.find((record) => record.type === "bill");
     if (!savedBill) return undefined;
@@ -540,7 +545,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     <p className="mt-1 text-[15px] text-white/58">{recentVoteBill?.displayNumber ?? recentVote?.rollCall ?? "Roll call"}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <div className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] text-white/50">Congress feed</div>
+                    <div className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] text-white/50">{recentVoteSourceLabel}</div>
                     <div className="rounded-full border border-[#2be68d]/25 bg-[#2be68d]/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none text-[#2be68d]">{recentVote?.result ?? "Updated"}</div>
                   </div>
                 </div>
@@ -825,6 +830,41 @@ function stateCodeFromDistrictCode(code?: string) {
 
 function districtNumberFromCode(code?: string) {
   return code?.match(/^[A-Z]{2}-0?(\d{1,2})$/i)?.[1] ?? "";
+}
+
+function getFederalDelegationMemberIds(targets: DashboardData["favoriteTargets"], profile: AccountProfileSnapshot | null) {
+  const stateCode = stateCodeFromDistrictCode(profile?.districtCode);
+  if (!stateCode) return new Set<string>();
+
+  const districtNumber = districtNumberFromCode(profile?.districtCode);
+  const stateMembers = targets.members.filter((member) => member.state === stateCode);
+
+  return new Set(
+    stateMembers
+      .filter((member) => member.chamber === "Senate" || (Boolean(districtNumber) && member.chamber === "House" && member.district === districtNumber))
+      .map((member) => member.bioguideId)
+  );
+}
+
+function resolveDashboardVoteFeed(
+  candidates: DashboardData["voteFeed"],
+  records: SavedFollowRecord[],
+  targets: DashboardData["favoriteTargets"],
+  profile: AccountProfileSnapshot | null
+) {
+  const savedBillIds = new Set(uniqueFavoriteRecords(records).filter((record) => record.type === "bill").map((record) => record.id));
+  const savedBillVote = candidates.find((candidate) => candidate.vote.billId && savedBillIds.has(candidate.vote.billId));
+  if (savedBillVote) return { ...savedBillVote, sourceLabel: "Saved bill" };
+
+  const delegationIds = getFederalDelegationMemberIds(targets, profile);
+  const delegationVote = candidates.find((candidate) => candidate.memberBioguideIds.some((memberId) => delegationIds.has(memberId)));
+  if (delegationVote) return { ...delegationVote, sourceLabel: "Your officials" };
+
+  const nationalVote = candidates.find((candidate) => Boolean(candidate.bill));
+  if (nationalVote) return { ...nationalVote, sourceLabel: "National feed" };
+
+  const latestVote = candidates[0];
+  return latestVote ? { ...latestVote, sourceLabel: "Congress feed" } : undefined;
 }
 
 function readDashboardFavoriteRecords() {

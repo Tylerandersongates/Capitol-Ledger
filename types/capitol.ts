@@ -157,6 +157,7 @@ export type Vote = {
   presentCount?: number;
   notVotingCount?: number;
   billId?: string;
+  memberBioguideIds?: string[];
   explanation: string;
   sourceUrl: string;
 };

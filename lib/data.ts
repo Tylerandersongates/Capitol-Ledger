@@ -461,7 +461,7 @@ function mapDatabaseBill(bill: PrismaBill): Bill {
   };
 }
 
-function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVote, "position">[] }): Vote {
+function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVote, "memberBioguideId" | "position">[] }): Vote {
   const positionCounts = (vote.memberVotes ?? []).reduce(
     (counts, memberVote) => {
       const position = dbVotePositionMap[memberVote.position];
@@ -480,6 +480,7 @@ function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVot
     congress: vote.congress,
     explanation: "Live roll-call vote synced from Congress.gov.",
     id: vote.id,
+    memberBioguideIds: uniqueStrings((vote.memberVotes ?? []).map((memberVote) => memberVote.memberBioguideId)),
     noCount: positionCounts.no,
     notVotingCount: positionCounts.notVoting,
     presentCount: positionCounts.present,
@@ -623,6 +624,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
               include: {
                 memberVotes: {
                   select: {
+                    memberBioguideId: true,
                     position: true
                   }
                 }
@@ -927,11 +929,24 @@ export function getVoteTotals(vote?: Vote) {
   };
 }
 
+function getVoteMemberBioguideIds(vote: Vote) {
+  return uniqueStrings([
+    ...(vote.memberBioguideIds ?? []),
+    ...memberVotes.filter((memberVote) => memberVote.voteId === vote.id).map((memberVote) => memberVote.memberBioguideId)
+  ]);
+}
+
 function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
   const sortedBills = [...sourceBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
   const recentVote = sortedVotes[0];
   const recentVoteBill = recentVote?.billId ? sourceBills.find((bill) => bill.id === recentVote.billId) : undefined;
+  const voteFeed = sortedVotes.map((vote) => ({
+    bill: vote.billId ? sourceBills.find((bill) => bill.id === vote.billId) : undefined,
+    memberBioguideIds: getVoteMemberBioguideIds(vote),
+    totals: getVoteTotals(vote),
+    vote
+  }));
   const trackedBill = sortedBills.find((bill) => getBillStatus(bill) === "In Committee") ?? sortedBills[0];
   const statusCounts = sourceBills.reduce(
     (counts, bill) => {
@@ -961,6 +976,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
           totals: getVoteTotals(recentVote)
         }
       : undefined,
+    voteFeed,
     favoriteTargets: {
       bills: sourceBills.map((bill) => ({
         displayNumber: bill.displayNumber,
@@ -1001,6 +1017,7 @@ async function getDatabaseDashboardRecords() {
           bill: true,
           memberVotes: {
             select: {
+              memberBioguideId: true,
               position: true
             }
           }
@@ -1148,6 +1165,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
             include: {
               memberVotes: {
                 select: {
+                  memberBioguideId: true,
                   position: true
                 }
               }
