@@ -3,11 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
+import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
   fetchAccountProfile,
+  readLocalAccountProfile,
   readLocalDistrictProfile,
   readLocalNotificationPreferences,
   syncAccountProfile,
@@ -24,9 +25,12 @@ import {
   type BetaDistrictPreset
 } from "@/lib/beta-district-presets";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
+import { getPartyLabel } from "@/components/party-affiliation-control";
 import type { AccountNotificationPreferences, Member } from "@/types/capitol";
 
 type NotificationPreferenceKey = keyof AccountNotificationPreferences;
+
+const setupSignalTotal = 5;
 
 const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: string }[] = [
   {
@@ -387,6 +391,7 @@ function useSetupMetrics(members: Member[]) {
   const district = useDistrictProfile();
   const [issueCount, setIssueCount] = useState(0);
   const [enabledAlertCount, setEnabledAlertCount] = useState(0);
+  const [partyAffiliation, setPartyAffiliation] = useState("");
 
   const officialsCount = district.districtCode ? getMatchedOfficials(members, district.districtCode).length : 0;
 
@@ -395,9 +400,11 @@ function useSetupMetrics(members: Member[]) {
       const interests = readIssueInterestsForSetup();
       const preferences = readLocalNotificationPreferences();
       const enabledCount = [preferences.voteReminders, preferences.districtAlerts, preferences.weeklyBrief].filter(Boolean).length;
+      const profile = readLocalAccountProfile();
 
       setIssueCount(interests.length);
       setEnabledAlertCount(enabledCount);
+      setPartyAffiliation(profile.partyAffiliation ?? "");
     }
 
     refreshSetupSignals();
@@ -418,19 +425,21 @@ function useSetupMetrics(members: Member[]) {
     district,
     enabledAlertCount,
     issueCount,
-    officialsCount
+    officialsCount,
+    partyAffiliation
   };
 }
 
 export function OnboardingProgressMeter({ members }: { members: Member[] }) {
-  const { district, enabledAlertCount, issueCount, officialsCount } = useSetupMetrics(members);
+  const { district, enabledAlertCount, issueCount, officialsCount, partyAffiliation } = useSetupMetrics(members);
   const completeCount = [
     Boolean(district.districtCode),
     officialsCount > 0,
+    Boolean(partyAffiliation),
     issueCount > 0,
     enabledAlertCount > 0
   ].filter(Boolean).length;
-  const percentReady = Math.round((completeCount / 4) * 100);
+  const percentReady = Math.round((completeCount / setupSignalTotal) * 100);
 
   return (
     <div className="mt-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.3)]">
@@ -439,7 +448,7 @@ export function OnboardingProgressMeter({ members }: { members: Member[] }) {
         <span className="shrink-0 text-[12px] font-semibold text-[#ffb12b]">{percentReady}%</span>
       </div>
       <div className="mt-2 flex items-center justify-between text-[13px] text-white/52">
-        <span>{completeCount} of 4 setup signals ready</span>
+        <span>{completeCount} of {setupSignalTotal} setup signals ready</span>
       </div>
       <div className="mt-3 h-2.5 rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
         <div
@@ -452,7 +461,7 @@ export function OnboardingProgressMeter({ members }: { members: Member[] }) {
 }
 
 export function OnboardingSetupFlow({ members }: { members: Member[] }) {
-  const { district, enabledAlertCount, issueCount, officialsCount } = useSetupMetrics(members);
+  const { district, enabledAlertCount, issueCount, officialsCount, partyAffiliation } = useSetupMetrics(members);
 
   const steps = [
     {
@@ -466,6 +475,12 @@ export function OnboardingSetupFlow({ members }: { members: Member[] }) {
       detail: officialsCount > 0 ? `${officialsCount} matched` : "Find officials",
       icon: <UserRound />,
       label: "Officials"
+    },
+    {
+      complete: Boolean(partyAffiliation),
+      detail: partyAffiliation ? getPartyLabel(partyAffiliation) : "Choose affiliation",
+      icon: <Flag />,
+      label: "Affiliation"
     },
     {
       complete: issueCount > 0,

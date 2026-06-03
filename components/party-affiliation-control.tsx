@@ -10,7 +10,7 @@ import {
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
 
-const partyOptions = [
+export const partyOptions = [
   { value: "", label: "Not selected", display: "Not selected" },
   { value: "prefer-not", label: "Prefer not to say", display: "Prefer not to say" },
   { value: "democrat", label: "Democrat", display: "Democrat" },
@@ -21,7 +21,7 @@ const partyOptions = [
   { value: "other", label: "Other", display: "Other" }
 ];
 
-function getPartyLabel(value: string) {
+export function getPartyLabel(value: string) {
   return partyOptions.find((option) => option.value === value)?.display ?? partyOptions[0].display;
 }
 
@@ -107,6 +107,70 @@ export function PartyAffiliationSelector() {
           ))}
         </select>
         <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/42" strokeWidth={1.8} aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+export function OnboardingPartyAffiliationSelector() {
+  const [party, setParty] = useState("");
+
+  useEffect(() => {
+    function refreshParty() {
+      setParty(readPartyAffiliation());
+    }
+
+    refreshParty();
+    void fetchAccountProfile().then((profile) => {
+      if (!profile) return;
+      writePartyAffiliation(profile.partyAffiliation);
+      setParty(profile.partyAffiliation);
+    });
+    window.addEventListener("storage", refreshParty);
+    window.addEventListener(accountProfileChangedEvent, refreshParty);
+
+    return () => {
+      window.removeEventListener("storage", refreshParty);
+      window.removeEventListener(accountProfileChangedEvent, refreshParty);
+    };
+  }, []);
+
+  function handleSelect(value: string) {
+    setParty(value);
+    writePartyAffiliation(value);
+    void syncAccountProfile({ partyAffiliation: value });
+  }
+
+  return (
+    <div className="mt-5">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+        <span className="min-w-0">
+          <span className="block text-[12px] font-semibold uppercase tracking-[0.1em] text-white/44">Current choice</span>
+          <span className="mt-1 block truncate text-[16px] font-semibold text-white">{getPartyLabel(party)}</span>
+        </span>
+        <Flag className="h-5 w-5 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
+        {partyOptions.map((option) => {
+          const active = party === option.value;
+
+          return (
+            <button
+              key={option.value || "none"}
+              type="button"
+              onClick={() => handleSelect(option.value)}
+              className={`min-h-[46px] rounded-2xl border px-3 text-center text-[13px] font-semibold transition ${
+                active
+                  ? "border-[#ffb12b]/48 bg-[#ffb12b]/16 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                  : "border-white/10 bg-white/[0.045] text-white/62 hover:border-[#ffb12b]/35 hover:bg-white/8"
+              }`}
+              aria-pressed={active}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -8,11 +8,13 @@ import {
 } from "@/components/account-profile-controls";
 import { GamificationEventLink } from "@/components/gamification-actions";
 import { MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
+import { OnboardingPartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { IssueInterestChips } from "@/components/saved-ledger-controls";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
+  Flag,
   Landmark,
   LocateFixed,
   MapPin,
@@ -37,7 +39,7 @@ export default function OnboardingPage() {
     <MobileShell
       ambientClassName={onboardingAmbientClass}
       backgroundClassName={onboardingBackgroundClass}
-      minHeight="min-h-[1320px]"
+      minHeight="min-h-[1500px]"
       contentClassName="px-8 pb-5 pt-8"
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
@@ -78,6 +80,11 @@ export default function OnboardingPage() {
 
               <OnboardingCard>
                 <OnboardingSetupFlow members={allMembers} />
+              </OnboardingCard>
+
+              <OnboardingCard>
+                <OnboardingSectionHeader icon={<Flag />} title="Affiliation" />
+                <OnboardingPartyAffiliationSelector />
               </OnboardingCard>
 
               <OnboardingCard>
