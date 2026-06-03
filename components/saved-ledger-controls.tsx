@@ -14,7 +14,7 @@ const readAlertsKey = "capitol-ledger:read-alerts";
 const persistenceEvent = "capitol-ledger:persistence-changed";
 const accountLedgerEndpoint = "/api/account/ledger";
 
-let accountHydrationStarted = false;
+let accountHydrationPromise: Promise<void> | null = null;
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
@@ -166,10 +166,17 @@ async function syncLocalLedgerToAccount() {
 }
 
 async function hydrateSavedLedgerFromAccount() {
-  if (typeof window === "undefined" || accountHydrationStarted) return;
+  if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
-  accountHydrationStarted = true;
+  if (accountHydrationPromise) return accountHydrationPromise;
 
+  accountHydrationPromise = hydrateSavedLedgerFromApi().finally(() => {
+    accountHydrationPromise = null;
+  });
+  return accountHydrationPromise;
+}
+
+async function hydrateSavedLedgerFromApi() {
   const response = await fetch(accountLedgerEndpoint, {
     cache: "no-store"
   }).catch(() => null);
@@ -179,8 +186,7 @@ async function hydrateSavedLedgerFromAccount() {
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   if (!data?.ledger) return;
 
-  writeLocalLedger(mergeLedgerSnapshots(readLocalLedger(), data.ledger));
-  void syncLocalLedgerToAccount();
+  writeLocalLedger(data.ledger);
 }
 
 export function SaveTargetButton({

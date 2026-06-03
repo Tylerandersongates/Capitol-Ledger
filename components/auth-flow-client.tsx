@@ -248,6 +248,14 @@ export function AuthFlowClient({
   async function prepareFreshAccountSetup() {
     resetLocalAccountSetupState();
 
+    await fetch("/api/account/ledger", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(readLocalLedger())
+    }).catch(() => null);
+
     await fetch("/api/account/profile", {
       method: "POST",
       headers: {
@@ -287,7 +295,7 @@ export function AuthFlowClient({
     router.refresh();
   }
 
-  async function finishProductionAuth(href = returnTo, syncLocalData = true) {
+  async function finishProductionAuth(href = returnTo, syncLocalData = false) {
     if (syncLocalData) await syncLocalAccountData();
     router.push(href);
     router.refresh();
