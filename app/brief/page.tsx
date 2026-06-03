@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { ArrowLeft, Bell, CalendarClock, CheckCircle2, FileText, Home, MailCheck, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, CalendarClock, CheckCircle2, Crown, FileText, Home, LockKeyhole, MailCheck, Search, UserRound } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { requireAccountSession } from "@/lib/route-guards";
+import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import { formatBriefGeneratedAt, getWeeklyBriefForUser, type WeeklyBriefSnapshot } from "@/lib/weekly-brief";
 
 export default async function WeeklyBriefPage() {
   const session = await requireAccountSession("/brief");
   const brief = await getWeeklyBriefForUser(session.user);
+
+  if (!isPlanFeatureEnabled(brief.plan.id, "weeklyBrief")) {
+    return <LockedWeeklyBriefPage planLabel={brief.plan.label} />;
+  }
 
   return (
     <MobileShell
@@ -121,6 +126,65 @@ export default async function WeeklyBriefPage() {
                 <div className="mt-1 text-[13px] leading-snug text-white/52">{action.body}</div>
               </Link>
             ))}
+          </div>
+        </MobileCard>
+      </main>
+
+      <MobileBottomNav
+        indicatorClassName="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white"
+        items={[
+          { href: "/dashboard", icon: <Home />, label: "Home" },
+          { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
+          { href: "/search", icon: <Search />, label: "Search" },
+          { href: "/alerts", icon: <Bell />, label: "Alerts" },
+          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+        ]}
+      />
+    </MobileShell>
+  );
+}
+
+function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
+  return (
+    <MobileShell
+      minHeight="min-h-[1080px]"
+      contentClassName="px-8 pb-5 pt-8"
+      statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
+    >
+      <header className="mt-12 flex items-center justify-between">
+        <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
+          <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
+        </Link>
+        <div className="text-right">
+          <div className="text-[14px] uppercase tracking-wide text-white/48">{planLabel}</div>
+          <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Weekly Brief</h1>
+        </div>
+      </header>
+
+      <main className="mt-7 space-y-4 pb-8">
+        <MobileCard variant="dashboard" className="px-5 py-5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[#ffb12b]">
+                <LockKeyhole className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-[13px] font-medium uppercase tracking-wide">Premium Brief</span>
+              </div>
+              <h2 className="mt-3 text-[25px] font-medium leading-tight text-white">Weekly Brief unlocks with Pro or Team</h2>
+              <p className="mt-3 text-[16px] leading-snug text-white/62">
+                Free accounts keep the dashboard, saved ledger, and civic alerts. Upgrade to open district summaries, saved watchlist movement, and weekly action queues.
+              </p>
+            </div>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
+              <Crown className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3">
+            <Link href="/upgrade" className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
+              View Upgrade Options
+            </Link>
+            <Link href="/dashboard" className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white/70">
+              Back to Dashboard
+            </Link>
           </div>
         </MobileCard>
       </main>

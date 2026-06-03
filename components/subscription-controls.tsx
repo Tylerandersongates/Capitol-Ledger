@@ -18,7 +18,7 @@ const storageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
-let accountHydrationStarted = false;
+let accountHydrationPromise: Promise<AccountSubscriptionSnapshot | null> | null = null;
 
 const planSwitcherLabels: Record<SubscriptionPlanId, string> = {
   free: "Free",
@@ -94,6 +94,18 @@ function writeSubscription(next: AccountSubscriptionSnapshot, syncAccount = true
   if (syncAccount) void syncSubscriptionToAccount(next);
 }
 
+function subscriptionsMatch(left: AccountSubscriptionSnapshot, right: AccountSubscriptionSnapshot) {
+  return (
+    left.cycle === right.cycle &&
+    left.plan === right.plan &&
+    left.provider === right.provider &&
+    left.providerCustomerId === right.providerCustomerId &&
+    left.providerEntitlementId === right.providerEntitlementId &&
+    left.providerSubscriptionId === right.providerSubscriptionId &&
+    left.status === right.status
+  );
+}
+
 async function syncSubscriptionToAccount(subscription = readSubscription()) {
   if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
@@ -113,36 +125,60 @@ async function syncSubscriptionToAccount(subscription = readSubscription()) {
 }
 
 async function hydrateSubscriptionFromAccount() {
-  if (typeof window === "undefined" || accountHydrationStarted) return;
-  if (!(await hasActiveBrowserSession())) return;
-  accountHydrationStarted = true;
+  if (typeof window === "undefined") return null;
+  if (!(await hasActiveBrowserSession())) return null;
 
-  const response = await fetch(accountSubscriptionEndpoint, {
-    cache: "no-store"
-  }).catch(() => null);
+  if (!accountHydrationPromise) {
+    accountHydrationPromise = fetch(accountSubscriptionEndpoint, {
+      cache: "no-store"
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const data = (await response.json().catch(() => null)) as { subscription?: AccountSubscriptionSnapshot } | null;
+        return data?.subscription ? normalizeSubscription(data.subscription) : null;
+      })
+      .catch(() => null)
+      .finally(() => {
+        accountHydrationPromise = null;
+      });
+  }
 
-  if (!response?.ok) return;
+  const subscription = await accountHydrationPromise;
+  if (!subscription) return null;
 
-  const data = (await response.json().catch(() => null)) as { subscription?: AccountSubscriptionSnapshot } | null;
-  if (data?.subscription) writeSubscription(normalizeSubscription(data.subscription), false);
+  if (!subscriptionsMatch(readSubscription(), subscription)) writeSubscription(subscription, false);
+  return subscription;
 }
 
 export function useSubscriptionState() {
   const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(defaultSubscription);
 
   useEffect(() => {
-    function refresh() {
-      setSubscription(readSubscription());
+    let active = true;
+
+    async function refresh() {
+      if (await hasActiveBrowserSession()) {
+        const accountSubscription = await hydrateSubscriptionFromAccount();
+        if (active) setSubscription(accountSubscription ?? defaultSubscription);
+        return;
+      }
+
+      if (active) setSubscription(readSubscription());
     }
 
-    refresh();
-    void hydrateSubscriptionFromAccount();
-    window.addEventListener("storage", refresh);
-    window.addEventListener(subscriptionEvent, refresh);
+    void refresh();
+
+    function refreshSubscription() {
+      void refresh();
+    }
+
+    window.addEventListener("storage", refreshSubscription);
+    window.addEventListener(subscriptionEvent, refreshSubscription);
 
     return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener(subscriptionEvent, refresh);
+      active = false;
+      window.removeEventListener("storage", refreshSubscription);
+      window.removeEventListener(subscriptionEvent, refreshSubscription);
     };
   }, []);
 

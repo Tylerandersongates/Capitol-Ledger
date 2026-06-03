@@ -12,7 +12,7 @@ import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions } from "@/lib/gamification";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CalendarClock, ChevronRight, FileText, Home, Sparkles, Star, UserRound, UsersRound } from "lucide-react";
+import { Bell, CalendarClock, ChevronRight, FileText, Home, LockKeyhole, Sparkles, Star, UserRound, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 import type { getDashboardData } from "@/lib/data";
@@ -426,40 +426,75 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </PlanFeatureGate>
             </div>
 
-            <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
-              <div className={dashboardCardAccentClass} />
-              <div className="relative z-10">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">
-                    <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
-                      <CalendarClock className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                    </span>
-                    Weekly brief
+            <PlanFeatureGate
+              feature="weeklyBrief"
+              fallback={
+                <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
+                  <div className={dashboardCardAccentClass} />
+                  <div className="relative z-10">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">
+                          <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
+                            <LockKeyhole className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                          </span>
+                          Weekly brief
+                        </div>
+                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Weekly brief locked</h2>
+                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro or Team to open district summaries, saved ledger updates, and priority actions.</p>
+                      </div>
+                      <Link href="/upgrade" className={mobileViewAllClass}>
+                        Upgrade
+                      </Link>
+                    </div>
+                    <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
+                      <div className="flex items-center justify-between">
+                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Queue</div>
+                        <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white/52">
+                          Closed
+                        </span>
+                      </div>
+                      <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly delivery unlocks with premium plans.</div>
+                    </div>
                   </div>
-                  <h2 className="mt-2 text-[22px] font-semibold leading-tight">Monday civic summary</h2>
-                  <p className="mt-2 text-[14px] leading-snug text-white/58">Delivery status, recent history, and your district watchlist.</p>
+                </MobileCard>
+              }
+            >
+              <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
+                <div className={dashboardCardAccentClass} />
+                <div className="relative z-10">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">
+                      <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
+                        <CalendarClock className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                      </span>
+                      Weekly brief
+                    </div>
+                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Monday civic summary</h2>
+                    <p className="mt-2 text-[14px] leading-snug text-white/58">Delivery status, recent history, and your district watchlist.</p>
+                  </div>
+                  <Link href="/brief" className={mobileViewAllClass}>
+                    Open
+                  </Link>
                 </div>
-                <Link href="/brief" className={mobileViewAllClass}>
-                  Open
-                </Link>
-              </div>
-              <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Queue</div>
-                  <span className="rounded-full border border-[#2be68d]/35 bg-[#2be68d]/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#2be68d]">
-                    Active
-                  </span>
+                <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Queue</div>
+                    <span className="rounded-full border border-[#2be68d]/35 bg-[#2be68d]/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#2be68d]">
+                      Active
+                    </span>
+                  </div>
+                  <div className="mt-2 text-[13px] leading-snug text-white/66">Next issue bundles vote recap, committee movement, and district-tailored policy signals.</div>
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                    <BriefMetricPill label="Updates" value={data.updateCount} />
+                    <BriefMetricPill label="Committee" value={data.statusCounts.inCommittee} />
+                    <BriefMetricPill label="In Action" value={data.billsInAction} />
+                  </div>
                 </div>
-                <div className="mt-2 text-[13px] leading-snug text-white/66">Next issue bundles vote recap, committee movement, and district-tailored policy signals.</div>
-                <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                  <BriefMetricPill label="Updates" value={data.updateCount} />
-                  <BriefMetricPill label="Committee" value={data.statusCounts.inCommittee} />
-                  <BriefMetricPill label="In Action" value={data.billsInAction} />
                 </div>
-              </div>
-              </div>
-            </MobileCard>
+              </MobileCard>
+            </PlanFeatureGate>
 
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[18px] font-medium leading-none">Latest Vote Feed</h2>
