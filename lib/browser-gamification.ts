@@ -102,8 +102,8 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
 }
 
 export async function hydrateGamificationFromAccount() {
-  if (typeof window === "undefined") return readLocalGamificationSnapshot();
-  if (!(await hasActiveBrowserSession())) return readLocalGamificationSnapshot();
+  if (typeof window === "undefined") return getDefaultAccountGamification();
+  if (!(await hasActiveBrowserSession())) return getDefaultAccountGamification();
   if (gamificationHydrationPromise) return gamificationHydrationPromise;
 
   gamificationHydrationPromise = hydrateGamificationFromApi();

@@ -965,6 +965,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
       bills: sourceBills.map((bill) => ({
         displayNumber: bill.displayNumber,
         id: bill.id,
+        latestActionText: bill.latestActionText,
         policyArea: bill.policyArea,
         shortTitle: bill.shortTitle
       })),

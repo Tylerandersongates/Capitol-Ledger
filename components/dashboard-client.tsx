@@ -6,8 +6,7 @@ import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import {
   gamificationChangedEvent,
-  hydrateGamificationFromAccount,
-  readLocalGamificationSnapshot
+  hydrateGamificationFromAccount
 } from "@/lib/browser-gamification";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions } from "@/lib/gamification";
@@ -74,7 +73,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const recentVoteBill = data.recentVote?.bill;
   const recentVote = data.recentVote?.vote;
   const recentVoteTotals = data.recentVote?.totals;
-  const trackedBill = data.trackedBill;
+  const trackedBill = useMemo(() => {
+    const savedBill = favoriteRecords.find((record) => record.type === "bill");
+    if (!savedBill) return undefined;
+    return data.favoriteTargets.bills.find((bill) => bill.id === savedBill.id);
+  }, [data.favoriteTargets.bills, favoriteRecords]);
+  const hasTrackedBill = Boolean(trackedBill);
   const trackerStage = resolveBillTrackerStage(trackedBill?.latestActionText);
   const trackerStageIndex = Math.max(0, billTrackerStages.indexOf(trackerStage));
   const trackerFillPercent = (trackerStageIndex / (billTrackerStages.length - 1)) * 100;
@@ -123,26 +127,21 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   useEffect(() => {
     let active = true;
 
-    function refreshFavorites() {
-      setFavoriteRecords(readDashboardFavoriteRecords());
-    }
-
     async function refreshFromAccount() {
       const records = await hydrateDashboardFavoriteRecords();
       if (active) setFavoriteRecords(records);
     }
 
-    refreshFavorites();
     void refreshFromAccount();
-    window.addEventListener("storage", refreshFavorites);
-    window.addEventListener(persistenceEvent, refreshFavorites);
-    window.addEventListener(followsChangedEvent, refreshFavorites);
+    window.addEventListener("storage", refreshFromAccount);
+    window.addEventListener(persistenceEvent, refreshFromAccount);
+    window.addEventListener(followsChangedEvent, refreshFromAccount);
 
     return () => {
       active = false;
-      window.removeEventListener("storage", refreshFavorites);
-      window.removeEventListener(persistenceEvent, refreshFavorites);
-      window.removeEventListener(followsChangedEvent, refreshFavorites);
+      window.removeEventListener("storage", refreshFromAccount);
+      window.removeEventListener(persistenceEvent, refreshFromAccount);
+      window.removeEventListener(followsChangedEvent, refreshFromAccount);
     };
   }, []);
 
@@ -154,14 +153,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   useEffect(() => {
     let active = true;
 
-    function refreshGamification() {
-      setGamificationSnapshot(readLocalGamificationSnapshot());
+    async function refreshGamification() {
+      const next = await hydrateGamificationFromAccount();
+      if (active) setGamificationSnapshot(next);
     }
 
-    refreshGamification();
-    void hydrateGamificationFromAccount().then((next) => {
-      if (active) setGamificationSnapshot(next);
-    });
+    void refreshGamification();
 
     window.addEventListener("storage", refreshGamification);
     window.addEventListener("focus", refreshGamification);
@@ -465,7 +462,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </MobileCard>
 
             <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-[18px] font-medium leading-none">Recent Votes</h2>
+              <h2 className="text-[18px] font-medium leading-none">Latest Vote Feed</h2>
               <Link href="/search?type=votes&focus=results" className={mobileViewAllClass}>
                 View All
               </Link>
@@ -479,7 +476,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{recentVoteBill?.shortTitle ?? recentVote?.question ?? "No recent vote"}</h3>
                     <p className="mt-1 text-[15px] text-white/58">{recentVoteBill?.displayNumber ?? recentVote?.rollCall ?? "Roll call"}</p>
                   </div>
-                  <div className="shrink-0 rounded-full border border-[#2be68d]/25 bg-[#2be68d]/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none text-[#2be68d]">{recentVote?.result ?? "Updated"}</div>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <div className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] text-white/50">Congress feed</div>
+                    <div className="rounded-full border border-[#2be68d]/25 bg-[#2be68d]/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none text-[#2be68d]">{recentVote?.result ?? "Updated"}</div>
+                  </div>
                 </div>
                 <VoteSpreadPanel
                   className="mt-2"
@@ -504,14 +504,21 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <div className="relative z-10">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
                   <div className="min-w-0">
-                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{trackedBill?.shortTitle ?? "Tracked Bill"}</h3>
-                    <p className="mt-1 text-[15px] text-white/58">{trackedBill?.displayNumber ?? "Bill"}</p>
+                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{trackedBill?.shortTitle ?? "No tracked bill yet"}</h3>
+                    <p className="mt-1 text-[15px] text-white/58">{trackedBill?.displayNumber ?? "Save a bill to start your tracker."}</p>
                   </div>
-                  <div className={`shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none ${trackerStagePill.bgClass} ${trackerStagePill.textClass}`}>
-                    {trackerStage}
-                  </div>
+                  {hasTrackedBill ? (
+                    <div className={`shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none ${trackerStagePill.bgClass} ${trackerStagePill.textClass}`}>
+                      {trackerStage}
+                    </div>
+                  ) : (
+                    <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-right text-[13px] font-medium leading-none text-white/52">
+                      Empty
+                    </div>
+                  )}
                 </div>
-                <div className={`${dashboardInnerPanelClass} mt-2 px-3 py-2.5`}>
+                {hasTrackedBill ? (
+                  <div className={`${dashboardInnerPanelClass} mt-2 px-3 py-2.5`}>
                   <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
                     <span>Stage Progress</span>
                     <span>{trackerProgressStep}</span>
@@ -544,7 +551,21 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   <div className="mt-2 text-right text-[10px] font-medium uppercase tracking-[0.07em] text-white/46">
                     {trackerCompletion}% to final stage
                   </div>
-                </div>
+                  </div>
+                ) : (
+                  <div className={`${dashboardInnerPanelClass} mt-2 px-3 py-3`}>
+                    <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
+                      <span>Saved tracker</span>
+                      <span>0 bills</span>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3 text-[13px] leading-snug text-white/58">
+                      Bills will appear here only after this account saves one from search or bill detail.
+                    </div>
+                    <Link href="/search?type=bills&focus=results" className="mt-3 flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[13px] font-medium text-[#ffb12b]">
+                      Find Bills
+                    </Link>
+                  </div>
+                )}
               </div>
             </MobileCard>
 
@@ -841,15 +862,19 @@ function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"
 
 async function readDashboardAccountLedger() {
   if (!(await hasActiveBrowserSession())) return null;
-  if (dashboardLedgerPromise) return dashboardLedgerPromise;
 
-  dashboardLedgerPromise = fetch(accountLedgerEndpoint, { cache: "no-store" })
-    .then(async (response) => {
-      if (!response.ok) return null;
-      const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-      return data?.ledger ?? null;
-    })
-    .catch(() => null);
+  if (!dashboardLedgerPromise) {
+    dashboardLedgerPromise = fetch(accountLedgerEndpoint, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+        return data?.ledger ?? null;
+      })
+      .catch(() => null)
+      .finally(() => {
+        dashboardLedgerPromise = null;
+      });
+  }
 
   return dashboardLedgerPromise;
 }
@@ -868,15 +893,16 @@ async function syncDashboardFavoriteRecordsToAccount(records: SavedFollowRecord[
   if (!response?.ok) return records;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  if (data?.ledger) dashboardLedgerPromise = Promise.resolve(data.ledger);
   return data?.ledger?.follows ?? records;
 }
 
 async function hydrateDashboardFavoriteRecords() {
+  if (!(await hasActiveBrowserSession())) return [];
+
   const local = readDashboardFavoriteRecords();
   const ledger = await readDashboardAccountLedger();
 
-  if (!ledger) return local;
+  if (!ledger) return [];
 
   const accountFavorites = uniqueFavoriteRecords(ledger.follows);
   if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false);
@@ -907,10 +933,12 @@ function writeDashboardAlertIds(ids: string[]) {
 }
 
 async function hydrateDashboardReadAlertIds() {
+  if (!(await hasActiveBrowserSession())) return [];
+
   const local = readDashboardAlertIds();
   const ledger = await readDashboardAccountLedger();
 
-  if (!ledger) return local;
+  if (!ledger) return [];
 
   const accountReadAlerts = uniqueStrings(ledger.readAlerts);
   const changed = accountReadAlerts.length !== local.length || accountReadAlerts.some((id, index) => id !== local[index]);

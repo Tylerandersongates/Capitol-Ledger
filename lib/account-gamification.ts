@@ -24,6 +24,7 @@ export type AccountGamificationSnapshot = {
 
 const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
+const setupOnlyBadgeIds = new Set(["civic-starter", "district-finder"]);
 
 declare global {
   // eslint-disable-next-line no-var
@@ -65,19 +66,20 @@ function normalizeBadgeIds(value: unknown) {
 }
 
 export function normalizeAccountGamification(value: Partial<AccountGamificationSnapshot> = {}): AccountGamificationSnapshot {
-  const eventCounts = normalizeEventCounts(value.eventCounts);
-  const earnedBadgeIds = normalizeBadgeIds(value.earnedBadgeIds);
+  const eventCounts = normalizeEventCounts(value.eventCounts).filter((record) => record.event !== "complete-onboarding");
+  const earnedBadgeIds = normalizeBadgeIds(value.earnedBadgeIds).filter((id) => !setupOnlyBadgeIds.has(id));
   const summary = getGamificationSummary(eventCounts, earnedBadgeIds);
   const civicScore = calculateGamificationScore(eventCounts);
+  const hasCivicActions = eventCounts.some((record) => record.count > 0);
 
   return {
     civicScore,
-    dayStreak: toPositiveInteger(value.dayStreak),
+    dayStreak: hasCivicActions ? toPositiveInteger(value.dayStreak) : 0,
     earnedBadgeIds,
     eventCounts,
     level: summary.level,
     levelTitle: summary.levelTitle,
-    monthlyGain: toPositiveInteger(value.monthlyGain),
+    monthlyGain: hasCivicActions ? toPositiveInteger(value.monthlyGain) : 0,
     nextLevelScore: summary.nextLevelScore,
     totalActions: summary.totalActions,
     totalBadges: summary.totalBadges,

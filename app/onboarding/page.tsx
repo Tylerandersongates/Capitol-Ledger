@@ -6,7 +6,6 @@ import {
   OnboardingProgressMeter,
   OnboardingSetupFlow
 } from "@/components/account-profile-controls";
-import { GamificationEventLink } from "@/components/gamification-actions";
 import { MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
 import { OnboardingPartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { IssueInterestChips } from "@/components/saved-ledger-controls";
@@ -104,9 +103,9 @@ export default function OnboardingPage() {
             </main>
 
             <div className="sticky bottom-0 -mx-8 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(6,24,52,0.78)_0%,rgba(3,14,32,0.96)_100%)] px-8 pb-5 pt-4 backdrop-blur-xl shadow-[0_-16px_34px_rgba(1,8,24,0.46),inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <GamificationEventLink href="/dashboard" event="complete-onboarding" targetId="district-setup" className="flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
+              <Link href="/dashboard" className="flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
                 Complete Setup
-              </GamificationEventLink>
+              </Link>
               <div className="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/82" />
             </div>
     </MobileShell>
