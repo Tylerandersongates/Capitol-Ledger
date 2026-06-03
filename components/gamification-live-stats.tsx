@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   gamificationChangedEvent,
-  hydrateGamificationFromAccount,
-  readLocalGamificationSnapshot
+  hydrateGamificationFromAccount
 } from "@/lib/browser-gamification";
 import { civicLevelTiers, getImpactActions } from "@/lib/gamification";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
@@ -14,16 +13,19 @@ export function useGamificationSnapshot() {
   const [snapshot, setSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
 
   useEffect(() => {
-    function refreshSnapshot() {
-      setSnapshot(readLocalGamificationSnapshot());
+    let active = true;
+
+    async function refreshSnapshot() {
+      const next = await hydrateGamificationFromAccount();
+      if (active) setSnapshot(next);
     }
 
-    refreshSnapshot();
-    void hydrateGamificationFromAccount().then((next) => setSnapshot(next));
+    void refreshSnapshot();
     window.addEventListener("storage", refreshSnapshot);
     window.addEventListener(gamificationChangedEvent, refreshSnapshot);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshSnapshot);
       window.removeEventListener(gamificationChangedEvent, refreshSnapshot);
     };

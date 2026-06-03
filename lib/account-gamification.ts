@@ -1,6 +1,7 @@
 import {
   badgeCatalog,
   calculateGamificationScore,
+  demoGamificationEventCounts,
   gamificationEventRules,
   getGamificationSummary,
   type GamificationEventCount,
@@ -25,6 +26,7 @@ export type AccountGamificationSnapshot = {
 const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
 const setupOnlyBadgeIds = new Set(["civic-starter", "district-finder"]);
+const legacyDemoCounts = new Map(demoGamificationEventCounts.map((record) => [record.event, record.count]));
 
 declare global {
   // eslint-disable-next-line no-var
@@ -65,8 +67,23 @@ function normalizeBadgeIds(value: unknown) {
   return Array.from(new Set(source.filter((id): id is string => typeof id === "string" && validBadgeIds.has(id))));
 }
 
+function isLegacyDemoGamification(eventCounts: GamificationEventCount[], value: Partial<AccountGamificationSnapshot>) {
+  const counts = new Map(eventCounts.map((record) => [record.event, record.count]));
+  const legacyCoreEvents: GamificationEventType[] = ["track-bill", "review-vote", "contact-representative", "sign-petition", "read-alert"];
+  const hasLegacyCoreCounts = legacyCoreEvents.every((event) => (counts.get(event) ?? 0) >= (legacyDemoCounts.get(event) ?? 0));
+
+  return (
+    hasLegacyCoreCounts &&
+    toPositiveInteger(value.dayStreak) >= 16 &&
+    toPositiveInteger(value.monthlyGain) >= 75
+  );
+}
+
 export function normalizeAccountGamification(value: Partial<AccountGamificationSnapshot> = {}): AccountGamificationSnapshot {
-  const eventCounts = normalizeEventCounts(value.eventCounts).filter((record) => record.event !== "complete-onboarding");
+  const normalizedEventCounts = normalizeEventCounts(value.eventCounts);
+  if (isLegacyDemoGamification(normalizedEventCounts, value)) return getDefaultAccountGamification();
+
+  const eventCounts = normalizedEventCounts.filter((record) => record.event !== "complete-onboarding");
   const earnedBadgeIds = normalizeBadgeIds(value.earnedBadgeIds).filter((id) => !setupOnlyBadgeIds.has(id));
   const summary = getGamificationSummary(eventCounts, earnedBadgeIds);
   const civicScore = calculateGamificationScore(eventCounts);

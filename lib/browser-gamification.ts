@@ -55,9 +55,17 @@ function readDedupeKeys() {
 function gamificationSignature(snapshot: AccountGamificationSnapshot) {
   const normalized = normalizeAccountGamification(snapshot);
   return JSON.stringify({
-    ...normalized,
     earnedBadgeIds: [...normalized.earnedBadgeIds].sort(),
-    eventCounts: [...normalized.eventCounts].sort((left, right) => left.event.localeCompare(right.event))
+    eventCounts: [...normalized.eventCounts].sort((left, right) => left.event.localeCompare(right.event)),
+    civicScore: normalized.civicScore,
+    dayStreak: normalized.dayStreak,
+    level: normalized.level,
+    levelTitle: normalized.levelTitle,
+    monthlyGain: normalized.monthlyGain,
+    nextLevelScore: normalized.nextLevelScore,
+    totalActions: normalized.totalActions,
+    totalBadges: normalized.totalBadges,
+    xpProgress: normalized.xpProgress
   });
 }
 
@@ -94,7 +102,7 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
   if (!data?.gamification) return null;
 
   const accountSnapshot = normalizeAccountGamification(data.gamification);
-  gamificationHydrationPromise = Promise.resolve(accountSnapshot);
+  gamificationHydrationPromise = null;
   if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), accountSnapshot)) {
     writeLocalGamificationSnapshot(accountSnapshot);
   }
@@ -106,7 +114,9 @@ export async function hydrateGamificationFromAccount() {
   if (!(await hasActiveBrowserSession())) return getDefaultAccountGamification();
   if (gamificationHydrationPromise) return gamificationHydrationPromise;
 
-  gamificationHydrationPromise = hydrateGamificationFromApi();
+  gamificationHydrationPromise = hydrateGamificationFromApi().finally(() => {
+    gamificationHydrationPromise = null;
+  });
   return gamificationHydrationPromise;
 }
 
@@ -115,14 +125,16 @@ async function hydrateGamificationFromApi() {
 
   const response = await fetch("/api/account/gamification", { cache: "no-store" }).catch(() => null);
   if (!response?.ok) {
-    gamificationHydrationPromise = null;
-    return local;
+    const emptySnapshot = getDefaultAccountGamification();
+    if (!gamificationSnapshotsMatch(local, emptySnapshot)) writeLocalGamificationSnapshot(emptySnapshot);
+    return emptySnapshot;
   }
 
   const data = (await response.json().catch(() => null)) as { gamification?: AccountGamificationSnapshot } | null;
   if (!data?.gamification) {
-    gamificationHydrationPromise = null;
-    return local;
+    const emptySnapshot = getDefaultAccountGamification();
+    if (!gamificationSnapshotsMatch(local, emptySnapshot)) writeLocalGamificationSnapshot(emptySnapshot);
+    return emptySnapshot;
   }
 
   const accountSnapshot = normalizeAccountGamification(data.gamification);
@@ -174,7 +186,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   });
 
   writeLocalGamificationSnapshot(next);
-  gamificationHydrationPromise = Promise.resolve(next);
+  gamificationHydrationPromise = null;
   void syncGamificationToAccount(next);
   return true;
 }
