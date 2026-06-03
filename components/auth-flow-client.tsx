@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -26,6 +25,10 @@ const alertsKey = "capitol-ledger:saved-alerts";
 const interestsKey = "capitol-ledger:issue-interests";
 const readAlertsKey = "capitol-ledger:read-alerts";
 const subscriptionKey = "capitol-ledger:subscription";
+const authCardAccentClass =
+  "pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(56,146,255,0.18),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(255,177,43,0.1),transparent_30%)]";
+const authInnerPanelClass =
+  "rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(23,67,121,0.34)_0%,rgba(5,19,43,0.72)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_28px_rgba(1,8,24,0.36)]";
 
 type AuthMode = "signIn" | "create" | "forgot" | "reset" | "verify" | "success";
 
@@ -96,6 +99,10 @@ function isEmail(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
+function hasCompletedLocalSetup() {
+  return Boolean(readLocalAccountProfile().districtCode);
+}
+
 async function postJson<T>(url: string, body: unknown) {
   const response = await fetch(url, {
     body: JSON.stringify(body),
@@ -132,7 +139,9 @@ export function AuthFlowClient({
   const [pending, setPending] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
   const [allowAccountCreation, setAllowAccountCreation] = useState(initialMode === "create");
+  const [setupComplete, setSetupComplete] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [userRequestedAccountCreation, setUserRequestedAccountCreation] = useState(false);
   const [verificationHandled, setVerificationHandled] = useState(false);
 
   const heading = useMemo(() => {
@@ -155,9 +164,20 @@ export function AuthFlowClient({
 
   useEffect(() => {
     const created = hasBrowserAccountCreated();
-    setAccountCreated(created && !allowAccountCreation);
+    const completed = hasCompletedLocalSetup();
+    const shouldUseDashboardReturn = created && completed && returnTo === "/onboarding" && !userRequestedAccountCreation;
+
+    setSetupComplete(completed);
+    setAccountCreated(created && (!allowAccountCreation || shouldUseDashboardReturn));
+
+    if (shouldUseDashboardReturn) {
+      setAllowAccountCreation(false);
+      if (mode === "create") setMode("signIn");
+      return;
+    }
+
     if (created && !allowAccountCreation && mode === "create") setMode("signIn");
-  }, [allowAccountCreation, mode]);
+  }, [allowAccountCreation, mode, returnTo, userRequestedAccountCreation]);
 
   useEffect(() => {
     if (resetToken) setMode("reset");
@@ -205,11 +225,14 @@ export function AuthFlowClient({
   }
 
   function useDifferentAccount() {
+    setUserRequestedAccountCreation(true);
     setAllowAccountCreation(true);
     setAccountCreated(false);
     setMode("create");
     setStatus("");
   }
+
+  const postAuthReturnTo = setupComplete && returnTo === "/onboarding" && !userRequestedAccountCreation ? "/dashboard" : returnTo;
 
   async function syncLocalAccountData() {
     await fetch("/api/account/ledger", {
@@ -273,7 +296,7 @@ export function AuthFlowClient({
     }).catch(() => null);
   }
 
-  async function startDemoAccount(href = returnTo) {
+  async function startDemoAccount(href = postAuthReturnTo) {
     if (!allowDemoMode) {
       setStatus("Demo mode is disabled for this deployment.");
       return;
@@ -303,7 +326,7 @@ export function AuthFlowClient({
     router.refresh();
   }
 
-  async function finishProductionAuth(href = returnTo, syncLocalData = false) {
+  async function finishProductionAuth(href = postAuthReturnTo, syncLocalData = false) {
     if (syncLocalData) await syncLocalAccountData();
     router.push(href);
     router.refresh();
@@ -494,41 +517,50 @@ export function AuthFlowClient({
   const showSecureAccessSection = showDifferentAccountCta || allowDemoMode || showSecondaryCreateCta;
 
   return (
-    <main className="mt-8 flex flex-1 flex-col">
-      <section className="text-center">
-        <div className="relative mx-auto w-fit">
-          <span className="pointer-events-none absolute inset-0 rounded-full bg-[#ffb12b]/20 blur-3xl" aria-hidden="true" />
-          <span className="pointer-events-none absolute inset-0 rounded-full border border-[#ffb12b]/45" aria-hidden="true" />
-          <div className="relative grid h-36 w-36 place-items-center rounded-full border border-rust/45 bg-[#ffb12b]/12 shadow-[0_0_64px_rgba(255,177,43,0.35)]">
-            <Image src="/capitol-ledger-logo.png" alt="" width={128} height={128} className="h-32 w-32 rounded-full object-cover" />
+    <main className="mt-7 flex flex-1 flex-col pb-8">
+      <MobileCard variant="dashboard" className="relative overflow-hidden px-6 py-6">
+        <div className={authCardAccentClass} />
+        <section className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#ffb12b]">
+            <ShieldCheck className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+            Secure access
           </div>
-        </div>
-        <div className="mt-7 text-[19px] font-semibold uppercase tracking-[0.26em] text-white">
-          Capitol <span className="text-[#ffb12b]">Ledger</span>
-        </div>
-        <h1 className="mt-7 text-[31px] font-medium leading-tight text-white">{heading}</h1>
-        <p className="mx-auto mt-4 max-w-sm text-[17px] leading-snug text-white/62">{body}</p>
-      </section>
+          <h1 className="mt-5 max-w-[23rem] text-[29px] font-medium leading-tight text-white">{heading}</h1>
+          <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">{body}</p>
+          <div className={`${authInnerPanelClass} mt-5 px-3 py-3`}>
+            <div className="grid grid-cols-3 gap-2">
+              {trustItems.map((item) => (
+                <div key={item} className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2 text-center">
+                  <CheckCircle2 className="mx-auto h-4 w-4 text-[#43ed74]" strokeWidth={2} aria-hidden="true" />
+                  <div className="mt-1 text-[10px] font-medium leading-tight text-white/58">{item}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </MobileCard>
 
-      <MobileCard className="mt-8 px-5 py-5">
-        {(mode === "signIn" || mode === "create") && (!accountCreated || allowAccountCreation) ? (
-          <div className="grid grid-cols-2 rounded-2xl border border-white/10 bg-white/5 p-1">
-            <button
-              type="button"
-              onClick={() => selectMode("signIn")}
-              className={`h-11 rounded-xl text-[16px] font-semibold ${mode === "signIn" ? "bg-[#ffb12b] text-[#061126]" : "text-white/58"}`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => selectMode("create")}
-              className={`h-11 rounded-xl text-[16px] font-semibold ${mode === "create" ? "bg-[#ffb12b] text-[#061126]" : "text-white/58"}`}
-            >
-              Create
-            </button>
-          </div>
-        ) : null}
+      <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-5 py-5">
+        <div className={authCardAccentClass} />
+        <div className="relative z-10">
+          {(mode === "signIn" || mode === "create") && (!accountCreated || allowAccountCreation) ? (
+            <div className="grid grid-cols-2 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(23,67,121,0.34)_0%,rgba(5,19,43,0.72)_100%)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
+              <button
+                type="button"
+                onClick={() => selectMode("signIn")}
+                className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "signIn" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => selectMode("create")}
+                className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "create" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
+              >
+                Create
+              </button>
+            </div>
+          ) : null}
 
         <div className="mt-6 space-y-4">
           {mode === "create" ? (
@@ -600,7 +632,7 @@ export function AuthFlowClient({
             <button
               type="button"
               onClick={() => updateField("consent", !form.consent)}
-              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-left text-[13px] leading-snug text-white/58"
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-left text-[13px] leading-snug text-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
               aria-pressed={form.consent}
             >
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded border ${form.consent ? "border-[#43ed74]/45 bg-[#43ed74]/12 text-[#43ed74]" : "border-white/15 bg-white/5"}`}>
@@ -611,7 +643,7 @@ export function AuthFlowClient({
           ) : null}
 
           {mode === "success" ? (
-            <div className="rounded-2xl border border-[#43ed74]/25 bg-[#43ed74]/10 p-4 text-center">
+            <div className="rounded-2xl border border-[#43ed74]/25 bg-[#43ed74]/10 p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <CheckCircle2 className="mx-auto h-9 w-9 text-[#43ed74]" strokeWidth={1.9} aria-hidden="true" />
               <div className="mt-3 text-[18px] font-semibold text-white">Verification complete</div>
               <p className="mt-2 text-[14px] leading-snug text-white/58">
@@ -640,7 +672,7 @@ export function AuthFlowClient({
               </button>
               <button
                 type="button"
-                onClick={() => void finishProductionAuth(returnTo, false)}
+                onClick={() => void finishProductionAuth(postAuthReturnTo, false)}
                 disabled={pending}
                 className="flex h-12 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[16px] font-semibold text-white/72"
               >
@@ -652,7 +684,7 @@ export function AuthFlowClient({
               type="button"
               onClick={() => void submit()}
               disabled={pending}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition hover:brightness-105 disabled:opacity-60"
             >
               {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Continue"}
               <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
@@ -684,7 +716,7 @@ export function AuthFlowClient({
               <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
                 <button
                   type="button"
-                  onClick={() => void startDemoAccount(returnTo)}
+                  onClick={() => void startDemoAccount(postAuthReturnTo)}
                   disabled={pending}
                   className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
                 >
@@ -716,28 +748,37 @@ export function AuthFlowClient({
             ) : null}
           </>
         ) : null}
+        </div>
       </MobileCard>
 
-      <MobileCard className="mt-5 px-5 py-5">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-[#43ed74]" strokeWidth={1.8} aria-hidden="true" />
-          <h2 className="text-[20px] font-medium leading-none">Private by design</h2>
-        </div>
-        <div className="mt-5 grid gap-3">
-          {trustItems.map((item) => (
-            <div key={item} className="flex items-center gap-3 text-[15px] text-white/64">
-              <span className="grid h-6 w-6 place-items-center rounded-full border border-[#43ed74]/45 text-[#43ed74]">
-                <CheckCircle2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </span>
-              {item}
+      <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-5 py-5">
+        <div className={authCardAccentClass} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-white/12 bg-white/[0.055] text-[#43ed74] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.32)]">
+              <ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/42">Data handling</div>
+              <h2 className="mt-1 text-[21px] font-semibold leading-none text-white">Private by design</h2>
             </div>
-          ))}
+          </div>
+          <div className={`${authInnerPanelClass} mt-5 grid gap-2 px-3 py-3`}>
+            {trustItems.map((item) => (
+              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[15px] text-white/64">
+                <span className="grid h-6 w-6 place-items-center rounded-full border border-[#43ed74]/45 text-[#43ed74]">
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                </span>
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
       </MobileCard>
 
       {allowDemoMode ? (
         <div className="mt-6 flex flex-col items-center gap-3 text-center">
-          <button type="button" onClick={() => void startDemoAccount(returnTo)} disabled={pending} className="text-[15px] font-semibold text-[#ffb12b] disabled:opacity-60">
+          <button type="button" onClick={() => void startDemoAccount(postAuthReturnTo)} disabled={pending} className="text-[15px] font-semibold text-[#ffb12b] disabled:opacity-60">
             Continue in demo mode
           </button>
           <p className="max-w-xs text-[12px] leading-5 text-white/38">
@@ -768,8 +809,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-[14px] font-semibold text-white/58">{label}</span>
-      <span className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[#031126]/88 px-4 py-3">
+      <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">{label}</span>
+      <span className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
         <span className="text-[#ffb12b] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{icon}</span>
         <input
           type={type}

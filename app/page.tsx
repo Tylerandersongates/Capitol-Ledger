@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
+import { getCurrentSession } from "@/lib/auth";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getCurrentSession();
+  if (session) redirect("/dashboard");
+
   redirect("/sign-in?mode=create&returnTo=%2Fonboarding");
 }

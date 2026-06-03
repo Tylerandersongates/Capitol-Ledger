@@ -1,10 +1,15 @@
 import { MobileShell } from "@/components/mobile-shell";
-import { mobileIconButtonClass } from "@/components/mobile-ui";
+import { mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { DemoAccountButton } from "@/components/demo-auth-controls";
 import { AuthFlowClient } from "@/components/auth-flow-client";
 import { safeReturnPath } from "@/lib/route-guards";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+
+const authAmbientClass =
+  "bg-[radial-gradient(circle_at_16%_8%,rgba(48,129,214,0.14),transparent_32%),radial-gradient(circle_at_84%_8%,rgba(255,177,43,0.09),transparent_30%),linear-gradient(180deg,rgba(2,10,24,0.12)_0%,rgba(1,8,21,0.62)_56%,rgba(1,6,18,0.9)_100%)]";
+const authBackgroundClass = "bg-[linear-gradient(180deg,#071a34_0%,#041226_36%,#020b1c_72%,#010716_100%)]";
 
 export default function SignInPage({ searchParams }: { searchParams?: { mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
   const initialMode = searchParams?.mode === "create" ? "create" : undefined;
@@ -13,19 +18,32 @@ export default function SignInPage({ searchParams }: { searchParams?: { mode?: s
 
   return (
     <MobileShell
-      minHeight="min-h-[980px]"
+      ambientClassName={authAmbientClass}
+      backgroundClassName={authBackgroundClass}
+      minHeight="min-h-[1180px]"
       contentClassName="px-8 pb-5 pt-8"
-      statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
+      statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
             <header className="mt-10 flex items-center justify-between">
-              <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
-                <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
-              </Link>
-              {allowDemoMode ? (
-                <DemoAccountButton href={returnTo} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[14px] font-semibold text-white/60">
-                  Demo
-                </DemoAccountButton>
-              ) : null}
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="relative grid h-[82px] w-[82px] shrink-0 place-items-center rounded-full border-2 border-[#d59a31]/80 bg-[radial-gradient(circle,rgba(255,177,43,0.18)_0%,rgba(28,102,180,0.22)_40%,rgba(4,17,39,0.94)_72%)] shadow-[inset_0_1px_0_rgba(255,210,120,0.22),0_0_26px_rgba(255,177,43,0.24),0_0_34px_rgba(35,132,255,0.12)]">
+                  <span className="absolute inset-[-5px] rounded-full border border-[#ffb12b]/42" />
+                  <Image src="/capitol-ledger-logo.png" alt="" width={78} height={78} className="h-[76px] w-[76px] rounded-full object-cover" />
+                </div>
+                <div className="min-w-0 whitespace-nowrap text-[15px] font-semibold uppercase tracking-[0.2em] text-white/86">
+                  Capitol <span className="text-brass">Ledger</span>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {allowDemoMode ? (
+                  <DemoAccountButton href={returnTo} className={`${mobileViewAllClass} px-4 py-2 text-[13px] text-white/72`}>
+                    Demo
+                  </DemoAccountButton>
+                ) : null}
+                <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
+                  <ArrowLeft className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
+                </Link>
+              </div>
             </header>
 
             <AuthFlowClient
