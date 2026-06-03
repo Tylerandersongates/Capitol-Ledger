@@ -1,6 +1,7 @@
 import { bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
+import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
@@ -257,9 +258,77 @@ const filterPartyMap = {
   Republican: PrismaParty.REPUBLICAN
 } as const satisfies Record<Party, PrismaParty>;
 
+type IssueSignal = (typeof issueSignals)[number];
+
+const issueSearchAliases = {
+  Affordability: ["affordable", "affordability", "cost of living", "consumer costs", "family costs", "prices", "housing", "rent"],
+  "Border Security": ["border", "border security", "customs", "homeland security", "immigration", "port of entry", "ports of entry"],
+  Jobs: ["apprenticeship", "career", "compensation", "economic development", "employment", "hiring", "job", "job training", "jobs", "labor", "salary", "small business", "unemployment", "wage", "wages", "worker", "workers", "workforce"],
+  Inflation: ["consumer prices", "inflation", "price stability", "prices", "supply chain"],
+  Healthcare: ["health", "health care", "healthcare", "hospital", "medicaid", "medicare", "patient", "patients", "public health"],
+  "Healthcare Affordability": ["affordable care", "care affordability", "health care affordability", "healthcare affordability", "medical costs", "patient costs", "prescription drug", "prescription drugs"],
+  Education: ["education", "school", "schools", "student", "students", "teacher", "teachers", "tuition"],
+  Infrastructure: ["broadband", "infrastructure", "ports", "public works", "resilience", "roads", "transportation", "water"],
+  "Federal Budget Deficit": ["appropriations", "budget", "debt", "deficit", "federal budget", "fiscal", "spending"],
+  "Drug Addiction": ["addiction", "behavioral health", "drug", "opioid", "opioids", "overdose", "substance abuse", "substance use"],
+  "Gun Violence": ["firearm", "firearms", "gun", "gun violence", "public safety", "school safety", "second amendment", "violence"],
+  "Climate Change": ["climate", "climate change", "emissions", "energy", "environment", "resilience", "sustainability"],
+  "Veterans Affairs": ["department of veterans affairs", "servicemember", "servicemembers", "veteran", "veterans", "veterans affairs"],
+  "Public Safety": ["emergency", "first responder", "first responders", "law enforcement", "police", "public safety", "violence"]
+} as const satisfies Record<IssueSignal, readonly string[]>;
+
 function matchesText(values: Array<string | undefined>, query: string) {
   const normalized = query.toLowerCase();
   return values.some((value) => value?.toLowerCase().includes(normalized));
+}
+
+function normalizeSearchTerm(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqueSearchTerms(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function getIssueSearchTerms(query: string) {
+  const normalizedQuery = normalizeSearchTerm(query);
+  const matchedSignal = issueSignals.find((signal) => normalizeSearchTerm(signal) === normalizedQuery);
+
+  if (!matchedSignal) return [query];
+  return uniqueSearchTerms([query, ...issueSearchAliases[matchedSignal]]);
+}
+
+function matchesAnyText(values: Array<string | undefined>, queries: string[]) {
+  return queries.some((query) => matchesText(values, query));
+}
+
+function billSearchValues(bill: Bill) {
+  return [
+    bill.displayNumber,
+    bill.title,
+    bill.shortTitle,
+    bill.policyArea,
+    bill.committeeName,
+    bill.latestActionText,
+    bill.summary,
+    getBillSponsor(bill)?.fullName
+  ];
+}
+
+function databaseBillSearchClauses(terms: string[]): Prisma.BillWhereInput[] {
+  return terms.flatMap((term) => [
+    { billNumber: { contains: term, mode: "insensitive" } },
+    { billType: { contains: term, mode: "insensitive" } },
+    { latestActionText: { contains: term, mode: "insensitive" } },
+    { policyArea: { contains: term, mode: "insensitive" } },
+    { shortTitle: { contains: term, mode: "insensitive" } },
+    { summary: { contains: term, mode: "insensitive" } },
+    { title: { contains: term, mode: "insensitive" } }
+  ]);
 }
 
 function stripSummaryMarkup(value: string) {
@@ -1058,6 +1127,7 @@ export function getRecentUpdates() {
 
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
+  const billSearchTerms = q ? getIssueSearchTerms(q) : [];
   const statusFilter = normalizeBillStatusFilter(filters.status);
   const chamber = filters.chamber as Chamber | undefined;
   const party = filters.party as Party | undefined;
@@ -1078,13 +1148,7 @@ export function searchRecords(filters: SearchFilters) {
   const billResults =
     type === "all" || type === "bills"
       ? bills.filter((bill) => {
-          if (
-            q &&
-            !matchesText(
-              [bill.displayNumber, bill.title, bill.shortTitle, bill.policyArea, getBillSponsor(bill)?.fullName],
-              q
-            )
-          ) {
+          if (q && !matchesAnyText(billSearchValues(bill), billSearchTerms)) {
             return false;
           }
           if (!matchesBillStatusFilter(bill, statusFilter)) return false;
@@ -1114,6 +1178,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
   try {
     const prisma = getPrisma();
     const q = filters.q?.trim();
+    const billSearchTerms = q ? getIssueSearchTerms(q) : [];
     const statusFilter = normalizeBillStatusFilter(filters.status);
     const chamber = filters.chamber && filters.chamber in filterChamberMap ? filterChamberMap[filters.chamber as Chamber] : undefined;
     const party = filters.party && filters.party in filterPartyMap ? filterPartyMap[filters.party as Party] : undefined;
@@ -1149,13 +1214,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
             take: 30,
             where: q
               ? {
-                  OR: [
-                    { billNumber: { contains: q, mode: "insensitive" } },
-                    { billType: { contains: q, mode: "insensitive" } },
-                    { policyArea: { contains: q, mode: "insensitive" } },
-                    { shortTitle: { contains: q, mode: "insensitive" } },
-                    { title: { contains: q, mode: "insensitive" } }
-                  ]
+                  OR: databaseBillSearchClauses(billSearchTerms)
                 }
               : {}
           })
