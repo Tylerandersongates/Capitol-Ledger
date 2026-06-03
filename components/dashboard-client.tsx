@@ -28,7 +28,6 @@ type DashboardFavoriteItem = {
   type: FollowTargetType;
 };
 
-const readAlertKey = "capitol-ledger:read-alerts";
 const followsKey = "capitol-ledger:follows";
 const accountLedgerEndpoint = "/api/account/ledger";
 const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
@@ -67,8 +66,7 @@ function getBillTrackerStagePill(stage: BillTrackerStage) {
 }
 
 export function DashboardClient({ data }: { data: DashboardData }) {
-  const defaultUnreadAlertIds = useMemo(() => data.defaultUnreadAlertIds, [data.defaultUnreadAlertIds]);
-  const [unreadAlertCount, setUnreadAlertCount] = useState(() => countUnreadAlertIds(defaultUnreadAlertIds, []));
+  const [unreadAlertCount, setUnreadAlertCount] = useState(0);
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>([]);
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
@@ -107,29 +105,25 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   useEffect(() => {
     let active = true;
 
-    function refreshFromBrowser() {
-      setUnreadAlertCount(countUnreadAlertIds(defaultUnreadAlertIds, readDashboardAlertIds()));
-    }
-
     async function refreshFromAccount() {
-      const readIds = await hydrateDashboardReadAlertIds();
-      if (active) setUnreadAlertCount(countUnreadAlertIds(defaultUnreadAlertIds, readIds));
+      const ledger = await readDashboardAccountLedger();
+      if (active) setUnreadAlertCount(countAccountUnreadAlertIds(ledger));
     }
 
     void refreshFromAccount();
-    window.addEventListener(readAlertsChangedEvent, refreshFromBrowser);
-    window.addEventListener("storage", refreshFromBrowser);
-    window.addEventListener("focus", refreshFromBrowser);
-    window.addEventListener("pageshow", refreshFromBrowser);
+    window.addEventListener(readAlertsChangedEvent, refreshFromAccount);
+    window.addEventListener("storage", refreshFromAccount);
+    window.addEventListener("focus", refreshFromAccount);
+    window.addEventListener("pageshow", refreshFromAccount);
 
     return () => {
       active = false;
-      window.removeEventListener(readAlertsChangedEvent, refreshFromBrowser);
-      window.removeEventListener("storage", refreshFromBrowser);
-      window.removeEventListener("focus", refreshFromBrowser);
-      window.removeEventListener("pageshow", refreshFromBrowser);
+      window.removeEventListener(readAlertsChangedEvent, refreshFromAccount);
+      window.removeEventListener("storage", refreshFromAccount);
+      window.removeEventListener("focus", refreshFromAccount);
+      window.removeEventListener("pageshow", refreshFromAccount);
     };
-  }, [defaultUnreadAlertIds]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1042,45 +1036,9 @@ async function hydrateDashboardFavoriteRecords() {
   return accountFavorites;
 }
 
-function readDashboardAlertIds() {
-  if (typeof window === "undefined") return [];
+function countAccountUnreadAlertIds(ledger: AccountLedgerSnapshot | null) {
+  if (!ledger) return 0;
 
-  try {
-    const stored = window.localStorage?.getItem(readAlertKey);
-    const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeDashboardAlertIds(ids: string[]) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage?.setItem(readAlertKey, JSON.stringify(uniqueStrings(ids)));
-    window.dispatchEvent(new Event(readAlertsChangedEvent));
-  } catch {
-    // The badge can still render safely when browser persistence is restricted.
-  }
-}
-
-async function hydrateDashboardReadAlertIds() {
-  if (!(await hasActiveBrowserSession())) return [];
-
-  const local = readDashboardAlertIds();
-  const ledger = await readDashboardAccountLedger();
-
-  if (!ledger) return [];
-
-  const accountReadAlerts = uniqueStrings(ledger.readAlerts);
-  const changed = accountReadAlerts.length !== local.length || accountReadAlerts.some((id, index) => id !== local[index]);
-
-  if (changed) writeDashboardAlertIds(accountReadAlerts);
-  return accountReadAlerts;
-}
-
-function countUnreadAlertIds(defaultUnreadAlertIds: string[], readIds: string[]) {
-  const read = new Set(readIds);
-  return uniqueStrings(defaultUnreadAlertIds).filter((id) => !read.has(id)).length;
+  const read = new Set(uniqueStrings(ledger.readAlerts));
+  return uniqueStrings(ledger.savedAlerts).filter((id) => !read.has(id)).length;
 }
