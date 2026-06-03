@@ -502,7 +502,7 @@ export function getEarnedBadges() {
 }
 
 export function getBadgeCollections(earnedBadgeIds?: string[]) {
-  const earnedIds = new Set((earnedBadgeIds?.length ? earnedBadgeIds : getEarnedBadges().map((badge) => badge.id)).filter(Boolean));
+  const earnedIds = new Set((earnedBadgeIds ?? getEarnedBadges().map((badge) => badge.id)).filter(Boolean));
   const earnedBadges = badgeCatalog
     .filter((badge) => earnedIds.has(badge.id))
     .map((badge) => ({ ...badge, status: "earned" as const }));

@@ -121,10 +121,6 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
-function mergeReadAlertIds(local: string[], account: string[] = []) {
-  return uniqueStrings([...local, ...account]);
-}
-
 function sameStringSet(left: string[], right: string[]) {
   if (left.length !== right.length) return false;
   const rightSet = new Set(right);
@@ -145,10 +141,10 @@ async function syncReadAlertsToAccount(ids = readAlertIds()) {
   if (!response?.ok) return ids;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  const merged = mergeReadAlertIds(ids, data?.ledger?.readAlerts);
-  readAlertsHydrationPromise = Promise.resolve(merged);
-  if (!sameStringSet(ids, merged)) writeAlertIds(merged);
-  return merged;
+  const accountReadAlerts = uniqueStrings(data?.ledger?.readAlerts ?? ids);
+  readAlertsHydrationPromise = Promise.resolve(accountReadAlerts);
+  if (!sameStringSet(ids, accountReadAlerts)) writeAlertIds(accountReadAlerts);
+  return accountReadAlerts;
 }
 
 async function hydrateReadAlertsFromAccount() {
@@ -169,12 +165,9 @@ async function hydrateReadAlertsFromApi() {
   }
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  const merged = mergeReadAlertIds(local, data?.ledger?.readAlerts);
-  if (!sameStringSet(local, merged)) {
-    writeAlertIds(merged);
-    void syncReadAlertsToAccount(merged);
-  }
-  return merged;
+  const accountReadAlerts = uniqueStrings(data?.ledger?.readAlerts ?? []);
+  if (!sameStringSet(local, accountReadAlerts)) writeAlertIds(accountReadAlerts);
+  return accountReadAlerts;
 }
 
 export function markAlertIdRead(id: string) {

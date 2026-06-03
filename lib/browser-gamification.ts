@@ -52,28 +52,6 @@ function readDedupeKeys() {
   return readJson<string[]>(gamificationDedupeKey, []);
 }
 
-function mergeEventCounts(local: AccountGamificationSnapshot, account: AccountGamificationSnapshot) {
-  const counts = new Map(local.eventCounts.map((record) => [record.event, record.count]));
-
-  account.eventCounts.forEach((record) => {
-    counts.set(record.event, Math.max(counts.get(record.event) ?? 0, record.count));
-  });
-
-  return Array.from(counts.entries()).map(([event, count]) => ({ event, count }));
-}
-
-function mergeGamificationSnapshots(local: AccountGamificationSnapshot, account: AccountGamificationSnapshot) {
-  return normalizeAccountGamification({
-    ...local,
-    dayStreak: Math.max(local.dayStreak, account.dayStreak),
-    earnedBadgeIds: Array.from(new Set([...local.earnedBadgeIds, ...account.earnedBadgeIds])),
-    eventCounts: mergeEventCounts(local, account),
-    level: Math.max(local.level, account.level),
-    monthlyGain: Math.max(local.monthlyGain, account.monthlyGain),
-    nextLevelScore: Math.max(local.nextLevelScore, account.nextLevelScore)
-  });
-}
-
 function gamificationSignature(snapshot: AccountGamificationSnapshot) {
   const normalized = normalizeAccountGamification(snapshot);
   return JSON.stringify({
@@ -115,12 +93,12 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
   const data = (await response.json().catch(() => null)) as { gamification?: AccountGamificationSnapshot } | null;
   if (!data?.gamification) return null;
 
-  const merged = mergeGamificationSnapshots(readLocalGamificationSnapshot(), data.gamification);
-  gamificationHydrationPromise = Promise.resolve(merged);
-  if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), merged)) {
-    writeLocalGamificationSnapshot(merged);
+  const accountSnapshot = normalizeAccountGamification(data.gamification);
+  gamificationHydrationPromise = Promise.resolve(accountSnapshot);
+  if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), accountSnapshot)) {
+    writeLocalGamificationSnapshot(accountSnapshot);
   }
-  return merged;
+  return accountSnapshot;
 }
 
 export async function hydrateGamificationFromAccount() {
@@ -147,13 +125,12 @@ async function hydrateGamificationFromApi() {
     return local;
   }
 
-  const merged = mergeGamificationSnapshots(local, data.gamification);
-  if (!gamificationSnapshotsMatch(local, merged)) {
-    writeLocalGamificationSnapshot(merged);
-    void syncGamificationToAccount(merged);
+  const accountSnapshot = normalizeAccountGamification(data.gamification);
+  if (!gamificationSnapshotsMatch(local, accountSnapshot)) {
+    writeLocalGamificationSnapshot(accountSnapshot);
   }
 
-  return merged;
+  return accountSnapshot;
 }
 
 export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1) {

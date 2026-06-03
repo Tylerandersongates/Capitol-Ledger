@@ -1,9 +1,7 @@
 import {
   badgeCatalog,
   calculateGamificationScore,
-  demoGamificationEventCounts,
   gamificationEventRules,
-  getEarnedBadges,
   getGamificationSummary,
   type GamificationEventCount,
   type GamificationEventType
@@ -26,7 +24,6 @@ export type AccountGamificationSnapshot = {
 
 const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
-const defaultEarnedBadgeIds = getEarnedBadges().map((badge) => badge.id);
 
 declare global {
   // eslint-disable-next-line no-var
@@ -46,7 +43,7 @@ function toPositiveInteger(value: unknown) {
 }
 
 function normalizeEventCounts(value: unknown): GamificationEventCount[] {
-  const source = Array.isArray(value) ? value : demoGamificationEventCounts;
+  const source = Array.isArray(value) ? value : [];
   const counts = new Map<GamificationEventType, number>();
 
   source.forEach((record) => {
@@ -63,7 +60,7 @@ function normalizeEventCounts(value: unknown): GamificationEventCount[] {
 }
 
 function normalizeBadgeIds(value: unknown) {
-  const source = Array.isArray(value) ? value : defaultEarnedBadgeIds;
+  const source = Array.isArray(value) ? value : [];
   return Array.from(new Set(source.filter((id): id is string => typeof id === "string" && validBadgeIds.has(id))));
 }
 
@@ -75,12 +72,12 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
 
   return {
     civicScore,
-    dayStreak: toPositiveInteger(value.dayStreak) || summary.dayStreak,
+    dayStreak: toPositiveInteger(value.dayStreak),
     earnedBadgeIds,
     eventCounts,
     level: summary.level,
     levelTitle: summary.levelTitle,
-    monthlyGain: toPositiveInteger(value.monthlyGain) || summary.monthlyGain,
+    monthlyGain: toPositiveInteger(value.monthlyGain),
     nextLevelScore: summary.nextLevelScore,
     totalActions: summary.totalActions,
     totalBadges: summary.totalBadges,

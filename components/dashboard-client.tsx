@@ -878,9 +878,9 @@ async function hydrateDashboardFavoriteRecords() {
 
   if (!ledger) return local;
 
-  const merged = uniqueFavoriteRecords([...local, ...ledger.follows]);
-  if (!favoriteRecordsMatch(local, merged)) writeDashboardFavoriteRecords(merged, false);
-  return merged;
+  const accountFavorites = uniqueFavoriteRecords(ledger.follows);
+  if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false);
+  return accountFavorites;
 }
 
 function readDashboardAlertIds() {
@@ -912,11 +912,11 @@ async function hydrateDashboardReadAlertIds() {
 
   if (!ledger) return local;
 
-  const merged = uniqueStrings([...local, ...ledger.readAlerts]);
-  const changed = merged.length !== local.length || merged.some((id, index) => id !== local[index]);
+  const accountReadAlerts = uniqueStrings(ledger.readAlerts);
+  const changed = accountReadAlerts.length !== local.length || accountReadAlerts.some((id, index) => id !== local[index]);
 
-  if (changed) writeDashboardAlertIds(merged);
-  return merged;
+  if (changed) writeDashboardAlertIds(accountReadAlerts);
+  return accountReadAlerts;
 }
 
 function countUnreadAlertIds(defaultUnreadAlertIds: string[], readIds: string[]) {

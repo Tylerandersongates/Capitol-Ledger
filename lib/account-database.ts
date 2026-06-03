@@ -303,6 +303,9 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
   return withDatabaseFallback("mergeLedgerIntoDatabase", null, async () => {
     const prisma = getPrisma();
     const ledger = normalizeAccountLedger(value);
+    const hasFollows = Array.isArray(value.follows);
+    const hasReadAlerts = Array.isArray(value.readAlerts);
+    const hasSavedAlerts = Array.isArray(value.savedAlerts);
     const hasIssueInterests = Array.isArray(value.issueInterests);
     const providedIssueInterests = Array.isArray(value.issueInterests) ? value.issueInterests : [];
     const issueInterests = hasIssueInterests
@@ -331,6 +334,14 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
         );
 
     await prisma.$transaction([
+      ...(hasFollows
+        ? [
+            prisma.$executeRaw`
+              DELETE FROM "Follow"
+              WHERE "userId" = ${userId}
+            `
+          ]
+        : []),
       ...ledger.follows.map((record) =>
         prisma.$executeRaw`
           INSERT INTO "Follow" ("id", "userId", "targetType", "targetId", "createdAt")
@@ -338,6 +349,14 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
           ON CONFLICT ("userId", "targetType", "targetId") DO NOTHING
         `
       ),
+      ...(hasSavedAlerts
+        ? [
+            prisma.$executeRaw`
+              DELETE FROM "SavedAlert"
+              WHERE "userId" = ${userId}
+            `
+          ]
+        : []),
       ...ledger.savedAlerts.map((alertId) =>
         prisma.$executeRaw`
           INSERT INTO "SavedAlert" ("id", "userId", "alertId", "createdAt")
@@ -345,6 +364,14 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
           ON CONFLICT ("userId", "alertId") DO NOTHING
         `
       ),
+      ...(hasReadAlerts
+        ? [
+            prisma.$executeRaw`
+              DELETE FROM "ReadAlert"
+              WHERE "userId" = ${userId}
+            `
+          ]
+        : []),
       ...ledger.readAlerts.map((alertId) =>
         prisma.$executeRaw`
           INSERT INTO "ReadAlert" ("id", "userId", "alertId", "readAt")
@@ -374,9 +401,11 @@ export async function toggleFollowInDatabase(userId: string, targetType: FollowT
     const shouldSave = saved ?? existing.length === 0;
 
     if (shouldSave) {
-      await mergeLedgerIntoDatabase(userId, {
-        follows: [{ id: targetId, type: targetType }]
-      });
+      await prisma.$executeRaw`
+        INSERT INTO "Follow" ("id", "userId", "targetType", "targetId", "createdAt")
+        VALUES (${randomUUID()}, ${userId}, ${toDbTargetType(targetType)}::"FollowTargetType", ${targetId}, NOW())
+        ON CONFLICT ("userId", "targetType", "targetId") DO NOTHING
+      `;
     } else {
       await prisma.$executeRaw`
         DELETE FROM "Follow"

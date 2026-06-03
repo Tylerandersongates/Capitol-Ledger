@@ -263,6 +263,14 @@ export function AuthFlowClient({
       },
       body: JSON.stringify(readLocalAccountProfile())
     }).catch(() => null);
+
+    await fetch("/api/account/gamification", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(readLocalGamificationSnapshot())
+    }).catch(() => null);
   }
 
   async function startDemoAccount(href = returnTo) {
@@ -598,7 +606,7 @@ export function AuthFlowClient({
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded border ${form.consent ? "border-[#43ed74]/45 bg-[#43ed74]/12 text-[#43ed74]" : "border-white/15 bg-white/5"}`}>
                 {form.consent ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
               </span>
-              Use my district, saved ledger, and alerts to personalize Capitol Ledger.
+              I agree to create my Capitol Ledger account and use my setup choices to personalize my experience.
             </button>
           ) : null}
 
