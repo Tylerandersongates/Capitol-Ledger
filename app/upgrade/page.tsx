@@ -1,0 +1,264 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Bell,
+  Check,
+  ChevronRight,
+  Crown,
+  FileText,
+  Home,
+  LockKeyhole,
+  Map,
+  ShieldCheck,
+  Sparkles,
+  UserRound
+} from "lucide-react";
+import { MobileShell } from "@/components/mobile-shell";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { BillingCycleToggle, PlanActionButton, PlanPrice, SubscriptionDemoSwitcher, TeamWorkspacePreview } from "@/components/subscription-controls";
+import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
+import type { SubscriptionPlanId } from "@/types/capitol";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
+const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
+const premiumCardDescriptionClass = "mt-2 text-[13px] leading-snug text-white/54";
+const premiumPanelClass = "rounded-2xl border border-white/10 bg-[#071a38]/62 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]";
+const premiumHeaderIconClass =
+  "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-white/8 text-[#ffb12b] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
+const premiumHeaderGreenIconClass =
+  "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
+
+export default function UpgradePage() {
+  return (
+    <MobileShell
+      minHeight="min-h-[1080px]"
+      contentClassName="px-8 pb-5 pt-8"
+      statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
+    >
+      <header className="relative mt-10 flex items-center justify-center">
+        <Link href="/dashboard" className={`absolute left-0 ${mobileIconButtonClass}`} aria-label="Back to dashboard">
+          <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
+        </Link>
+        <h1 className="text-[30px] font-medium leading-none text-white">Upgrade</h1>
+        <Link href="/account" className={`absolute right-0 ${mobileIconButtonClass}`} aria-label="Open account">
+          <Crown className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
+        </Link>
+      </header>
+
+      <main className="mt-7 space-y-4 pb-8">
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <PremiumUpgradeHeader
+            aside={<span className={premiumHeaderIconClass}><Crown /></span>}
+            description="Choose individual intelligence or a shared workspace for campaigns, nonprofits, civic groups, and local teams."
+            eyebrow="Premium Intelligence"
+            title="Choose your civic workspace"
+          />
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <ValuePill label="Priority alerts" value="Fast" />
+            <ValuePill label="Source map" value="Deep" />
+            <ValuePill label="Briefs" value="Weekly" />
+          </div>
+          <Link href="#plans" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
+            View Plans
+          </Link>
+        </MobileCard>
+
+        <div id="plans">
+          <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+            <PremiumUpgradeHeader
+              description="Choose a billing cycle before selecting a plan."
+              eyebrow="Billing"
+              icon={<Sparkles />}
+              title="Plan cycle"
+            />
+            <div className="mt-5">
+              <BillingCycleToggle />
+            </div>
+          </MobileCard>
+        </div>
+
+        <section className="space-y-3" aria-label="Subscription plans">
+          <PlanTierCard
+            badge="Best Value"
+            featured
+            icon={<Crown />}
+            inactiveLabel="Upgrade to Pro"
+            plan="pro"
+          />
+          <PlanTierCard
+            icon={<ShieldCheck />}
+            inactiveLabel="Switch to Free"
+            plan="free"
+          />
+          <PlanTierCard
+            badge="Team Preview"
+            icon={<Sparkles />}
+            inactiveLabel="Start Team Plan"
+            plan="team"
+          />
+        </section>
+
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <TeamWorkspacePreview />
+        </MobileCard>
+
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <SubscriptionDemoSwitcher showPreview={false} />
+        </MobileCard>
+
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0">
+                <span className={premiumEyebrowClass}>Plan Logistics</span>
+                <span className={`${premiumCardTitleClass} mt-2 block`}>Compare access</span>
+                <span className={premiumCardDescriptionClass}>Check the core unlocks without turning the page into a spreadsheet.</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className={premiumHeaderIconClass}>
+                  <LockKeyhole />
+                </span>
+                <ChevronRight className="h-5 w-5 text-white/42 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
+              </span>
+            </summary>
+            <div className={`mt-5 max-h-[250px] overflow-y-auto overscroll-contain ${premiumPanelClass} p-3 pb-4`}>
+              <div className="grid grid-cols-[1fr_44px_44px_44px] gap-2 pb-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-white/42">
+                <span className="text-left">Feature</span>
+                <span>Free</span>
+                <span>Pro</span>
+                <span>Team</span>
+              </div>
+              <div className="divide-y divide-white/8">
+                {planComparisonRows.map(({ featureId, label }) => (
+                  <div key={label} className="grid grid-cols-[1fr_44px_44px_44px] items-center gap-2 py-3">
+                    <span className="text-[13px] leading-snug text-white/64">{label}</span>
+                    <PlanCheck enabled={isPlanFeatureEnabled("free", featureId)} />
+                    <PlanCheck enabled={isPlanFeatureEnabled("pro", featureId)} />
+                    <PlanCheck enabled={isPlanFeatureEnabled("team", featureId)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+        </MobileCard>
+      </main>
+
+      <MobileBottomNav
+        items={[
+          { href: "/dashboard", icon: <Home />, label: "Home" },
+          { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
+          { href: "/map", icon: <Map />, label: "Map" },
+          { href: "/alerts", icon: <Bell />, label: "Alerts" },
+          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+        ]}
+      />
+    </MobileShell>
+  );
+}
+
+function PremiumUpgradeHeader({
+  aside,
+  description,
+  eyebrow,
+  icon,
+  iconTone = "gold",
+  title
+}: {
+  aside?: ReactNode;
+  description?: ReactNode;
+  eyebrow: string;
+  icon?: ReactNode;
+  iconTone?: "gold" | "green";
+  title: ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+      <div className="min-w-0">
+        <div className={premiumEyebrowClass}>{eyebrow}</div>
+        <h2 className={`${premiumCardTitleClass} mt-2`}>{title}</h2>
+        {description ? <p className={premiumCardDescriptionClass}>{description}</p> : null}
+      </div>
+      {aside ? <div className="shrink-0">{aside}</div> : icon ? <span className={iconTone === "green" ? premiumHeaderGreenIconClass : premiumHeaderIconClass}>{icon}</span> : null}
+    </div>
+  );
+}
+
+function ValuePill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={`${premiumPanelClass} px-2 py-3 text-center`}>
+      <div className="truncate text-[16px] font-semibold leading-none text-[#ffb12b]">{value}</div>
+      <div className="mt-2 truncate text-[10px] leading-tight text-white/46">{label}</div>
+    </div>
+  );
+}
+
+function PlanTierCard({
+  badge,
+  featured = false,
+  icon,
+  inactiveLabel,
+  plan
+}: {
+  badge?: string;
+  featured?: boolean;
+  icon: ReactNode;
+  inactiveLabel: string;
+  plan: SubscriptionPlanId;
+}) {
+  const planDetails = subscriptionPlans[plan];
+  const actionClassName = featured
+    ? "mt-5 flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[14px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition disabled:opacity-45"
+    : "mt-5 flex h-11 w-full items-center justify-center rounded-xl border border-white/12 bg-white/[0.045] text-[14px] font-semibold text-white/72 transition disabled:opacity-45";
+
+  return (
+    <MobileCard
+      variant="rust"
+      className={`relative overflow-hidden px-5 py-5 ${featured ? "border-[#ffb12b]/55 shadow-[0_0_34px_rgba(255,177,43,0.16)]" : ""}`}
+    >
+      {badge ? <div className={`absolute right-5 top-5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${featured ? "bg-[#ffb12b] text-[#061126]" : "border border-white/10 bg-white/[0.045] text-white/52"}`}>{badge}</div> : null}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+        <div className="min-w-0 pr-14">
+          <div className={premiumEyebrowClass}>{featured ? "Recommended" : "Plan"}</div>
+          <h2 className={`${premiumCardTitleClass} mt-2`}>{planDetails.name}</h2>
+          <p className={premiumCardDescriptionClass}>{planDetails.description}.</p>
+        </div>
+        <span className={featured ? premiumHeaderIconClass : plan === "free" ? premiumHeaderGreenIconClass : premiumHeaderIconClass}>{icon}</span>
+      </div>
+      <PlanPrice
+        plan={plan}
+        className="mt-4 flex items-end gap-2"
+        priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
+        unitClassName="pb-1 text-[12px] text-white/50"
+      />
+      <FeatureList items={planDetails.highlights} />
+      <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} className={actionClassName} />
+    </MobileCard>
+  );
+}
+
+function FeatureList({ items }: { items: string[] }) {
+  return (
+    <div className="mt-4 grid gap-2">
+      {items.map((item) => (
+        <div key={item} className="flex items-center gap-2 text-[13px] leading-snug text-white/68">
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[#ffb12b]/55 text-[#ffb12b]">
+            <Check className="h-3.5 w-3.5" strokeWidth={2.1} aria-hidden="true" />
+          </span>
+          {item}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlanCheck({ enabled }: { enabled: boolean }) {
+  return (
+    <span className={`mx-auto grid h-6 w-6 place-items-center rounded-full ${enabled ? "border border-[#ffb12b]/65 text-[#ffb12b]" : "bg-white/8 text-white/24"}`}>
+      {enabled ? <Check className="h-4 w-4" strokeWidth={2.1} aria-hidden="true" /> : "-"}
+    </span>
+  );
+}

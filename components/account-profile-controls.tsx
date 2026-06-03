@@ -1,0 +1,578 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
+import {
+  accountProfileChangedEvent,
+  defaultDistrictProfile,
+  fetchAccountProfile,
+  readLocalDistrictProfile,
+  readLocalNotificationPreferences,
+  syncAccountProfile,
+  writeLocalDistrictProfile,
+  writeLocalNotificationPreferences,
+  type LocalDistrictProfile
+} from "@/lib/browser-account-profile";
+import { useSubscriptionState } from "@/components/subscription-controls";
+import {
+  betaDistrictPresets,
+  betaDistrictZipExamples,
+  findBetaDistrictPresetForZip,
+  getMatchedOfficials,
+  type BetaDistrictPreset
+} from "@/lib/beta-district-presets";
+import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
+import type { AccountNotificationPreferences, Member } from "@/types/capitol";
+
+type NotificationPreferenceKey = keyof AccountNotificationPreferences;
+
+const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: string }[] = [
+  {
+    detail: "Floor votes and committee movement",
+    key: "voteReminders",
+    label: "Vote reminders"
+  },
+  {
+    detail: "Federal, state, and local updates",
+    key: "districtAlerts",
+    label: "District alerts"
+  },
+  {
+    detail: "Personal civic intelligence summary",
+    key: "weeklyBrief",
+    label: "Weekly brief"
+  }
+];
+
+const issueInterestsKey = "capitol-ledger:issue-interests";
+const persistenceEvent = "capitol-ledger:persistence-changed";
+
+type DistrictMatchResult =
+  | {
+      district: Required<LocalDistrictProfile>;
+      status: "matched";
+    }
+  | {
+      message: string;
+      status: "review";
+    };
+
+const stateNameByCode: Record<string, string> = {
+  CA: "California",
+  MA: "Massachusetts",
+  NY: "New York",
+  TX: "Texas"
+};
+
+const demoZipExamples = betaDistrictZipExamples.slice(0, 4).join(", ");
+
+function districtProfileFromPreset(preset: BetaDistrictPreset): Required<LocalDistrictProfile> {
+  return {
+    districtCode: preset.code,
+    districtLabel: preset.label,
+    districtState: preset.state
+  };
+}
+
+function normalizeDistrictCode(code: string) {
+  return code
+    .toUpperCase()
+    .replace(/^([A-Z]{2})-0?(\d{1,2})$/, (_, state: string, district: string) => `${state}-${district.padStart(2, "0")}`);
+}
+
+function removeDistrictCode(value: string) {
+  return value.replace(/\s*[-·]\s*[A-Z]{2}-0?\d{1,2}/i, "").trim();
+}
+
+function buildDistrictMatch(input: string): DistrictMatchResult {
+  const value = input.trim();
+  if (!value) {
+    return {
+      message: `Enter a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+      status: "review"
+    };
+  }
+
+  const explicitZip = value.match(/\b\d{5}\b/)?.[0];
+  if (explicitZip) {
+    const preset = findBetaDistrictPresetForZip(explicitZip);
+    if (preset) {
+      return {
+        district: districtProfileFromPreset(preset),
+        status: "matched"
+      };
+    }
+
+    return {
+      message: `ZIP ${explicitZip} is outside the demo ZIP set. Demo ZIPs include ${demoZipExamples}; full launch should use address-level district lookup.`,
+      status: "review"
+    };
+  }
+
+  const explicitCode = value.match(/\b[A-Z]{2}-0?\d{1,2}\b/i)?.[0];
+  if (explicitCode) {
+    const normalizedCode = normalizeDistrictCode(explicitCode);
+    const preset = betaDistrictPresets.find((district) => normalizeDistrictCode(district.code) === normalizedCode);
+    if (preset) {
+      return {
+        district: districtProfileFromPreset(preset),
+        status: "matched"
+      };
+    }
+
+    const stateCode = normalizedCode.slice(0, 2);
+    const cityLabel = removeDistrictCode(value) || `District ${normalizedCode}`;
+
+    return {
+      district: {
+        districtCode: normalizedCode,
+        districtLabel: `${cityLabel} - ${normalizedCode}`,
+        districtState: stateNameByCode[stateCode] ?? stateCode
+      },
+      status: "matched"
+    };
+  }
+
+  const normalized = value.toLowerCase();
+  const matchedPreset = betaDistrictPresets.find((district) =>
+    district.input.some((term) => normalized.includes(term.toLowerCase()))
+  );
+
+  if (matchedPreset) {
+    return {
+      district: districtProfileFromPreset(matchedPreset),
+      status: "matched"
+    };
+  }
+
+  return {
+    message: `No beta district match yet. Try a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+    status: "review"
+  };
+}
+
+function districtPlaceLabel(district: Required<LocalDistrictProfile>) {
+  return district.districtLabel.replace(/\s+-\s+[A-Z]{2}-0?\d{1,2}$/i, "");
+}
+
+function useDistrictProfile() {
+  const [district, setDistrict] = useState(defaultDistrictProfile);
+
+  useEffect(() => {
+    function refreshDistrict() {
+      setDistrict(readLocalDistrictProfile());
+    }
+
+    refreshDistrict();
+    void fetchAccountProfile().then((profile) => {
+      if (!profile) return;
+      writeLocalDistrictProfile(profile);
+      setDistrict(readLocalDistrictProfile());
+    });
+    window.addEventListener("storage", refreshDistrict);
+    window.addEventListener(accountProfileChangedEvent, refreshDistrict);
+
+    return () => {
+      window.removeEventListener("storage", refreshDistrict);
+      window.removeEventListener(accountProfileChangedEvent, refreshDistrict);
+    };
+  }, []);
+
+  return district;
+}
+
+function readIssueInterestsForSetup() {
+  if (typeof window === "undefined") return [] as string[];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(issueInterestsKey) ?? "[]") as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return Array.from(new Set(parsed.filter((value): value is string => typeof value === "string" && value.trim().length > 0)));
+  } catch {
+    return [];
+  }
+}
+
+export function AccountDistrictDisplay() {
+  const district = useDistrictProfile();
+
+  return <p className="mt-2 text-[17px] text-white/52">{district.districtLabel}</p>;
+}
+
+export function AccountDistrictSettingRow() {
+  const district = useDistrictProfile();
+
+  return (
+    <Link href="/onboarding" className="grid grid-cols-[34px_1fr_auto] items-center gap-3 py-4">
+      <span className="text-[#ffb12b]">
+        <MapPin className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[16px] font-semibold text-white">District</span>
+        <span className="mt-1 block truncate text-[13px] text-white/52">{district.districtLabel}</span>
+      </span>
+      <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
+    </Link>
+  );
+}
+
+export function OnboardingDistrictSetup() {
+  const district = useDistrictProfile();
+  const [districtInput, setDistrictInput] = useState("");
+  const [matchedDistrict, setMatchedDistrict] = useState(defaultDistrictProfile);
+  const [matchNotice, setMatchNotice] = useState<{ detail: string; title: string; tone: "review" | "success" } | null>(null);
+
+  useEffect(() => {
+    setMatchedDistrict(district);
+  }, [district]);
+
+  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>) {
+    setMatchedDistrict(nextDistrict);
+    setDistrictInput("");
+    setMatchNotice({
+      detail: `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`,
+      title: "District saved",
+      tone: "success"
+    });
+    writeLocalDistrictProfile(nextDistrict);
+    void syncAccountProfile(nextDistrict);
+  }
+
+  function matchDistrict() {
+    const result = buildDistrictMatch(districtInput);
+    if (result.status === "review") {
+      setMatchNotice({
+        detail: result.message,
+        title: "Check district",
+        tone: "review"
+      });
+      return;
+    }
+
+    saveDistrict(result.district);
+  }
+
+  const matchedStateCode = matchedDistrict.districtCode.slice(0, 2);
+
+  return (
+    <>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          matchDistrict();
+        }}
+        className="mt-5 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(24,72,128,0.32)_0%,rgba(4,16,38,0.78)_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_28px_rgba(1,8,24,0.28)]"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/44">District lookup</div>
+            <div className="mt-1 truncate text-[13px] text-white/56">City, demo ZIP, or district code</div>
+          </div>
+          <span className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[11px] font-semibold text-[#74f49a]">
+            {matchedDistrict.districtCode}
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(15,52,99,0.38)_0%,rgba(3,15,34,0.84)_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.3)]">
+          <Search className="h-5 w-5 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+          <input
+            name="district"
+            value={districtInput}
+            onChange={(event) => setDistrictInput(event.target.value)}
+            className="h-12 min-w-0 bg-transparent text-[16px] font-medium text-white outline-none placeholder:text-white/36"
+            placeholder=""
+          />
+          <button type="submit" className="h-10 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)]">
+            Match
+          </button>
+        </div>
+
+        {matchNotice ? (
+          <div
+            className={`mt-3 grid grid-cols-[22px_1fr] gap-2 rounded-xl border px-3 py-2.5 ${
+              matchNotice.tone === "success"
+                ? "border-[#43ed74]/24 bg-[#43ed74]/[0.09] text-[#74f49a]"
+                : "border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffcf74]"
+            }`}
+          >
+            {matchNotice.tone === "success" ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+            ) : (
+              <AlertCircle className="mt-0.5 h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+            )}
+            <span className="min-w-0">
+              <span className="block text-[13px] font-semibold text-white">{matchNotice.title}</span>
+              <span className="mt-0.5 block text-[12px] leading-snug text-white/56">{matchNotice.detail}</span>
+            </span>
+          </div>
+        ) : null}
+
+        <div className="mt-4 border-t border-white/8 pt-4">
+          <div className="grid min-h-[84px] grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#43ed74]/24 bg-[linear-gradient(180deg,rgba(38,169,92,0.15)_0%,rgba(7,42,49,0.46)_100%)] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.24)]">
+            <span className="grid h-8 w-8 place-items-center rounded-full border border-[#43ed74]/28 bg-[#43ed74]/12 text-[#43ed74]">
+              <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[15px] font-semibold text-white">District matched</div>
+              <div className="mt-1 truncate text-[13px] text-white/58">{matchedDistrict.districtLabel}</div>
+            </div>
+            <Link href={`/search?type=members&state=${matchedStateCode}&focus=results`} className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
+              Officials
+            </Link>
+          </div>
+        </div>
+      </form>
+    </>
+  );
+}
+
+export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
+  const district = useDistrictProfile();
+  const officials = getMatchedOfficials(members, district.districtCode).slice(0, 4);
+  const stateCode = district.districtCode?.slice(0, 2) ?? "TX";
+
+  return (
+    <div className="mt-5 divide-y divide-white/8">
+      {officials.map((official) => (
+        <Link key={official.bioguideId} href={`/members/${official.bioguideId}`} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 py-4">
+          {official.photoUrl ? (
+            <Image src={official.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" />
+          ) : (
+            <span className="grid h-11 w-11 place-items-center rounded-full border border-rust/35 bg-white/5 text-[#ffb12b]">
+              <UserRound className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+          )}
+          <span className="min-w-0">
+            <span className="block truncate text-[16px] font-semibold text-white">{official.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</span>
+            <span className="mt-1 block truncate text-[13px] text-white/52">
+              U.S. {official.chamber === "Senate" ? "Senator" : "Representative"} · {official.state}
+              {official.district ? `-${official.district}` : ""} · {official.party}
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
+        </Link>
+      ))}
+      <Link href={`/search?type=members&state=${stateCode}`} className="flex items-center justify-between py-4 text-[14px] font-semibold text-[#ffb12b]">
+        View all matched officials
+        <ChevronRight className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+function useSetupMetrics(members: Member[]) {
+  const district = useDistrictProfile();
+  const [issueCount, setIssueCount] = useState(0);
+  const [enabledAlertCount, setEnabledAlertCount] = useState(0);
+
+  const officialsCount = getMatchedOfficials(members, district.districtCode).length;
+
+  useEffect(() => {
+    function refreshSetupSignals() {
+      const interests = readIssueInterestsForSetup();
+      const preferences = readLocalNotificationPreferences();
+      const enabledCount = [preferences.voteReminders, preferences.districtAlerts, preferences.weeklyBrief].filter(Boolean).length;
+
+      setIssueCount(interests.length);
+      setEnabledAlertCount(enabledCount);
+    }
+
+    refreshSetupSignals();
+    void fetchAccountProfile().then(() => refreshSetupSignals());
+
+    window.addEventListener("storage", refreshSetupSignals);
+    window.addEventListener(accountProfileChangedEvent, refreshSetupSignals);
+    window.addEventListener(persistenceEvent, refreshSetupSignals);
+
+    return () => {
+      window.removeEventListener("storage", refreshSetupSignals);
+      window.removeEventListener(accountProfileChangedEvent, refreshSetupSignals);
+      window.removeEventListener(persistenceEvent, refreshSetupSignals);
+    };
+  }, []);
+
+  return {
+    district,
+    enabledAlertCount,
+    issueCount,
+    officialsCount
+  };
+}
+
+export function OnboardingProgressMeter({ members }: { members: Member[] }) {
+  const { district, enabledAlertCount, issueCount, officialsCount } = useSetupMetrics(members);
+  const completeCount = [
+    Boolean(district.districtCode),
+    officialsCount > 0,
+    issueCount > 0,
+    enabledAlertCount > 0
+  ].filter(Boolean).length;
+  const percentReady = Math.round((completeCount / 4) * 100);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.3)]">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/44">Profile readiness</span>
+        <span className="shrink-0 text-[12px] font-semibold text-[#ffb12b]">{percentReady}%</span>
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[13px] text-white/52">
+        <span>{completeCount} of 4 setup signals ready</span>
+      </div>
+      <div className="mt-3 h-2.5 rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_18px_rgba(255,177,43,0.32)] transition-[width]"
+          style={{ width: `${percentReady}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function OnboardingSetupFlow({ members }: { members: Member[] }) {
+  const { district, enabledAlertCount, issueCount, officialsCount } = useSetupMetrics(members);
+
+  const steps = [
+    {
+      complete: Boolean(district.districtCode),
+      detail: district.districtCode ? `${district.districtCode} located` : "Locate district",
+      icon: <MapPin />,
+      label: "District"
+    },
+    {
+      complete: officialsCount > 0,
+      detail: officialsCount > 0 ? `${officialsCount} matched` : "Find officials",
+      icon: <UserRound />,
+      label: "Officials"
+    },
+    {
+      complete: issueCount > 0,
+      detail: issueCount > 0 ? `${issueCount} signals selected` : "Choose signals",
+      icon: <Vote />,
+      label: "Issues"
+    },
+    {
+      complete: enabledAlertCount > 0,
+      detail: enabledAlertCount > 0 ? `${enabledAlertCount} reminders active` : "Set reminders",
+      icon: <Bell />,
+      label: "Alerts"
+    }
+  ];
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">Setup flow</div>
+          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Profile readiness</h2>
+        </div>
+        <span className="mt-1 shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
+          {district.districtCode}
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
+        {steps.map((step, index) => (
+          <div key={step.label} className="min-h-[98px] rounded-[1.05rem] border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.24)_0%,rgba(6,22,49,0.68)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(1,8,24,0.24)]">
+            <div className="flex items-center justify-between gap-2">
+              <span className={`grid h-8 w-8 place-items-center rounded-full ${step.complete ? "bg-[#43ed74]/14 text-[#43ed74]" : "bg-[#ffb12b]/12 text-[#ffb12b]"}`}>
+                {step.complete ? <Check className="h-[18px] w-[18px]" strokeWidth={2.1} aria-hidden="true" /> : <span className="[&>svg]:h-[18px] [&>svg]:w-[18px] [&>svg]:stroke-[1.8]">{step.icon}</span>}
+              </span>
+              <span className="text-[11px] font-semibold text-white/34">0{index + 1}</span>
+            </div>
+            <div className="mt-3">
+              <div className="truncate text-[14px] font-semibold text-white">{step.label}</div>
+              <div className="mt-1 truncate text-[12px] text-white/48">{step.detail}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export function NotificationPreferencesEditor({ compact = false, dense = false }: { compact?: boolean; dense?: boolean }) {
+  const [subscription] = useSubscriptionState();
+  const [preferences, setPreferences] = useState(readLocalNotificationPreferences);
+  const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "weeklyBrief");
+
+  useEffect(() => {
+    function refreshPreferences() {
+      setPreferences(readLocalNotificationPreferences());
+    }
+
+    refreshPreferences();
+    void fetchAccountProfile().then((profile) => {
+      if (!profile) return;
+      writeLocalNotificationPreferences(profile.notificationPreferences);
+      setPreferences(readLocalNotificationPreferences());
+    });
+    window.addEventListener("storage", refreshPreferences);
+    window.addEventListener(accountProfileChangedEvent, refreshPreferences);
+
+    return () => {
+      window.removeEventListener("storage", refreshPreferences);
+      window.removeEventListener(accountProfileChangedEvent, refreshPreferences);
+    };
+  }, []);
+
+  function togglePreference(key: NotificationPreferenceKey) {
+    const next = {
+      ...preferences,
+      [key]: !preferences[key]
+    };
+
+    setPreferences(next);
+    writeLocalNotificationPreferences(next);
+    void syncAccountProfile({ notificationPreferences: next });
+  }
+
+  return (
+    <div className={dense ? "space-y-2" : compact ? "space-y-3" : "mt-5 space-y-4"}>
+      {preferenceRows.map((row) => {
+        const locked = row.key === "weeklyBrief" && !weeklyBriefUnlocked;
+        const enabled = locked ? false : preferences[row.key];
+
+        return (
+          <button
+            key={row.key}
+            type="button"
+            onClick={() => {
+              if (!locked) togglePreference(row.key);
+            }}
+            disabled={locked}
+            className={`flex w-full items-center justify-between gap-4 rounded-2xl border text-left transition ${
+              locked
+                ? "cursor-not-allowed border-white/8 bg-white/[0.025] opacity-65"
+                : "border-white/8 bg-white/4 hover:border-[#ffb12b]/35 hover:bg-white/8"
+            } ${dense ? "rounded-xl px-3 py-2.5" : "p-4"}`}
+            aria-disabled={locked}
+            aria-pressed={enabled}
+          >
+            <span className="min-w-0">
+              <span className={`flex items-center gap-2 font-semibold text-white ${dense ? "text-[13px]" : "text-[16px]"}`}>
+                {row.label}
+                {locked ? (
+                  <span className={`inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/6 px-2 py-0.5 font-medium text-white/50 ${dense ? "text-[10px]" : "text-[11px]"}`}>
+                    <LockKeyhole className="h-3 w-3" strokeWidth={1.8} aria-hidden="true" />
+                    Pro
+                  </span>
+                ) : null}
+              </span>
+              <span className={`mt-1 block text-white/50 ${dense ? "text-[11px]" : "text-[13px]"}`}>{locked ? "Unlocks with Pro Intelligence" : row.detail}</span>
+            </span>
+            <PreferenceToggle enabled={enabled} disabled={locked} dense={dense} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PreferenceToggle({ dense = false, disabled = false, enabled }: { dense?: boolean; disabled?: boolean; enabled: boolean }) {
+  return (
+    <span className={`shrink-0 rounded-full border p-0.5 ${dense ? "h-6 w-10" : "h-7 w-12"} ${enabled ? "border-[#ffb12b]/55 bg-[#ffb12b]/25" : "border-white/15 bg-white/8"}`}>
+      <span className={`block rounded-full transition ${dense ? "h-5 w-5" : "h-6 w-6"} ${enabled ? (dense ? "translate-x-4 bg-[#ffb12b]" : "translate-x-5 bg-[#ffb12b]") : disabled ? "bg-white/22" : "bg-white/35"}`} />
+    </span>
+  );
+}
