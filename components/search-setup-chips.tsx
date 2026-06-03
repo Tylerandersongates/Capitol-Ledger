@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,11 +11,14 @@ import {
   writeLocalDistrictProfile,
   type LocalDistrictProfile
 } from "@/lib/browser-account-profile";
+import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { stateCodeFromDistrictCode } from "@/lib/beta-district-presets";
+import { issueSignals } from "@/lib/issue-signals";
+import type { AccountLedgerSnapshot } from "@/types/capitol";
 
 const issueInterestsKey = "capitol-ledger:issue-interests";
 const persistenceEvent = "capitol-ledger:persistence-changed";
-const fallbackInterests = ["Healthcare", "Education", "Infrastructure"];
+const accountLedgerEndpoint = "/api/account/ledger";
 
 const stateCodeByName: Record<string, string> = {
   Alaska: "AK",
@@ -33,8 +37,9 @@ type SetupChip = {
 };
 
 export function SearchSetupChips({ focus }: { focus?: string }) {
-  const [interests, setInterests] = useState<string[]>(fallbackInterests);
+  const [interests, setInterests] = useState<string[]>([]);
   const [district, setDistrict] = useState<Required<LocalDistrictProfile>>(defaultDistrictProfile);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +55,10 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
       writeLocalDistrictProfile(profile);
       refreshSetup();
     });
+    void hydrateIssueInterestsFromAccount().then((accountInterests) => {
+      if (!active || !accountInterests) return;
+      setInterests(accountInterests);
+    });
 
     window.addEventListener("storage", refreshSetup);
     window.addEventListener(accountProfileChangedEvent, refreshSetup);
@@ -64,6 +73,14 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
   }, []);
 
   const chips = useMemo(() => buildSetupChips(interests, district, focus), [district, focus, interests]);
+  const selectedInterestSet = useMemo(() => new Set(interests), [interests]);
+
+  function toggleInterest(interest: string) {
+    const next = selectedInterestSet.has(interest) ? interests.filter((item) => item !== interest) : uniqueStrings([...interests, interest]);
+    setInterests(next);
+    writeLocalIssueInterests(next);
+    void syncIssueInterestsToAccount(next);
+  }
 
   return (
     <div className="mt-4 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.18)_0%,rgba(7,23,50,0.58)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
@@ -71,47 +88,131 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">From your setup</div>
           <div className="mt-1 text-[12px] leading-snug text-white/52">
-            Interests plus your default district state, currently {district.districtState}.
+            Saved interests plus your default district state{district.districtState ? `, currently ${district.districtState}` : ""}.
           </div>
         </div>
-        <Link href="/account" className="shrink-0 rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-          Edit setup
-        </Link>
+        <button
+          type="button"
+          onClick={() => setEditing((current) => !current)}
+          className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+            editing ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/[0.045] text-[#ffb12b]"
+          }`}
+          aria-pressed={editing}
+        >
+          {editing ? "Done" : "Edit interests"}
+        </button>
       </div>
 
-      <div className="mt-3 overflow-x-auto overflow-y-hidden pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Setup-based search shortcuts">
-        <div className="grid auto-cols-max grid-flow-col grid-rows-2 gap-2">
-          {chips.map((chip) => (
-            <Link
-              key={chip.id}
-              href={chip.href}
-              className={`flex h-9 items-center rounded-full border px-3 text-[12px] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition ${
-                chip.tone === "district"
-                  ? "border-[#43ed74]/28 bg-[#43ed74]/10 text-[#74f49a] hover:border-[#43ed74]/45 hover:bg-[#43ed74]/14"
-                  : "border-[#ffb12b]/24 bg-[#ffb12b]/7 text-white/66 hover:border-[#ffb12b]/38 hover:bg-[#ffb12b]/12 hover:text-white"
-              }`}
-            >
-              {chip.label}
-            </Link>
-          ))}
+      {editing ? (
+        <div className="mt-3 max-h-[154px] overflow-y-auto rounded-2xl border border-white/10 bg-[#071a38]/62 p-2">
+          <div className="flex flex-wrap gap-2">
+            {issueSignals.map((interest) => {
+              const active = selectedInterestSet.has(interest);
+
+              return (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => toggleInterest(interest)}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition ${
+                    active ? "border-[#ffb12b]/40 bg-[#ffb12b]/12 text-[#ffb12b]" : "border-white/12 bg-white/5 text-white/58 hover:border-[#ffb12b]/35 hover:text-white/78"
+                  }`}
+                  aria-pressed={active}
+                >
+                  {active ? <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
+                  {interest}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-3 overflow-x-auto overflow-y-hidden pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Setup-based search shortcuts">
+          {chips.length ? (
+            <div className="grid auto-cols-max grid-flow-col grid-rows-2 gap-2">
+              {chips.map((chip) => (
+                <Link
+                  key={chip.id}
+                  href={chip.href}
+                  className={`flex h-9 items-center rounded-full border px-3 text-[12px] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition ${
+                    chip.tone === "district"
+                      ? "border-[#43ed74]/28 bg-[#43ed74]/10 text-[#74f49a] hover:border-[#43ed74]/45 hover:bg-[#43ed74]/14"
+                      : "border-[#ffb12b]/24 bg-[#ffb12b]/7 text-white/66 hover:border-[#ffb12b]/38 hover:bg-[#ffb12b]/12 hover:text-white"
+                  }`}
+                >
+                  {chip.label}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-[12px] leading-snug text-white/52">
+              No saved issue interests yet. Tap Edit interests to add topics here.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function readLocalIssueInterests() {
-  if (typeof window === "undefined") return fallbackInterests;
+  if (typeof window === "undefined") return [];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(issueInterestsKey) ?? "[]") as unknown;
-    if (!Array.isArray(parsed)) return fallbackInterests;
+    if (!Array.isArray(parsed)) return [];
 
     const interests = Array.from(new Set(parsed.filter((value): value is string => typeof value === "string" && value.trim().length > 0)));
-    return interests.length ? interests : fallbackInterests;
+    return interests;
   } catch {
-    return fallbackInterests;
+    return [];
   }
+}
+
+function writeLocalIssueInterests(interests: string[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(issueInterestsKey, JSON.stringify(uniqueStrings(interests)));
+    window.dispatchEvent(new Event(persistenceEvent));
+  } catch {
+    // Search shortcuts can still render from in-memory state if local persistence is unavailable.
+  }
+}
+
+async function hydrateIssueInterestsFromAccount() {
+  if (typeof window === "undefined") return null;
+  if (!(await hasActiveBrowserSession())) return null;
+
+  const response = await fetch(accountLedgerEndpoint, { cache: "no-store" }).catch(() => null);
+  if (!response?.ok) return null;
+
+  const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+  const accountInterests = uniqueStrings(data?.ledger?.issueInterests ?? []);
+  writeLocalIssueInterests(accountInterests);
+  return accountInterests;
+}
+
+async function syncIssueInterestsToAccount(interests: string[]) {
+  if (typeof window === "undefined") return;
+  if (!(await hasActiveBrowserSession())) return;
+
+  const response = await fetch(accountLedgerEndpoint, {
+    body: JSON.stringify({ issueInterests: uniqueStrings(interests) }),
+    headers: {
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  }).catch(() => null);
+
+  if (!response?.ok) return;
+
+  const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+  if (data?.ledger) writeLocalIssueInterests(data.ledger.issueInterests);
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function buildSetupChips(interests: string[], district: Required<LocalDistrictProfile>, focus?: string): SetupChip[] {
