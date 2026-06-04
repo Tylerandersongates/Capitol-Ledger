@@ -12,7 +12,11 @@ const authBackgroundClass = "bg-[linear-gradient(180deg,#071a34_0%,#041226_36%,#
 export default function SignInPage({ searchParams }: { searchParams?: { mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
   const initialMode = searchParams?.mode === "create" ? "create" : undefined;
   const returnTo = safeReturnPath(searchParams?.returnTo, initialMode === "create" ? "/onboarding" : "/dashboard");
-  const allowDemoMode = process.env.AUTH_DEMO_ENABLED === "true" && !process.env.VERCEL_ENV;
+  const isVercelDeployment = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+  const allowDemoMode =
+    !isVercelDeployment &&
+    process.env.AUTH_DEMO_ENABLED !== "false" &&
+    (process.env.AUTH_DEMO_ENABLED === "true" || process.env.NODE_ENV !== "production");
 
   return (
     <MobileShell
@@ -34,8 +38,8 @@ export default function SignInPage({ searchParams }: { searchParams?: { mode?: s
               </div>
               {allowDemoMode ? (
                 <div className="flex shrink-0 items-center gap-2">
-                  <DemoAccountButton href={returnTo} className={`${mobileViewAllClass} px-4 py-2 text-[13px] text-white/72`}>
-                    Demo
+                  <DemoAccountButton href="/dashboard" className={`${mobileViewAllClass} px-4 py-2 text-[13px] text-white/72`}>
+                    Preview
                   </DemoAccountButton>
                 </div>
               ) : null}

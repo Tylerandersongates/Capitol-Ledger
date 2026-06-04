@@ -4,7 +4,8 @@ import { guardMutationRequest } from "@/lib/request-security";
 
 function demoAuthEnabled() {
   const isVercelDeployment = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
-  return process.env.AUTH_DEMO_ENABLED === "true" && !isVercelDeployment;
+  if (isVercelDeployment || process.env.AUTH_DEMO_ENABLED === "false") return false;
+  return process.env.AUTH_DEMO_ENABLED === "true" || process.env.NODE_ENV !== "production";
 }
 
 export async function GET() {
