@@ -1,11 +1,9 @@
 import { MobileShell } from "@/components/mobile-shell";
-import { mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { mobileViewAllClass } from "@/components/mobile-ui";
 import { DemoAccountButton } from "@/components/demo-auth-controls";
 import { AuthFlowClient } from "@/components/auth-flow-client";
 import { safeReturnPath } from "@/lib/route-guards";
 import Image from "next/image";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 const authAmbientClass =
   "bg-[radial-gradient(circle_at_16%_8%,rgba(48,129,214,0.14),transparent_32%),radial-gradient(circle_at_84%_8%,rgba(255,177,43,0.09),transparent_30%),linear-gradient(180deg,rgba(2,10,24,0.12)_0%,rgba(1,8,21,0.62)_56%,rgba(1,6,18,0.9)_100%)]";
@@ -34,16 +32,13 @@ export default function SignInPage({ searchParams }: { searchParams?: { mode?: s
                   Capitol <span className="text-brass">Ledger</span>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {allowDemoMode ? (
+              {allowDemoMode ? (
+                <div className="flex shrink-0 items-center gap-2">
                   <DemoAccountButton href={returnTo} className={`${mobileViewAllClass} px-4 py-2 text-[13px] text-white/72`}>
                     Demo
                   </DemoAccountButton>
-                ) : null}
-                <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
-                  <ArrowLeft className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
-                </Link>
-              </div>
+                </div>
+              ) : null}
             </header>
 
             <AuthFlowClient
