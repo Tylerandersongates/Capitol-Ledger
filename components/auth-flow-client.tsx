@@ -686,7 +686,7 @@ export function AuthFlowClient({
               disabled={pending}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition hover:brightness-105 disabled:opacity-60"
             >
-              {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Continue"}
+              {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
               <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
             </button>
           )}
@@ -708,7 +708,7 @@ export function AuthFlowClient({
 
             {showDifferentAccountCta ? (
               <button type="button" onClick={useDifferentAccount} className="mt-5 w-full text-center text-[14px] font-semibold text-[#ffb12b]">
-                Use a different account
+                Create a new account
               </button>
             ) : null}
 
