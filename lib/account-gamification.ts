@@ -70,12 +70,24 @@ function normalizeBadgeIds(value: unknown) {
 function deriveEarnedBadgeIds(eventCounts: GamificationEventCount[], value: unknown) {
   const earnedBadgeIds = new Set(normalizeBadgeIds(value));
   const counts = new Map(eventCounts.map((record) => [record.event, record.count]));
+  const ruleBadgeIds = new Set<string>();
+  const qualifiedBadgeIds = new Set<string>();
 
   gamificationEventRules.forEach((rule) => {
     const count = counts.get(rule.event) ?? 0;
     rule.badgeProgress.forEach((progress) => {
-      if (count >= progress.threshold && validBadgeIds.has(progress.badgeId)) earnedBadgeIds.add(progress.badgeId);
+      if (!validBadgeIds.has(progress.badgeId)) return;
+      ruleBadgeIds.add(progress.badgeId);
+      if (count >= progress.threshold) qualifiedBadgeIds.add(progress.badgeId);
     });
+  });
+
+  ruleBadgeIds.forEach((badgeId) => {
+    if (qualifiedBadgeIds.has(badgeId)) {
+      earnedBadgeIds.add(badgeId);
+    } else {
+      earnedBadgeIds.delete(badgeId);
+    }
   });
 
   return Array.from(earnedBadgeIds);

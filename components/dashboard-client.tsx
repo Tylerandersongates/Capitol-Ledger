@@ -12,7 +12,7 @@ import {
 } from "@/lib/browser-gamification";
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
-import { getImpactActions } from "@/lib/gamification";
+import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import Image from "next/image";
 import Link from "next/link";
 import { Bell, CalendarClock, ChevronRight, FileText, Home, LockKeyhole, Sparkles, Star, UserRound, UsersRound } from "lucide-react";
@@ -42,6 +42,12 @@ const gamificationCategories = [
   { href: "/badges", label: "Badges" },
   { href: "/impact", label: "Impact Actions" }
 ] as const;
+const impactCategoryHrefs: Record<ImpactActionId, string> = {
+  "bills-tracked": "/search?type=bills",
+  "letters-sent": "/letters#letters",
+  "petitions-signed": "/letters#petitions",
+  "votes-cast": "/impact#election-participation"
+};
 const dashboardCardAccentClass =
   "pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(56,146,255,0.18),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(255,177,43,0.1),transparent_30%)]";
 const dashboardInnerPanelClass =
@@ -689,7 +695,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     {impactCategories.map((category) => (
                       <Link
                         key={category.id}
-                        href="/impact"
+                        href={impactCategoryHrefs[category.id]}
                         className="flex items-center justify-between rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-[11px] transition hover:bg-white/[0.07]"
                       >
                         <span className="flex items-center gap-1.5">

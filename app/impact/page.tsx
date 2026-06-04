@@ -14,6 +14,7 @@ import {
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { ElectionParticipationCard } from "@/components/election-participation-card";
+import { VoterRegistrationCard } from "@/components/voter-registration-card";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -97,6 +98,8 @@ export default function ImpactPage() {
           </div>
           <RecentAchievementsList />
         </MobileCard>
+
+        <VoterRegistrationCard />
 
         <ElectionParticipationCard />
 

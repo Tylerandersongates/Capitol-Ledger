@@ -107,7 +107,15 @@ export function EarnedBadgeTile({
   );
 }
 
-export function LockedBadgeTile({ badge, showDescription = false }: { badge: GamificationBadge; showDescription?: boolean }) {
+export function LockedBadgeTile({
+  badge,
+  progressLabel,
+  showDescription = false
+}: {
+  badge: GamificationBadge;
+  progressLabel?: string;
+  showDescription?: boolean;
+}) {
   return (
     <div className="flex min-h-[214px] flex-col items-center text-center">
       <div
@@ -125,6 +133,11 @@ export function LockedBadgeTile({ badge, showDescription = false }: { badge: Gam
         <div className="max-w-[7.3rem] text-[16px] font-medium leading-snug text-white/60">
           {badge.label}
         </div>
+        {progressLabel ? (
+          <div className="mt-2 rounded-full border border-white/12 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold leading-none text-white/62">
+            {progressLabel}
+          </div>
+        ) : null}
         {showDescription ? (
           <div className="mt-3 max-w-[7.7rem] text-[12px] leading-snug text-white/42">
             {badge.description}

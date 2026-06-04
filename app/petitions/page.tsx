@@ -5,74 +5,52 @@ import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
+import {
+  hydrateSignedPetitions,
+  readLocalSignedPetitionIds,
+  recordSignedPetition,
+  signedPetitionsChangedEvent
+} from "@/lib/browser-petition-history";
+import { civicPetitions } from "@/lib/civic-petitions";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Megaphone, UserRound } from "lucide-react";
 
-const signedPetitionsKey = "capitol-ledger:signed-petitions";
-
-const petitions = [
-  {
-    id: "petition-public-records-2026",
-    title: "Protect Public Records Access",
-    body: "Support stronger publication standards for federal vote and committee records.",
-    progressLabel: "31,200 supporters",
-    targetLabel: "Goal 50,000"
-  },
-  {
-    id: "petition-vote-transparency-2026",
-    title: "Require Vote Explanation Notes",
-    body: "Support short plain-language notes for each major vote to improve civic understanding.",
-    progressLabel: "18,940 supporters",
-    targetLabel: "Goal 30,000"
-  },
-  {
-    id: "petition-ethics-audit-2026",
-    title: "Expand Ethics Audit Reporting",
-    body: "Support quarterly public accountability summaries for committee and floor actions.",
-    progressLabel: "22,510 supporters",
-    targetLabel: "Goal 40,000"
-  }
-] as const;
-
-function readSignedPetitionIds() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const stored = window.localStorage.getItem(signedPetitionsKey);
-    const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeSignedPetitionIds(ids: string[]) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.setItem(signedPetitionsKey, JSON.stringify(Array.from(new Set(ids))));
-  } catch {
-    // Ignore browser storage restrictions in demo sessions.
-  }
-}
-
 export default function PetitionsPage() {
   const snapshot = useGamificationSnapshot();
-  const [signedIds, setSignedIds] = useState<string[]>([]);
+  const [signingId, setSigningId] = useState<string | null>(null);
+  const [signedIds, setSignedIds] = useState<string[]>(() => readLocalSignedPetitionIds());
   const signedSet = useMemo(() => new Set(signedIds), [signedIds]);
 
   useEffect(() => {
-    setSignedIds(readSignedPetitionIds());
+    let active = true;
+
+    async function refreshSignedPetitions() {
+      const records = await hydrateSignedPetitions();
+      if (active) setSignedIds(records.map((record) => record.petitionId));
+    }
+
+    void refreshSignedPetitions();
+    window.addEventListener(signedPetitionsChangedEvent, refreshSignedPetitions);
+    window.addEventListener("focus", refreshSignedPetitions);
+    window.addEventListener("storage", refreshSignedPetitions);
+
+    return () => {
+      active = false;
+      window.removeEventListener(signedPetitionsChangedEvent, refreshSignedPetitions);
+      window.removeEventListener("focus", refreshSignedPetitions);
+      window.removeEventListener("storage", refreshSignedPetitions);
+    };
   }, []);
 
-  function signPetition(id: string) {
-    if (signedSet.has(id)) return;
+  async function signPetition(petition: (typeof civicPetitions)[number]) {
+    if (signedSet.has(petition.id) || signingId) return;
 
-    recordGamificationEvent("sign-petition", id);
-    const next = [...signedSet, id];
+    setSigningId(petition.id);
+    recordGamificationEvent("sign-petition", petition.id);
+    const next = [...signedSet, petition.id];
     setSignedIds(next);
-    writeSignedPetitionIds(next);
+    await recordSignedPetition(petition).finally(() => setSigningId(null));
   }
 
   return (
@@ -108,8 +86,9 @@ export default function PetitionsPage() {
         </MobileCard>
 
         <div className="mt-4 space-y-3">
-          {petitions.map((petition) => {
+          {civicPetitions.map((petition) => {
             const signed = signedSet.has(petition.id);
+            const signing = signingId === petition.id;
 
             return (
               <MobileCard key={petition.id} variant="dashboard" className="px-4 py-4">
@@ -127,20 +106,23 @@ export default function PetitionsPage() {
                   <span>{petition.targetLabel}</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-white/12">
-                  <div className="h-full w-[62%] rounded-full bg-gradient-to-r from-[#9064f4] via-[#b98fff] to-[#e2ceff] shadow-[0_0_14px_rgba(174,132,255,0.3)]" />
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#9064f4] via-[#b98fff] to-[#e2ceff] shadow-[0_0_14px_rgba(174,132,255,0.3)]"
+                    style={{ width: `${petition.progressPercent}%` }}
+                  />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => signPetition(petition.id)}
+                    onClick={() => signPetition(petition)}
                     className={`h-10 rounded-lg border text-[14px] font-medium transition ${
                       signed
                         ? "cursor-default border-[#4fdb89]/32 bg-[#4fdb89]/14 text-[#4fdb89]"
                         : "border-[#c08dff]/38 bg-[#c08dff]/14 text-[#d5b8ff] hover:brightness-110"
                     }`}
-                    disabled={signed}
+                    disabled={signed || Boolean(signingId)}
                   >
-                    {signed ? "Signed" : "Sign Petition"}
+                    {signed ? "Signed" : signing ? "Signing..." : "Sign Petition"}
                   </button>
                   <Link
                     href="/badges"

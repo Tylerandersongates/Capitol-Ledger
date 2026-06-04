@@ -25,7 +25,10 @@ const electionLogEntries: ElectionEntry[] = [
 const electionParticipationKey = "capitol-ledger:election-participation-ids";
 const electionEvent = "participate-election";
 const totalElectionCount = electionLogEntries.length;
+const electionBadgeProgress = getGamificationEventRule(electionEvent)?.badgeProgress ?? [];
+const voterElectionGoal = electionBadgeProgress.find((progress) => progress.badgeId === "voter")?.threshold ?? 4;
 const ballotVeteranElectionGoal = getGamificationEventRule(electionEvent)?.badgeProgress.find((progress) => progress.badgeId === "ballot-veteran")?.threshold ?? 5;
+const superVoterElectionGoal = electionBadgeProgress.find((progress) => progress.badgeId === "super-voter")?.threshold ?? totalElectionCount;
 
 function readStoredElectionIds() {
   if (typeof window === "undefined") return [];
@@ -56,6 +59,22 @@ function pillTone(type: ElectionEntry["type"]) {
   if (type === "General") return "border-[#ffbd39]/45 bg-[#ffbd39]/14 text-[#ffbd39]";
   if (type === "Runoff") return "border-[#d18bff]/45 bg-[#d18bff]/14 text-[#d18bff]";
   return "border-[#43ed74]/40 bg-[#43ed74]/14 text-[#43ed74]";
+}
+
+function nextElectionBadgeMessage(electionCount: number) {
+  if (electionCount < voterElectionGoal) {
+    return `Log ${voterElectionGoal} of ${totalElectionCount} unique elections to unlock Voter.`;
+  }
+
+  if (electionCount < ballotVeteranElectionGoal) {
+    return `Log ${ballotVeteranElectionGoal} of ${totalElectionCount} unique elections to unlock Ballot Veteran.`;
+  }
+
+  if (electionCount < superVoterElectionGoal) {
+    return `Log ${superVoterElectionGoal} of ${totalElectionCount} unique elections to unlock Super Voter.`;
+  }
+
+  return "All election participation badges unlocked.";
 }
 
 export function ElectionParticipationCard() {
@@ -139,7 +158,7 @@ export function ElectionParticipationCard() {
         </div>
 
         <p className="mt-3 text-[13px] leading-relaxed text-white/58">
-          Count primary, general, runoff, and special elections toward the Ballot Veteran badge.
+          Count primary, general, runoff, and special elections toward Voter, Ballot Veteran, and Super Voter badges.
         </p>
         <p className="mt-1 text-[11px] uppercase tracking-[0.05em] text-white/42">
           Tap once to select. Tap again to confirm. Tap a logged row once to remove it.
@@ -182,7 +201,7 @@ export function ElectionParticipationCard() {
 
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#43ed74]/20 bg-[#43ed74]/8 px-3 py-2 text-[12px] text-[#8ef8af]">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden="true" />
-          <span>{status || `Log ${ballotVeteranElectionGoal} of ${totalElectionCount} unique elections to unlock Ballot Veteran.`}</span>
+          <span>{status || nextElectionBadgeMessage(electionCount)}</span>
         </div>
       </MobileCard>
     </div>

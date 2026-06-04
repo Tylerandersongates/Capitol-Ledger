@@ -5,7 +5,12 @@ import { GamificationSync } from "@/components/gamification-sync";
 import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
-import { getBadgeCollections, type GamificationEventType } from "@/lib/gamification";
+import {
+  getBadgeCollections,
+  getGamificationEventRules,
+  type GamificationBadge,
+  type GamificationEventType
+} from "@/lib/gamification";
 import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -20,6 +25,7 @@ const badgeFilters: Array<{ label: string; value: BadgeFilter }> = [
 ];
 
 const activitySignals: Array<{ event: GamificationEventType; href: string; label: string; tone: string }> = [
+  { event: "complete-voter-registration", href: "/impact#voter-registration", label: "Registration Form", tone: "#9fc4ff" },
   { event: "track-bill", href: "/search?type=bills&focus=results", label: "Bills Tracked", tone: "#ffbd39" },
   { event: "review-vote", href: "/search?type=votes&focus=results", label: "Votes Reviewed", tone: "#79a8ff" },
   { event: "participate-election", href: "/impact#election-participation", label: "Elections Logged", tone: "#ffd45c" },
@@ -35,6 +41,51 @@ function normalizeBadgeFilter(filter?: string): BadgeFilter {
 
 function badgeFilterHref(filter: BadgeFilter) {
   return filter === "all" ? "/badges" : `/badges?filter=${filter}`;
+}
+
+const fallbackBadgeTargets: Record<string, number> = {
+  "coalition-builder": 1,
+  "committee-pro": 20,
+  "committee-watcher": 10,
+  "constitution-champion": 10,
+  "local-builder": 1,
+  "policy-architect": 5,
+  "policy-expert": 15,
+  "transparency-ally": 10
+};
+
+function getLockedBadgeProgressLabel({
+  badge,
+  eventCountMap,
+  level
+}: {
+  badge: GamificationBadge;
+  eventCountMap: Map<GamificationEventType, number>;
+  level: number;
+}) {
+  if (badge.id === "civic-luminary") return `${Math.min(level, 10)}/10`;
+
+  const ruleProgress = getGamificationEventRules()
+    .flatMap((rule) =>
+      rule.badgeProgress
+        .filter((progress) => progress.badgeId === badge.id)
+        .map((progress) => ({
+          current: Math.min(eventCountMap.get(rule.event) ?? 0, progress.threshold),
+          target: progress.threshold
+        }))
+    )
+    .sort((left, right) => right.current / right.target - left.current / left.target);
+
+  const progress = ruleProgress[0];
+  if (progress) return `${progress.current}/${progress.target}`;
+
+  const fallbackTarget = fallbackBadgeTargets[badge.id];
+  if (fallbackTarget) return `0/${fallbackTarget}`;
+
+  const parsedTarget = Number(badge.description.match(/\d+/)?.[0]);
+  if (Number.isFinite(parsedTarget) && parsedTarget > 0) return `0/${parsedTarget}`;
+
+  return "0/1";
 }
 
 export default function BadgesPage() {
@@ -168,7 +219,12 @@ function BadgesContent() {
             </div>
             <div className={`mt-7 grid grid-cols-3 gap-x-7 ${activeFilter === "locked" ? "gap-y-10" : "gap-y-9"}`}>
               {lockedBadges.map((badge) => (
-                <LockedBadgeTile key={badge.id} badge={badge} showDescription={activeFilter === "locked"} />
+                <LockedBadgeTile
+                  key={badge.id}
+                  badge={badge}
+                  progressLabel={getLockedBadgeProgressLabel({ badge, eventCountMap, level: snapshot.level })}
+                  showDescription={activeFilter === "locked"}
+                />
               ))}
             </div>
           </div>

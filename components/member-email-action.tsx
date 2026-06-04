@@ -3,6 +3,11 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Mail, Send } from "lucide-react";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
+import {
+  confirmLocalSentLetter,
+  recordLocalSentLetter,
+  type SentLetterRecord
+} from "@/lib/browser-letter-history";
 
 type MemberEmailActionProps = {
   bioguideId: string;
@@ -17,6 +22,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
   const [expanded, setExpanded] = useState(false);
   const [fromEmail, setFromEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [pendingLetter, setPendingLetter] = useState<SentLetterRecord | null>(null);
   const [status, setStatus] = useState<SendState>("idle");
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -28,6 +34,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
   async function onSend() {
     setStatus("sending");
     setStatusMessage("");
+    setPendingLetter(null);
 
     const response = await fetch(`/api/members/${bioguideId}/email`, {
       method: "POST",
@@ -51,6 +58,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
     const payload = (await response.json().catch(() => null)) as
       | {
           contactUrl?: string;
+          letter?: SentLetterRecord;
           mailtoUrl?: string;
           message?: string;
           mode?: "manual" | "webhook";
@@ -66,12 +74,16 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
       window.open(payload.contactUrl, "_blank", "noopener,noreferrer");
     }
 
+    const localLetter = payload?.letter ? recordLocalSentLetter(payload.letter) : null;
+
     if (payload?.mode === "manual") {
+      setPendingLetter(localLetter ?? payload?.letter ?? null);
       setStatus("confirming");
       setStatusMessage("Draft opened. After you send it, confirm here so Capitol Ledger can log the civic action.");
       return;
     }
 
+    setPendingLetter(null);
     recordGamificationEvent("contact-representative", bioguideId);
     setStatus("success");
     setStatusMessage(payload?.message || "Message sent. Replies will go to your email inbox.");
@@ -79,10 +91,28 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
     setMessage("");
   }
 
-  function onConfirmSent() {
+  async function onConfirmSent() {
+    if (pendingLetter?.id) {
+      const response = await fetch("/api/account/letters", {
+        body: JSON.stringify({ id: pendingLetter.id }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "PATCH"
+      }).catch(() => null);
+      const payload = (await response?.json().catch(() => null)) as { letter?: SentLetterRecord } | null;
+
+      if (payload?.letter) {
+        recordLocalSentLetter(payload.letter);
+      } else {
+        confirmLocalSentLetter(pendingLetter.id);
+      }
+    }
+
     recordGamificationEvent("contact-representative", bioguideId);
     setStatus("success");
     setStatusMessage("Civic action logged. Replies and follow-up correspondence will stay in your email provider.");
+    setPendingLetter(null);
     setExpanded(false);
     setMessage("");
   }
@@ -95,6 +125,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           setExpanded((current) => !current);
           setStatus("idle");
           setStatusMessage("");
+          setPendingLetter(null);
         }}
         className="inline-flex items-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[15px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110"
       >
@@ -131,6 +162,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   onClick={() => {
                     setStatus("idle");
                     setStatusMessage("");
+                    setPendingLetter(null);
                   }}
                   className="inline-flex h-10 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75"
                 >

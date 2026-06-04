@@ -1,10 +1,13 @@
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth";
 import { getMemberDetailWithLiveData } from "@/lib/data";
 import { contactSubjectForMember, resolveOfficialContactUrl } from "@/lib/member-contact";
-import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
+import {
+  cooldownKeyFor,
+  readMostRecentOfficialContact,
+  recordOfficialContact
+} from "@/lib/official-contact-messages";
 import { guardMutationRequest } from "@/lib/request-security";
 
 const emailRequestSchema = z.object({
@@ -16,20 +19,6 @@ const emailRequestSchema = z.object({
 
 const OFFICIAL_MESSAGE_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 
-type DbOfficialContactMessage = {
-  sentAt: Date;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __capitolLedgerOfficialContactSchemaReady: Promise<boolean> | undefined;
-  // eslint-disable-next-line no-var
-  var __capitolLedgerOfficialContactCooldownStore: Map<string, number> | undefined;
-}
-
-const officialContactCooldownStore = globalThis.__capitolLedgerOfficialContactCooldownStore ?? new Map<string, number>();
-globalThis.__capitolLedgerOfficialContactCooldownStore = officialContactCooldownStore;
-
 function appName() {
   return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger";
 }
@@ -40,92 +29,6 @@ function webhookModeEnabled() {
 
 function webhookUrl() {
   return process.env.OFFICIAL_CONTACT_WEBHOOK_URL;
-}
-
-function normalizeMemberBioguideId(value: string) {
-  return value.trim().toUpperCase();
-}
-
-function normalizeSenderKey(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function cooldownKeyFor(memberBioguideId: string, senderKey: string) {
-  return `${normalizeMemberBioguideId(memberBioguideId)}|${normalizeSenderKey(senderKey)}`;
-}
-
-async function ensureOfficialContactSchema() {
-  if (!hasDatabaseUrl()) return false;
-  if (globalThis.__capitolLedgerOfficialContactSchemaReady) return globalThis.__capitolLedgerOfficialContactSchemaReady;
-
-  globalThis.__capitolLedgerOfficialContactSchemaReady = (async () => {
-    const prisma = getPrisma();
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "OfficialContactMessage" (
-        "id" TEXT NOT NULL PRIMARY KEY,
-        "memberBioguideId" TEXT NOT NULL,
-        "senderKey" TEXT NOT NULL,
-        "senderEmail" TEXT NOT NULL,
-        "userId" TEXT,
-        "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS "OfficialContactMessage_member_sender_sentAt_idx"
-      ON "OfficialContactMessage"("memberBioguideId", "senderKey", "sentAt")
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS "OfficialContactMessage_userId_idx"
-      ON "OfficialContactMessage"("userId")
-    `);
-
-    return true;
-  })();
-
-  return globalThis.__capitolLedgerOfficialContactSchemaReady;
-}
-
-async function readMostRecentOfficialContact(memberBioguideId: string, senderKey: string, cooldownKey: string) {
-  if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbOfficialContactMessage[]>`
-      SELECT "sentAt"
-      FROM "OfficialContactMessage"
-      WHERE "memberBioguideId" = ${normalizeMemberBioguideId(memberBioguideId)}
-        AND "senderKey" = ${normalizeSenderKey(senderKey)}
-      ORDER BY "sentAt" DESC
-      LIMIT 1
-    `;
-    return rows[0]?.sentAt?.getTime() ?? null;
-  }
-
-  return officialContactCooldownStore.get(cooldownKey) ?? null;
-}
-
-async function recordOfficialContact({
-  cooldownKey,
-  memberBioguideId,
-  senderKey,
-  senderEmail,
-  userId
-}: {
-  cooldownKey: string;
-  memberBioguideId: string;
-  senderKey: string;
-  senderEmail: string;
-  userId?: string;
-}) {
-  if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    await prisma.$executeRaw`
-      INSERT INTO "OfficialContactMessage" ("id", "memberBioguideId", "senderKey", "senderEmail", "userId", "sentAt", "createdAt")
-      VALUES (${randomUUID()}, ${normalizeMemberBioguideId(memberBioguideId)}, ${normalizeSenderKey(senderKey)}, ${senderEmail}, ${userId ?? null}, NOW(), NOW())
-    `;
-    return;
-  }
-
-  officialContactCooldownStore.set(cooldownKey, Date.now());
 }
 
 function composeContactBody({
@@ -245,16 +148,26 @@ export async function POST(
       return NextResponse.json({ error: "Email relay is temporarily unavailable. Try again in a minute." }, { status: 502 });
     }
 
-    await recordOfficialContact({
+    const letter = await recordOfficialContact({
+      contactUrl,
       cooldownKey: contactCooldownKey,
+      deliveryMode: "webhook",
+      deliveryStatus: "sent",
       memberBioguideId: member.bioguideId,
-      senderKey,
+      memberChamber: member.chamber,
+      memberDistrict: member.district,
+      memberName: member.fullName,
+      memberState: member.state,
+      message: parsed.data.message,
       senderEmail,
+      senderKey,
+      subject,
       userId: session?.user?.id
     });
 
     return NextResponse.json({
       contactUrl,
+      letter,
       message: "Message sent.",
       mode: "webhook",
       status: "sent"
@@ -269,16 +182,26 @@ export async function POST(
     })
   )}`;
 
-  await recordOfficialContact({
+  const letter = await recordOfficialContact({
+    contactUrl,
     cooldownKey: contactCooldownKey,
+    deliveryMode: "manual",
+    deliveryStatus: "prepared",
     memberBioguideId: member.bioguideId,
-    senderKey,
+    memberChamber: member.chamber,
+    memberDistrict: member.district,
+    memberName: member.fullName,
+    memberState: member.state,
+    message: parsed.data.message,
     senderEmail,
+    senderKey,
+    subject,
     userId: session?.user?.id
   });
 
   return NextResponse.json({
     contactUrl,
+    letter,
     mailtoUrl,
     message: "Draft prepared.",
     mode: "manual",

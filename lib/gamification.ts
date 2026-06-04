@@ -18,6 +18,7 @@ export type BadgeTone = "blue" | "gold" | "green" | "purple";
 export type BadgeStatus = "earned" | "locked";
 export type GamificationEventType =
   | "complete-onboarding"
+  | "complete-voter-registration"
   | "contact-representative"
   | "open-official-source"
   | "participate-election"
@@ -72,15 +73,15 @@ export type CivicLevelTier = {
 
 export const civicLevelTiers: CivicLevelTier[] = [
   { level: 1, minScore: 0, title: "Civic Starter" },
-  { level: 2, minScore: 80, title: "District Scout" },
-  { level: 3, minScore: 190, title: "Issue Tracker" },
-  { level: 4, minScore: 340, title: "Public Watcher" },
-  { level: 5, minScore: 540, title: "Policy Advocate" },
-  { level: 6, minScore: 800, title: "Community Organizer" },
-  { level: 7, minScore: 1130, title: "Civic Leader" },
-  { level: 8, minScore: 1500, title: "Democracy Defender" },
-  { level: 9, minScore: 1960, title: "Accountability Champion" },
-  { level: 10, minScore: 2520, title: "Civic Luminary" }
+  { level: 2, minScore: 150, title: "District Scout" },
+  { level: 3, minScore: 400, title: "Issue Tracker" },
+  { level: 4, minScore: 750, title: "Public Watcher" },
+  { level: 5, minScore: 1250, title: "Policy Advocate" },
+  { level: 6, minScore: 1900, title: "Community Organizer" },
+  { level: 7, minScore: 2800, title: "Civic Leader" },
+  { level: 8, minScore: 4000, title: "Democracy Defender" },
+  { level: 9, minScore: 5600, title: "Accountability Champion" },
+  { level: 10, minScore: 7500, title: "Civic Luminary" }
 ];
 
 const impactActionDisplay: Record<ImpactActionId, Omit<ImpactAction, "id" | "value">> = {
@@ -105,6 +106,14 @@ export const gamificationEventRules: GamificationEventRule[] = [
     ]
   },
   {
+    event: "complete-voter-registration",
+    label: "Complete voter registration form",
+    points: 75,
+    streakCredit: true,
+    dedupe: "once",
+    badgeProgress: [{ badgeId: "register-to-vote", threshold: 1 }]
+  },
+  {
     event: "track-bill",
     label: "Track a bill",
     points: 40,
@@ -112,8 +121,8 @@ export const gamificationEventRules: GamificationEventRule[] = [
     dedupe: "once-per-target",
     impactActionId: "bills-tracked",
     badgeProgress: [
-      { badgeId: "bill-tracker", threshold: 5 },
-      { badgeId: "public-records", threshold: 8 }
+      { badgeId: "bill-tracker", threshold: 50 },
+      { badgeId: "public-records", threshold: 20 }
     ]
   },
   {
@@ -142,8 +151,8 @@ export const gamificationEventRules: GamificationEventRule[] = [
     streakCredit: true,
     dedupe: "once-per-target",
     badgeProgress: [
-      { badgeId: "source-checker", threshold: 6 },
-      { badgeId: "data-sentinel", threshold: 20 }
+      { badgeId: "source-checker", threshold: 20 },
+      { badgeId: "data-sentinel", threshold: 40 }
     ]
   },
   {
@@ -154,9 +163,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
     dedupe: "once-per-target",
     impactActionId: "votes-cast",
     badgeProgress: [
-      { badgeId: "register-to-vote", threshold: 1 },
-      { badgeId: "democracy-defender", threshold: 10 },
-      { badgeId: "super-voter", threshold: 20 }
+      { badgeId: "democracy-defender", threshold: 30 }
     ]
   },
   {
@@ -166,7 +173,11 @@ export const gamificationEventRules: GamificationEventRule[] = [
     streakCredit: true,
     dedupe: "once-per-target",
     impactActionId: "votes-cast",
-    badgeProgress: [{ badgeId: "ballot-veteran", threshold: 5 }]
+    badgeProgress: [
+      { badgeId: "voter", threshold: 4 },
+      { badgeId: "ballot-veteran", threshold: 5 },
+      { badgeId: "super-voter", threshold: 6 }
+    ]
   },
   {
     event: "watch-speech-video",
@@ -174,7 +185,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
     points: 15,
     streakCredit: true,
     dedupe: "once-per-target",
-    badgeProgress: [{ badgeId: "floor-watch", threshold: 8 }]
+    badgeProgress: [{ badgeId: "floor-watch", threshold: 10 }]
   },
   {
     event: "contact-representative",
@@ -184,8 +195,8 @@ export const gamificationEventRules: GamificationEventRule[] = [
     dedupe: "once-per-target",
     impactActionId: "letters-sent",
     badgeProgress: [
-      { badgeId: "advocate", threshold: 3 },
-      { badgeId: "official-canvasser", threshold: 12 },
+      { badgeId: "advocate", threshold: 20 },
+      { badgeId: "official-canvasser", threshold: 40 },
       { badgeId: "change-maker", threshold: 50 }
     ]
   },
@@ -197,7 +208,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
     dedupe: "once-per-target",
     impactActionId: "petitions-signed",
     badgeProgress: [
-      { badgeId: "campaign-ally", threshold: 8 },
+      { badgeId: "campaign-ally", threshold: 15 },
       { badgeId: "change-maker", threshold: 50 }
     ]
   }
@@ -205,6 +216,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
 
 export const demoGamificationEventCounts: GamificationEventCount[] = [
   { event: "complete-onboarding", count: 1 },
+  { event: "complete-voter-registration", count: 1 },
   { event: "track-bill", count: 8 },
   { event: "review-vote", count: 5 },
   { event: "contact-representative", count: 12 },
@@ -228,7 +240,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "bill-tracker",
     label: "Bill Tracker",
-    description: "Track 5 bills",
+    description: "Track 50 bills",
     icon: "file",
     status: "earned",
     tone: "green",
@@ -237,7 +249,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "voter",
     label: "Voter",
-    description: "Vote in an election",
+    description: "Log 4 election participations",
     icon: "vote",
     status: "earned",
     tone: "blue",
@@ -246,7 +258,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "advocate",
     label: "Advocate",
-    description: "Contact 3 reps",
+    description: "Contact 20 reps",
     icon: "megaphone",
     status: "earned",
     tone: "gold",
@@ -255,7 +267,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "democracy-defender",
     label: "Democracy Defender",
-    description: "Review 10 voting records",
+    description: "Review 30 voting records",
     icon: "shield",
     status: "earned",
     tone: "gold",
@@ -264,7 +276,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "policy-expert",
     label: "Policy Expert",
-    description: "Follow 4 policy areas",
+    description: "Follow 15 policy areas",
     icon: "landmark",
     status: "earned",
     tone: "purple",
@@ -281,7 +293,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "source-checker",
     label: "Source Checker",
-    description: "Open 6 official source links",
+    description: "Open 20 official source links",
     icon: "search",
     status: "earned",
     tone: "green"
@@ -289,7 +301,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "committee-watcher",
     label: "Committee Watcher",
-    description: "Track 3 committee actions",
+    description: "Track 10 committee actions",
     icon: "scale",
     status: "earned",
     tone: "gold"
@@ -313,7 +325,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "public-records",
     label: "Public Records",
-    description: "Review 8 bill records",
+    description: "Review 20 bill records",
     icon: "file",
     status: "earned",
     tone: "green"
@@ -321,7 +333,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "register-to-vote",
     label: "Register to Vote",
-    description: "Review 1 vote record",
+    description: "Complete a Voter Registration Form",
     icon: "vote",
     status: "locked",
     tone: "blue"
@@ -329,7 +341,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "super-voter",
     label: "Super Voter",
-    description: "Review 20 vote records",
+    description: "Log 6 election participations",
     icon: "trophy",
     status: "locked",
     tone: "gold"
@@ -337,7 +349,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "constitution-champion",
     label: "Constitution Champion",
-    description: "Complete 5 civic learning actions",
+    description: "Complete 10 civic learning actions",
     icon: "landmark",
     status: "locked",
     tone: "blue"
@@ -353,7 +365,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "official-canvasser",
     label: "Official Canvasser",
-    description: "Contact 12 representative offices",
+    description: "Contact 40 representative offices",
     icon: "megaphone",
     status: "locked",
     tone: "purple"
@@ -361,7 +373,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "campaign-ally",
     label: "Campaign Ally",
-    description: "Sign 8 civic petitions",
+    description: "Sign 15 civic petitions",
     icon: "building",
     status: "locked",
     tone: "gold"
@@ -377,7 +389,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "committee-pro",
     label: "Committee Pro",
-    description: "Track 10 committee hearings",
+    description: "Track 20 committee hearings",
     icon: "scale",
     status: "locked",
     tone: "green"
@@ -385,7 +397,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "floor-watch",
     label: "Floor Watch",
-    description: "Watch 8 floor activity updates",
+    description: "Watch 10 floor activity updates",
     icon: "vote",
     status: "locked",
     tone: "gold"
@@ -401,7 +413,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "transparency-ally",
     label: "Transparency Ally",
-    description: "Share 5 source-linked records",
+    description: "Share 10 source-linked records",
     icon: "shield",
     status: "locked",
     tone: "green"
@@ -409,7 +421,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "policy-architect",
     label: "Policy Architect",
-    description: "Create 3 policy watchlists",
+    description: "Create 5 policy watchlists",
     icon: "landmark",
     status: "locked",
     tone: "purple"
@@ -433,7 +445,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "data-sentinel",
     label: "Data Sentinel",
-    description: "Verify 20 official records",
+    description: "Verify 40 official records",
     icon: "search",
     status: "locked",
     tone: "green"
