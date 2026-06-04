@@ -6,7 +6,9 @@ import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import {
   gamificationChangedEvent,
-  hydrateGamificationFromAccount
+  hydrateGamificationFromAccount,
+  readLocalGamificationSnapshot,
+  recordCompletedDistrictSetupIfReady
 } from "@/lib/browser-gamification";
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
@@ -175,8 +177,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     let active = true;
 
     async function refreshGamification() {
+      const repairedBeforeHydration = recordCompletedDistrictSetupIfReady();
+      if (active && repairedBeforeHydration) setGamificationSnapshot(readLocalGamificationSnapshot());
+
       const next = await hydrateGamificationFromAccount();
-      if (active) setGamificationSnapshot(next);
+      const repairedAfterHydration = recordCompletedDistrictSetupIfReady();
+      const repairedSnapshot = repairedBeforeHydration || repairedAfterHydration ? readLocalGamificationSnapshot() : next;
+      if (active) setGamificationSnapshot(repairedSnapshot);
     }
 
     void refreshGamification();

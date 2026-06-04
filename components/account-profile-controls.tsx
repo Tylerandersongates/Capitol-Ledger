@@ -17,6 +17,7 @@ import {
   type LocalDistrictProfile
 } from "@/lib/browser-account-profile";
 import { useSubscriptionState } from "@/components/subscription-controls";
+import { recordCompletedDistrictSetupIfReady } from "@/lib/browser-gamification";
 import {
   betaDistrictPresets,
   betaDistrictZipExamples,
@@ -241,6 +242,7 @@ export function OnboardingDistrictSetup() {
       tone: "success"
     });
     writeLocalDistrictProfile(nextDistrict);
+    recordCompletedDistrictSetupIfReady();
     void syncAccountProfile(nextDistrict);
   }
 

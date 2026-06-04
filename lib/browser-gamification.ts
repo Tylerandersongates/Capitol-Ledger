@@ -7,6 +7,7 @@ import {
   normalizeAccountGamification,
   type AccountGamificationSnapshot
 } from "@/lib/account-gamification";
+import { readLocalDistrictProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 
 export const gamificationChangedEvent = "capitol-ledger:gamification-changed";
@@ -151,12 +152,38 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   const rule = getGamificationEventRule(event);
   if (!rule) return false;
 
-  const key = dedupeKey(event, targetId);
-  const dedupeKeys = readDedupeKeys();
-  if (key && dedupeKeys.includes(key)) return false;
-
   const current = readLocalGamificationSnapshot();
   const counts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
+  const existingCount = counts.get(event) ?? 0;
+  const key = dedupeKey(event, targetId);
+  const dedupeKeys = readDedupeKeys();
+  if (key && dedupeKeys.includes(key) && !(rule.dedupe === "once" && existingCount === 0)) return false;
+
+  if (rule.dedupe === "once" && existingCount > 0) {
+    const earnedBadgeIds = new Set(current.earnedBadgeIds);
+    let badgesChanged = false;
+
+    rule.badgeProgress.forEach((progress) => {
+      if (existingCount >= progress.threshold && !earnedBadgeIds.has(progress.badgeId)) {
+        earnedBadgeIds.add(progress.badgeId);
+        badgesChanged = true;
+      }
+    });
+
+    if (key && !dedupeKeys.includes(key)) writeJson(gamificationDedupeKey, [...dedupeKeys, key]);
+    if (!badgesChanged) return false;
+
+    const next = normalizeAccountGamification({
+      ...current,
+      earnedBadgeIds: Array.from(earnedBadgeIds)
+    });
+
+    writeLocalGamificationSnapshot(next);
+    gamificationHydrationPromise = null;
+    void syncGamificationToAccount(next);
+    return true;
+  }
+
   const nextCount = (counts.get(event) ?? 0) + Math.max(1, Math.floor(amount));
   counts.set(event, nextCount);
 
@@ -176,7 +203,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
       // Ignore storage failures in restricted browser contexts.
     }
   }
-  if (key) writeJson(gamificationDedupeKey, [...dedupeKeys, key]);
+  if (key && !dedupeKeys.includes(key)) writeJson(gamificationDedupeKey, [...dedupeKeys, key]);
 
   const next = normalizeAccountGamification({
     ...current,
@@ -190,4 +217,11 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   gamificationHydrationPromise = null;
   void syncGamificationToAccount(next);
   return true;
+}
+
+export function recordCompletedDistrictSetupIfReady() {
+  const district = readLocalDistrictProfile();
+  if (!district.districtCode) return false;
+
+  return recordGamificationEvent("complete-onboarding", district.districtCode);
 }

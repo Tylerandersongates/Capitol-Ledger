@@ -25,7 +25,6 @@ export type AccountGamificationSnapshot = {
 
 const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
-const setupOnlyBadgeIds = new Set(["civic-starter", "district-finder"]);
 const legacyDemoCounts = new Map(demoGamificationEventCounts.map((record) => [record.event, record.count]));
 const accountCreationDayStreak = 1;
 
@@ -68,6 +67,20 @@ function normalizeBadgeIds(value: unknown) {
   return Array.from(new Set(source.filter((id): id is string => typeof id === "string" && validBadgeIds.has(id))));
 }
 
+function deriveEarnedBadgeIds(eventCounts: GamificationEventCount[], value: unknown) {
+  const earnedBadgeIds = new Set(normalizeBadgeIds(value));
+  const counts = new Map(eventCounts.map((record) => [record.event, record.count]));
+
+  gamificationEventRules.forEach((rule) => {
+    const count = counts.get(rule.event) ?? 0;
+    rule.badgeProgress.forEach((progress) => {
+      if (count >= progress.threshold && validBadgeIds.has(progress.badgeId)) earnedBadgeIds.add(progress.badgeId);
+    });
+  });
+
+  return Array.from(earnedBadgeIds);
+}
+
 function isLegacyDemoGamification(eventCounts: GamificationEventCount[], value: Partial<AccountGamificationSnapshot>) {
   const counts = new Map(eventCounts.map((record) => [record.event, record.count]));
   const legacyCoreEvents: GamificationEventType[] = ["track-bill", "review-vote", "contact-representative", "sign-petition", "read-alert"];
@@ -84,8 +97,8 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
   const normalizedEventCounts = normalizeEventCounts(value.eventCounts);
   if (isLegacyDemoGamification(normalizedEventCounts, value)) return getDefaultAccountGamification();
 
-  const eventCounts = normalizedEventCounts.filter((record) => record.event !== "complete-onboarding");
-  const earnedBadgeIds = normalizeBadgeIds(value.earnedBadgeIds).filter((id) => !setupOnlyBadgeIds.has(id));
+  const eventCounts = normalizedEventCounts;
+  const earnedBadgeIds = deriveEarnedBadgeIds(eventCounts, value.earnedBadgeIds);
   const summary = getGamificationSummary(eventCounts, earnedBadgeIds);
   const civicScore = calculateGamificationScore(eventCounts);
   const hasCivicActions = eventCounts.some((record) => record.count > 0);
