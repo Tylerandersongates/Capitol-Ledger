@@ -67,6 +67,7 @@ const premiumScrollPanelClass = `${premiumPanelClass} max-h-[250px] overflow-y-a
 export default async function AccountPage() {
   const session = await getCurrentSession();
   const authenticated = Boolean(session);
+  const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
 
   return (
     <MobileShell
@@ -113,7 +114,7 @@ export default async function AccountPage() {
                   </div>
                   <div className="min-w-0">
                     <div className={premiumEyebrowClass}>Citizen Profile</div>
-                    <h2 className={`${premiumCardTitleClass} mt-2`}>Demo Citizen</h2>
+                    <h2 className={`${premiumCardTitleClass} mt-2`}>{profileDisplayName}</h2>
                     <AccountDistrictDisplay />
                     <div className="mt-3 flex flex-wrap items-center gap-2 [&>*]:mt-0 [&>*]:px-2.5 [&>*]:py-1 [&>*]:text-[11px]">
                       <PartyAffiliationDisplay />
