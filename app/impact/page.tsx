@@ -3,13 +3,12 @@ import {
   CivicScoreValue,
   CivicLevelPathCard,
   DayStreakValue,
-  ImpactActionsList,
   LevelProgressBar,
   LevelStatusValue,
   MonthlyGainValue,
+  PremiumImpactBreakdown,
   RecentAchievementsList,
   StreakWeekIndicator,
-  TotalActionsValue,
   XpProgressValue
 } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
@@ -120,24 +119,8 @@ export default function ImpactPage() {
           </div>
         </MobileCard>
 
-        <MobileCard variant="dashboard" className="px-5 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[21px] font-medium leading-none">Impact Breakdown</h2>
-            <div className="text-[16px] text-white/55">
-              This Month
-            </div>
-          </div>
-          <div className="mt-7 grid grid-cols-[150px_1fr] items-center gap-5">
-            <div className="relative h-36 w-36 rounded-full bg-[conic-gradient(#ff6f2d_0_25%,#5c75b7_25%_38%,#516bab_38%_50%,#49c878_50%_88%,#9ca3af_88%_100%)]">
-              <div className="absolute inset-[28px] grid place-items-center rounded-full bg-[#06152b] text-center">
-                <div>
-                  <div className="text-[28px] font-medium leading-none text-[#ffb12b]"><TotalActionsValue /></div>
-                  <div className="mt-2 text-[16px] leading-none text-white/72">Actions</div>
-                </div>
-              </div>
-            </div>
-            <ImpactActionsList />
-          </div>
+        <MobileCard variant="dashboard" className="overflow-hidden px-5 py-5">
+          <PremiumImpactBreakdown />
         </MobileCard>
       </main>
 

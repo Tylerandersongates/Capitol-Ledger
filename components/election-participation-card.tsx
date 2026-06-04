@@ -4,11 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Vote } from "lucide-react";
 import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileCard } from "@/components/mobile-ui";
-import {
-  readLocalGamificationSnapshot,
-  syncGamificationToAccount,
-  writeLocalGamificationSnapshot
-} from "@/lib/browser-gamification";
+import { setGamificationEventCount } from "@/lib/browser-gamification";
+import { getGamificationEventRule } from "@/lib/gamification";
 
 type ElectionEntry = {
   id: string;
@@ -26,9 +23,9 @@ const electionLogEntries: ElectionEntry[] = [
 ];
 
 const electionParticipationKey = "capitol-ledger:election-participation-ids";
-const ballotVeteranBadgeId = "ballot-veteran";
 const electionEvent = "participate-election";
-const electionEventPoints = 60;
+const totalElectionCount = electionLogEntries.length;
+const ballotVeteranElectionGoal = getGamificationEventRule(electionEvent)?.badgeProgress.find((progress) => progress.badgeId === "ballot-veteran")?.threshold ?? 5;
 
 function readStoredElectionIds() {
   if (typeof window === "undefined") return [];
@@ -95,32 +92,7 @@ export function ElectionParticipationCard() {
     const nextUniqueIds = Array.from(new Set(nextIds));
     writeStoredElectionIds(nextUniqueIds);
     setLoggedElectionIds(nextUniqueIds);
-
-    const current = readLocalGamificationSnapshot();
-    const previousCount = current.eventCounts.find((record) => record.event === electionEvent)?.count ?? 0;
-    const nextCounts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
-    if (nextUniqueIds.length > 0) {
-      nextCounts.set(electionEvent, nextUniqueIds.length);
-    } else {
-      nextCounts.delete(electionEvent);
-    }
-
-    const earnedBadgeIds = new Set(current.earnedBadgeIds);
-    if (nextUniqueIds.length >= 5) {
-      earnedBadgeIds.add(ballotVeteranBadgeId);
-    } else {
-      earnedBadgeIds.delete(ballotVeteranBadgeId);
-    }
-
-    const nextMonthlyGain = Math.max(0, current.monthlyGain + (nextUniqueIds.length - previousCount) * electionEventPoints);
-
-    writeLocalGamificationSnapshot({
-      ...current,
-      earnedBadgeIds: Array.from(earnedBadgeIds),
-      eventCounts: Array.from(nextCounts.entries()).map(([event, count]) => ({ event, count })),
-      monthlyGain: nextMonthlyGain
-    });
-    void syncGamificationToAccount();
+    setGamificationEventCount(electionEvent, nextUniqueIds.length);
   }
 
   function toggleElectionSelection(entry: ElectionEntry) {
@@ -162,7 +134,7 @@ export function ElectionParticipationCard() {
             <h2 className="text-[21px] font-medium leading-none">Election Participation</h2>
           </div>
           <div className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[12px] font-medium text-white/76">
-            {electionCount}/5
+            {electionCount}/{totalElectionCount}
           </div>
         </div>
 
@@ -210,7 +182,7 @@ export function ElectionParticipationCard() {
 
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#43ed74]/20 bg-[#43ed74]/8 px-3 py-2 text-[12px] text-[#8ef8af]">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden="true" />
-          <span>{status || "Log 5 unique elections to unlock Ballot Veteran."}</span>
+          <span>{status || `Log ${ballotVeteranElectionGoal} of ${totalElectionCount} unique elections to unlock Ballot Veteran.`}</span>
         </div>
       </MobileCard>
     </div>

@@ -1,5 +1,6 @@
 import {
   getGamificationEventRule,
+  getGamificationEventRules,
   type GamificationEventType
 } from "@/lib/gamification";
 import {
@@ -74,6 +75,30 @@ function gamificationSnapshotsMatch(left: AccountGamificationSnapshot, right: Ac
   return gamificationSignature(left) === gamificationSignature(right);
 }
 
+function deriveEarnedBadgeIdsForCounts(snapshot: AccountGamificationSnapshot, counts: Map<GamificationEventType, number>) {
+  const earnedBadgeIds = new Set(snapshot.earnedBadgeIds);
+  const ruleBadgeIds = new Set<string>();
+  const qualifiedBadgeIds = new Set<string>();
+
+  getGamificationEventRules().forEach((rule) => {
+    const count = counts.get(rule.event) ?? 0;
+    rule.badgeProgress.forEach((progress) => {
+      ruleBadgeIds.add(progress.badgeId);
+      if (count >= progress.threshold) qualifiedBadgeIds.add(progress.badgeId);
+    });
+  });
+
+  ruleBadgeIds.forEach((badgeId) => {
+    if (qualifiedBadgeIds.has(badgeId)) {
+      earnedBadgeIds.add(badgeId);
+    } else {
+      earnedBadgeIds.delete(badgeId);
+    }
+  });
+
+  return Array.from(earnedBadgeIds);
+}
+
 export function readLocalGamificationSnapshot() {
   return normalizeAccountGamification(readJson<Partial<AccountGamificationSnapshot>>(gamificationKey, getDefaultAccountGamification()));
 }
@@ -112,7 +137,7 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
 
 export async function hydrateGamificationFromAccount() {
   if (typeof window === "undefined") return getDefaultAccountGamification();
-  if (!(await hasActiveBrowserSession())) return getDefaultAccountGamification();
+  if (!(await hasActiveBrowserSession())) return readLocalGamificationSnapshot();
   if (gamificationHydrationPromise) return gamificationHydrationPromise;
 
   gamificationHydrationPromise = hydrateGamificationFromApi().finally(() => {
@@ -126,16 +151,12 @@ async function hydrateGamificationFromApi() {
 
   const response = await fetch("/api/account/gamification", { cache: "no-store" }).catch(() => null);
   if (!response?.ok) {
-    const emptySnapshot = getDefaultAccountGamification();
-    if (!gamificationSnapshotsMatch(local, emptySnapshot)) writeLocalGamificationSnapshot(emptySnapshot);
-    return emptySnapshot;
+    return local;
   }
 
   const data = (await response.json().catch(() => null)) as { gamification?: AccountGamificationSnapshot } | null;
   if (!data?.gamification) {
-    const emptySnapshot = getDefaultAccountGamification();
-    if (!gamificationSnapshotsMatch(local, emptySnapshot)) writeLocalGamificationSnapshot(emptySnapshot);
-    return emptySnapshot;
+    return local;
   }
 
   const accountSnapshot = normalizeAccountGamification(data.gamification);
@@ -212,6 +233,52 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
     eventCounts: Array.from(counts.entries()).map(([event, count]) => ({ event, count })),
     monthlyGain: current.monthlyGain + rule.points
   });
+
+  writeLocalGamificationSnapshot(next);
+  gamificationHydrationPromise = null;
+  void syncGamificationToAccount(next);
+  return true;
+}
+
+export function setGamificationEventCount(event: GamificationEventType, count: number) {
+  if (typeof window === "undefined") return false;
+
+  const rule = getGamificationEventRule(event);
+  if (!rule) return false;
+
+  const current = readLocalGamificationSnapshot();
+  const nextCount = Math.max(0, Math.floor(count));
+  const counts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
+  const previousCount = counts.get(event) ?? 0;
+  const didIncrease = nextCount > previousCount;
+
+  if (nextCount > 0) {
+    counts.set(event, nextCount);
+  } else {
+    counts.delete(event);
+  }
+
+  const currentDay = todayKey();
+  const lastStreakCredit = window.localStorage?.getItem(gamificationStreakKey);
+  const baselineStreakCredit = rule.streakCredit && current.dayStreak <= 1 && current.totalActions === 0;
+  const streakCredit = rule.streakCredit && didIncrease && !baselineStreakCredit && lastStreakCredit !== currentDay;
+  if ((streakCredit || (didIncrease && baselineStreakCredit)) && rule.streakCredit) {
+    try {
+      window.localStorage?.setItem(gamificationStreakKey, currentDay);
+    } catch {
+      // Ignore storage failures in restricted browser contexts.
+    }
+  }
+
+  const next = normalizeAccountGamification({
+    ...current,
+    dayStreak: streakCredit ? current.dayStreak + 1 : current.dayStreak,
+    earnedBadgeIds: deriveEarnedBadgeIdsForCounts(current, counts),
+    eventCounts: Array.from(counts.entries()).map(([recordEvent, recordCount]) => ({ event: recordEvent, count: recordCount })),
+    monthlyGain: Math.max(0, current.monthlyGain + (nextCount - previousCount) * rule.points)
+  });
+
+  if (gamificationSnapshotsMatch(current, next)) return false;
 
   writeLocalGamificationSnapshot(next);
   gamificationHydrationPromise = null;

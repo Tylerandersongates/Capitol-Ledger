@@ -96,11 +96,6 @@ export function DayStreakValue({ className }: { className?: string }) {
   return <span className={className}>{snapshot.dayStreak} {snapshot.dayStreak === 1 ? "Day" : "Days"}</span>;
 }
 
-export function TotalActionsValue() {
-  const snapshot = useGamificationSnapshot();
-  return <span>{snapshot.totalActions}</span>;
-}
-
 const streakWeekDays = [
   { jsDay: 1, label: "M", name: "Monday" },
   { jsDay: 2, label: "T", name: "Tuesday" },
@@ -148,17 +143,88 @@ export function StreakWeekIndicator() {
 export function ImpactActionsList() {
   const snapshot = useGamificationSnapshot();
   const actions = getImpactActions(snapshot.eventCounts);
+  const totalActions = actions.reduce((total, row) => total + row.value, 0);
 
   return (
-    <div className="space-y-4">
-      {actions.map((row) => (
-        <div key={row.id} className="grid grid-cols-[20px_1fr_28px] items-center gap-3 text-[17px]">
-          <span className="h-4 w-4 rounded-full" style={{ backgroundColor: row.color }} />
-          <span className="text-white/64">{row.label}</span>
-          <span className="text-right font-semibold text-white">{row.value}</span>
-        </div>
-      ))}
+    <div className="space-y-2.5">
+      {actions.map((row) => {
+        const percent = totalActions > 0 ? Math.round((row.value / totalActions) * 100) : 0;
+        const progressWidth = row.value > 0 ? `${Math.max(8, percent)}%` : "0%";
+
+        return (
+          <div key={row.id} className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="grid grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-2">
+              <span className="h-3.5 w-3.5 rounded-full shadow-[0_0_14px_currentColor]" style={{ backgroundColor: row.color, color: row.color }} />
+              <span className="truncate text-[13px] font-medium text-white/72">{row.label}</span>
+              <span className="text-[15px] font-semibold text-white">{row.value}</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full shadow-[0_0_14px_currentColor] transition-[width]"
+                style={{ backgroundColor: row.color, color: row.color, width: progressWidth }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function buildImpactChartGradient(actions: ReturnType<typeof getImpactActions>, totalActions: number) {
+  if (totalActions <= 0) {
+    return "conic-gradient(rgba(255,255,255,0.11) 0deg 360deg)";
+  }
+
+  let cursor = 0;
+  return `conic-gradient(${actions.map((row) => {
+    const start = cursor;
+    const end = cursor + (row.value / totalActions) * 360;
+    cursor = end;
+    return `${row.color} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`;
+  }).join(", ")})`;
+}
+
+export function PremiumImpactBreakdown() {
+  const snapshot = useGamificationSnapshot();
+  const actions = getImpactActions(snapshot.eventCounts);
+  const totalActions = actions.reduce((total, row) => total + row.value, 0);
+  const activeActionCount = actions.filter((row) => row.value > 0).length;
+  const chartGradient = buildImpactChartGradient(actions, totalActions);
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[21px] font-medium leading-none">Impact Breakdown</h2>
+          <div className="mt-2 text-[12px] font-medium uppercase tracking-[0.08em] text-white/42">
+            {activeActionCount > 0 ? `${activeActionCount} active signal${activeActionCount === 1 ? "" : "s"}` : "No actions logged"}
+          </div>
+        </div>
+        <div className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#ffc44d] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          This Month
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-[154px_minmax(0,1fr)] items-center gap-4">
+        <div className="relative h-[154px] w-[154px]">
+          <div className="absolute inset-0 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.03)_58%,rgba(255,255,255,0.08)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_18px_36px_rgba(1,8,24,0.36)]" />
+          <div
+            className="absolute inset-[9px] rounded-full shadow-[inset_0_0_18px_rgba(0,0,0,0.34),0_0_24px_rgba(73,200,120,0.08)]"
+            style={{ background: chartGradient }}
+          />
+          <div className="absolute inset-[25px] rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(9,34,71,0.96)_0%,rgba(4,17,40,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]" />
+          <div className="absolute inset-0 grid place-items-center text-center">
+            <div>
+              <div className="text-[36px] font-medium leading-none text-[#ffb12b]">{totalActions}</div>
+              <div className="mt-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-white/54">Actions</div>
+            </div>
+          </div>
+        </div>
+
+        <ImpactActionsList />
+      </div>
+    </>
   );
 }
 
