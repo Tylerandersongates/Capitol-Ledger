@@ -17,12 +17,12 @@ type ElectionEntry = {
 };
 
 const electionLogEntries: ElectionEntry[] = [
-  { id: "2024-primary", label: "2024 Primary Election", type: "Primary" },
-  { id: "2024-general", label: "2024 General Election", type: "General" },
-  { id: "2025-special-district", label: "2025 District Special Election", type: "Special" },
   { id: "2026-primary", label: "2026 Primary Election", type: "Primary" },
   { id: "2026-general", label: "2026 General Election", type: "General" },
-  { id: "2026-runoff", label: "2026 Runoff Election", type: "Runoff" }
+  { id: "2026-runoff", label: "2026 Runoff Election", type: "Runoff" },
+  { id: "2027-district-special", label: "2027 District Special Election", type: "Special" },
+  { id: "2028-primary", label: "2028 Primary Election", type: "Primary" },
+  { id: "2028-general", label: "2028 General Election", type: "General" }
 ];
 
 const electionParticipationKey = "capitol-ledger:election-participation-ids";
