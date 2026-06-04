@@ -58,8 +58,9 @@ export default function ImpactPage() {
               <MonthlyGainValue className="mt-4 block text-[19px] font-medium text-[#43ed74]" />
             </div>
             <div className="rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(2,10,28,0.34)]">
-              <div className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-white/12 bg-[#06152b]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_6px_18px_rgba(0,0,0,0.38)]">
-                <Image src="/capitol-ledger-logo.png" alt="" width={64} height={64} className="h-16 w-16 rounded-full object-cover" />
+              <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full border-2 border-[#d59a31]/80 bg-[radial-gradient(circle,rgba(255,177,43,0.18)_0%,rgba(28,102,180,0.22)_40%,rgba(4,17,39,0.94)_72%)] shadow-[inset_0_1px_0_rgba(255,210,120,0.22),0_0_22px_rgba(255,177,43,0.22),0_0_28px_rgba(35,132,255,0.12)]">
+                <span className="absolute inset-[-5px] rounded-full border border-[#ffb12b]/42" />
+                <Image src="/capitol-ledger-logo.png" alt="" width={72} height={72} className="h-[72px] w-[72px] rounded-full object-cover" />
               </div>
               <div className="mt-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/46">XP Progress</div>
               <div className="mt-1.5 h-2 rounded-full bg-white/13">
