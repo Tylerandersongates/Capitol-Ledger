@@ -1,4 +1,3 @@
-import { EarnedBadgeTile } from "@/components/gamification-ui";
 import { GamificationSync } from "@/components/gamification-sync";
 import {
   CivicScoreValue,
@@ -8,13 +7,13 @@ import {
   LevelProgressBar,
   LevelStatusValue,
   MonthlyGainValue,
+  RecentAchievementsList,
   TotalActionsValue,
   XpProgressValue
 } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { ElectionParticipationCard } from "@/components/election-participation-card";
-import { getRecentAchievements } from "@/lib/gamification";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -32,8 +31,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default function ImpactPage() {
-  const recentAchievements = getRecentAchievements();
-
   return (
     <MobileShell
       minHeight="min-h-[1080px]"
@@ -97,11 +94,7 @@ export default function ImpactPage() {
               View All
             </Link>
           </div>
-          <div className="mt-7 grid grid-cols-3 gap-x-7">
-            {recentAchievements.map((achievement) => (
-              <EarnedBadgeTile key={achievement.id} badge={achievement} size="medium" showDescription />
-            ))}
-          </div>
+          <RecentAchievementsList />
         </MobileCard>
 
         <ElectionParticipationCard />

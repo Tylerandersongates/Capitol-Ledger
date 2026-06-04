@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EarnedBadgeTile } from "@/components/gamification-ui";
 import {
   gamificationChangedEvent,
   hydrateGamificationFromAccount
 } from "@/lib/browser-gamification";
-import { civicLevelTiers, getImpactActions } from "@/lib/gamification";
+import { civicLevelTiers, getBadgeCollections, getImpactActions } from "@/lib/gamification";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 
 export function useGamificationSnapshot() {
@@ -112,6 +113,33 @@ export function ImpactActionsList() {
           <span className="text-white/64">{row.label}</span>
           <span className="text-right font-semibold text-white">{row.value}</span>
         </div>
+      ))}
+    </div>
+  );
+}
+
+export function RecentAchievementsList() {
+  const snapshot = useGamificationSnapshot();
+  const badgeCollections = getBadgeCollections(snapshot.earnedBadgeIds);
+  const badgeById = new Map(badgeCollections.earnedBadges.map((badge) => [badge.id, badge]));
+  const recentBadges = snapshot.earnedBadgeIds
+    .map((id) => badgeById.get(id))
+    .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge))
+    .slice(-3)
+    .reverse();
+
+  if (!recentBadges.length) {
+    return (
+      <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] leading-snug text-white/56">
+        Achievements appear here after setup and civic actions are completed.
+      </div>
+    );
+  }
+
+  return (
+    <div className={`mt-7 grid gap-x-7 ${recentBadges.length === 1 ? "grid-cols-1" : recentBadges.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+      {recentBadges.map((achievement) => (
+        <EarnedBadgeTile key={achievement.id} badge={achievement} size="medium" showDescription />
       ))}
     </div>
   );
