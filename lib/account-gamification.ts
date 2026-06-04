@@ -27,6 +27,7 @@ const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
 const setupOnlyBadgeIds = new Set(["civic-starter", "district-finder"]);
 const legacyDemoCounts = new Map(demoGamificationEventCounts.map((record) => [record.event, record.count]));
+const accountCreationDayStreak = 1;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -91,7 +92,7 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
 
   return {
     civicScore,
-    dayStreak: hasCivicActions ? toPositiveInteger(value.dayStreak) : 0,
+    dayStreak: Math.max(accountCreationDayStreak, toPositiveInteger(value.dayStreak)),
     earnedBadgeIds,
     eventCounts,
     level: summary.level,

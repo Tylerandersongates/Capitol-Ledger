@@ -167,8 +167,9 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
 
   const currentDay = todayKey();
   const lastStreakCredit = window.localStorage?.getItem(gamificationStreakKey);
-  const streakCredit = rule.streakCredit && lastStreakCredit !== currentDay;
-  if (streakCredit) {
+  const baselineStreakCredit = rule.streakCredit && current.dayStreak <= 1 && current.totalActions === 0;
+  const streakCredit = rule.streakCredit && !baselineStreakCredit && lastStreakCredit !== currentDay;
+  if (streakCredit || baselineStreakCredit) {
     try {
       window.localStorage?.setItem(gamificationStreakKey, currentDay);
     } catch {
