@@ -93,12 +93,56 @@ export function XpProgressValue({ className }: { className?: string }) {
 
 export function DayStreakValue({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
-  return <span className={className}>{snapshot.dayStreak} Days</span>;
+  return <span className={className}>{snapshot.dayStreak} {snapshot.dayStreak === 1 ? "Day" : "Days"}</span>;
 }
 
 export function TotalActionsValue() {
   const snapshot = useGamificationSnapshot();
   return <span>{snapshot.totalActions}</span>;
+}
+
+const streakWeekDays = [
+  { jsDay: 1, label: "M", name: "Monday" },
+  { jsDay: 2, label: "T", name: "Tuesday" },
+  { jsDay: 3, label: "W", name: "Wednesday" },
+  { jsDay: 4, label: "T", name: "Thursday" },
+  { jsDay: 5, label: "F", name: "Friday" },
+  { jsDay: 6, label: "S", name: "Saturday" },
+  { jsDay: 0, label: "S", name: "Sunday" }
+] as const;
+
+export function StreakWeekIndicator() {
+  const snapshot = useGamificationSnapshot();
+  const [currentDay] = useState(() => new Date().getDay());
+  const currentDayIndex = streakWeekDays.findIndex((day) => day.jsDay === currentDay);
+  const visibleStreakDays = Math.min(Math.max(0, snapshot.dayStreak), streakWeekDays.length);
+  const firstCheckedIndex = Math.max(0, currentDayIndex - visibleStreakDays + 1);
+
+  return (
+    <div className="grid grid-cols-7 gap-1 text-center text-[12px]">
+      {streakWeekDays.map((day, index) => {
+        const checked = currentDayIndex >= 0 && index >= firstCheckedIndex && index <= currentDayIndex;
+        const current = checked && index === currentDayIndex;
+
+        return (
+          <div key={`${day.name}-${index}`} aria-label={`${day.name}${checked ? " streak day complete" : ""}`}>
+            <div className={current ? "font-semibold text-[#ffb12b]" : "text-white/45"}>{day.label}</div>
+            <div
+              className={`mt-3 grid h-6 w-6 place-items-center rounded-full text-[13px] ${
+                current
+                  ? "bg-[#ffb12b] font-semibold text-[#061126]"
+                  : checked
+                    ? "border border-[#73dd6d] text-[#73dd6d]"
+                    : "border border-white/12 text-transparent"
+              }`}
+            >
+              {checked ? "✓" : ""}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function ImpactActionsList() {

@@ -8,6 +8,7 @@ import {
   LevelStatusValue,
   MonthlyGainValue,
   RecentAchievementsList,
+  StreakWeekIndicator,
   TotalActionsValue,
   XpProgressValue
 } from "@/components/gamification-live-stats";
@@ -113,16 +114,7 @@ export default function ImpactPage() {
                 <DayStreakValue className="text-[30px] font-medium leading-none text-[#ffb12b]" />
                 <div className="mt-3 text-[18px] text-white/70">Keep it going!</div>
               </div>
-              <div className="grid grid-cols-6 gap-2 text-center text-[13px]">
-                {["M", "T", "W", "T", "F", "S"].map((day, index) => (
-                  <div key={`${day}-${index}`}>
-                    <div className={index === 5 ? "text-[#ffb12b]" : "text-white/45"}>{day}</div>
-                    <div className={`mt-3 grid h-7 w-7 place-items-center rounded-full text-[15px] ${index === 5 ? "bg-[#ffb12b] font-semibold text-[#061126]" : "border border-[#73dd6d] text-[#73dd6d]"}`}>
-                      {index === 5 ? "S" : "✓"}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <StreakWeekIndicator />
             </div>
           </div>
         </MobileCard>
