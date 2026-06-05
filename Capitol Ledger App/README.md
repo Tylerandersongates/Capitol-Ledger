@@ -6,7 +6,7 @@ Capitol Ledger is the mobile-first civic intelligence MVP we are building around
 
 Source app:
 
-`/Users/tylergates/Documents/Codex/2026-05-14/we-are-going-to-create-a`
+`/Users/tylergates/Documents/Capitol Ledger`
 
 Clean local preview:
 
@@ -33,7 +33,10 @@ Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civi
 
 ## Product Notes
 
-- Current focus: Phase 2 + Phase 3 overlap. Phase 1 web-beta baseline is complete; active work is now auth stability plus UI polish from tester annotations.
+- Current focus: first trusted beta tester intake on June 6, 2026. Phase 1 is tester-launch ready; Phase 2 and Phase 3 are now in beta QA/triage mode.
+- Latest pushed beta package: `b5106dd Prepare beta tester polish and guide`.
+- The first-round beta tester guide lives in `docs/beta-tester-guide` as Markdown, PDF, editable DOCX, and annotated snapshots.
+- Password reset/forgot-password has been verified working for the beta pass.
 - Free, Pro Intelligence, and Civic Team now share one subscription entitlement matrix, with demo mode switchers on `/account` and `/upgrade`.
 - Subscription modes now visibly affect the app: dashboard Pro policy lens, bill detail AI/source/video gates, search smart filters and export reports, alerts priority lane, and Civic Team map/workspace panel.
 - The subscription walkthrough, expected plan behavior, and QA checklist live in `Subscription Demo Guide.md`.
@@ -45,4 +48,4 @@ Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civi
 - `/account` now includes optional party affiliation, displayed under city/district and controlled from Account Settings.
 - Save/unsave star actions on official and bill profiles now provide immediate in-UI confirmation (`Saved to your ledger` / `Removed from your ledger`) while updating saved-ledger state.
 - Official profile accountability now uses a visible nonpartisan methodology: the score is a weighted source-coverage model across voting records, public engagement, sponsored bills, and ethics/compliance evidence.
-- Active next step: complete official-profile interaction polish (tab behavior, info affordances, score explanation clarity, and layout consistency) and then run a deployed smoke pass.
+- Active next step: run the deployed `/beta` smoke path, send the beta guide and deployed `/beta` link to the first trusted testers, then triage `/feedback/review` after each session.

@@ -296,6 +296,10 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   const status = getBillStatus(bill);
   const activeTab = normalizeTab(searchParams?.tab);
   const displayNumber = bill.displayNumber.replace(". ", ".");
+  const headerTitle = bill.shortTitle || bill.title;
+  let headerTitleSizeClass = "text-[32px] leading-[1.06]";
+  if (headerTitle.length > 90) headerTitleSizeClass = "text-[24px] leading-[1.12]";
+  else if (headerTitle.length > 54) headerTitleSizeClass = "text-[27px] leading-[1.1]";
   const introducedDate = bill.introducedDate ?? bill.latestActionDate;
   const committeeDate = bill.latestActionDate;
   const progressSteps: ProgressStep[] = [
@@ -331,13 +335,17 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
       </header>
 
       <section className="mt-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-[44px] font-semibold leading-none text-white">{displayNumber}</h1>
-          <span className="rounded-full border border-emerald-400/35 bg-emerald-400/13 px-4 py-2 text-[18px] font-medium text-[#59ee83]">
+        <h1 className={`${headerTitleSizeClass} hyphens-auto break-words font-semibold text-white`} style={{ overflowWrap: "anywhere" }}>
+          {headerTitle}
+        </h1>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="rounded-full border border-white/12 bg-white/[0.055] px-3.5 py-2 text-[15px] font-semibold leading-none text-white/72">
+            {displayNumber}
+          </span>
+          <span className="rounded-full border border-emerald-400/35 bg-emerald-400/13 px-3.5 py-2 text-[15px] font-medium leading-none text-[#59ee83]">
             {status}
           </span>
         </div>
-        <h2 className="mt-5 text-[23px] font-medium leading-tight text-white">{bill.shortTitle}</h2>
         <BillStanceControl billId={bill.id} />
       </section>
 

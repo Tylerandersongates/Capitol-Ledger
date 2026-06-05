@@ -4,6 +4,8 @@
 
 Get Capitol Ledger into the hands of trusted testers before App Store sale or public launch, collect useful feedback, fix the highest-impact issues, then package the Apple/TestFlight version with much less risk.
 
+Current status: first trusted tester intake is planned for June 6, 2026.
+
 ## Recommended Order
 
 For the detailed execution checklist, use `Phase 1 Web Beta Launch Checklist.md`.
@@ -66,15 +68,17 @@ Ask testers to complete these tasks:
 Open `/beta`, then work through the in-app checklist.
 
 1. Create an account or sign in.
-2. Set district and policy interests.
-3. Open the dashboard and explain what they think the top cards mean.
-4. Search for bills and officials.
-5. Open a bill, review summary, pros/cons, sources, votes, and video links.
-6. Open an official profile and review voting/accountability sections.
-7. Open alerts, read one alert, and confirm unread behavior makes sense.
-8. Check badges, impact, and profile stats.
-9. Change subscription demo mode and describe what feels locked or unclear.
-10. Use `/feedback` to report one bug, one confusing flow, and one missing item.
+2. Try forgot password/password reset if they are comfortable testing account recovery.
+3. Set district and policy interests.
+4. Open the dashboard and explain what they think the top cards mean.
+5. Search for bills and officials.
+6. Open a bill, review summary, pros/cons, sources, votes, and video links.
+7. Open an official profile and review voting/accountability sections.
+8. Open alerts, read one alert, and confirm unread behavior makes sense.
+9. Check badges, impact, voter registration, and election participation.
+10. Check Letters Sent and Signed Petitions in the action ledger.
+11. Open `/upgrade`, compare Free/Pro/Team, switch billing cycle, and describe what feels locked or unclear.
+12. Use `/feedback` to report one bug, one confusing flow, and one missing item.
 
 ## Feedback Categories
 
@@ -97,7 +101,8 @@ Avoid adding Android-specific work now unless a tester or investor requires it. 
 - `NEXT_PUBLIC_APP_URL` points to the deployed beta URL, not the local preview URL.
 - `BETA_REVIEWER_EMAILS` includes your reviewer account email.
 - Production auth QA passes.
-- Email verification and password reset delivery are working.
+- Password reset/forgot-password is verified working for the beta pass.
+- Email verification delivery is confirmed if testers are creating new accounts.
 - Congress.gov sync can run safely with conservative limits.
 - Subscription demo modes are clear.
 - `/feedback` saves tester reports.
@@ -109,6 +114,7 @@ Avoid adding Android-specific work now unless a tester or investor requires it. 
 - `/feedback/review` can copy a triage summary and export a filtered CSV.
 - `pnpm beta:triage` summarizes blockers, untriaged reports, status counts, severity counts, and category counts from the database.
 - `/beta` gives testers the checklist and routes them into feedback.
+- `/beta` includes subscription/upgrade testing.
 - `pnpm beta:check` passes for the deployed beta environment.
 - `BETA_CHECK_DATABASE=true pnpm beta:check` confirms the feedback table exists when you want a direct database check.
 - Dashboard, search, bill details, profile, alerts, badges, impact, account, upgrade, and sign-in have been tested on mobile width.

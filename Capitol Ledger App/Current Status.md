@@ -6,6 +6,17 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Pushed latest beta tester polish and guide package to `origin/main` at commit `b5106dd Prepare beta tester polish and guide`.
+- First trusted beta tester intake is planned for June 6, 2026.
+- Added first-round beta tester guide deliverables under `docs/beta-tester-guide`: Markdown source, generated PDF, editable DOCX, annotated snapshots, and generator scripts.
+- Added subscription/upgrade testing to the in-app `/beta` checklist, bringing the tester queue to 8 flows.
+- Confirmed `BETA_REVIEWER_EMAILS` exists in Vercel from June 1, 2026, and updated local `.env.local` for parity without committing the email value.
+- Verified forgot-password/password reset works for the beta pass.
+- Updated Recent Achievements on `/impact` to read as latest unlocked badges and keep its badge list bounded with internal scrolling.
+- Updated `/account` profile header so party affiliation and subscription pills stay side by side without unpredictable wrapping.
+- Updated election participation logging to one tap to log and one tap to remove, with six listed elections matching the Super Voter path.
+- Restored `/badges` all-view behavior so earned and locked badges both show full badge sets instead of a tiny preview.
+- Removed misleading Remember Me and Face ID UI from sign-in until real session/passkey support is ready.
 - Added clear save-state UI feedback on official and bill profile star actions: users now see `Saved to your ledger` / `Removed from your ledger` confirmation chips immediately after tapping.
 - Confirmed the profile star action is wired to saved-ledger persistence (local + account sync path), so save/unsave behavior now has both visible UI feedback and data-state impact.
 - Began the official-profile polish pass (layout balance + score explanation + interaction clarity) as the active design iteration track after beta plumbing stabilized.
@@ -179,7 +190,7 @@ Last checked passes:
 - Congress.gov member, bill, committee, official source-link, bill-summary, bill-cosponsor, House vote, and House member-vote upserts are now available behind `CONGRESS_SYNC_WRITE=true`; keep House vote ingestion explicit with `CONGRESS_SYNC_HOUSE_VOTES=true` and small limits until Neon records are inspected.
 - Search/discovery, dashboard, and bill detail pages now read synced Neon civic records first and keep demo records as fallback. The next live-data UI move is extending that pattern into member detail, vote detail, alerts, and Weekly Brief inputs.
 - Smart Filters are now useful as a high-volume discovery pattern. The live-data version should add broader facets such as policy area, bill status, committee, vote result, and source availability after Congress.gov records are fully synced.
-- Beta testing now has an in-app tester checklist, feedback intake path, actionable filtered review queue, and readiness check. The next beta-readiness step is to deploy a web beta, give testers the `/beta` route, triage `BetaFeedback` records after each session, and only then package the Apple/TestFlight build.
+- Beta testing now has an in-app tester checklist, feedback intake path, actionable filtered review queue, readiness check, first-round tester guide, and subscription testing path. The next beta-readiness step is to run the June 6, 2026 trusted tester intake, triage `BetaFeedback` records after each session, and only then package the Apple/TestFlight build.
 - Bill details now separate the formal bill summary from the AI Policy Lens personal-impact read. Both longer description areas use fixed-height scroll boxes so cards stay visually consistent as bill text changes.
 - `/bills` now routes to the searchable bills list instead of relying only on individual bill detail URLs.
 - The mobile app now uses a darker shared navy background instead of page-level blue/gold gradients. If we later build a native iOS shell, this visual system should map cleanly into Apple-style Liquid Glass surfaces because cards already rely on translucent backgrounds, borders, and blur.

@@ -4,10 +4,10 @@
 
 ### Phase Status Snapshot
 
-1. Phase 1: Web Beta Readiness - Baseline complete, now in maintenance mode.
-2. Phase 2: Account and Auth Stability - In progress.
-3. Phase 3: Design QA and Beta Polish - In progress (current UI iteration lane).
-4. Phase 4: Subscription Demo Integration - Ready after Phase 3 visual freeze.
+1. Phase 1: Web Beta Readiness - Tester-launch ready; first trusted tester round planned for June 6, 2026.
+2. Phase 2: Account and Auth Stability - Beta-ready; password reset/forgot-password flow verified working.
+3. Phase 3: Design QA and Beta Polish - Beta-ready; move into tester feedback triage.
+4. Phase 4: Subscription Demo Integration - Beta-ready; subscription testing is now part of `/beta`.
 5. Phase 5: Core Civic Data Expansion - Planned.
 6. Phase 6: External Production Services - Planned.
 7. Phase 7: App Store and TestFlight - Planned.
@@ -16,17 +16,17 @@
 
 Goal: get Capitol Ledger deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
 
-Estimated time: 0.5 to 1.5 focused days, depending mostly on Vercel environment setup and the first tester report pass.
+Current mode: tester intake and triage. First trusted tester round is planned for June 6, 2026.
 
-1. Deploy the current app to Vercel with Neon connected.
-2. Apply the newest Prisma migrations against Neon.
-3. Set beta environment values in Vercel: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_COOKIE_SECURE=true`, `NEXT_PUBLIC_APP_URL`, `BETA_REVIEWER_EMAILS`, and `CONGRESS_API_KEY`.
-4. Run the Phase 1 readiness checks from `Phase 1 Web Beta Launch Checklist.md`.
-5. Create or sign in with the reviewer account listed in `BETA_REVIEWER_EMAILS`.
-6. Submit one test report from `/feedback`.
-7. Confirm it appears in `/feedback/review`, then mark status and launch decision.
-8. Run the beta triage check after every tester session.
-9. Invite a first small group of 3 to 5 trusted testers through `/beta`.
+Before sending tester links:
+
+1. Confirm the latest Vercel deployment for commit `b5106dd` is green.
+2. Open the deployed `/beta` route and confirm the checklist shows 8 flows, including subscriptions.
+3. Sign in with the reviewer account listed in `BETA_REVIEWER_EMAILS`.
+4. Submit one test report from `/feedback`.
+5. Confirm it appears in `/feedback/review`, then mark status and launch decision.
+6. Send testers the beta guide PDF or editable DOCX plus the deployed `/beta` link.
+7. Run `/feedback/review` and `pnpm beta:triage` after each tester session.
 
 Exit criteria:
 
@@ -49,43 +49,50 @@ Current Phase 1 status:
 - Search category views now show the fuller list for Bills, Officials, and Votes instead of only preview cards.
 - Vercel production build path includes `prisma generate`, resolving prior Prisma-client deployment mismatches.
 - Local `beta:check` passes the file and core environment checks.
+- Latest pushed commit is `b5106dd Prepare beta tester polish and guide`.
+- `/beta` now includes 8 tester flows, including subscription/upgrade testing.
+- The first-round beta tester guide now exists in Markdown, PDF, and editable DOCX form under `docs/beta-tester-guide`.
+- `BETA_REVIEWER_EMAILS` is confirmed in Vercel from June 1, 2026, and local `.env.local` has been updated for parity without committing the email value.
+- Forgot-password/password reset has been verified working for the beta pass.
 - Phase 1 ongoing maintenance step: run a deployed smoke test after each major push (submit one `/feedback` report and confirm visibility in `/feedback/review`).
 - Local `.env.local` can stay pointed at the local preview; Vercel owns the deployed `NEXT_PUBLIC_APP_URL` value.
 - The database-backed `beta:triage` check should be run from the normal Terminal against Neon because the Codex sandbox can hit local Prisma engine restrictions.
 
 ### Phase 2: Account And Auth Stability
 
-Goal: make real account behavior feel dependable before inviting broader testers.
+Goal: keep real account behavior dependable during the trusted beta round.
 
-Estimated time: 1 to 2 days.
+Current mode: beta QA and follow-up fixes.
 
-1. Connect real auth email delivery for verification and password reset using `Auth Email Delivery Guide.md`.
-2. Run `auth-email:check`, `production-auth:check`, and deployed `production-auth:qa`.
+1. Password reset/forgot-password is verified working for the beta pass.
+2. Confirm email verification delivery with at least one production account if testers will create new accounts.
 3. Confirm returning users see the clean sign-in screen, while first-time visitors can create an account.
 4. Confirm onboarding, district setup, party affiliation, alert preferences, read alerts, saved ledger, subscription mode, and gamification persist after sign-out/sign-in.
-5. Decide whether the current in-memory rate limiting is enough for beta, or add a provider-backed limiter before public traffic.
+5. Watch tester reports for account/session confusion and fix anything marked as a launch blocker.
+6. Decide whether the current in-memory rate limiting is enough for beta, or add a provider-backed limiter before public traffic.
 
 ### Phase 3: Design QA And Beta Polish
 
-Goal: remove visual friction from the tester-facing app before a larger beta round.
+Goal: remove visual friction reported by testers before a larger beta round.
 
-Estimated time: 0.5 to 1 day.
+Current mode: triage-driven polish.
 
-1. Do a beta-readiness visual pass on `/feedback`, `/sign-in`, `/account`, `/dashboard`, `/search`, `/alerts`, `/badges`, and `/upgrade`.
-2. Decide the final Weekly Brief visual treatment once the scheduled delivery service is connected.
-3. Add state and local official profile destinations for the map/government levels flow.
-4. Create investor/App Store screenshot layouts from finished mobile pages.
-5. Run a final visual QA pass after restarting the production preview.
+1. Triage `/feedback/review` after each tester session.
+2. Fix anything marked Launch blocker before adding more testers.
+3. Batch Beta OK polish items into short passes instead of interrupting tester intake.
+4. Decide the final Weekly Brief visual treatment once the scheduled delivery service is connected.
+5. Create investor/App Store screenshot layouts from finished mobile pages after the first tester round.
 
 ### Phase 4: Subscription Demo Integration
 
-Goal: make Free, Pro Intelligence, and Civic Team easy to demonstrate and explain.
+Goal: make Free, Pro Intelligence, and Civic Team easy to demonstrate, test, and explain.
 
-Estimated time: 2 to 4 hours.
+Current mode: included in beta testing.
 
-1. Tune locked preview card copy and spacing after viewing the restarted app.
-2. Capture demo screenshots for Free, Pro Intelligence, and Civic Team.
-3. Prepare an investor-facing timed walkthrough based on `Subscription Demo Guide.md`.
+1. Have testers open `/upgrade`, compare Free/Pro/Team, switch billing cycle, and report unclear pricing or locked-feature language.
+2. Triage subscription feedback before live billing work.
+3. Capture demo screenshots for Free, Pro Intelligence, and Civic Team after tester feedback settles.
+4. Prepare an investor-facing timed walkthrough based on `Subscription Demo Guide.md`.
 
 ### Phase 5: Core Civic Data Expansion
 
@@ -109,8 +116,9 @@ Estimated time: 3 to 7 days, depending on provider approvals.
 1. Run `backend:check` as the broad outside-service tracker.
 2. Configure Stripe live price IDs, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET`, then run `BILLING_REQUIRE_STRIPE=true billing:check`.
 3. Choose the Weekly Brief email/push provider bridge, configure the task secret and provider settings, then run `weekly-brief:check` and `weekly-brief:qa`.
-4. Add remaining gamification triggers once product flows exist: petition signing, representative contact delivery, team invites, and civic learning actions.
-5. Add monitoring/error reporting and production rate limiting before public launch.
+4. Add push notifications attached to alerts: provider choice, permission prompts, device token storage, alert-triggered sends, and preference/unsubscribe controls.
+5. Add remaining gamification triggers once product flows exist: petition signing, representative contact delivery, team invites, and civic learning actions.
+6. Add monitoring/error reporting and production rate limiting before public launch.
 
 ### Phase 7: App Store And TestFlight
 

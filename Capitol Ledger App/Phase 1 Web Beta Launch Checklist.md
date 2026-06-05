@@ -1,6 +1,6 @@
 # Phase 1 Web Beta Launch Checklist
 
-Status: Phase 1 baseline is complete. Keep this checklist as the post-deploy smoke + tester intake maintenance runbook.
+Status: Phase 1 is tester-launch ready. First trusted tester intake is planned for June 6, 2026. Keep this checklist as the post-deploy smoke + tester intake maintenance runbook.
 
 ## Goal
 
@@ -54,7 +54,7 @@ node .tools/pnpm.cjs run beta:triage
 
 ## Phase 1 Checks
 
-Run these before inviting testers:
+Run these before inviting testers or after any major push:
 
 ```bash
 node .tools/pnpm.cjs run prisma:migrate:deploy
@@ -72,13 +72,38 @@ AUTH_QA_BASE_URL="https://your-vercel-beta-url" node .tools/pnpm.cjs run product
 
 1. Open the deployed Vercel URL.
 2. Create a reviewer account or sign in with the reviewer email listed in `BETA_REVIEWER_EMAILS`.
-3. Visit `/dashboard`, `/search`, `/bills/demo-hr-4021`, `/alerts`, `/badges`, `/account`, and `/upgrade`.
+3. Visit `/beta`, `/dashboard`, `/search`, `/bills/demo-hr-4021`, `/alerts`, `/badges`, `/impact`, `/account`, and `/upgrade`.
 4. Submit one test report at `/feedback`.
 5. Open `/feedback/review`.
 6. Confirm the report appears.
 7. Mark it as Reviewing or Resolved.
 8. Mark the launch decision as Beta OK or Later unless it is truly blocking.
 9. Run `beta:triage` again.
+
+## June 6, 2026 Tester Intake
+
+Send the first trusted testers:
+
+- the deployed `/beta` link
+- the beta tester guide PDF
+- the editable DOCX only if a tester or collaborator needs to revise the instructions
+
+Ask testers to focus on:
+
+- sign-in, forgot password, and returning-user behavior
+- dashboard comprehension
+- search, bill detail, official profile, and alerts
+- badges, impact, voter registration, and election participation
+- Letters Sent and Signed Petitions in the action ledger
+- subscription/upgrade clarity across Free, Pro, and Team
+- feedback reporting from the row they are testing
+
+After each tester session:
+
+1. Open `/feedback/review`.
+2. Filter `Open`, `Blockers`, and `Untriaged`.
+3. Mark each report as Launch blocker, Beta OK, or Later.
+4. Export CSV or copy the triage summary before starting fixes.
 
 ## Tester Invite Script
 
@@ -111,4 +136,4 @@ Ask them to complete the checklist and submit feedback for:
 
 Move to Phase 2: Account and Auth Stability.
 
-That phase focuses on verification email delivery, password reset delivery, returning-user behavior, account persistence, and deployed auth QA.
+That phase is now in beta QA mode: password reset is verified working, and the remaining work is watching account/session tester feedback, confirming verification delivery as needed, and fixing any launch-blocking persistence issues.
