@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" role="img" aria-labelledby="title-impact desc-impact">
+  <title id="title-impact">Annotated Capitol Ledger impact snapshot</title>
+  <desc id="desc-impact">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
+  
+    <defs>
+      <linearGradient id="screenGradient-impact" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#071a34"/>
+        <stop offset="0.48" stop-color="#010817"/>
+        <stop offset="1" stop-color="#000511"/>
+      </linearGradient>
+      <linearGradient id="cardGradient" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#134073" stop-opacity="0.64"/>
+        <stop offset="1" stop-color="#0c264e" stop-opacity="0.76"/>
+      </linearGradient>
+      <clipPath id="screenClip-impact">
+        <rect x="0" y="0" width="328" height="758" rx="34"/>
+      </clipPath>
+      <marker id="arrow-impact" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+        <path d="M1 1L11 6L1 11Z" fill="#ffb12b"/>
+      </marker>
+      <filter id="softShadow-impact" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000511" flood-opacity="0.42"/>
+      </filter>
+    </defs>
+  
+  <rect width="760" height="860" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="760" height="860" fill="url(#screenGradient-impact)" opacity="0.08"/>
+  <text x="430" y="44" fill="#061126" font-size="22" font-weight="800">Tester callouts</text>
+  <text x="430" y="67" fill="#38506f" font-size="13" font-weight="600">Use these labels when reviewing the page.</text>
+  <g filter="url(#softShadow-impact)">
+    <rect x="34" y="30" width="360" height="790" rx="54" fill="#020713" stroke="#1d293b" stroke-width="8"/>
+    <rect x="50" y="46" width="328" height="758" rx="34" fill="url(#screenGradient-impact)" stroke="rgba(255,255,255,0.68)" stroke-width="1.5"/>
+  </g>
+  <g clip-path="url(#screenClip-impact)" transform="translate(50 46)">
+    <path d="M0 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M38 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M76 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M114 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M152 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M190 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M228 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M266 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M304 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 0H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 38H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 76H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 114H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 152H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 190H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 228H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 266H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 304H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 342H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 380H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 418H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 456H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 494H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 532H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 570H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 608H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 646H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 684H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 722H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>
+    
+    
+    <text x="20" y="32" fill="#f7f9ff" font-size="15" font-weight="700">9:41</text>
+    <rect x="280" y="20" width="28" height="11" rx="4" fill="none" stroke="rgba(255,255,255,0.72)"/>
+    <rect x="283" y="23" width="18" height="5" rx="2" fill="rgba(255,255,255,0.72)"/>
+    <circle cx="35" cy="73" r="18" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.12)"/><path d="M40 64l-10 9 10 9" fill="none" stroke="#f7f9ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <text x="64" y="84" fill="#f7f9ff" font-size="26" font-weight="700">Your Impact</text>
+    
+  
+    
+    <rect x="18" y="116" width="292" height="104" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="116" width="292" height="104" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="146" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Civic Score</text>
+    <text x="34" y="176" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">+0 this month</text>
+    
+      <text x="38" y="190" fill="#ffb12b" font-size="42" font-weight="800">0</text>
+      <circle cx="248" cy="164" r="34" fill="rgba(255,177,43,0.12)" stroke="#ffb12b" stroke-opacity="0.58"/>
+      <rect x="204" y="205" width="88" height="7" rx="4" fill="rgba(255,255,255,0.13)"/>
+      <rect x="204" y="205" width="22" height="7" rx="4" fill="#ffb12b"/>
+    
+  
+    
+    <rect x="18" y="236" width="292" height="104" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="236" width="292" height="104" rx="18" fill="#79a8ff" fill-opacity="0.05"/>
+    
+    <text x="34" y="266" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Voter Registration</text>
+    <text x="34" y="296" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Complete a Voter Registration Form</text>
+    
+      
+    <rect x="256" y="252" width="38" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="275" y="268" text-anchor="middle" fill="#f7f9ff" font-size="10" font-weight="700">0/1</text>
+  
+      <rect x="38" y="306" width="252" height="32" rx="10" fill="rgba(121,168,255,0.12)" stroke="rgba(121,168,255,0.34)"/>
+      <text x="164" y="327" text-anchor="middle" fill="#b8d2ff" font-size="12" font-weight="700">Mark Form Complete</text>
+    
+  
+    
+    <rect x="18" y="356" width="292" height="236" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="356" width="292" height="236" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="386" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Election Participation</text>
+    <text x="34" y="416" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Primary, general, runoff, and</text><text x="34" y="432" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">special elections</text>
+    
+      
+    <rect x="250" y="372" width="44" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="272" y="388" text-anchor="middle" fill="#f7f9ff" font-size="10" font-weight="700">0/6</text>
+  
+      
+    <rect x="36" y="430" width="256" height="42" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+    <circle cx="53" cy="451" r="5" fill="#ffb12b"/>
+    <text x="66" y="450" fill="#f7f9ff" fill-opacity="0.86" font-size="12.5" font-weight="600">2026 Primary Election</text>
+    
+    
+    <rect x="214" y="440" width="62" height="22" rx="11" fill="#ffb12b" fill-opacity="0.12" stroke="#ffb12b" stroke-opacity="0.55"/>
+    <text x="245" y="455" text-anchor="middle" fill="#ffb12b" font-size="10" font-weight="700">Primary</text>
+  
+  
+      
+    <rect x="36" y="478" width="256" height="42" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+    <circle cx="53" cy="499" r="5" fill="#ffb12b"/>
+    <text x="66" y="498" fill="#f7f9ff" fill-opacity="0.86" font-size="12.5" font-weight="600">2026 General Election</text>
+    
+    
+    <rect x="214" y="488" width="62" height="22" rx="11" fill="#ffb12b" fill-opacity="0.12" stroke="#ffb12b" stroke-opacity="0.55"/>
+    <text x="245" y="503" text-anchor="middle" fill="#ffb12b" font-size="10" font-weight="700">General</text>
+  
+  
+      
+    <rect x="36" y="526" width="256" height="42" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+    <circle cx="53" cy="547" r="5" fill="#43ed74"/>
+    <text x="66" y="546" fill="#f7f9ff" fill-opacity="0.86" font-size="12.5" font-weight="600">2027 District Special</text>
+    
+    
+    <rect x="214" y="536" width="62" height="22" rx="11" fill="#43ed74" fill-opacity="0.12" stroke="#43ed74" stroke-opacity="0.55"/>
+    <text x="245" y="551" text-anchor="middle" fill="#43ed74" font-size="10" font-weight="700">Special</text>
+  
+  
+      <rect x="36" y="574" width="256" height="34" rx="11" fill="rgba(67,237,116,0.08)" stroke="rgba(67,237,116,0.24)"/>
+      <text x="55" y="596" fill="#8ef8af" font-size="11.5" font-weight="600">Log 6 unique elections for Super Voter.</text>
+    
+  
+    
+    <rect x="18" y="608" width="292" height="78" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="608" width="292" height="78" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="638" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Engagement Streak</text>
+    <text x="34" y="668" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">1 Day - keep it going</text>
+    
+  
+    
+    <rect x="0" y="692" width="328" height="66" fill="rgba(2,11,28,0.92)" stroke="rgba(255,255,255,0.18)"/>
+    
+          <circle cx="32.8" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M10 22V12L20 5l10 7v10" transform="translate(12.799999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="32.8" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Home</text>
+        
+          <circle cx="98.39999999999999" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M11 6h14l4 4v20H11z" transform="translate(78.39999999999999 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="98.39999999999999" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Bills</text>
+        
+          <circle cx="164" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M12 18l5 5 11-13" transform="translate(144 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="164" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Track</text>
+        
+          <circle cx="229.59999999999997" cy="716" r="16" fill="rgba(255,177,43,0.12)" stroke="rgba(255,177,43,0.72)"/>
+          <path d="M16 27h8" transform="translate(209.59999999999997 695) scale(0.7)" fill="none" stroke="#ffb12b" stroke-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="229.59999999999997" y="750" text-anchor="middle" fill="#ffb12b" fill-opacity="1" font-size="11.5" font-weight="500">Alerts</text>
+        
+          <circle cx="295.2" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M15 27c2-5 12-5 14 0" transform="translate(275.2 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="295.2" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Profile</text>
+        
+  
+  
+  </g>
+  
+        <path d="M430 130.5 C388 130.5, 388 211, 316 211" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-impact)"/>
+        <circle cx="298" cy="211" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="298" y="216" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">1</text>
+        <g filter="url(#softShadow-impact)">
+          <rect x="430" y="94" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="116" r="11" fill="#ffb12b"/>
+          <text x="451" y="121" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">1</text>
+          <text x="472" y="117" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Civic Score and XP should</text><text x="472" y="132" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">change after actions are</text><text x="472" y="147" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">completed.</text>
+        </g>
+      
+        <path d="M430 241.5 C388 241.5, 388 367, 232 367" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-impact)"/>
+        <circle cx="214" cy="367" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="214" y="372" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">2</text>
+        <g filter="url(#softShadow-impact)">
+          <rect x="430" y="205" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="227" r="11" fill="#ffb12b"/>
+          <text x="451" y="232" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">2</text>
+          <text x="472" y="228" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Voter Registration is a</text><text x="472" y="243" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">completion input for the</text><text x="472" y="258" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Register to Vote badge.</text>
+        </g>
+      
+        <path d="M430 347 C388 347, 388 430, 338 430" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-impact)"/>
+        <circle cx="320" cy="430" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="320" y="435" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">3</text>
+        <g filter="url(#softShadow-impact)">
+          <rect x="430" y="318" width="278" height="58" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="340" r="11" fill="#ffb12b"/>
+          <text x="451" y="345" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">3</text>
+          <text x="472" y="341" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Election progress now uses</text><text x="472" y="356" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">all six listed elections.</text>
+        </g>
+      
+        <path d="M430 479 C388 479, 388 498, 142 498" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-impact)"/>
+        <circle cx="124" cy="498" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="124" y="503" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">4</text>
+        <g filter="url(#softShadow-impact)">
+          <rect x="430" y="450" width="278" height="58" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="472" r="11" fill="#ffb12b"/>
+          <text x="451" y="477" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">4</text>
+          <text x="472" y="473" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Election rows log on one tap</text><text x="472" y="488" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">and remove on the next tap.</text>
+        </g>
+      
+        <path d="M430 634.5 C388 634.5, 388 696, 236 696" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-impact)"/>
+        <circle cx="218" cy="696" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="218" y="701" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">5</text>
+        <g filter="url(#softShadow-impact)">
+          <rect x="430" y="598" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="620" r="11" fill="#ffb12b"/>
+          <text x="451" y="625" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">5</text>
+          <text x="472" y="621" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Streak and impact breakdown</text><text x="472" y="636" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">should feel clear, premium,</text><text x="472" y="651" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">and trustworthy.</text>
+        </g>
+      
+</svg>

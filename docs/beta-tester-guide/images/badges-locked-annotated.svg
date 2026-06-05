@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" role="img" aria-labelledby="title-badges-locked desc-badges-locked">
+  <title id="title-badges-locked">Annotated Capitol Ledger badges-locked snapshot</title>
+  <desc id="desc-badges-locked">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
+  
+    <defs>
+      <linearGradient id="screenGradient-badges-locked" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#071a34"/>
+        <stop offset="0.48" stop-color="#010817"/>
+        <stop offset="1" stop-color="#000511"/>
+      </linearGradient>
+      <linearGradient id="cardGradient" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#134073" stop-opacity="0.64"/>
+        <stop offset="1" stop-color="#0c264e" stop-opacity="0.76"/>
+      </linearGradient>
+      <clipPath id="screenClip-badges-locked">
+        <rect x="0" y="0" width="328" height="758" rx="34"/>
+      </clipPath>
+      <marker id="arrow-badges-locked" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+        <path d="M1 1L11 6L1 11Z" fill="#ffb12b"/>
+      </marker>
+      <filter id="softShadow-badges-locked" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000511" flood-opacity="0.42"/>
+      </filter>
+    </defs>
+  
+  <rect width="760" height="860" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="760" height="860" fill="url(#screenGradient-badges-locked)" opacity="0.08"/>
+  <text x="430" y="44" fill="#061126" font-size="22" font-weight="800">Tester callouts</text>
+  <text x="430" y="67" fill="#38506f" font-size="13" font-weight="600">Use these labels when reviewing the page.</text>
+  <g filter="url(#softShadow-badges-locked)">
+    <rect x="34" y="30" width="360" height="790" rx="54" fill="#020713" stroke="#1d293b" stroke-width="8"/>
+    <rect x="50" y="46" width="328" height="758" rx="34" fill="url(#screenGradient-badges-locked)" stroke="rgba(255,255,255,0.68)" stroke-width="1.5"/>
+  </g>
+  <g clip-path="url(#screenClip-badges-locked)" transform="translate(50 46)">
+    <path d="M0 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M38 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M76 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M114 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M152 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M190 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M228 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M266 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M304 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 0H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 38H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 76H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 114H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 152H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 190H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 228H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 266H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 304H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 342H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 380H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 418H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 456H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 494H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 532H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 570H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 608H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 646H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 684H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 722H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>
+    
+    
+    <text x="20" y="32" fill="#f7f9ff" font-size="15" font-weight="700">9:41</text>
+    <rect x="280" y="20" width="28" height="11" rx="4" fill="none" stroke="rgba(255,255,255,0.72)"/>
+    <rect x="283" y="23" width="18" height="5" rx="2" fill="rgba(255,255,255,0.72)"/>
+    <circle cx="35" cy="73" r="18" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.12)"/><path d="M40 64l-10 9 10 9" fill="none" stroke="#f7f9ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <text x="64" y="84" fill="#f7f9ff" font-size="26" font-weight="700">Badges</text>
+    
+  
+    <rect x="34" y="116" width="260" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+    <rect x="206" y="121" width="82" height="32" rx="16" fill="rgba(255,177,43,0.13)"/>
+    <text x="76" y="143" fill="#f7f9ff" fill-opacity="0.56" font-size="13" font-weight="700">All</text>
+    <text x="152" y="143" fill="#f7f9ff" fill-opacity="0.56" font-size="13" font-weight="700">Earned</text>
+    <text x="247" y="143" text-anchor="middle" fill="#ffb12b" font-size="13" font-weight="800">Locked</text>
+    
+    <rect x="18" y="178" width="292" height="146" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="178" width="292" height="146" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="208" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Progress</text>
+    <text x="34" y="238" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Badges earned and level state</text>
+    
+      <text x="38" y="258" fill="#ffb12b" font-size="42" font-weight="800">0</text>
+      <text x="85" y="258" fill="#f7f9ff" fill-opacity="0.70" font-size="24" font-weight="600">/ 28</text>
+      <rect x="38" y="288" width="190" height="8" rx="4" fill="rgba(255,255,255,0.13)"/>
+      <circle cx="256" cy="246" r="32" fill="rgba(255,177,43,0.10)" stroke="rgba(255,177,43,0.35)"/>
+    
+  
+    <text x="18" y="374" fill="#f7f9ff" font-size="21" font-weight="800">Locked Badges</text>
+    <g opacity="0.9">
+      
+    <polygon points="58,406 94,406 118,444 94,482 58,482 34,444" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="24" y="514" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Source</text><text x="24" y="530" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Checker</text>
+    
+    <rect x="44" y="548" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="72" y="564" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">0/20</text>
+  
+    <text x="26" y="590" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Open source</text><text x="26" y="603" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">links</text>
+  
+      
+    <polygon points="162,406 198,406 222,444 198,482 162,482 138,444" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="128" y="514" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Committee</text><text x="128" y="530" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Watcher</text>
+    
+    <rect x="148" y="548" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="176" y="564" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">0/10</text>
+  
+    <text x="130" y="590" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Track committee</text><text x="130" y="603" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">actions</text>
+  
+      
+    <polygon points="266,406 302,406 326,444 302,482 266,482 242,444" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="232" y="514" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Register to</text><text x="232" y="530" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Vote</text>
+    
+    <rect x="252" y="548" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="280" y="564" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">0/1</text>
+  
+    <text x="234" y="590" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Complete a form</text>
+  
+      
+    <polygon points="58,584 94,584 118,622 94,660 58,660 34,622" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="24" y="692" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Super Voter</text>
+    
+    <rect x="44" y="726" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="72" y="742" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">5/6</text>
+  
+    <text x="26" y="768" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Log election</text><text x="26" y="781" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">participation</text>
+  
+      
+    <polygon points="162,584 198,584 222,622 198,660 162,660 138,622" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="128" y="692" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Constitution</text><text x="128" y="708" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Champion</text>
+    
+    <rect x="148" y="726" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="176" y="742" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">0/10</text>
+  
+    <text x="130" y="768" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Civic learning</text><text x="130" y="781" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">actions</text>
+  
+      
+    <polygon points="266,584 302,584 326,622 302,660 266,660 242,622" fill="rgba(148,163,184,0.42)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="232" y="692" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Policy</text><text x="232" y="708" fill="#f7f9ff" fill-opacity="0.62" font-size="13.5" font-weight="800">Architect</text>
+    
+    <rect x="252" y="726" width="56" height="24" rx="12" fill="#f7f9ff" fill-opacity="0.12" stroke="#f7f9ff" stroke-opacity="0.55"/>
+    <text x="280" y="742" text-anchor="middle" fill="#f7f9ff" font-size="11" font-weight="700">0/5</text>
+  
+    <text x="234" y="768" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">Build policy</text><text x="234" y="781" fill="#f7f9ff" fill-opacity="0.78" font-size="10.5" font-weight="500">actions</text>
+  
+    </g>
+    
+    <rect x="0" y="692" width="328" height="66" fill="rgba(2,11,28,0.92)" stroke="rgba(255,255,255,0.18)"/>
+    
+          <circle cx="32.8" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M10 22V12L20 5l10 7v10" transform="translate(12.799999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="32.8" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Home</text>
+        
+          <circle cx="98.39999999999999" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M11 6h14l4 4v20H11z" transform="translate(78.39999999999999 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="98.39999999999999" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Bills</text>
+        
+          <circle cx="164" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M12 18l5 5 11-13" transform="translate(144 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="164" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Track</text>
+        
+          <circle cx="229.59999999999997" cy="716" r="16" fill="rgba(255,177,43,0.12)" stroke="rgba(255,177,43,0.72)"/>
+          <path d="M16 27h8" transform="translate(209.59999999999997 695) scale(0.7)" fill="none" stroke="#ffb12b" stroke-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="229.59999999999997" y="750" text-anchor="middle" fill="#ffb12b" fill-opacity="1" font-size="11.5" font-weight="500">Alerts</text>
+        
+          <circle cx="295.2" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M15 27c2-5 12-5 14 0" transform="translate(275.2 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="295.2" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Profile</text>
+        
+  
+  
+  </g>
+  
+        <path d="M430 132.5 C388 132.5, 388 183, 316 183" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-badges-locked)"/>
+        <circle cx="298" cy="183" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="298" y="188" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">1</text>
+        <g filter="url(#softShadow-badges-locked)">
+          <rect x="430" y="96" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="118" r="11" fill="#ffb12b"/>
+          <text x="451" y="123" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">1</text>
+          <text x="472" y="119" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Filter tabs let testers</text><text x="472" y="134" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">switch between all, earned,</text><text x="472" y="149" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">and locked badges.</text>
+        </g>
+      
+        <path d="M430 246.5 C388 246.5, 388 301, 144 301" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-badges-locked)"/>
+        <circle cx="126" cy="301" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="126" y="306" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">2</text>
+        <g filter="url(#softShadow-badges-locked)">
+          <rect x="430" y="210" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="232" r="11" fill="#ffb12b"/>
+          <text x="451" y="237" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">2</text>
+          <text x="472" y="233" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Overall badge progress</text><text x="472" y="248" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">should match the earned</text><text x="472" y="263" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">total and the badge count.</text>
+        </g>
+      
+        <path d="M430 370.5 C388 370.5, 388 556, 333 556" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-badges-locked)"/>
+        <circle cx="315" cy="556" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="315" y="561" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">3</text>
+        <g filter="url(#softShadow-badges-locked)">
+          <rect x="430" y="334" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="356" r="11" fill="#ffb12b"/>
+          <text x="451" y="361" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">3</text>
+          <text x="472" y="357" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Locked badges now show a</text><text x="472" y="372" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">small progress pill like</text><text x="472" y="387" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">0/20 or 5/6.</text>
+        </g>
+      
+        <path d="M430 510.5 C388 510.5, 388 596, 336 596" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-badges-locked)"/>
+        <circle cx="318" cy="596" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="318" y="601" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">4</text>
+        <g filter="url(#softShadow-badges-locked)">
+          <rect x="430" y="474" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="496" r="11" fill="#ffb12b"/>
+          <text x="451" y="501" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">4</text>
+          <text x="472" y="497" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Requirement copy should</text><text x="472" y="512" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">match the badge name and</text><text x="472" y="527" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">real completion action.</text>
+        </g>
+      
+        <path d="M430 658.5 C388 658.5, 388 734, 132 734" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-badges-locked)"/>
+        <circle cx="114" cy="734" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="114" y="739" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">5</text>
+        <g filter="url(#softShadow-badges-locked)">
+          <rect x="430" y="622" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="644" r="11" fill="#ffb12b"/>
+          <text x="451" y="649" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">5</text>
+          <text x="472" y="645" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Super Voter belongs to</text><text x="472" y="660" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">election participation and</text><text x="472" y="675" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">should count to six.</text>
+        </g>
+      
+</svg>

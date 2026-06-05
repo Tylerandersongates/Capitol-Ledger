@@ -101,8 +101,8 @@ function BadgesContent() {
   const snapshot = useGamificationSnapshot();
   const activeFilter = normalizeBadgeFilter(searchParams.get("filter") ?? undefined);
   const badgeCollections = useMemo(() => getBadgeCollections(snapshot.earnedBadgeIds), [snapshot.earnedBadgeIds]);
-  const earnedBadges = activeFilter === "earned" ? badgeCollections.earnedBadges : badgeCollections.featuredEarnedBadges;
-  const lockedBadges = activeFilter === "locked" ? badgeCollections.lockedBadges : badgeCollections.lockedBadges.slice(0, 3);
+  const earnedBadges = badgeCollections.earnedBadges;
+  const lockedBadges = badgeCollections.lockedBadges;
   const eventCountMap = useMemo(() => new Map(snapshot.eventCounts.map((record) => [record.event, record.count])), [snapshot.eventCounts]);
 
   return (
@@ -192,16 +192,12 @@ function BadgesContent() {
           <>
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[23px] font-medium leading-none">Earned Badges</h2>
-              {activeFilter === "all" ? (
-                <Link href="/badges?filter=earned" className={mobileViewAllClass}>
-                  View All
-                </Link>
-              ) : null}
+              <span className={mobileViewAllClass}>{earnedBadges.length}/{badgeCollections.totalBadges}</span>
             </div>
 
-            <div className={`mt-8 grid grid-cols-3 gap-x-8 ${activeFilter === "earned" ? "gap-y-10" : "gap-y-8"}`}>
+            <div className="mt-8 grid grid-cols-3 gap-x-8 gap-y-10">
               {earnedBadges.map((badge) => (
-                <EarnedBadgeTile key={badge.id} badge={badge} showDescription={activeFilter === "earned"} />
+                <EarnedBadgeTile key={badge.id} badge={badge} showDescription />
               ))}
             </div>
           </>
@@ -211,19 +207,15 @@ function BadgesContent() {
           <div className="mt-8 border-t border-white/10 pt-8">
             <div className="flex items-center justify-between">
               <h2 className="text-[23px] font-medium leading-none">Locked Badges</h2>
-              {activeFilter === "all" ? (
-                <Link href="/badges?filter=locked" className={mobileViewAllClass}>
-                  View All
-                </Link>
-              ) : null}
+              <span className={mobileViewAllClass}>{lockedBadges.length}/{badgeCollections.totalBadges}</span>
             </div>
-            <div className={`mt-7 grid grid-cols-3 gap-x-7 ${activeFilter === "locked" ? "gap-y-10" : "gap-y-9"}`}>
+            <div className="mt-7 grid grid-cols-3 gap-x-7 gap-y-10">
               {lockedBadges.map((badge) => (
                 <LockedBadgeTile
                   key={badge.id}
                   badge={badge}
                   progressLabel={getLockedBadgeProgressLabel({ badge, eventCountMap, level: snapshot.level })}
-                  showDescription={activeFilter === "locked"}
+                  showDescription
                 />
               ))}
             </div>

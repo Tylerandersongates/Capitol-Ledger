@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" role="img" aria-labelledby="title-account desc-account">
+  <title id="title-account">Annotated Capitol Ledger account snapshot</title>
+  <desc id="desc-account">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
+  
+    <defs>
+      <linearGradient id="screenGradient-account" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#071a34"/>
+        <stop offset="0.48" stop-color="#010817"/>
+        <stop offset="1" stop-color="#000511"/>
+      </linearGradient>
+      <linearGradient id="cardGradient" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#134073" stop-opacity="0.64"/>
+        <stop offset="1" stop-color="#0c264e" stop-opacity="0.76"/>
+      </linearGradient>
+      <clipPath id="screenClip-account">
+        <rect x="0" y="0" width="328" height="758" rx="34"/>
+      </clipPath>
+      <marker id="arrow-account" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+        <path d="M1 1L11 6L1 11Z" fill="#ffb12b"/>
+      </marker>
+      <filter id="softShadow-account" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000511" flood-opacity="0.42"/>
+      </filter>
+    </defs>
+  
+  <rect width="760" height="860" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="760" height="860" fill="url(#screenGradient-account)" opacity="0.08"/>
+  <text x="430" y="44" fill="#061126" font-size="22" font-weight="800">Tester callouts</text>
+  <text x="430" y="67" fill="#38506f" font-size="13" font-weight="600">Use these labels when reviewing the page.</text>
+  <g filter="url(#softShadow-account)">
+    <rect x="34" y="30" width="360" height="790" rx="54" fill="#020713" stroke="#1d293b" stroke-width="8"/>
+    <rect x="50" y="46" width="328" height="758" rx="34" fill="url(#screenGradient-account)" stroke="rgba(255,255,255,0.68)" stroke-width="1.5"/>
+  </g>
+  <g clip-path="url(#screenClip-account)" transform="translate(50 46)">
+    <path d="M0 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M38 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M76 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M114 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M152 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M190 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M228 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M266 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M304 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 0H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 38H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 76H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 114H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 152H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 190H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 228H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 266H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 304H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 342H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 380H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 418H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 456H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 494H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 532H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 570H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 608H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 646H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 684H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 722H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>
+    
+    
+    <text x="20" y="32" fill="#f7f9ff" font-size="15" font-weight="700">9:41</text>
+    <rect x="280" y="20" width="28" height="11" rx="4" fill="none" stroke="rgba(255,255,255,0.72)"/>
+    <rect x="283" y="23" width="18" height="5" rx="2" fill="rgba(255,255,255,0.72)"/>
+    
+    <text x="20" y="70" fill="#f7f9ff" fill-opacity="0.46" font-size="10" font-weight="700" letter-spacing="1.4">ACCOUNT CENTER</text>
+    <text x="20" y="96" fill="#f7f9ff" font-size="26" font-weight="700">Profile</text>
+    
+  
+    
+    <rect x="18" y="130" width="292" height="172" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="130" width="292" height="172" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="160" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Citizen Profile</text>
+    <text x="34" y="190" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Name, district, party,</text><text x="34" y="206" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">subscription, and synced status.</text>
+    
+      <circle cx="68" cy="206" r="30" fill="rgba(255,177,43,0.12)" stroke="#ffb12b" stroke-opacity="0.54"/>
+      <circle cx="88" cy="226" r="11" fill="#43ed74" stroke="#061126" stroke-width="2"/>
+      <text x="112" y="205" fill="#f7f9ff" font-size="18" font-weight="800">Demo Citizen</text>
+      <text x="112" y="229" fill="#f7f9ff" fill-opacity="0.54" font-size="12">District setup and alert profile</text>
+      
+    <rect x="38" y="248" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="50" y="271" fill="#ffb12b" font-size="18" font-weight="700">0</text>
+    <text x="50" y="288" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">SCORE</text>
+  
+      
+    <rect x="126" y="248" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="138" y="271" fill="#ffb12b" font-size="18" font-weight="700">1</text>
+    <text x="138" y="288" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">LEVEL</text>
+  
+      
+    <rect x="214" y="248" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="226" y="271" fill="#ffb12b" font-size="18" font-weight="700">0</text>
+    <text x="226" y="288" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">BADGES</text>
+  
+    
+  
+    
+    <rect x="18" y="318" width="292" height="134" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="318" width="292" height="134" rx="18" fill="#43ed74" fill-opacity="0.05"/>
+    
+    <text x="34" y="348" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Tracked civic watchlist</text>
+    <text x="34" y="378" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Saved officials, bills, alerts,</text><text x="34" y="394" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">and issue interests.</text>
+    
+      
+    <rect x="38" y="390" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="50" y="413" fill="#43ed74" font-size="18" font-weight="700">0</text>
+    <text x="50" y="430" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">OFFICIALS</text>
+  
+      
+    <rect x="126" y="390" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="138" y="413" fill="#79a8ff" font-size="18" font-weight="700">0</text>
+    <text x="138" y="430" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">BILLS</text>
+  
+      
+    <rect x="214" y="390" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="226" y="413" fill="#ffb12b" font-size="18" font-weight="700">0</text>
+    <text x="226" y="430" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">ALERTS</text>
+  
+    
+  
+    
+    <rect x="18" y="468" width="292" height="142" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="468" width="292" height="142" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="498" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Account Settings</text>
+    
+    
+      
+    <rect x="36" y="518" width="256" height="42" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+    <circle cx="53" cy="539" r="5" fill="#ffb12b"/>
+    <text x="66" y="538" fill="#f7f9ff" fill-opacity="0.86" font-size="12.5" font-weight="600">Notifications</text>
+    <text x="66" y="552" fill="#f7f9ff" fill-opacity="0.45" font-size="9.5">Votes, district alerts, weekly brief</text>
+    
+  
+      
+    <rect x="36" y="566" width="256" height="42" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+    <circle cx="53" cy="587" r="5" fill="#79a8ff"/>
+    <text x="66" y="586" fill="#f7f9ff" fill-opacity="0.86" font-size="12.5" font-weight="600">Beta Testing</text>
+    <text x="66" y="600" fill="#f7f9ff" fill-opacity="0.45" font-size="9.5">Checklist and feedback</text>
+    
+  
+    
+  
+    
+    <rect x="18" y="626" width="292" height="68" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="626" width="292" height="68" rx="18" fill="#43ed74" fill-opacity="0.05"/>
+    
+    <text x="34" y="656" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Privacy Protected</text>
+    <text x="34" y="686" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Data export and controls planned</text>
+    
+  
+    
+    <rect x="0" y="692" width="328" height="66" fill="rgba(2,11,28,0.92)" stroke="rgba(255,255,255,0.18)"/>
+    
+          <circle cx="32.8" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M10 22V12L20 5l10 7v10" transform="translate(12.799999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="32.8" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Home</text>
+        
+          <circle cx="98.39999999999999" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M11 6h14l4 4v20H11z" transform="translate(78.39999999999999 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="98.39999999999999" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Bills</text>
+        
+          <circle cx="164" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M12 18l5 5 11-13" transform="translate(144 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="164" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Track</text>
+        
+          <circle cx="229.59999999999997" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M16 27h8" transform="translate(209.59999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="229.59999999999997" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Alerts</text>
+        
+          <circle cx="295.2" cy="716" r="16" fill="rgba(255,177,43,0.12)" stroke="rgba(255,177,43,0.72)"/>
+          <path d="M15 27c2-5 12-5 14 0" transform="translate(275.2 695) scale(0.7)" fill="none" stroke="#ffb12b" stroke-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="295.2" y="750" text-anchor="middle" fill="#ffb12b" fill-opacity="1" font-size="11.5" font-weight="500">Profile</text>
+        
+  
+  
+  </g>
+  
+        <path d="M430 136.5 C388 136.5, 388 253, 146 253" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-account)"/>
+        <circle cx="128" cy="253" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="128" y="258" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">1</text>
+        <g filter="url(#softShadow-account)">
+          <rect x="430" y="100" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="122" r="11" fill="#ffb12b"/>
+          <text x="451" y="127" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">1</text>
+          <text x="472" y="123" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Profile identity should use</text><text x="472" y="138" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">the signed-in account name</text><text x="472" y="153" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">when available.</text>
+        </g>
+      
+        <path d="M430 256.5 C388 256.5, 388 314, 234 314" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-account)"/>
+        <circle cx="216" cy="314" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="216" y="319" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">2</text>
+        <g filter="url(#softShadow-account)">
+          <rect x="430" y="220" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="242" r="11" fill="#ffb12b"/>
+          <text x="451" y="247" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">2</text>
+          <text x="472" y="243" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Account stats mirror</text><text x="472" y="258" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">gamification data from the</text><text x="472" y="273" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">rest of the app.</text>
+        </g>
+      
+        <path d="M430 390.5 C388 390.5, 388 448, 152 448" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-account)"/>
+        <circle cx="134" cy="448" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="134" y="453" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">3</text>
+        <g filter="url(#softShadow-account)">
+          <rect x="430" y="354" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="376" r="11" fill="#ffb12b"/>
+          <text x="451" y="381" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">3</text>
+          <text x="472" y="377" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Saved Ledger summarizes the</text><text x="472" y="392" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">user's tracked civic</text><text x="472" y="407" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">watchlist.</text>
+        </g>
+      
+        <path d="M430 544 C388 544, 388 578, 160 578" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-account)"/>
+        <circle cx="142" cy="578" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="142" y="583" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">4</text>
+        <g filter="url(#softShadow-account)">
+          <rect x="430" y="500" width="278" height="88" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="522" r="11" fill="#ffb12b"/>
+          <text x="451" y="527" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">4</text>
+          <text x="472" y="523" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Settings expose</text><text x="472" y="538" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">notification, district,</text><text x="472" y="553" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">privacy, beta, and sign-in</text><text x="472" y="568" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">controls.</text>
+        </g>
+      
+        <path d="M430 686.5 C388 686.5, 388 706, 232 706" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-account)"/>
+        <circle cx="214" cy="706" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="214" y="711" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">5</text>
+        <g filter="url(#softShadow-account)">
+          <rect x="430" y="650" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="672" r="11" fill="#ffb12b"/>
+          <text x="451" y="677" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">5</text>
+          <text x="472" y="673" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Privacy copy should make</text><text x="472" y="688" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">testers feel clear about</text><text x="472" y="703" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">data handling.</text>
+        </g>
+      
+</svg>

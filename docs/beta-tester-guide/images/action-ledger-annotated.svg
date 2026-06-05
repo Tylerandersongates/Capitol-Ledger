@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" role="img" aria-labelledby="title-action-ledger desc-action-ledger">
+  <title id="title-action-ledger">Annotated Capitol Ledger action-ledger snapshot</title>
+  <desc id="desc-action-ledger">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
+  
+    <defs>
+      <linearGradient id="screenGradient-action-ledger" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#071a34"/>
+        <stop offset="0.48" stop-color="#010817"/>
+        <stop offset="1" stop-color="#000511"/>
+      </linearGradient>
+      <linearGradient id="cardGradient" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#134073" stop-opacity="0.64"/>
+        <stop offset="1" stop-color="#0c264e" stop-opacity="0.76"/>
+      </linearGradient>
+      <clipPath id="screenClip-action-ledger">
+        <rect x="0" y="0" width="328" height="758" rx="34"/>
+      </clipPath>
+      <marker id="arrow-action-ledger" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+        <path d="M1 1L11 6L1 11Z" fill="#ffb12b"/>
+      </marker>
+      <filter id="softShadow-action-ledger" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000511" flood-opacity="0.42"/>
+      </filter>
+    </defs>
+  
+  <rect width="760" height="860" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="760" height="860" fill="url(#screenGradient-action-ledger)" opacity="0.08"/>
+  <text x="430" y="44" fill="#061126" font-size="22" font-weight="800">Tester callouts</text>
+  <text x="430" y="67" fill="#38506f" font-size="13" font-weight="600">Use these labels when reviewing the page.</text>
+  <g filter="url(#softShadow-action-ledger)">
+    <rect x="34" y="30" width="360" height="790" rx="54" fill="#020713" stroke="#1d293b" stroke-width="8"/>
+    <rect x="50" y="46" width="328" height="758" rx="34" fill="url(#screenGradient-action-ledger)" stroke="rgba(255,255,255,0.68)" stroke-width="1.5"/>
+  </g>
+  <g clip-path="url(#screenClip-action-ledger)" transform="translate(50 46)">
+    <path d="M0 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M38 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M76 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M114 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M152 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M190 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M228 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M266 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M304 0V758" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 0H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 38H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 76H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 114H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 152H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 190H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 228H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 266H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 304H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 342H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 380H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 418H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 456H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 494H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 532H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 570H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 608H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 646H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 684H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/><path d="M0 722H328" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>
+    
+    
+    <text x="20" y="32" fill="#f7f9ff" font-size="15" font-weight="700">9:41</text>
+    <rect x="280" y="20" width="28" height="11" rx="4" fill="none" stroke="rgba(255,255,255,0.72)"/>
+    <rect x="283" y="23" width="18" height="5" rx="2" fill="rgba(255,255,255,0.72)"/>
+    <circle cx="35" cy="73" r="18" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.12)"/><path d="M40 64l-10 9 10 9" fill="none" stroke="#f7f9ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="64" y="70" fill="#f7f9ff" fill-opacity="0.46" font-size="10" font-weight="700" letter-spacing="1.4">CIVIC ENGAGEMENT</text>
+    <text x="64" y="96" fill="#f7f9ff" font-size="26" font-weight="700">Action Ledger</text>
+    
+  
+    
+    <rect x="18" y="128" width="292" height="104" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="128" width="292" height="104" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    
+    <text x="34" y="158" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Civic action history</text>
+    <text x="34" y="188" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">Prepared letters, confirmed sends,</text><text x="34" y="204" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">signed petitions, recipients, and</text><text x="34" y="204" fill="#f7f9ff" fill-opacity="0.62" font-size="12.5" font-weight="500">issues.</text>
+    
+  
+    
+    <rect x="18" y="248" width="292" height="118" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="248" width="292" height="118" rx="18" fill="#ffb12b" fill-opacity="0.05"/>
+    <text x="34" y="272" fill="#ffb12b" font-size="10" font-weight="700" letter-spacing="1.4">CIVIC ACTION LEDGER</text>
+    <text x="34" y="296" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">0 tracked actions</text>
+    
+    
+      
+    <rect x="35" y="314" width="76" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="47" y="337" fill="#43ed74" font-size="18" font-weight="700">0</text>
+    <text x="47" y="354" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">LETTERS</text>
+  
+      
+    <rect x="126" y="314" width="82" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="138" y="337" fill="#b98fff" font-size="18" font-weight="700">0</text>
+    <text x="138" y="354" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">PETITIONS</text>
+  
+      
+    <rect x="223" y="314" width="70" height="54" rx="12" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)"/>
+    <text x="235" y="337" fill="#79a8ff" font-size="18" font-weight="700">-</text>
+    <text x="235" y="354" fill="#f7f9ff" fill-opacity="0.58" font-size="10" font-weight="700" letter-spacing="0.8">LATEST</text>
+  
+    
+  
+    
+    <rect x="18" y="382" width="292" height="142" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="382" width="292" height="142" rx="18" fill="#43ed74" fill-opacity="0.05"/>
+    
+    <text x="34" y="412" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Recent Letters</text>
+    
+    
+      
+    <rect x="235" y="398" width="58" height="26" rx="13" fill="#ffb12b" fill-opacity="0.12" stroke="#ffb12b" stroke-opacity="0.55"/>
+    <text x="264" y="415" text-anchor="middle" fill="#ffb12b" font-size="11" font-weight="700">Find</text>
+  
+      <rect x="36" y="436" width="256" height="72" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"/>
+      <text x="52" y="465" fill="#f7f9ff" font-size="14" font-weight="700">No letters tracked yet</text>
+      <text x="52" y="486" fill="#f7f9ff" fill-opacity="0.54" font-size="11.5">Drafts and sent confirmations appear here.</text>
+    
+  
+    
+    <rect x="18" y="540" width="292" height="130" rx="18" fill="url(#cardGradient)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="18" y="540" width="292" height="130" rx="18" fill="#b98fff" fill-opacity="0.05"/>
+    
+    <text x="34" y="570" fill="#f7f9ff" fill-opacity="1" font-size="20" font-weight="700">Signed Petitions</text>
+    
+    
+      
+    <rect x="222" y="556" width="70" height="26" rx="13" fill="#b98fff" fill-opacity="0.12" stroke="#b98fff" stroke-opacity="0.55"/>
+    <text x="257" y="573" text-anchor="middle" fill="#b98fff" font-size="11" font-weight="700">Browse</text>
+  
+      <rect x="36" y="594" width="256" height="58" rx="14" fill="rgba(185,143,255,0.08)" stroke="rgba(185,143,255,0.2)"/>
+      <text x="52" y="623" fill="#f7f9ff" font-size="14" font-weight="700">No petitions signed yet</text>
+      <text x="52" y="642" fill="#f7f9ff" fill-opacity="0.54" font-size="11.5">Signed campaigns appear with date and issue.</text>
+    
+  
+    
+    <rect x="0" y="692" width="328" height="66" fill="rgba(2,11,28,0.92)" stroke="rgba(255,255,255,0.18)"/>
+    
+          <circle cx="32.8" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M10 22V12L20 5l10 7v10" transform="translate(12.799999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="32.8" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Home</text>
+        
+          <circle cx="98.39999999999999" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M11 6h14l4 4v20H11z" transform="translate(78.39999999999999 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="98.39999999999999" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Bills</text>
+        
+          <circle cx="164" cy="716" r="16" fill="rgba(255,177,43,0.12)" stroke="rgba(255,177,43,0.72)"/>
+          <path d="M12 18l5 5 11-13" transform="translate(144 695) scale(0.7)" fill="none" stroke="#ffb12b" stroke-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="164" y="750" text-anchor="middle" fill="#ffb12b" fill-opacity="1" font-size="11.5" font-weight="500">Track</text>
+        
+          <circle cx="229.59999999999997" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M16 27h8" transform="translate(209.59999999999997 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="229.59999999999997" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Alerts</text>
+        
+          <circle cx="295.2" cy="716" r="16" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.12)"/>
+          <path d="M15 27c2-5 12-5 14 0" transform="translate(275.2 695) scale(0.7)" fill="none" stroke="#f7f9ff" stroke-opacity="0.82" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="295.2" y="750" text-anchor="middle" fill="#f7f9ff" fill-opacity="0.82" font-size="11.5" font-weight="500">Profile</text>
+        
+  
+  
+  </g>
+  
+        <path d="M430 140.5 C388 140.5, 388 358, 144 358" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-action-ledger)"/>
+        <circle cx="126" cy="358" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="126" y="363" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">1</text>
+        <g filter="url(#softShadow-action-ledger)">
+          <rect x="430" y="104" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="126" r="11" fill="#ffb12b"/>
+          <text x="451" y="131" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">1</text>
+          <text x="472" y="127" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">The summary card combines</text><text x="472" y="142" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">letters and petitions into</text><text x="472" y="157" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">total civic actions.</text>
+        </g>
+      
+        <path d="M430 274 C388 274, 388 456, 330 456" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-action-ledger)"/>
+        <circle cx="312" cy="456" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="312" y="461" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">2</text>
+        <g filter="url(#softShadow-action-ledger)">
+          <rect x="430" y="230" width="278" height="88" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="252" r="11" fill="#ffb12b"/>
+          <text x="451" y="257" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">2</text>
+          <text x="472" y="253" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Find starts the</text><text x="472" y="268" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">representative flow that</text><text x="472" y="283" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">creates draft or sent letter</text><text x="472" y="298" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">records.</text>
+        </g>
+      
+        <path d="M430 396.5 C388 396.5, 388 512, 164 512" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-action-ledger)"/>
+        <circle cx="146" cy="512" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="146" y="517" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">3</text>
+        <g filter="url(#softShadow-action-ledger)">
+          <rect x="430" y="360" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="382" r="11" fill="#ffb12b"/>
+          <text x="451" y="387" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">3</text>
+          <text x="472" y="383" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Recent Letters should</text><text x="472" y="398" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">preserve subject, recipient,</text><text x="472" y="413" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">status, and date.</text>
+        </g>
+      
+        <path d="M430 540.5 C388 540.5, 388 614, 322 614" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-action-ledger)"/>
+        <circle cx="304" cy="614" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="304" y="619" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">4</text>
+        <g filter="url(#softShadow-action-ledger)">
+          <rect x="430" y="504" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="526" r="11" fill="#ffb12b"/>
+          <text x="451" y="531" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">4</text>
+          <text x="472" y="527" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Browse opens petitions, and</text><text x="472" y="542" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">signed campaigns return to</text><text x="472" y="557" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">this section.</text>
+        </g>
+      
+        <path d="M430 676.5 C388 676.5, 388 669, 164 669" fill="none" stroke="#ffb12b" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow-action-ledger)"/>
+        <circle cx="146" cy="669" r="14" fill="#ffb12b" stroke="#f7f9ff" stroke-width="2.5"/>
+        <text x="146" y="674" text-anchor="middle" fill="#061126" font-size="14" font-weight="800">5</text>
+        <g filter="url(#softShadow-action-ledger)">
+          <rect x="430" y="640" width="278" height="73" rx="14" fill="rgba(7,20,43,0.96)" stroke="rgba(255,177,43,0.42)"/>
+          <circle cx="451" cy="662" r="11" fill="#ffb12b"/>
+          <text x="451" y="667" text-anchor="middle" fill="#061126" font-size="13" font-weight="800">5</text>
+          <text x="472" y="663" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">Signed Petitions should</text><text x="472" y="678" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">appear under letters on the</text><text x="472" y="693" fill="#f7f9ff" fill-opacity="0.88" font-size="12.5" font-weight="600">same ledger page.</text>
+        </g>
+      
+</svg>

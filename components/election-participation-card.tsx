@@ -81,7 +81,6 @@ export function ElectionParticipationCard() {
   const snapshot = useGamificationSnapshot();
   const [loggedElectionIds, setLoggedElectionIds] = useState<string[]>([]);
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
-  const [pendingElectionId, setPendingElectionId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const snapshotElectionCount = useMemo(
     () => snapshot.eventCounts.find((record) => record.event === "participate-election")?.count ?? 0,
@@ -120,7 +119,6 @@ export function ElectionParticipationCard() {
       try {
         const nextIds = loggedElectionIds.filter((id) => id !== entry.id);
         applyElectionSelection(nextIds);
-        setPendingElectionId(null);
         setStatus(`Removed: ${entry.label}`);
       } catch {
         setStatus("Could not update this election right now. Please try again.");
@@ -128,16 +126,9 @@ export function ElectionParticipationCard() {
       return;
     }
 
-    if (pendingElectionId !== entry.id) {
-      setPendingElectionId(entry.id);
-      setStatus(`Tap again to log ${entry.label}.`);
-      return;
-    }
-
     try {
       const nextIds = [...loggedElectionIds, entry.id];
       applyElectionSelection(nextIds);
-      setPendingElectionId(null);
       setStatus(`Logged: ${entry.label}`);
     } catch {
       setStatus("Could not update this election right now. Please try again.");
@@ -161,18 +152,15 @@ export function ElectionParticipationCard() {
           Count primary, general, runoff, and special elections toward Voter, Ballot Veteran, and Super Voter badges.
         </p>
         <p className="mt-1 text-[11px] uppercase tracking-[0.05em] text-white/42">
-          Tap once to select. Tap again to confirm. Tap a logged row once to remove it.
+          Tap once to log an election. Tap a logged row again to remove it.
         </p>
 
         <div className="mt-4 grid gap-2">
           {electionLogEntries.map((entry) => {
             const isLogged = loggedElectionIds.includes(entry.id);
-            const isPending = pendingElectionId === entry.id;
             const rowClassName = isLogged
               ? "border-[#43ed74]/42 bg-[#43ed74]/12 shadow-[0_0_16px_rgba(67,237,116,0.16)]"
-              : isPending
-                ? "border-[#ffbd39]/48 bg-[#ffbd39]/12 shadow-[0_0_16px_rgba(255,189,57,0.2)]"
-                : "border-white/10 bg-white/[0.03]";
+              : "border-white/10 bg-white/[0.03]";
 
             return (
               <button
@@ -184,8 +172,6 @@ export function ElectionParticipationCard() {
                 <span className="flex items-center gap-2">
                   {isLogged ? (
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-[#43ed74]" strokeWidth={2} aria-hidden="true" />
-                  ) : isPending ? (
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#ffbd39]" aria-hidden="true" />
                   ) : (
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-white/28" aria-hidden="true" />
                   )}

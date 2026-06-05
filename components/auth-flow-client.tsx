@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Fingerprint,
   KeyRound,
   LockKeyhole,
   Mail,
@@ -616,12 +615,7 @@ export function AuthFlowClient({
 
           {mode === "signIn" ? (
             <div className="flex items-center justify-between text-[14px]">
-              <label className="flex items-center gap-2 text-white/58">
-                <span className="grid h-5 w-5 place-items-center rounded border border-rust/45 bg-rust/10 text-[#ffb12b]">
-                  <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-                </span>
-                Remember me
-              </label>
+              <span className="text-white/50">Keeps you signed in for 30 days.</span>
               <button type="button" onClick={() => selectMode("forgot")} className="font-semibold text-[#ffb12b]">
                 Forgot?
               </button>
@@ -712,29 +706,8 @@ export function AuthFlowClient({
               </button>
             ) : null}
 
-            {allowDemoMode ? (
-              <div className={`mt-5 grid gap-3 ${accountCreated && !allowAccountCreation ? "grid-cols-1" : "grid-cols-2"}`}>
-                <button
-                  type="button"
-                  onClick={() => void startDemoAccount(postAuthReturnTo)}
-                  disabled={pending}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
-                >
-                  <Fingerprint className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                  Face ID
-                </button>
-                {showSecondaryCreateCta ? (
-                  <button
-                    type="button"
-                    onClick={() => selectMode("create")}
-                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
-                  >
-                    <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                    New account
-                  </button>
-                ) : null}
-              </div>
-            ) : showSecondaryCreateCta ? (
+            {/* TODO: Add Face ID back when real passkey/WebAuthn sign-in is implemented. */}
+            {showSecondaryCreateCta ? (
               <div className="mt-5">
                 <button
                   type="button"

@@ -48,6 +48,13 @@ const testerTasks = [
     title: "Check gamification"
   },
   {
+    body: "Open Upgrade, compare Free, Pro, and Team, switch billing cycle, preview plan actions, and report unclear pricing or locked feature language.",
+    href: "/upgrade",
+    label: "Plans",
+    reportHref: "/feedback?source=upgrade",
+    title: "Test subscriptions"
+  },
+  {
     body: "Open the Team workspace preview. Check whether shared watchlists, alerts, roles, and invite language make sense for organizations.",
     href: "/team",
     label: "Team",
@@ -98,7 +105,7 @@ export default function BetaTesterPage() {
             title="How to test"
           />
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <MiniMetric label="Tasks" value="7" />
+            <MiniMetric label="Tasks" value="8" />
             <MiniMetric label="Actions" value="2" />
             <MiniMetric label="Round" value="Beta" />
           </div>
@@ -106,7 +113,7 @@ export default function BetaTesterPage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
-            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">7 flows</span>}
+            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">8 flows</span>}
             description="Open each flow, then report from the same row if something feels off."
             eyebrow="Tester Queue"
             title="Checklist"

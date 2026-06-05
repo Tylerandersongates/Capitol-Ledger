@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { EarnedBadgeTile } from "@/components/gamification-ui";
+import { badgeIcon, badgeTones } from "@/components/gamification-ui";
 import {
   gamificationChangedEvent,
   hydrateGamificationFromAccount
 } from "@/lib/browser-gamification";
-import { civicLevelTiers, getBadgeCollections, getImpactActions } from "@/lib/gamification";
+import { civicLevelTiers, getBadgeCollections, getImpactActions, type GamificationBadge } from "@/lib/gamification";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 
 export function useGamificationSnapshot() {
@@ -240,18 +240,53 @@ export function RecentAchievementsList() {
 
   if (!recentBadges.length) {
     return (
-      <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] leading-snug text-white/56">
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[13px] leading-snug text-white/56">
         Achievements appear here after setup and civic actions are completed.
       </div>
     );
   }
 
   return (
-    <div className={`mt-7 grid gap-x-7 ${recentBadges.length === 1 ? "grid-cols-1" : recentBadges.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-      {recentBadges.map((achievement) => (
-        <EarnedBadgeTile key={achievement.id} badge={achievement} size="medium" showDescription />
-      ))}
+    <div className="mt-4">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Latest unlocked badges</div>
+      <div className="mt-3 max-h-[172px] space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {recentBadges.map((achievement) => (
+          <RecentAchievementRow key={achievement.id} badge={achievement} />
+        ))}
+      </div>
     </div>
+  );
+}
+
+function RecentAchievementRow({ badge }: { badge: GamificationBadge }) {
+  const colors = badgeTones[badge.tone];
+
+  return (
+    <Link
+      href="/badges"
+      className="grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-[#ffb12b]/36 hover:bg-white/[0.055] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
+    >
+      <div
+        className={`grid h-12 w-12 shrink-0 place-items-center bg-gradient-to-br ${colors.shell} p-[2px] ${colors.glow}`}
+        style={{ clipPath: "polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%)" }}
+      >
+        <div
+          className={`grid h-full w-full place-items-center bg-gradient-to-br ${colors.core}`}
+          style={{ clipPath: "polygon(25% 8%, 75% 8%, 98% 50%, 75% 92%, 25% 92%, 2% 50%)" }}
+        >
+          <span className={`${colors.text} [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.65]`}>{badgeIcon(badge.icon)}</span>
+        </div>
+      </div>
+
+      <div className="min-w-0">
+        <div className="truncate text-[15px] font-semibold leading-tight text-white">{badge.label}</div>
+        <div className="mt-1 text-[12px] leading-snug text-white/52">{badge.description}</div>
+      </div>
+
+      <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#74f49a]">
+        Earned
+      </span>
+    </Link>
   );
 }
 
