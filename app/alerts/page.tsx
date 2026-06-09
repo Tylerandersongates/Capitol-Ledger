@@ -8,6 +8,7 @@ import {
 import { MobileShell } from "@/components/mobile-shell";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
+import { isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -28,13 +29,6 @@ function eventCategoryLabel(event: ReturnType<typeof getRecentUpdates>[number]) 
   if (event.targetType === "bill") return "Bill Update";
 
   return "Civic Update";
-}
-
-function isActionNeededEvent(event: ReturnType<typeof getRecentUpdates>[number]) {
-  const text = `${event.title} ${event.body}`.toLowerCase();
-  if (text.includes("action pending") || text.includes("deadline")) return true;
-  if (event.targetType === "bill" && (text.includes("vote") || text.includes("hearing") || text.includes("committee"))) return true;
-  return false;
 }
 
 function getNotificationPreference(event: ReturnType<typeof getRecentUpdates>[number]): AlertsInboxPreference {
@@ -61,7 +55,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
       body: `${targetLabel} - ${event.body}`,
       categoryLabel: eventCategoryLabel(event),
       preference: getNotificationPreference(event),
-      actionNeeded: isActionNeededEvent(event),
+      actionNeeded: isActionNeededAlertEvent(event),
       action: bill ? "View Bill" : member ? "View Profile" : "View Record",
       href,
       group,

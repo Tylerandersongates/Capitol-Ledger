@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
+import { MobileAlertsBadge } from "@/components/mobile-alerts-badge";
 
 type MobileCardVariant = "default" | "rust" | "dashboard" | "compact";
 
@@ -74,12 +75,17 @@ function MobileBottomNavLink({
   const iconWrapClass = active || highlighted
     ? "bg-[linear-gradient(180deg,rgba(255,188,60,0.2)_0%,rgba(255,140,24,0.12)_100%)] border border-[#ffb12b]/32 shadow-[0_0_18px_rgba(255,177,43,0.26)]"
     : "border border-white/10 bg-white/[0.035]";
+  const shouldShowAlertsBadge = href.startsWith("/alerts");
 
   return (
     <Link href={href} className={`relative flex flex-col items-center gap-1.5 ${tone}`}>
       <span className={`relative grid h-9 w-9 place-items-center rounded-full [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8] ${iconWrapClass}`}>
         {icon}
-        {badge ? <span className="absolute -right-2 -top-2 grid h-5 w-5 place-items-center rounded-full bg-rust text-[11px] font-semibold text-white">{badge}</span> : null}
+        {shouldShowAlertsBadge ? (
+          <MobileAlertsBadge fallbackBadge={badge} />
+        ) : badge ? (
+          <span className="absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full bg-rust px-1 text-[11px] font-semibold leading-none text-white">{badge}</span>
+        ) : null}
       </span>
       <span className="text-[12px]">{label}</span>
     </Link>
