@@ -20,6 +20,9 @@ const localAccountStateKeys = [
   "capitol-ledger:subscription"
 ];
 let accountProfileFetchPromise: Promise<AccountProfileSnapshot | null> | null = null;
+let accountProfileCache: AccountProfileSnapshot | null = null;
+let accountProfileCacheUpdatedAt = 0;
+const accountProfileCacheTtlMs = 30_000;
 
 export type LocalDistrictProfile = Pick<AccountProfileSnapshot, "districtCode" | "districtLabel" | "districtState">;
 
@@ -130,6 +133,8 @@ export function resetLocalAccountSetupState() {
     // Fresh account setup should continue even when browser storage is restricted.
   }
   accountProfileFetchPromise = null;
+  accountProfileCache = null;
+  accountProfileCacheUpdatedAt = 0;
   window.dispatchEvent(new Event(accountProfileChangedEvent));
   window.dispatchEvent(new Event("capitol-ledger:follows-changed"));
   window.dispatchEvent(new Event("capitol-ledger:gamification-changed"));
@@ -140,6 +145,7 @@ export function resetLocalAccountSetupState() {
 export async function fetchAccountProfile() {
   if (typeof window === "undefined") return null;
   if (!(await hasActiveBrowserSession())) return null;
+  if (accountProfileCache && Date.now() - accountProfileCacheUpdatedAt < accountProfileCacheTtlMs) return accountProfileCache;
   if (accountProfileFetchPromise) return accountProfileFetchPromise;
 
   accountProfileFetchPromise = fetchAccountProfileFromApi().finally(() => {
@@ -153,6 +159,10 @@ async function fetchAccountProfileFromApi() {
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
+  if (data?.profile) {
+    accountProfileCache = data.profile;
+    accountProfileCacheUpdatedAt = Date.now();
+  }
   return data?.profile ?? null;
 }
 
@@ -172,6 +182,8 @@ export async function syncAccountProfile(profile: Partial<AccountProfileSnapshot
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
   if (data?.profile) {
     accountProfileFetchPromise = null;
+    accountProfileCache = data.profile;
+    accountProfileCacheUpdatedAt = Date.now();
     writeLocalAccountProfile(data.profile);
   }
   return data?.profile ?? null;

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LocateFixed, Loader2, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
 import {
   accountProfileChangedEvent,
@@ -32,8 +32,10 @@ import { getPartyLabel } from "@/components/party-affiliation-control";
 import type { AccountNotificationPreferences, Member, SavedFollowRecord } from "@/types/capitol";
 
 type NotificationPreferenceKey = keyof AccountNotificationPreferences;
+type SetupMetrics = ReturnType<typeof useSetupMetrics>;
 
 const setupSignalTotal = 5;
+const OnboardingSetupMetricsContext = createContext<SetupMetrics | null>(null);
 
 const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: string }[] = [
   {
@@ -617,6 +619,21 @@ function useSetupMetrics(members: Member[]) {
   };
 }
 
+export function OnboardingSetupMetricsProvider({ children, members }: { children: ReactNode; members: Member[] }) {
+  const setupMetrics = useSetupMetrics(members);
+
+  return <OnboardingSetupMetricsContext.Provider value={setupMetrics}>{children}</OnboardingSetupMetricsContext.Provider>;
+}
+
+function useOnboardingSetupMetrics() {
+  const setupMetrics = useContext(OnboardingSetupMetricsContext);
+  if (!setupMetrics) {
+    throw new Error("Onboarding setup components must be wrapped in OnboardingSetupMetricsProvider.");
+  }
+
+  return setupMetrics;
+}
+
 function setupCompleteCount({
   district,
   enabledAlertCount,
@@ -633,8 +650,8 @@ function setupCompleteCount({
   ].filter(Boolean).length;
 }
 
-export function OnboardingProgressMeter({ members }: { members: Member[] }) {
-  const setupMetrics = useSetupMetrics(members);
+export function OnboardingProgressMeter() {
+  const setupMetrics = useOnboardingSetupMetrics();
   const completeCount = setupCompleteCount(setupMetrics);
   const percentReady = Math.round((completeCount / setupSignalTotal) * 100);
 
@@ -657,9 +674,9 @@ export function OnboardingProgressMeter({ members }: { members: Member[] }) {
   );
 }
 
-export function OnboardingCompleteButton({ members }: { members: Member[] }) {
+export function OnboardingCompleteButton() {
   const router = useRouter();
-  const setupMetrics = useSetupMetrics(members);
+  const setupMetrics = useOnboardingSetupMetrics();
   const completeCount = setupCompleteCount(setupMetrics);
   const complete = completeCount >= setupSignalTotal;
 
@@ -690,8 +707,8 @@ export function OnboardingCompleteButton({ members }: { members: Member[] }) {
   );
 }
 
-export function OnboardingSetupFlow({ members }: { members: Member[] }) {
-  const { district, enabledAlertCount, issueCount, officialsCount, partyAffiliation } = useSetupMetrics(members);
+export function OnboardingSetupFlow() {
+  const { district, enabledAlertCount, issueCount, officialsCount, partyAffiliation } = useOnboardingSetupMetrics();
 
   const steps = [
     {

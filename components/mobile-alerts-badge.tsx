@@ -10,6 +10,11 @@ type AlertSummaryResponse = {
   activeAlertIds?: string[];
 };
 
+let alertSummaryCache: AlertSummaryResponse | null = null;
+let alertSummaryCacheUpdatedAt = 0;
+let alertSummaryPromise: Promise<AlertSummaryResponse | null> | null = null;
+const alertSummaryCacheTtlMs = 20_000;
+
 function formatBadgeValue(value: number) {
   if (value > 99) return "99+";
   return String(value);
@@ -31,6 +36,30 @@ function countUnopenedActiveAlerts(activeAlertIds: string[], fallbackCount?: num
   return activeAlertIds.filter((id) => !readIds.has(id)).length;
 }
 
+async function fetchAlertSummary() {
+  if (alertSummaryCache && Date.now() - alertSummaryCacheUpdatedAt < alertSummaryCacheTtlMs) return alertSummaryCache;
+  if (alertSummaryPromise) return alertSummaryPromise;
+
+  alertSummaryPromise = fetch("/api/alerts/summary", { cache: "no-store" })
+    .then(async (response) => {
+      if (!response.ok) return null;
+      const data = (await response.json().catch(() => null)) as AlertSummaryResponse | null;
+      if (!data) return null;
+      alertSummaryCache = {
+        activeAlertCount: data.activeAlertCount,
+        activeAlertIds: Array.isArray(data.activeAlertIds) ? data.activeAlertIds : []
+      };
+      alertSummaryCacheUpdatedAt = Date.now();
+      return alertSummaryCache;
+    })
+    .catch(() => null)
+    .finally(() => {
+      alertSummaryPromise = null;
+    });
+
+  return alertSummaryPromise;
+}
+
 export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string }) {
   const [badge, setBadge] = useState(fallbackBadge ?? "");
 
@@ -47,10 +76,9 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
     }
 
     async function refreshBadge() {
-      const response = await fetch("/api/alerts/summary", { cache: "no-store" }).catch(() => null);
-      if (!active || !response?.ok) return;
+      const data = await fetchAlertSummary();
+      if (!active || !data) return;
 
-      const data = (await response.json().catch(() => null)) as AlertSummaryResponse | null;
       activeAlertIds = Array.isArray(data?.activeAlertIds) ? data.activeAlertIds : [];
       updateBadge(countUnopenedActiveAlerts(activeAlertIds, data?.activeAlertCount));
     }

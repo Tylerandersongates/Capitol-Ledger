@@ -107,9 +107,16 @@ function hasCompletedLocalSetup() {
   const issueCount = Array.isArray(storedInterests)
     ? storedInterests.filter((interest) => typeof interest === "string" && interest.trim().length > 0).length
     : 0;
+  const storedFollows = readJson<unknown>(followsKey, []);
+  const officialsReady = Array.isArray(storedFollows)
+    ? storedFollows.some((record) => {
+        if (!record || typeof record !== "object") return false;
+        return "type" in record && record.type === "member" && "id" in record && typeof record.id === "string" && record.id.length > 0;
+      })
+    : false;
   const completeCount = [
     districtReady,
-    districtReady,
+    officialsReady,
     Boolean(profile.partyAffiliation),
     issueCount > 0,
     enabledAlertCount > 0

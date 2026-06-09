@@ -5,6 +5,7 @@ import {
   OnboardingDistrictSetup,
   OnboardingMatchedOfficials,
   OnboardingProgressMeter,
+  OnboardingSetupMetricsProvider,
   OnboardingSetupFlow
 } from "@/components/account-profile-controls";
 import { MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
@@ -58,55 +59,57 @@ export default function OnboardingPage() {
               </Link>
             </header>
 
-            <main className="mt-7 space-y-5 pb-8">
-              <OnboardingCard className="px-6 py-6">
-                <div className="relative z-10">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#ffb12b]">
-                    <MapPin className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                    District setup
+            <OnboardingSetupMetricsProvider members={allMembers}>
+              <main className="mt-7 space-y-5 pb-8">
+                <OnboardingCard className="px-6 py-6">
+                  <div className="relative z-10">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#ffb12b]">
+                      <MapPin className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                      District setup
+                    </div>
+                    <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Build your civic profile.</h1>
+                    <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">
+                      Start with your district so Capitol Ledger can personalize officials, bills, votes, and alerts.
+                    </p>
                   </div>
-                  <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Build your civic profile.</h1>
-                  <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">
-                    Start with your district so Capitol Ledger can personalize officials, bills, votes, and alerts.
-                  </p>
-                </div>
-                <OnboardingProgressMeter members={allMembers} />
-              </OnboardingCard>
+                  <OnboardingProgressMeter />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSectionHeader icon={<LocateFixed />} title="Find Your District" />
-                <OnboardingDistrictSetup members={allMembers} />
-              </OnboardingCard>
+                <OnboardingCard>
+                  <OnboardingSectionHeader icon={<LocateFixed />} title="Find Your District" />
+                  <OnboardingDistrictSetup members={allMembers} />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSetupFlow members={allMembers} />
-              </OnboardingCard>
+                <OnboardingCard>
+                  <OnboardingSetupFlow />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSectionHeader icon={<Flag />} title="Affiliation" />
-                <OnboardingPartyAffiliationSelector />
-              </OnboardingCard>
+                <OnboardingCard>
+                  <OnboardingSectionHeader icon={<Flag />} title="Affiliation" />
+                  <OnboardingPartyAffiliationSelector />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSectionHeader icon={<Landmark />} title="Your Officials" />
-                <OnboardingMatchedOfficials members={allMembers} />
-              </OnboardingCard>
+                <OnboardingCard>
+                  <OnboardingSectionHeader icon={<Landmark />} title="Your Officials" />
+                  <OnboardingMatchedOfficials members={allMembers} />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSectionHeader icon={<Vote />} title="Issue Signals" />
-                <IssueInterestChips interests={[...issueSignals]} />
-              </OnboardingCard>
+                <OnboardingCard>
+                  <OnboardingSectionHeader icon={<Vote />} title="Issue Signals" />
+                  <IssueInterestChips interests={[...issueSignals]} />
+                </OnboardingCard>
 
-              <OnboardingCard>
-                <OnboardingSectionHeader icon={<Bell />} title="Civic Alerts" />
-                <NotificationPreferencesEditor compact />
-              </OnboardingCard>
-            </main>
+                <OnboardingCard>
+                  <OnboardingSectionHeader icon={<Bell />} title="Civic Alerts" />
+                  <NotificationPreferencesEditor compact />
+                </OnboardingCard>
+              </main>
 
-            <div className="sticky bottom-0 -mx-8 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(6,24,52,0.78)_0%,rgba(3,14,32,0.96)_100%)] px-8 pb-5 pt-4 backdrop-blur-xl shadow-[0_-16px_34px_rgba(1,8,24,0.46),inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <OnboardingCompleteButton members={allMembers} />
-              <div className="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/82" />
-            </div>
+              <div className="sticky bottom-0 -mx-8 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(6,24,52,0.78)_0%,rgba(3,14,32,0.96)_100%)] px-8 pb-5 pt-4 backdrop-blur-xl shadow-[0_-16px_34px_rgba(1,8,24,0.46),inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <OnboardingCompleteButton />
+                <div className="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/82" />
+              </div>
+            </OnboardingSetupMetricsProvider>
     </MobileShell>
   );
 }
