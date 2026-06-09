@@ -330,6 +330,7 @@ export function AlertsInboxClient({
                     key={notification.id}
                     {...notification}
                     iconElement={notificationIcon(notification.icon)}
+                    opened={readIds.includes(notification.id)}
                     priorityRank={index + 1}
                     unread={isUnread(notification)}
                     onRead={() => markRead(notification.id)}
@@ -346,6 +347,7 @@ export function AlertsInboxClient({
                       key={notification.id}
                       {...notification}
                       iconElement={notificationIcon(notification.icon)}
+                      opened={readIds.includes(notification.id)}
                       unread={isUnread(notification)}
                       onRead={() => markRead(notification.id)}
                     />
@@ -399,6 +401,7 @@ function NotificationCard({
   href,
   iconElement,
   onRead,
+  opened,
   priorityRank,
   time,
   title,
@@ -406,10 +409,11 @@ function NotificationCard({
 }: AlertsInboxItem & {
   iconElement: ReactNode;
   onRead: () => void;
+  opened: boolean;
   priorityRank?: number;
   unread: boolean;
 }) {
-  const showStatusIndicator = unread || actionNeeded;
+  const showStatusIndicator = unread || (actionNeeded && !opened);
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
