@@ -949,7 +949,13 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 }
 
 export async function getBillDetailWithLiveData(billId: string): Promise<BillDetailData | null> {
-  return (await getDatabaseBillDetailData(billId)) ?? getDemoBillDetailData(billId);
+  const demoDetail = getDemoBillDetailData(billId);
+
+  if (billId.startsWith("demo-") && demoDetail) {
+    return demoDetail;
+  }
+
+  return (await getDatabaseBillDetailData(billId)) ?? demoDetail;
 }
 
 export function getBillStatus(bill: Bill) {
