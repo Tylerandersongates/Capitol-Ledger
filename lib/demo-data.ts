@@ -82,6 +82,24 @@ const memberRecords: Member[] = [
     description: "Senator from California included for state-based tester onboarding and search filtering."
   },
   {
+    bioguideId: "FCA030",
+    firstName: "Laura",
+    lastName: "Friedman",
+    fullName: "Rep. Laura Friedman",
+    party: "Democrat",
+    state: "CA",
+    district: "30",
+    chamber: "House",
+    active: true,
+    term: "119th Congress",
+    termsInOffice: 1,
+    firstElectedDate: "2024-11-05",
+    nextElectionDate: "2026-11-03",
+    officialUrl: "https://friedman.house.gov/",
+    sourceUrl: "https://friedman.house.gov/",
+    description: "House member from California's 30th District included for Montrose, Glendale, and CA-30 beta district matching."
+  },
+  {
     bioguideId: "G000585",
     firstName: "Jimmy",
     lastName: "Gomez",

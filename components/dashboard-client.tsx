@@ -120,7 +120,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const committeePercent = data.billsInAction ? (data.statusCounts.inCommittee / data.billsInAction) * 100 : 0;
   const inProgressPercent = data.billsInAction ? (inProgressCount / data.billsInAction) * 100 : 0;
   const impactCategories = useMemo(() => getImpactActions(gamificationSnapshot.eventCounts), [gamificationSnapshot.eventCounts]);
-  const resolvedFavoriteItems = useMemo(() => resolveDashboardFavorites(favoriteRecords, data.favoriteTargets), [data.favoriteTargets, favoriteRecords]);
+  const resolvedFavoriteItems = useMemo(
+    () => resolveDashboardFavorites(favoriteRecords, data.favoriteTargets, accountProfile),
+    [accountProfile, data.favoriteTargets, favoriteRecords]
+  );
   const favoriteItems = resolvedFavoriteItems.slice(0, 3);
   const suggestedFavorites = useMemo(() => getSuggestedDashboardFavorites(data.favoriteTargets, favoriteRecords, accountProfile).slice(0, 2), [accountProfile, data.favoriteTargets, favoriteRecords]);
   const visibleFavorites = favoriteItems.length ? favoriteItems : suggestedFavorites;
@@ -148,6 +151,15 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       window.removeEventListener("pageshow", refreshFromAccount);
     };
   }, []);
+
+  useEffect(() => {
+    if (!accountProfile?.districtCode) return;
+
+    const next = mergeDistrictDelegationFavoriteRecords(favoriteRecords, data.favoriteTargets, accountProfile);
+    if (favoriteRecordsMatch(favoriteRecords, next)) return;
+
+    setFavoriteRecords(writeDashboardFavoriteRecords(next));
+  }, [accountProfile, data.favoriteTargets, favoriteRecords]);
 
   useEffect(() => {
     let active = true;
@@ -858,17 +870,25 @@ function districtNumberFromCode(code?: string) {
 }
 
 function getFederalDelegationMemberIds(targets: DashboardData["favoriteTargets"], profile: AccountProfileSnapshot | null) {
+  return new Set(getFederalDelegationMembers(targets, profile).map((member) => member.bioguideId));
+}
+
+function getFederalDelegationMembers(targets: DashboardData["favoriteTargets"], profile: AccountProfileSnapshot | null) {
   const stateCode = stateCodeFromDistrictCode(profile?.districtCode);
-  if (!stateCode) return new Set<string>();
+  if (!stateCode) return [];
 
   const districtNumber = districtNumberFromCode(profile?.districtCode);
   const stateMembers = targets.members.filter((member) => member.state === stateCode);
+  const exactRepresentative = districtNumber
+    ? stateMembers.find((member) => member.chamber === "House" && member.district === districtNumber)
+    : undefined;
 
-  return new Set(
-    stateMembers
-      .filter((member) => member.chamber === "Senate" || (Boolean(districtNumber) && member.chamber === "House" && member.district === districtNumber))
-      .map((member) => member.bioguideId)
-  );
+  return [
+    ...(exactRepresentative ? [exactRepresentative] : []),
+    ...stateMembers
+      .filter((member) => member.chamber === "Senate")
+      .sort((left, right) => left.fullName.localeCompare(right.fullName))
+  ];
 }
 
 function resolveDashboardVoteFeed(
@@ -934,11 +954,19 @@ function toggleDashboardFavoriteRecord(record: SavedFollowRecord) {
   return writeDashboardFavoriteRecords(next);
 }
 
-function resolveDashboardFavorites(records: SavedFollowRecord[], targets: DashboardData["favoriteTargets"]) {
+function resolveDashboardFavorites(records: SavedFollowRecord[], targets: DashboardData["favoriteTargets"], profile: AccountProfileSnapshot | null) {
   const memberMap = new Map(targets.members.map((member) => [member.bioguideId, member]));
   const billMap = new Map(targets.bills.map((bill) => [bill.id, bill]));
+  const delegationItems = getFederalDelegationMembers(targets, profile).map<DashboardFavoriteItem>((member) => ({
+    href: `/members/${member.bioguideId}`,
+    id: member.bioguideId,
+    label: member.fullName,
+    meta: `${member.chamber} / ${member.state} / ${member.party}`,
+    type: "member"
+  }));
+  const delegationKeys = new Set(delegationItems.map((item) => favoriteRecordKey({ id: item.id, type: item.type })));
 
-  return uniqueFavoriteRecords(records).map<DashboardFavoriteItem>((record) => {
+  const savedItems = uniqueFavoriteRecords(records).map<DashboardFavoriteItem>((record) => {
     if (record.type === "member") {
       const member = memberMap.get(record.id);
 
@@ -961,6 +989,21 @@ function resolveDashboardFavorites(records: SavedFollowRecord[], targets: Dashbo
       type: "bill"
     };
   });
+
+  return [...delegationItems, ...savedItems.filter((item) => !delegationKeys.has(favoriteRecordKey({ id: item.id, type: item.type })))];
+}
+
+function mergeDistrictDelegationFavoriteRecords(
+  records: SavedFollowRecord[],
+  targets: DashboardData["favoriteTargets"],
+  profile: AccountProfileSnapshot | null
+) {
+  const delegationRecords = getFederalDelegationMembers(targets, profile).map<SavedFollowRecord>((member) => ({
+    id: member.bioguideId,
+    type: "member"
+  }));
+
+  return uniqueFavoriteRecords([...delegationRecords, ...records]);
 }
 
 function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"], records: SavedFollowRecord[], profile: AccountProfileSnapshot | null) {
@@ -1055,16 +1098,18 @@ async function syncDashboardFavoriteRecordsToAccount(records: SavedFollowRecord[
 }
 
 async function hydrateDashboardFavoriteRecords() {
-  if (!(await hasActiveBrowserSession())) return [];
-
   const local = readDashboardFavoriteRecords();
+  if (!(await hasActiveBrowserSession())) return local;
+
   const ledger = await readDashboardAccountLedger();
 
-  if (!ledger) return [];
+  if (!ledger) return local;
 
   const accountFavorites = uniqueFavoriteRecords(ledger.follows);
-  if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false);
-  return accountFavorites;
+  const mergedFavorites = uniqueFavoriteRecords([...local, ...accountFavorites]);
+  if (!favoriteRecordsMatch(local, mergedFavorites)) writeDashboardFavoriteRecords(mergedFavorites, false);
+  if (!favoriteRecordsMatch(accountFavorites, mergedFavorites)) void syncDashboardFavoriteRecordsToAccount(mergedFavorites);
+  return mergedFavorites;
 }
 
 function countAccountUnreadAlertIds(ledger: AccountLedgerSnapshot | null) {

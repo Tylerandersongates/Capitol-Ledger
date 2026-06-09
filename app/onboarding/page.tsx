@@ -74,7 +74,7 @@ export default function OnboardingPage() {
 
               <OnboardingCard>
                 <OnboardingSectionHeader icon={<LocateFixed />} title="Find Your District" />
-                <OnboardingDistrictSetup />
+                <OnboardingDistrictSetup members={allMembers} />
               </OnboardingCard>
 
               <OnboardingCard>
