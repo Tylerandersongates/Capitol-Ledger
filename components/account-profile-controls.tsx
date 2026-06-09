@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
+import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LocateFixed, Loader2, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
@@ -72,6 +72,17 @@ const stateNameByCode: Record<string, string> = {
 };
 
 const demoZipExamples = betaDistrictZipExamples.slice(0, 4).join(", ");
+const demoDistrictLocations: Array<{ latitude: number; longitude: number; preset: BetaDistrictPreset }> = [
+  { latitude: 34.0522, longitude: -118.2437, preset: betaDistrictPresets[0] },
+  { latitude: 34.2068, longitude: -118.2245, preset: betaDistrictPresets[1] },
+  { latitude: 42.4184, longitude: -71.1062, preset: betaDistrictPresets[2] },
+  { latitude: 42.3601, longitude: -71.0589, preset: betaDistrictPresets[3] },
+  { latitude: 40.8467, longitude: -73.8648, preset: betaDistrictPresets[4] },
+  { latitude: 30.2672, longitude: -97.7431, preset: betaDistrictPresets[5] },
+  { latitude: 29.7604, longitude: -95.3698, preset: betaDistrictPresets[6] },
+  { latitude: 32.7767, longitude: -96.797, preset: betaDistrictPresets[7] }
+];
+const demoLocationMatchRadiusMiles = 55;
 
 function districtProfileFromPreset(preset: BetaDistrictPreset): Required<LocalDistrictProfile> {
   return {
@@ -89,6 +100,23 @@ function normalizeDistrictCode(code: string) {
 
 function removeDistrictCode(value: string) {
   return value.replace(/\s*[-·]\s*[A-Z]{2}-0?\d{1,2}/i, "").trim();
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function distanceInMiles(left: { latitude: number; longitude: number }, right: { latitude: number; longitude: number }) {
+  const earthRadiusMiles = 3958.8;
+  const latitudeDelta = degreesToRadians(right.latitude - left.latitude);
+  const longitudeDelta = degreesToRadians(right.longitude - left.longitude);
+  const leftLatitude = degreesToRadians(left.latitude);
+  const rightLatitude = degreesToRadians(right.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(leftLatitude) * Math.cos(rightLatitude) * Math.sin(longitudeDelta / 2) * Math.sin(longitudeDelta / 2);
+
+  return 2 * earthRadiusMiles * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
 function buildDistrictMatch(input: string): DistrictMatchResult {
@@ -154,6 +182,27 @@ function buildDistrictMatch(input: string): DistrictMatchResult {
 
   return {
     message: `No beta district match yet. Try a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+    status: "review"
+  };
+}
+
+function buildDistrictMatchFromCoordinates(latitude: number, longitude: number): DistrictMatchResult {
+  const nearest = demoDistrictLocations
+    .map((location) => ({
+      distance: distanceInMiles({ latitude, longitude }, location),
+      preset: location.preset
+    }))
+    .sort((left, right) => left.distance - right.distance)[0];
+
+  if (nearest && nearest.distance <= demoLocationMatchRadiusMiles) {
+    return {
+      district: districtProfileFromPreset(nearest.preset),
+      status: "matched"
+    };
+  }
+
+  return {
+    message: `Current location is outside the beta district set. Try a city, district code, or demo ZIP such as ${demoZipExamples}; full launch should use official address-level district lookup.`,
     status: "review"
   };
 }
@@ -226,6 +275,7 @@ export function AccountDistrictSettingRow() {
 export function OnboardingDistrictSetup() {
   const district = useDistrictProfile();
   const [districtInput, setDistrictInput] = useState("");
+  const [locationLookupStatus, setLocationLookupStatus] = useState<"idle" | "locating">("idle");
   const [matchedDistrict, setMatchedDistrict] = useState(defaultDistrictProfile);
   const [matchNotice, setMatchNotice] = useState<{ detail: string; title: string; tone: "review" | "success" } | null>(null);
 
@@ -233,11 +283,11 @@ export function OnboardingDistrictSetup() {
     setMatchedDistrict(district);
   }, [district]);
 
-  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>) {
+  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>, detail = `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`) {
     setMatchedDistrict(nextDistrict);
     setDistrictInput("");
     setMatchNotice({
-      detail: `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`,
+      detail,
       title: "District saved",
       tone: "success"
     });
@@ -258,6 +308,48 @@ export function OnboardingDistrictSetup() {
     }
 
     saveDistrict(result.district);
+  }
+
+  function matchCurrentLocation() {
+    if (!navigator.geolocation) {
+      setMatchNotice({
+        detail: `Location lookup is not available in this browser. Enter a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+        title: "Location unavailable",
+        tone: "review"
+      });
+      return;
+    }
+
+    setLocationLookupStatus("locating");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationLookupStatus("idle");
+        const result = buildDistrictMatchFromCoordinates(position.coords.latitude, position.coords.longitude);
+        if (result.status === "review") {
+          setMatchNotice({
+            detail: result.message,
+            title: "Check district",
+            tone: "review"
+          });
+          return;
+        }
+
+        saveDistrict(result.district, `${districtPlaceLabel(result.district)} matched from your current location. Precise coordinates were not saved.`);
+      },
+      () => {
+        setLocationLookupStatus("idle");
+        setMatchNotice({
+          detail: "Location permission was not used. You can still enter a city, ZIP, or district code.",
+          title: "Location skipped",
+          tone: "review"
+        });
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 600000,
+        timeout: 10000
+      }
+    );
   }
 
   const matchedStateCode = matchedDistrict.districtCode.slice(0, 2);
@@ -293,6 +385,23 @@ export function OnboardingDistrictSetup() {
           <button type="submit" className="h-10 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)]">
             Match
           </button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={matchCurrentLocation}
+            disabled={locationLookupStatus === "locating"}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/[0.07] disabled:cursor-wait disabled:text-white/46"
+          >
+            {locationLookupStatus === "locating" ? (
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.9} aria-hidden="true" />
+            ) : (
+              <LocateFixed className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+            )}
+            {locationLookupStatus === "locating" ? "Locating" : "Use current location"}
+          </button>
+          <span className="min-w-[11rem] flex-1 text-[11px] leading-snug text-white/44">Browser permission only; precise coordinates are not stored.</span>
         </div>
 
         {matchNotice ? (
