@@ -801,7 +801,7 @@ function Field({
 function PasswordVisibilityButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} aria-label={label} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/54 transition hover:bg-white/8 hover:text-white">
-      {active ? <EyeOff className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" /> : <Eye className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
+      {active ? <Eye className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" /> : <EyeOff className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
     </button>
   );
 }
