@@ -10,6 +10,7 @@ import {
   Map,
   ShieldCheck,
   UserPlus,
+  Settings,
   UserRound,
   UsersRound
 } from "lucide-react";
@@ -271,7 +272,7 @@ export default function TeamWorkspacePage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { active: true, href: "/map", icon: <Map />, label: "Map" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

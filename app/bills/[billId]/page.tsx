@@ -2,6 +2,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { BillStanceControl } from "@/components/bill-stance-controls";
 import { GamificationEventAnchor } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
@@ -31,16 +32,12 @@ import {
   Share2,
   Sparkles,
   UsersRound,
+  Settings,
   UserRound,
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
-import {
-  getBillDetailWithLiveData,
-  getBillSummary,
-  getBillStatus,
-  getVoteTotals
-} from "@/lib/data";
+import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillSourceMatch, BillVideo, Member, Vote, VotePosition } from "@/types/capitol";
@@ -397,7 +394,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
           { active: true, href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>
@@ -559,9 +556,9 @@ function AiPointGroup({ points, title, tone }: { points: string[]; title: string
 
 function ScrollableTextBox({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`mt-5 max-h-32 overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-4 leading-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
+    <MobileGlassScrollFrame heightClassName="max-h-32" className={`px-4 py-4 leading-6 ${className}`}>
       <p className="whitespace-pre-line">{children}</p>
-    </div>
+    </MobileGlassScrollFrame>
   );
 }
 
@@ -758,7 +755,7 @@ function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {
       <div className="min-w-0">
         <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Cosponsors</div>
         {cosponsors.length ? (
-          <div className="mt-1 flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <MobileGlassScrollFrame axis="horizontal" ariaLabel="Cosponsors" frameClassName="mt-1" className="flex gap-2">
             {cosponsors.map((member) => (
               <Link
                 key={member.bioguideId}
@@ -770,7 +767,7 @@ function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/42" aria-hidden="true" />
               </Link>
             ))}
-          </div>
+          </MobileGlassScrollFrame>
         ) : (
           <div className="mt-1 truncate text-[16px] font-semibold leading-tight text-white">No cosponsors listed</div>
         )}
@@ -792,11 +789,11 @@ function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) 
           <ShieldCheck className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <div className="mt-5 flex h-[248px] snap-y snap-mandatory flex-col gap-3 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <MobileGlassScrollFrame heightClassName="h-[248px]" className="flex snap-y snap-mandatory flex-col gap-3">
         {sourceMatches.map((match) => (
           <SourceMatchRow key={match.id} match={match} />
         ))}
-      </div>
+      </MobileGlassScrollFrame>
       {sourceMatches.length > 1 ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
           <span>Scroll sources</span>

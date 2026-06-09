@@ -16,7 +16,7 @@ import {
   Home,
   Landmark,
   UserCircle,
-  UserRound
+  Settings
 } from "lucide-react";
 import { getAllMembers, getDashboardData } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
@@ -107,7 +107,7 @@ export default function AlertDetailPage() {
                 { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
                 { href: "/search", icon: <CheckCircle2 />, label: "Track" },
                 { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
-                { href: "/account", icon: <UserRound />, label: "Profile" }
+                { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
     </MobileShell>

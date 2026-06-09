@@ -12,11 +12,18 @@ import {
   Map,
   ShieldCheck,
   Sparkles,
-  UserRound
+  Settings
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
-import { BillingCycleToggle, PlanActionButton, PlanPrice, SubscriptionDemoSwitcher, TeamWorkspacePreview } from "@/components/subscription-controls";
+import {
+  BillingCycleToggle,
+  PlanActionButton,
+  PlanPrice,
+  SubscriptionDemoSwitcher,
+  TeamWorkspacePreview
+} from "@/components/subscription-controls";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
 import type { SubscriptionPlanId } from "@/types/capitol";
 
@@ -44,7 +51,7 @@ export default function UpgradePage() {
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
         <h1 className="text-[30px] font-medium leading-none text-white">Upgrade</h1>
-        <Link href="/account" className={`absolute right-0 ${mobileIconButtonClass}`} aria-label="Open account">
+        <Link href="/profile" className={`absolute right-0 ${mobileIconButtonClass}`} aria-label="Open profile">
           <Crown className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
         </Link>
       </header>
@@ -125,7 +132,7 @@ export default function UpgradePage() {
                 <ChevronRight className="h-5 w-5 text-white/42 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
               </span>
             </summary>
-            <div className={`mt-5 max-h-[250px] overflow-y-auto overscroll-contain ${premiumPanelClass} p-3 pb-4`}>
+            <MobileGlassScrollFrame className="p-3 pb-4">
               <div className="grid grid-cols-[1fr_44px_44px_44px] gap-2 pb-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-white/42">
                 <span className="text-left">Feature</span>
                 <span>Free</span>
@@ -142,7 +149,7 @@ export default function UpgradePage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </MobileGlassScrollFrame>
           </details>
         </MobileCard>
       </main>
@@ -153,7 +160,7 @@ export default function UpgradePage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/map", icon: <Map />, label: "Map" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+          { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

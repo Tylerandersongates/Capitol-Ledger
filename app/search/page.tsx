@@ -1,4 +1,5 @@
 import { MobileShell } from "@/components/mobile-shell";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { DiscoverySearchForm } from "@/components/discovery-search-form";
@@ -17,7 +18,7 @@ import {
   ArrowLeft,
   Search,
   Sparkles,
-  UserRound,
+  Settings,
   Vote
 } from "lucide-react";
 import { getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
@@ -251,7 +252,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
                 { active: true, href: "/search", icon: <Search />, label: "Search" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
-                { href: "/account", icon: <UserRound />, label: "Profile" }
+                { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
     </MobileShell>
@@ -499,15 +500,13 @@ function ResultSection({
           </Link>
         )}
       </div>
-      <div
-        className={`space-y-3 ${
-          expanded && count > 2
-            ? "max-h-[19rem] overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            : ""
-        }`}
-      >
-        {children}
-      </div>
+      {expanded && count > 2 ? (
+        <MobileGlassScrollFrame heightClassName="max-h-[19rem]" className="space-y-3">
+          {children}
+        </MobileGlassScrollFrame>
+      ) : (
+        <div className="space-y-3">{children}</div>
+      )}
       {expanded && count > 2 ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
           <span>Scroll records</span>

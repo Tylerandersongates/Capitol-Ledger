@@ -16,6 +16,7 @@ import {
   Link2,
   Search,
   ShieldCheck,
+  Settings,
   UserRound,
   UsersRound,
   Vote
@@ -150,7 +151,7 @@ export default function VoteDetailPage({ params }: VotePageProps) {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { active: true, href: "/search?type=votes", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

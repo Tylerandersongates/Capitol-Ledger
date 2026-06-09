@@ -1,7 +1,19 @@
 import Link from "next/link";
-import { ArrowLeft, Bell, CheckCircle2, ClipboardCheck, FileText, Home, MessageSquarePlus, Search, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  CheckCircle2,
+  ClipboardCheck,
+  FileText,
+  Home,
+  MessageSquarePlus,
+  Search,
+  ShieldCheck,
+  Settings
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { MobileShell } from "@/components/mobile-shell";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 
 const testerTasks = [
@@ -119,7 +131,7 @@ export default function BetaTesterPage() {
             title="Checklist"
           />
 
-          <div className={`mt-5 max-h-[430px] overflow-y-auto overscroll-contain ${premiumPanelClass} divide-y divide-white/8 p-2 pb-3`}>
+          <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="divide-y divide-white/8">
             {testerTasks.map((task, index) => (
               <div key={task.title} className="py-4 first:pt-2 last:pb-1">
                 <div className="grid grid-cols-[34px_1fr_auto] items-start gap-3">
@@ -140,7 +152,7 @@ export default function BetaTesterPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </MobileGlassScrollFrame>
         </MobileCard>
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -186,7 +198,7 @@ export default function BetaTesterPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+          { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

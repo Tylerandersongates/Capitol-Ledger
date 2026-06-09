@@ -1,11 +1,25 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MemberEmailAction } from "@/components/member-email-action";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Bell, BriefcaseBusiness, ChevronRight, ExternalLink, FileText, Home, Landmark, Search, ShieldCheck, UserRound, Vote as VoteIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  BriefcaseBusiness,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Home,
+  Landmark,
+  Search,
+  ShieldCheck,
+  Settings,
+  Vote as VoteIcon
+} from "lucide-react";
 import { getMemberDetailWithLiveData, type MemberCaucusMembership, type MemberVoteRecord } from "@/lib/data";
 import { calculateMemberScore, type MemberScoreModel } from "@/lib/member-scoring";
 import { getCurrentSession } from "@/lib/auth";
@@ -565,7 +579,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
                 { href: "/search?type=bills", icon: <FileText />, label: "Track" },
                 { highlighted: true, href: "/search?type=members", icon: <Search />, label: "Search" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
-                { href: "/account", icon: <UserRound />, label: "Profile" }
+                { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
     </MobileShell>
@@ -760,7 +774,7 @@ function OverviewTab({
           eyebrow="Constituent Alignment"
           title={`${scoreModel.constituentAlignment.viewerState} issue match`}
         />
-        <div className="mt-5 max-h-[260px] snap-y snap-mandatory space-y-4 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <MobileGlassScrollFrame heightClassName="max-h-[260px]" className="snap-y snap-mandatory space-y-4">
           {scoreModel.constituentAlignment.components.map((component) => (
             <div key={component.label} className={`snap-start ${premiumPanelClass} px-4 py-4`}>
               <div className="flex items-center justify-between gap-3">
@@ -773,17 +787,17 @@ function OverviewTab({
               <p className="mt-2 text-[13px] leading-snug text-white/50">{component.detail}</p>
             </div>
           ))}
-        </div>
+        </MobileGlassScrollFrame>
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-[16px] font-medium text-white">By topic</h3>
             <span className={premiumPillClass}>{scoreModel.constituentAlignment.topics.length} topics</span>
           </div>
-          <div className="mt-4 max-h-[410px] snap-y snap-mandatory space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[410px]" className="snap-y snap-mandatory space-y-3">
             {scoreModel.constituentAlignment.topics.map((topic) => (
               <TopicMathCard key={topic.topic} topic={topic} />
             ))}
-          </div>
+          </MobileGlassScrollFrame>
         </div>
         <p className="mt-4 text-[12px] leading-snug text-white/46">{scoreModel.constituentAlignment.note}</p>
       </MobileCard>
@@ -810,7 +824,7 @@ function OverviewTab({
             <div className="text-[15px] font-medium text-white">Evidence details</div>
             <span className={premiumPillClass}>{scoreModel.factors.length} inputs</span>
           </div>
-          <div className="mt-3 max-h-[330px] snap-y snap-mandatory space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[330px]" className="snap-y snap-mandatory space-y-3">
             {scoreModel.factors.map((factor) => (
               <div key={`${factor.key}-method`} className="snap-start rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                 <div className="flex items-center justify-between gap-3">
@@ -821,7 +835,7 @@ function OverviewTab({
                 <div className="mt-2 text-[12px] text-[#ffb12b]/82">{factor.evidence}</div>
               </div>
             ))}
-          </div>
+          </MobileGlassScrollFrame>
         </div>
       </MobileCard>
     </>
@@ -1109,7 +1123,7 @@ function CommitteesTab({
             eyebrow="Affiliations"
             title="Caucuses & Roles"
           />
-          <div className="mt-5 max-h-[430px] space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
             {caucusMemberships.map((membership) => (
               <a
                 key={`${membership.caucusName}-${membership.role}`}
@@ -1130,7 +1144,7 @@ function CommitteesTab({
                 </div>
               </a>
             ))}
-          </div>
+          </MobileGlassScrollFrame>
         </MobileCard>
       ) : null}
     </>

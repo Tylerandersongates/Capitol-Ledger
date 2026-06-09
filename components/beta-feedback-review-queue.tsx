@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ClipboardCheck, Download, MessageSquarePlus } from "lucide-react";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileCard } from "@/components/mobile-ui";
 import type { BetaFeedbackRecord, BetaFeedbackReleaseDecision, BetaFeedbackStatus } from "@/lib/beta-feedback";
 
@@ -167,7 +168,7 @@ export function BetaFeedbackReviewQueue({
           <span className="text-[13px] font-medium text-white/42">{filteredRecords.length} shown</span>
         </div>
 
-        <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <MobileGlassScrollFrame axis="horizontal" ariaLabel="Feedback filters" frameClassName="">
           <div className="flex min-w-max gap-2">
             {feedbackFilters.map((filter) => (
               <button
@@ -182,7 +183,7 @@ export function BetaFeedbackReviewQueue({
               </button>
             ))}
           </div>
-        </div>
+        </MobileGlassScrollFrame>
 
         <div className="grid grid-cols-2 gap-2">
           <button

@@ -15,11 +15,28 @@ import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CalendarClock, ChevronRight, FileText, Home, LockKeyhole, Sparkles, Star, UserRound, UsersRound } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  ChevronRight,
+  FileText,
+  Home,
+  LockKeyhole,
+  Sparkles,
+  Star,
+  Settings,
+  UserRound,
+  UsersRound
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 import type { getDashboardData } from "@/lib/data";
-import type { AccountLedgerSnapshot, AccountProfileSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
+import type {
+  AccountLedgerSnapshot,
+  AccountProfileSnapshot,
+  FollowTargetType,
+  SavedFollowRecord
+} from "@/types/capitol";
 
 type DashboardData = ReturnType<typeof getDashboardData>;
 type DashboardFavoriteItem = {
@@ -74,7 +91,7 @@ function getBillTrackerStagePill(stage: BillTrackerStage) {
 }
 
 export function DashboardClient({ data }: { data: DashboardData }) {
-  const [unreadAlertCount, setUnreadAlertCount] = useState(0);
+  const [, setUnreadAlertCount] = useState(0);
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>([]);
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
@@ -108,7 +125,6 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const suggestedFavorites = useMemo(() => getSuggestedDashboardFavorites(data.favoriteTargets, favoriteRecords, accountProfile).slice(0, 2), [accountProfile, data.favoriteTargets, favoriteRecords]);
   const visibleFavorites = favoriteItems.length ? favoriteItems : suggestedFavorites;
   const showingSavedFavorites = favoriteItems.length > 0;
-  const alertInboxHref = unreadAlertCount > 0 ? "/alerts?filter=unread" : "/alerts";
 
   useEffect(() => {
     let active = true;
@@ -231,16 +247,11 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 </div>
               </div>
               <Link
-                href={alertInboxHref}
+                href="/profile"
                 className={`relative ${mobileIconButtonClass}`}
-                aria-label={unreadAlertCount > 0 ? `Open ${unreadAlertCount} unread alerts` : "Open alerts"}
+                aria-label="Open profile"
               >
-                <Bell className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
-                {unreadAlertCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ffb12b] px-1 text-[11px] font-semibold leading-none text-[#061126]">
-                    {Math.min(unreadAlertCount, 9)}
-                  </span>
-                ) : null}
+                <UserRound className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
               </Link>
             </header>
 
@@ -717,7 +728,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
                 { href: "/search?type=members", icon: <UsersRound />, label: "Representatives" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
-                { href: "/account", icon: <UserRound />, label: "Profile" }
+                { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
     </MobileShell>

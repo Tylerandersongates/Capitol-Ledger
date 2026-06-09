@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
@@ -110,7 +111,7 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
       </div>
 
       {editing ? (
-        <div className="mt-3 max-h-[154px] overflow-y-auto rounded-2xl border border-white/10 bg-[#071a38]/62 p-2">
+        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[154px]">
           <div className="flex flex-wrap gap-2">
             {issueSignals.map((interest) => {
               const active = selectedInterestSet.has(interest);
@@ -131,11 +132,11 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
               );
             })}
           </div>
-        </div>
+        </MobileGlassScrollFrame>
       ) : (
-        <div className="mt-3 overflow-x-auto overflow-y-hidden pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Setup-based search shortcuts">
+        <MobileGlassScrollFrame axis="horizontal" ariaLabel="Setup-based search shortcuts" frameClassName="mt-3">
           {chips.length ? (
-            <div className="grid auto-cols-max grid-flow-col grid-rows-2 gap-2">
+            <div className="grid w-max auto-cols-max grid-flow-col grid-rows-2 gap-2">
               {chips.map((chip) => (
                 <Link
                   key={chip.id}
@@ -155,7 +156,7 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
               No saved issue interests yet. Tap Edit interests to add topics here.
             </div>
           )}
-        </div>
+        </MobileGlassScrollFrame>
       )}
     </div>
   );

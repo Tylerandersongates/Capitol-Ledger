@@ -3,7 +3,7 @@ import { LettersSentClient } from "@/components/letters-sent-client";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import Link from "next/link";
-import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Mail, Settings } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,7 +50,7 @@ export default function LettersPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { active: true, href: "/letters", icon: <CheckCircle2 />, label: "Track" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

@@ -11,7 +11,7 @@ const navItems = [
   { href: "/map", label: "Map", icon: Map },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/upgrade", label: "Pro", icon: Crown },
-  { href: "/account", label: "Account", icon: UserRound }
+  { href: "/profile", label: "Profile", icon: UserRound }
 ];
 
 export function SiteHeader() {
@@ -27,6 +27,8 @@ export function SiteHeader() {
     pathname === "/upgrade" ||
     pathname === "/search" ||
     pathname === "/account" ||
+    pathname === "/profile" ||
+    pathname === "/settings" ||
     pathname === "/beta" ||
     pathname.startsWith("/feedback") ||
     pathname === "/onboarding" ||

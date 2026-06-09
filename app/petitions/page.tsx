@@ -14,7 +14,7 @@ import {
 import { civicPetitions } from "@/lib/civic-petitions";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Megaphone, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Megaphone, Settings } from "lucide-react";
 
 export default function PetitionsPage() {
   const snapshot = useGamificationSnapshot();
@@ -143,7 +143,7 @@ export default function PetitionsPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <CheckCircle2 />, label: "Track" },
           { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Bell, FileText, Home, Scale, Search, Sparkles, UserRound } from "lucide-react";
+import { ArrowRight, Bell, FileText, Home, Scale, Search, Sparkles, Settings, UserRound } from "lucide-react";
 import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PlanFeatureGate, useSubscriptionState } from "@/components/subscription-controls";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
@@ -11,6 +11,7 @@ import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import {
   accountProfileChangedEvent,
+  defaultNotificationPreferences,
   fetchAccountProfile,
   readLocalNotificationPreferences,
   writeLocalNotificationPreferences
@@ -198,7 +199,7 @@ export function AlertsInboxClient({
 }) {
   const [subscription] = useSubscriptionState();
   const [readIds, setReadIds] = useState<string[]>([]);
-  const [notificationPreferences, setNotificationPreferences] = useState(() => readLocalNotificationPreferences());
+  const [notificationPreferences, setNotificationPreferences] = useState(defaultNotificationPreferences);
   const priorityAlertsEnabled = isPlanFeatureEnabled(subscription.plan, "priorityAlerts");
 
   useEffect(() => {
@@ -365,7 +366,7 @@ export function AlertsInboxClient({
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Track" },
           { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </>
@@ -408,6 +409,8 @@ function NotificationCard({
   priorityRank?: number;
   unread: boolean;
 }) {
+  const showStatusIndicator = unread || actionNeeded;
+
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
       <Link href={href} onClick={onRead} className="flex items-start gap-3">
@@ -423,7 +426,7 @@ function NotificationCard({
                   #{priorityRank}
                 </span>
               ) : null}
-              {unread ? <span className="h-2 w-2 rounded-full bg-[#ffb12b] shadow-[0_0_12px_rgba(255,177,43,0.8)]" aria-label="Unread" /> : null}
+              {showStatusIndicator ? <span className="h-2 w-2 rounded-full bg-[#ffb12b] shadow-[0_0_12px_rgba(255,177,43,0.8)]" aria-label={unread ? "Unread" : "Action needed"} /> : null}
             </div>
             <div className="shrink-0 whitespace-nowrap rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-3 py-2 text-[14px] font-medium leading-none text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]">
               {time}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { badgeIcon, badgeTones } from "@/components/gamification-ui";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
   gamificationChangedEvent,
   hydrateGamificationFromAccount
@@ -249,11 +250,11 @@ export function RecentAchievementsList() {
   return (
     <div className="mt-4">
       <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Latest unlocked badges</div>
-      <div className="mt-3 max-h-[172px] space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[172px]" className="space-y-2">
         {recentBadges.map((achievement) => (
           <RecentAchievementRow key={achievement.id} badge={achievement} />
         ))}
-      </div>
+      </MobileGlassScrollFrame>
     </div>
   );
 }
@@ -363,7 +364,7 @@ function MobileLevelPathShell({
         {nextLevel ? <span> · {pointsToNext.toLocaleString()} XP to Level {nextLevel}</span> : null}
       </div>
 
-      <div className="mt-4 max-h-[126px] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#071a38]/62 p-2 pb-3">
+      <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[126px]">
         <div className="divide-y divide-white/8">
           {civicLevelTiers.map((tier) => {
             const active = tier.level === currentLevel;
@@ -394,7 +395,7 @@ function MobileLevelPathShell({
             );
           })}
         </div>
-      </div>
+      </MobileGlassScrollFrame>
     </>
   );
 }

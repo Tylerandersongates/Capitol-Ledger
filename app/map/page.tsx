@@ -3,17 +3,7 @@ import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass 
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Bell,
-  Building2,
-  CheckCircle2,
-  ChevronRight,
-  Home,
-  Landmark,
-  Map,
-  UserRound,
-  UsersRound
-} from "lucide-react";
+import { Bell, Building2, CheckCircle2, ChevronRight, Home, Landmark, Map, Settings, UsersRound } from "lucide-react";
 import { getAllBills, getBillStatus, getDemoStats } from "@/lib/data";
 
 const levelFilters = [
@@ -238,7 +228,7 @@ export default function MapPage({ searchParams }: { searchParams?: { level?: str
                 { active: true, href: "/map", icon: <Map />, label: "Map" },
                 { href: "/search", icon: <CheckCircle2 />, label: "Track" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
-                { href: "/account", icon: <UserRound />, label: "Profile" }
+                { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
     </MobileShell>

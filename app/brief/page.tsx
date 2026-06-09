@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { ArrowLeft, Bell, CalendarClock, CheckCircle2, Crown, FileText, Home, LockKeyhole, MailCheck, Search, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  CalendarClock,
+  CheckCircle2,
+  Crown,
+  FileText,
+  Home,
+  LockKeyhole,
+  MailCheck,
+  Search,
+  Settings
+} from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { requireAccountSession } from "@/lib/route-guards";
@@ -137,7 +149,7 @@ export default async function WeeklyBriefPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+          { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>
@@ -196,7 +208,7 @@ function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+          { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell, BookmarkCheck, Check, Star } from "lucide-react";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
@@ -376,30 +377,55 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
         </div>
       ) : null}
 
-      <div className={compact ? "mt-5 flex flex-wrap gap-2" : "mt-5 max-h-[168px] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 pb-4"}>
-        <div className="flex flex-wrap gap-2">
-        {interests.map((interest) => {
-          const active = selected.includes(interest);
-          const disabled = !editing && !compact;
+      {compact ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {interests.map((interest) => {
+            const active = selected.includes(interest);
+            const disabled = !editing && !compact;
 
-          return (
-            <button
-              key={interest}
-              type="button"
-              onClick={() => toggleInterest(interest)}
-              disabled={disabled}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
-                active ? "border-[#ffb12b]/38 bg-[#ffb12b]/12 text-[#ffb12b]" : "border-white/12 bg-white/5 text-white/58"
-              } ${editing || compact ? "hover:border-[#ffb12b]/55 hover:bg-[#ffb12b]/10" : "cursor-default"}`}
-              aria-pressed={active}
-            >
-              {active ? <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
-              {interest}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={interest}
+                type="button"
+                onClick={() => toggleInterest(interest)}
+                disabled={disabled}
+                className={`rounded-full border px-3 py-2 text-[13px] font-medium transition disabled:cursor-default ${
+                  active
+                    ? "border-[#ffb12b]/34 bg-[#ffb12b]/14 text-[#ffcf54]"
+                    : "border-white/10 bg-white/[0.035] text-white/48"
+                }`}
+              >
+                {interest}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      ) : (
+        <MobileGlassScrollFrame heightClassName="max-h-[168px]" className="p-3 pb-4">
+          <div className="flex flex-wrap gap-2">
+            {interests.map((interest) => {
+              const active = selected.includes(interest);
+              const disabled = !editing && !compact;
+
+              return (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => toggleInterest(interest)}
+                  disabled={disabled}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
+                    active ? "border-[#ffb12b]/38 bg-[#ffb12b]/12 text-[#ffb12b]" : "border-white/12 bg-white/5 text-white/58"
+                  } ${editing || compact ? "hover:border-[#ffb12b]/55 hover:bg-[#ffb12b]/10" : "cursor-default"}`}
+                  aria-pressed={active}
+                >
+                  {active ? <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
+                  {interest}
+                </button>
+              );
+            })}
+          </div>
+        </MobileGlassScrollFrame>
+      )}
 
       {!compact ? (
         <div className="mt-4 flex items-center justify-between gap-4 text-[12px] text-white/42">

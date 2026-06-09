@@ -2,7 +2,7 @@ import { BetaFeedbackForm } from "@/components/beta-feedback-form";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import Link from "next/link";
-import { ArrowLeft, Bell, FileText, Home, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, FileText, Home, Search, Settings } from "lucide-react";
 
 export default function FeedbackPage() {
   return (
@@ -39,7 +39,7 @@ export default function FeedbackPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { active: true, href: "/account", icon: <UserRound />, label: "Profile" }
+          { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

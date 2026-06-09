@@ -14,7 +14,7 @@ import {
 import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Trophy, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, FileText, Home, Trophy, Settings } from "lucide-react";
 
 type BadgeFilter = "all" | "earned" | "locked";
 
@@ -229,7 +229,7 @@ function BadgesContent() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <CheckCircle2 />, label: "Track" },
           { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>

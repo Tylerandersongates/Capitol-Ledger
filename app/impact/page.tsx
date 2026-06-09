@@ -17,16 +17,7 @@ import { ElectionParticipationCard } from "@/components/election-participation-c
 import { VoterRegistrationCard } from "@/components/voter-registration-card";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Bell,
-  CheckCircle2,
-  FileText,
-  Flame,
-  Home,
-  Info,
-  UserRound
-} from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, FileText, Flame, Home, Info, Settings, UserRound } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -133,7 +124,7 @@ export default function ImpactPage() {
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
           { href: "/search", icon: <CheckCircle2 />, label: "Track" },
           { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
-          { href: "/account", icon: <UserRound />, label: "Profile" }
+          { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
     </MobileShell>
