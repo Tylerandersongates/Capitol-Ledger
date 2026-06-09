@@ -93,6 +93,7 @@ Current mode: included in beta testing.
 2. Triage subscription feedback before live billing work.
 3. Capture demo screenshots for Free, Pro Intelligence, and Civic Team after tester feedback settles.
 4. Prepare an investor-facing timed walkthrough based on `Subscription Demo Guide.md`.
+5. After beta testing, configure the new Stripe account for real checkout: create/check price IDs, add the Stripe secret key and webhook secret in Vercel, and keep the Stripe dashboard password/API key out of git.
 
 ### Phase 5: Core Civic Data Expansion
 
@@ -114,7 +115,7 @@ Goal: connect the outside services needed for paid production use.
 Estimated time: 3 to 7 days, depending on provider approvals.
 
 1. Run `backend:check` as the broad outside-service tracker.
-2. Configure Stripe live price IDs, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET`, then run `BILLING_REQUIRE_STRIPE=true billing:check`.
+2. Configure the new Stripe account after beta testing: add live price IDs, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` through Vercel environment variables, store the Stripe dashboard password securely outside the repo, then run `BILLING_REQUIRE_STRIPE=true billing:check`.
 3. Choose the Weekly Brief email/push provider bridge, configure the task secret and provider settings, then run `weekly-brief:check` and `weekly-brief:qa`.
 4. Add push notifications attached to alerts: provider choice, permission prompts, device token storage, alert-triggered sends, and preference/unsubscribe controls.
 5. Add remaining gamification triggers once product flows exist: petition signing, representative contact delivery, team invites, and civic learning actions.

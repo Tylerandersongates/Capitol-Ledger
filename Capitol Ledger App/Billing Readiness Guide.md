@@ -41,6 +41,8 @@ BILLING_REQUIRE_STRIPE=true pnpm billing:check
 
 Set `STRIPE_LIVE_MODE=true` only when the configured key and price IDs are live production Stripe values.
 
+Do not commit Stripe API keys, webhook secrets, or the Stripe dashboard password. Add keys through Vercel environment variables after beta testing, and keep the dashboard password in a secure password manager.
+
 ## Stripe Price Mapping
 
 - Pro monthly: `CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID`
