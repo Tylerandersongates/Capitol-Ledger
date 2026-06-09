@@ -31,6 +31,42 @@ select {
   font: inherit;
 }
 
+.auth-field-input {
+  appearance: none;
+  background: transparent !important;
+  color: #f4f8ff !important;
+  caret-color: #ffb12b;
+  color-scheme: dark;
+}
+
+.auth-field-input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+}
+
+.auth-field-input:-webkit-autofill,
+.auth-field-input:-webkit-autofill:hover,
+.auth-field-input:-webkit-autofill:focus,
+.auth-field-input:-webkit-autofill:active {
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 1000px rgba(3, 15, 34, 0.98) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(3, 15, 34, 0.98) inset !important;
+  -webkit-text-fill-color: #f4f8ff !important;
+  caret-color: #ffb12b;
+  transition: background-color 999999s ease-in-out 0s, color 999999s ease-in-out 0s;
+}
+
+.auth-field-input:autofill {
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 1000px rgba(3, 15, 34, 0.98) inset !important;
+  -webkit-text-fill-color: #f4f8ff !important;
+}
+
+.auth-field-input::-ms-reveal,
+.auth-field-input::-ms-clear {
+  display: none;
+}
+
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-brass focus:ring-offset-2 focus:ring-offset-ink;
 }

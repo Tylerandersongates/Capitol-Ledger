@@ -570,7 +570,7 @@ export function AuthFlowClient({
           ) : null}
 
           {mode !== "success" && mode !== "reset" ? (
-            <Field icon={<Mail />} label="Email" type="email" placeholder="you@example.com" value={form.email} onChange={(value) => updateField("email", value)} />
+            <Field icon={<Mail />} label="Email" type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={(value) => updateField("email", value)} />
           ) : null}
 
           {mode === "signIn" || mode === "create" || mode === "reset" ? (
@@ -578,6 +578,7 @@ export function AuthFlowClient({
               icon={<KeyRound />}
               label={mode === "reset" ? "New password" : "Password"}
               type={showPassword ? "text" : "password"}
+              autoComplete={mode === "signIn" ? "current-password" : "new-password"}
               placeholder={mode === "reset" ? "New password" : "Password"}
               trailing={
                 <PasswordVisibilityButton
@@ -596,6 +597,7 @@ export function AuthFlowClient({
               icon={<LockKeyhole />}
               label="Confirm password"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               placeholder={mode === "reset" ? "Confirm new password" : "Confirm password"}
               value={form.confirmPassword}
               onChange={(value) => updateField("confirmPassword", value)}
@@ -764,6 +766,7 @@ export function AuthFlowClient({
 }
 
 function Field({
+  autoComplete,
   icon,
   label,
   onChange,
@@ -772,6 +775,7 @@ function Field({
   type,
   value
 }: {
+  autoComplete?: string;
   icon: ReactElement;
   label: string;
   onChange: (value: string) => void;
@@ -786,11 +790,12 @@ function Field({
       <span className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
         <span className="text-[#ffb12b] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{icon}</span>
         <input
+          autoComplete={autoComplete}
           type={type}
           placeholder={placeholder}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-[16px] text-white outline-none placeholder:text-white/38"
+          className="auth-field-input min-w-0 flex-1 bg-transparent text-[16px] outline-none"
         />
         {trailing ? trailing : null}
       </span>
