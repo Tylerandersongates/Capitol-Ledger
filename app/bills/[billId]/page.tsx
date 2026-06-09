@@ -360,9 +360,9 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
       <main className="mt-7 space-y-5 pb-8">
         {activeTab === "overview" ? (
           <>
+            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
             <ProgressSummaryCard billId={bill.id} progressSteps={progressSteps} />
             <VoteBreakdownCard billId={bill.id} vote={billVote} voteTotals={voteTotals} />
-            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
           </>
         ) : null}
 
@@ -372,11 +372,11 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 
         {activeTab === "details" ? (
           <>
+            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens">
               <AiPolicyLensCard analysis={buildAiBillAnalysis(bill, billSummary.text)} />
             </PlanFeatureGate>
-            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
             <PlanFeatureGate feature="sourceMap">
               <SourceMapCard sourceMatches={sourceMatches} />
             </PlanFeatureGate>
