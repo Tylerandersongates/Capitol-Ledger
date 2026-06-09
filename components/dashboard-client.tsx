@@ -198,9 +198,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   useEffect(() => {
     let active = true;
 
-    async function refreshGamification() {
+    function refreshLocalGamification() {
+      recordCompletedDistrictSetupIfReady();
+      if (active) setGamificationSnapshot(readLocalGamificationSnapshot());
+    }
+
+    async function refreshAccountGamification() {
       const repairedBeforeHydration = recordCompletedDistrictSetupIfReady();
-      if (active && repairedBeforeHydration) setGamificationSnapshot(readLocalGamificationSnapshot());
+      if (active) setGamificationSnapshot(readLocalGamificationSnapshot());
 
       const next = await hydrateGamificationFromAccount();
       const repairedAfterHydration = recordCompletedDistrictSetupIfReady();
@@ -208,17 +213,19 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       if (active) setGamificationSnapshot(repairedSnapshot);
     }
 
-    void refreshGamification();
+    void refreshAccountGamification();
 
-    window.addEventListener("storage", refreshGamification);
-    window.addEventListener("focus", refreshGamification);
-    window.addEventListener(gamificationChangedEvent, refreshGamification);
+    window.addEventListener("storage", refreshLocalGamification);
+    window.addEventListener("focus", refreshAccountGamification);
+    window.addEventListener("pageshow", refreshAccountGamification);
+    window.addEventListener(gamificationChangedEvent, refreshLocalGamification);
 
     return () => {
       active = false;
-      window.removeEventListener("storage", refreshGamification);
-      window.removeEventListener("focus", refreshGamification);
-      window.removeEventListener(gamificationChangedEvent, refreshGamification);
+      window.removeEventListener("storage", refreshLocalGamification);
+      window.removeEventListener("focus", refreshAccountGamification);
+      window.removeEventListener("pageshow", refreshAccountGamification);
+      window.removeEventListener(gamificationChangedEvent, refreshLocalGamification);
     };
   }, []);
 

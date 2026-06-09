@@ -283,16 +283,16 @@ export function OnboardingDistrictSetup() {
     setMatchedDistrict(district);
   }, [district]);
 
-  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>, detail = `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`) {
+  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>, detailPrefix = `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`) {
     setMatchedDistrict(nextDistrict);
     setDistrictInput("");
+    writeLocalDistrictProfile(nextDistrict);
+    const awardedGamification = recordCompletedDistrictSetupIfReady();
     setMatchNotice({
-      detail,
+      detail: `${detailPrefix} ${awardedGamification ? "+100 Civic Score recorded." : "District setup reward already counted."}`,
       title: "District saved",
       tone: "success"
     });
-    writeLocalDistrictProfile(nextDistrict);
-    recordCompletedDistrictSetupIfReady();
     void syncAccountProfile(nextDistrict);
   }
 

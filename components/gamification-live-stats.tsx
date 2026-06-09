@@ -6,30 +6,39 @@ import { badgeIcon, badgeTones } from "@/components/gamification-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
   gamificationChangedEvent,
-  hydrateGamificationFromAccount
+  hydrateGamificationFromAccount,
+  readLocalGamificationSnapshot
 } from "@/lib/browser-gamification";
 import { civicLevelTiers, getBadgeCollections, getImpactActions, type GamificationBadge } from "@/lib/gamification";
-import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
+import type { AccountGamificationSnapshot } from "@/lib/account-gamification";
 
 export function useGamificationSnapshot() {
-  const [snapshot, setSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
+  const [snapshot, setSnapshot] = useState<AccountGamificationSnapshot>(() => readLocalGamificationSnapshot());
 
   useEffect(() => {
     let active = true;
 
-    async function refreshSnapshot() {
+    function refreshLocalSnapshot() {
+      if (active) setSnapshot(readLocalGamificationSnapshot());
+    }
+
+    async function refreshAccountSnapshot() {
       const next = await hydrateGamificationFromAccount();
       if (active) setSnapshot(next);
     }
 
-    void refreshSnapshot();
-    window.addEventListener("storage", refreshSnapshot);
-    window.addEventListener(gamificationChangedEvent, refreshSnapshot);
+    void refreshAccountSnapshot();
+    window.addEventListener("storage", refreshLocalSnapshot);
+    window.addEventListener(gamificationChangedEvent, refreshLocalSnapshot);
+    window.addEventListener("focus", refreshAccountSnapshot);
+    window.addEventListener("pageshow", refreshAccountSnapshot);
 
     return () => {
       active = false;
-      window.removeEventListener("storage", refreshSnapshot);
-      window.removeEventListener(gamificationChangedEvent, refreshSnapshot);
+      window.removeEventListener("storage", refreshLocalSnapshot);
+      window.removeEventListener(gamificationChangedEvent, refreshLocalSnapshot);
+      window.removeEventListener("focus", refreshAccountSnapshot);
+      window.removeEventListener("pageshow", refreshAccountSnapshot);
     };
   }, []);
 

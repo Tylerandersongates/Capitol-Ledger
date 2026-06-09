@@ -75,6 +75,31 @@ function gamificationSnapshotsMatch(left: AccountGamificationSnapshot, right: Ac
   return gamificationSignature(left) === gamificationSignature(right);
 }
 
+function mergeGamificationSnapshots(...snapshots: Partial<AccountGamificationSnapshot>[]) {
+  const eventCounts = new Map<GamificationEventType, number>();
+  const earnedBadgeIds = new Set<string>();
+  let dayStreak = 0;
+  let monthlyGain = 0;
+
+  snapshots.forEach((snapshot) => {
+    const normalized = normalizeAccountGamification(snapshot);
+    dayStreak = Math.max(dayStreak, normalized.dayStreak);
+    monthlyGain = Math.max(monthlyGain, normalized.monthlyGain);
+
+    normalized.eventCounts.forEach((record) => {
+      eventCounts.set(record.event, Math.max(eventCounts.get(record.event) ?? 0, record.count));
+    });
+    normalized.earnedBadgeIds.forEach((badgeId) => earnedBadgeIds.add(badgeId));
+  });
+
+  return normalizeAccountGamification({
+    dayStreak,
+    earnedBadgeIds: Array.from(earnedBadgeIds),
+    eventCounts: Array.from(eventCounts.entries()).map(([event, count]) => ({ event, count })),
+    monthlyGain
+  });
+}
+
 function deriveEarnedBadgeIdsForCounts(snapshot: AccountGamificationSnapshot, counts: Map<GamificationEventType, number>) {
   const earnedBadgeIds = new Set(snapshot.earnedBadgeIds);
   const ruleBadgeIds = new Set<string>();
@@ -127,7 +152,7 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
   const data = (await response.json().catch(() => null)) as { gamification?: AccountGamificationSnapshot } | null;
   if (!data?.gamification) return null;
 
-  const accountSnapshot = normalizeAccountGamification(data.gamification);
+  const accountSnapshot = mergeGamificationSnapshots(snapshot, data.gamification);
   gamificationHydrationPromise = null;
   if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), accountSnapshot)) {
     writeLocalGamificationSnapshot(accountSnapshot);
@@ -160,11 +185,16 @@ async function hydrateGamificationFromApi() {
   }
 
   const accountSnapshot = normalizeAccountGamification(data.gamification);
-  if (!gamificationSnapshotsMatch(local, accountSnapshot)) {
-    writeLocalGamificationSnapshot(accountSnapshot);
+  const mergedSnapshot = mergeGamificationSnapshots(local, accountSnapshot);
+  if (!gamificationSnapshotsMatch(local, mergedSnapshot)) {
+    writeLocalGamificationSnapshot(mergedSnapshot);
   }
 
-  return accountSnapshot;
+  if (!gamificationSnapshotsMatch(accountSnapshot, mergedSnapshot)) {
+    void syncGamificationToAccount(mergedSnapshot);
+  }
+
+  return mergedSnapshot;
 }
 
 export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1) {
