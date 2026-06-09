@@ -14,7 +14,7 @@ import {
   UserRound
 } from "lucide-react";
 import { MobileCard } from "@/components/mobile-ui";
-import { readLocalAccountProfile, resetLocalAccountSetupState } from "@/lib/browser-account-profile";
+import { readLocalAccountProfile, readLocalNotificationPreferences, resetLocalAccountSetupState } from "@/lib/browser-account-profile";
 import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
@@ -99,7 +99,23 @@ function isEmail(value: string) {
 }
 
 function hasCompletedLocalSetup() {
-  return Boolean(readLocalAccountProfile().districtCode);
+  const profile = readLocalAccountProfile();
+  const districtReady = Boolean(profile.districtCode);
+  const preferences = readLocalNotificationPreferences();
+  const enabledAlertCount = [preferences.districtAlerts, preferences.voteReminders, preferences.weeklyBrief].filter(Boolean).length;
+  const storedInterests = readJson<unknown>(interestsKey, []);
+  const issueCount = Array.isArray(storedInterests)
+    ? storedInterests.filter((interest) => typeof interest === "string" && interest.trim().length > 0).length
+    : 0;
+  const completeCount = [
+    districtReady,
+    districtReady,
+    Boolean(profile.partyAffiliation),
+    issueCount > 0,
+    enabledAlertCount > 0
+  ].filter(Boolean).length;
+
+  return completeCount >= 5;
 }
 
 async function postJson<T>(url: string, body: unknown) {

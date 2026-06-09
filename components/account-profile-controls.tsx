@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LocateFixed, Loader2, LockKeyhole, MapPin, Search, UserRound, Vote } from "lucide-react";
 import {
@@ -616,15 +617,25 @@ function useSetupMetrics(members: Member[]) {
   };
 }
 
-export function OnboardingProgressMeter({ members }: { members: Member[] }) {
-  const { district, enabledAlertCount, issueCount, officialsCount, partyAffiliation } = useSetupMetrics(members);
-  const completeCount = [
+function setupCompleteCount({
+  district,
+  enabledAlertCount,
+  issueCount,
+  officialsCount,
+  partyAffiliation
+}: ReturnType<typeof useSetupMetrics>) {
+  return [
     Boolean(district.districtCode),
     officialsCount > 0,
     Boolean(partyAffiliation),
     issueCount > 0,
     enabledAlertCount > 0
   ].filter(Boolean).length;
+}
+
+export function OnboardingProgressMeter({ members }: { members: Member[] }) {
+  const setupMetrics = useSetupMetrics(members);
+  const completeCount = setupCompleteCount(setupMetrics);
   const percentReady = Math.round((completeCount / setupSignalTotal) * 100);
 
   return (
@@ -643,6 +654,39 @@ export function OnboardingProgressMeter({ members }: { members: Member[] }) {
         />
       </div>
     </div>
+  );
+}
+
+export function OnboardingCompleteButton({ members }: { members: Member[] }) {
+  const router = useRouter();
+  const setupMetrics = useSetupMetrics(members);
+  const completeCount = setupCompleteCount(setupMetrics);
+  const complete = completeCount >= setupSignalTotal;
+
+  function openDashboard() {
+    if (!complete) return;
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={openDashboard}
+        disabled={!complete}
+        className={`flex h-12 w-full items-center justify-center rounded-2xl text-[17px] font-semibold shadow-[0_0_24px_rgba(255,177,43,0.22)] transition ${
+          complete
+            ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#071225] hover:brightness-105"
+            : "cursor-not-allowed border border-white/10 bg-white/[0.045] text-white/42 shadow-none"
+        }`}
+      >
+        {complete ? "Complete Setup" : `Finish setup (${completeCount}/${setupSignalTotal})`}
+      </button>
+      <div className="mt-2 text-center text-[12px] font-medium text-white/42">
+        {complete ? "Ready for Dashboard" : `${completeCount} of ${setupSignalTotal} ready`}
+      </div>
+    </>
   );
 }
 
