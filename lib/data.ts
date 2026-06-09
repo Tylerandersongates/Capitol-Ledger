@@ -1005,6 +1005,10 @@ function getVoteMemberBioguideIds(vote: Vote) {
   ]);
 }
 
+function dashboardVoteSourceKind(vote: Vote) {
+  return vote.id.startsWith("demo-") ? "demo" : "live";
+}
+
 function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
   const sortedBills = [...sourceBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
@@ -1013,6 +1017,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
   const voteFeed = sortedVotes.map((vote) => ({
     bill: vote.billId ? sourceBills.find((bill) => bill.id === vote.billId) : undefined,
     memberBioguideIds: getVoteMemberBioguideIds(vote),
+    sourceKind: dashboardVoteSourceKind(vote),
     totals: getVoteTotals(vote),
     vote
   }));
@@ -1030,6 +1035,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
 
   return {
     billsInAction: sourceBills.length,
+    generatedAt: new Date().toISOString(),
     defaultUnreadAlertIds: [
       recentVoteBill || trackedBill ? systemVoteReminderAlertId : "",
       ...getRecentUpdates()

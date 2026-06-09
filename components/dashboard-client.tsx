@@ -13,6 +13,7 @@ import {
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
+import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -39,6 +40,8 @@ import type {
 } from "@/types/capitol";
 
 type DashboardData = ReturnType<typeof getDashboardData>;
+type DashboardVoteFeedCandidate = DashboardData["voteFeed"][number] & { sourceLabel?: string };
+type DashboardVoteFreshnessTone = "demo" | "empty" | "fresh" | "quiet";
 type DashboardFavoriteItem = {
   id: string;
   href: string;
@@ -103,6 +106,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const recentVote = selectedVoteFeed?.vote;
   const recentVoteTotals = selectedVoteFeed?.totals;
   const recentVoteSourceLabel = selectedVoteFeed?.sourceLabel ?? "Congress feed";
+  const recentVoteFreshness = getDashboardVoteFreshness(selectedVoteFeed, data.generatedAt);
   const trackedBill = useMemo(() => {
     const savedBill = favoriteRecords.find((record) => record.type === "bill");
     if (!savedBill) return undefined;
@@ -594,6 +598,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     yes: recentVoteTotals?.yes ?? 0
                   }}
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] ${getDashboardVoteFreshnessToneClass(recentVoteFreshness.tone)}`}>
+                    {recentVoteFreshness.label}
+                  </span>
+                  <span className="text-[12px] font-medium text-white/48">{recentVoteFreshness.detail}</span>
+                </div>
               </div>
             </MobileCard>
 
@@ -889,6 +899,59 @@ function getFederalDelegationMembers(targets: DashboardData["favoriteTargets"], 
       .filter((member) => member.chamber === "Senate")
       .sort((left, right) => left.fullName.localeCompare(right.fullName))
   ];
+}
+
+function getUtcDateKey(value?: string) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 10);
+}
+
+function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undefined, generatedAt: string) {
+  if (!candidate?.vote) {
+    return {
+      detail: "Vote feed is waiting for records.",
+      label: "No recorded votes",
+      tone: "empty" as const
+    };
+  }
+
+  const recordedLabel = `Last recorded ${formatDate(candidate.vote.voteDate)}`;
+
+  if (candidate.sourceKind === "demo") {
+    return {
+      detail: recordedLabel,
+      label: "Demo fallback",
+      tone: "demo" as const
+    };
+  }
+
+  const voteDateKey = getUtcDateKey(candidate.vote.voteDate);
+  const generatedDateKey = getUtcDateKey(generatedAt);
+
+  if (voteDateKey && generatedDateKey && voteDateKey === generatedDateKey) {
+    return {
+      detail: recordedLabel,
+      label: "Updated today",
+      tone: "fresh" as const
+    };
+  }
+
+  return {
+    detail: recordedLabel,
+    label: candidate.sourceLabel === "National feed" ? "No new vote today" : "No matched vote today",
+    tone: "quiet" as const
+  };
+}
+
+function getDashboardVoteFreshnessToneClass(tone: DashboardVoteFreshnessTone) {
+  if (tone === "demo") return "border-[#ffb12b]/30 bg-[#ffb12b]/12 text-[#ffb12b]";
+  if (tone === "fresh") return "border-[#2be68d]/28 bg-[#2be68d]/12 text-[#2be68d]";
+  if (tone === "quiet") return "border-[#79a8ff]/24 bg-[#79a8ff]/10 text-[#9fc4ff]";
+  return "border-white/10 bg-white/[0.045] text-white/48";
 }
 
 function resolveDashboardVoteFeed(
