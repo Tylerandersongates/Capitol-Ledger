@@ -1,6 +1,7 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { BillStanceDetailRow } from "@/components/bill-stance-controls";
 import { GamificationEventLink } from "@/components/gamification-actions";
+import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { MarkAlertRead } from "@/components/mark-alert-read";
 import { SaveAlertButton } from "@/components/saved-ledger-controls";
@@ -46,9 +47,9 @@ export default function AlertDetailPage() {
     >
             <MarkAlertRead alertId="system-vote-reminder" />
             <header className="relative mt-10 flex items-center justify-center">
-              <Link href="/dashboard" className={`absolute left-0 ${mobileIconButtonClass}`} aria-label="Back to dashboard">
+              <HistoryBackButton className={`absolute left-0 ${mobileIconButtonClass}`}>
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
-              </Link>
+              </HistoryBackButton>
               <h1 className="text-[22px] font-medium leading-none text-white">Alert Details</h1>
               <SaveAlertButton alertId={vote?.id ?? bill?.id ?? "demo-alert"} />
             </header>

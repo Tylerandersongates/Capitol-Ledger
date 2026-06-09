@@ -5,13 +5,13 @@ import {
   type AlertsInboxItem,
   type AlertsInboxPreference
 } from "@/components/alerts-inbox-client";
+import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileShell } from "@/components/mobile-shell";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -90,9 +90,9 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
       <header className="mt-12 flex items-center gap-4">
-        <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
+        <HistoryBackButton className={mobileIconButtonClass}>
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
-        </Link>
+        </HistoryBackButton>
         <h1 className="text-[28px] font-medium leading-none text-white">Alerts</h1>
       </header>
 

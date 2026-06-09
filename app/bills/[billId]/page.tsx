@@ -3,6 +3,7 @@ import { BillStanceControl } from "@/components/bill-stance-controls";
 import { GamificationEventAnchor } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
+import { HistoryBackButton } from "@/components/history-back-button";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
@@ -314,9 +315,9 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
       <header className="mt-10 flex items-center justify-between">
-        <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
+        <HistoryBackButton className={mobileIconButtonClass}>
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
-        </Link>
+        </HistoryBackButton>
         <div className="flex items-center gap-5">
           <SaveTargetButton targetType="bill" targetId={bill.id} label="Save bill" />
           <GamificationEventAnchor
