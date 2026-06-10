@@ -19,12 +19,15 @@ const releaseDecisions: Array<{ label: string; value: BetaFeedbackReleaseDecisio
   { label: "Later", value: "later" }
 ];
 
-type FeedbackFilter = "all" | "open" | "blockers" | "beta_ok" | "later" | "untriaged" | BetaFeedbackStatus;
+type FeedbackFilter = "all" | "open" | "blockers" | "high" | "medium" | "low" | "beta_ok" | "later" | "untriaged" | BetaFeedbackStatus;
 
 const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
   { label: "All", value: "all" },
   { label: "Open", value: "open" },
   { label: "Blockers", value: "blockers" },
+  { label: "High", value: "high" },
+  { label: "Medium", value: "medium" },
+  { label: "Low", value: "low" },
   { label: "Untriaged", value: "untriaged" },
   { label: "New", value: "new" },
   { label: "Reviewing", value: "reviewing" },
@@ -504,6 +507,7 @@ function filterRecords(records: BetaFeedbackRecord[], filter: FeedbackFilter) {
   if (filter === "all") return records;
   if (filter === "open") return records.filter((record) => record.status === "new" || record.status === "reviewing");
   if (filter === "blockers") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "launch_blocker");
+  if (filter === "high" || filter === "medium" || filter === "low") return records.filter((record) => record.status !== "resolved" && record.severity === filter);
   if (filter === "beta_ok") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "beta_acceptable");
   if (filter === "later") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "later");
   if (filter === "untriaged") return records.filter((record) => record.status !== "resolved" && !record.releaseDecision);
@@ -532,6 +536,9 @@ function formatFilterLabel(filter: FeedbackFilter) {
   if (filter === "all") return "All reports";
   if (filter === "open") return "Open reports";
   if (filter === "blockers") return "Launch blockers";
+  if (filter === "high") return "High severity reports";
+  if (filter === "medium") return "Medium severity reports";
+  if (filter === "low") return "Low severity reports";
   if (filter === "beta_ok") return "Beta acceptable reports";
   if (filter === "later") return "Later reports";
   if (filter === "untriaged") return "Untriaged reports";
