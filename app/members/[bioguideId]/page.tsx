@@ -767,10 +767,17 @@ function OverviewTab({
               </div>
             </div>
           }
-          description={<>Topics used: {scoreModel.constituentAlignment.selectedTopics.join(", ")}</>}
+          description={<>Scoring categories used: {scoreModel.constituentAlignment.selectedTopics.join(", ")}</>}
           eyebrow="Constituent Alignment"
           title={`${scoreModel.constituentAlignment.viewerState} issue match`}
         />
+        <div className={`mb-5 ${premiumPanelClass} px-4 py-4`}>
+          <div className="text-[15px] font-medium text-white">Beta model coverage</div>
+          <p className="mt-2 text-[13px] leading-snug text-white/50">
+            Capitol Ledger lets you choose 14 issue signals, then rolls related signals into 8 broader scoring categories for this beta accountability model.
+            Individual issue-level scoring is planned as the model expands.
+          </p>
+        </div>
         <MobileGlassScrollFrame heightClassName="max-h-[260px]" className="snap-y snap-mandatory space-y-4">
           {scoreModel.constituentAlignment.components.map((component) => (
             <div key={component.label} className={`snap-start ${premiumPanelClass} px-4 py-4`}>
@@ -787,8 +794,8 @@ function OverviewTab({
         </MobileGlassScrollFrame>
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-medium text-white">By topic</h3>
-            <span className={premiumPillClass}>{scoreModel.constituentAlignment.topics.length} topics</span>
+            <h3 className="text-[16px] font-medium text-white">By scoring category</h3>
+            <span className={premiumPillClass}>{scoreModel.constituentAlignment.topics.length} categories</span>
           </div>
           <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[410px]" className="snap-y snap-mandatory space-y-3">
             {scoreModel.constituentAlignment.topics.map((topic) => (
