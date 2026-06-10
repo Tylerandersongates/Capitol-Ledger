@@ -215,6 +215,15 @@ async function hydrateIssueInterestsFromAccount() {
     return mergedInterests;
   }
 
+  if (localInterests.length) {
+    const mergedInterests = uniqueStrings([...accountInterests, ...localInterests]);
+    if (mergedInterests.length !== accountInterests.length) {
+      writeLocalIssueInterests(mergedInterests, { pendingSync: true });
+      void syncIssueInterestsToAccount(mergedInterests);
+      return mergedInterests;
+    }
+  }
+
   writeLocalIssueInterests(accountInterests, { pendingSync: false });
   return accountInterests;
 }
