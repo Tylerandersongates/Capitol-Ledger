@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
+import { getCurrentSession } from "@/lib/auth";
 
-export default function HomePage() {
-  redirect("/sign-in?mode=create&returnTo=%2Fonboarding");
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const session = await getCurrentSession();
+
+  redirect(session ? "/dashboard" : "/sign-in?returnTo=%2Fdashboard");
 }

@@ -14,10 +14,15 @@ import {
   UserRound
 } from "lucide-react";
 import { MobileCard } from "@/components/mobile-ui";
-import { readLocalAccountProfile, readLocalNotificationPreferences, resetLocalAccountSetupState } from "@/lib/browser-account-profile";
+import {
+  readLocalAccountProfile,
+  readLocalNotificationPreferences,
+  resetLocalAccountSetupState,
+  writeLocalAccountProfile
+} from "@/lib/browser-account-profile";
 import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
-import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
+import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 const followsKey = "capitol-ledger:follows";
 const alertsKey = "capitol-ledger:saved-alerts";
@@ -94,22 +99,28 @@ function readLocalSubscription(): Partial<AccountSubscriptionSnapshot> {
   return readJson<Partial<AccountSubscriptionSnapshot>>(subscriptionKey, {});
 }
 
-function isEmail(value: string) {
-  return /^\S+@\S+\.\S+$/.test(value.trim());
+function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
+  try {
+    window.localStorage.setItem(followsKey, JSON.stringify(snapshot.follows));
+    window.localStorage.setItem(alertsKey, JSON.stringify(snapshot.savedAlerts));
+    window.localStorage.setItem(interestsKey, JSON.stringify(snapshot.issueInterests));
+    window.localStorage.setItem(readAlertsKey, JSON.stringify(snapshot.readAlerts));
+    window.dispatchEvent(new Event("capitol-ledger:follows-changed"));
+    window.dispatchEvent(new Event("capitol-ledger:persistence-changed"));
+  } catch {
+    // Sign-in should continue even when browser persistence is restricted.
+  }
 }
 
-function hasCompletedLocalSetup() {
-  const profile = readLocalAccountProfile();
+function hasCompletedSetupSignals(profile: Partial<AccountProfileSnapshot>, ledger: Partial<AccountLedgerSnapshot>) {
   const districtReady = Boolean(profile.districtCode);
-  const preferences = readLocalNotificationPreferences();
+  const preferences = profile.notificationPreferences ?? readLocalNotificationPreferences();
   const enabledAlertCount = [preferences.districtAlerts, preferences.voteReminders, preferences.weeklyBrief].filter(Boolean).length;
-  const storedInterests = readJson<unknown>(interestsKey, []);
-  const issueCount = Array.isArray(storedInterests)
-    ? storedInterests.filter((interest) => typeof interest === "string" && interest.trim().length > 0).length
+  const issueCount = Array.isArray(ledger.issueInterests)
+    ? ledger.issueInterests.filter((interest) => typeof interest === "string" && interest.trim().length > 0).length
     : 0;
-  const storedFollows = readJson<unknown>(followsKey, []);
-  const officialsReady = Array.isArray(storedFollows)
-    ? storedFollows.some((record) => {
+  const officialsReady = Array.isArray(ledger.follows)
+    ? ledger.follows.some((record) => {
         if (!record || typeof record !== "object") return false;
         return "type" in record && record.type === "member" && "id" in record && typeof record.id === "string" && record.id.length > 0;
       })
@@ -123,6 +134,14 @@ function hasCompletedLocalSetup() {
   ].filter(Boolean).length;
 
   return completeCount >= 5;
+}
+
+function isEmail(value: string) {
+  return /^\S+@\S+\.\S+$/.test(value.trim());
+}
+
+function hasCompletedLocalSetup() {
+  return hasCompletedSetupSignals(readLocalAccountProfile(), readLocalLedger());
 }
 
 async function postJson<T>(url: string, body: unknown) {
@@ -290,6 +309,42 @@ export function AuthFlowClient({
     }).catch(() => null);
   }
 
+  async function hasCompletedAccountSetup() {
+    const [profileResult, ledgerResult] = await Promise.all([
+      fetch("/api/account/profile", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) return null;
+          return (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
+        })
+        .catch(() => null),
+      fetch("/api/account/ledger", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) return null;
+          return (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+        })
+        .catch(() => null)
+    ]);
+
+    const profile = profileResult?.profile ?? null;
+    const ledger = ledgerResult?.ledger ?? null;
+
+    if (profile) writeLocalAccountProfile(profile);
+    if (ledger) writeLocalLedger(ledger);
+
+    return hasCompletedSetupSignals(profile ?? readLocalAccountProfile(), ledger ?? readLocalLedger());
+  }
+
+  async function resolvePostAuthReturnTo(href = postAuthReturnTo) {
+    if (href !== "/onboarding" || userRequestedAccountCreation) return href;
+    if (setupComplete) return "/dashboard";
+
+    const accountSetupComplete = await hasCompletedAccountSetup();
+    if (!accountSetupComplete) return href;
+
+    setSetupComplete(true);
+    return "/dashboard";
+  }
+
   async function prepareFreshAccountSetup() {
     resetLocalAccountSetupState();
 
@@ -383,7 +438,7 @@ export function AuthFlowClient({
       setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
-      await finishProductionAuth();
+      await finishProductionAuth(await resolvePostAuthReturnTo());
       return;
     }
 
@@ -501,7 +556,7 @@ export function AuthFlowClient({
       setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
-      await finishProductionAuth();
+      await finishProductionAuth(await resolvePostAuthReturnTo());
       return;
     }
 
