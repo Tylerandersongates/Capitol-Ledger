@@ -353,11 +353,16 @@ export function AccountSubscriptionSummary() {
 
 export function SubscriptionBadge() {
   const [subscription] = useSubscriptionState();
+  const planName = subscriptionPlans[subscription.plan].name;
 
   return (
-    <Link href="/upgrade" className="mt-3 inline-flex max-w-full items-center gap-2 truncate rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-medium text-[#ffb12b]">
+    <Link
+      href="/upgrade"
+      aria-label={`Manage Capitol Ledger ${planName}`}
+      className="mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-medium text-[#ffb12b]"
+    >
       <Crown className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-      Capitol Ledger {subscriptionPlans[subscription.plan].name}
+      <span className="min-w-0 truncate">{planName}</span>
     </Link>
   );
 }

@@ -82,7 +82,7 @@ export default async function AccountPage() {
                     <div className={premiumEyebrowClass}>Citizen Profile</div>
                     <h2 className={`${premiumCardTitleClass} mt-2`}>{profileDisplayName}</h2>
                     <AccountDistrictDisplay />
-                    <div className="mt-3 grid max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 [&>*]:mt-0 [&>*]:min-w-0 [&>*]:px-2.5 [&>*]:py-1 [&>*]:text-[11px]">
+                    <div className="mt-3 grid max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 [&>*]:mt-0 [&>*]:min-w-0 [&>*]:px-2 [&>*]:py-1 [&>*]:text-[10px]">
                       <PartyAffiliationDisplay />
                       <SubscriptionBadge />
                     </div>
