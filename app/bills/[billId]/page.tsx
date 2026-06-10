@@ -373,7 +373,6 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 
         {activeTab === "details" ? (
           <>
-            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens">
               <AiPolicyLensCard analysis={buildAiBillAnalysis(bill, billSummary.text)} />
