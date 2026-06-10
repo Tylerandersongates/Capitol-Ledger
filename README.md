@@ -6,6 +6,8 @@ This scaffold is demo-first: the app runs against local seed data immediately, w
 
 ## Quick Start
 
+Use Node 20 or 22 for local preview. The project has a runtime check that fails fast on unsupported Node versions because newer runtimes can hang during Next.js route compilation.
+
 ```bash
 npm install
 cp .env.example .env.local
@@ -13,6 +15,14 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+For the beta preview target used during QA, run:
+
+```bash
+npm run dev:preview
+```
+
+Open `http://127.0.0.1:3023`.
 
 If macOS blocks the downloaded Next.js SWC binary, use the WASM fallback scripts:
 
@@ -25,7 +35,9 @@ npm run build:wasm
 
 ```bash
 npm run dev              # Start the web app
+npm run dev:preview      # Start the QA preview on 127.0.0.1:3023
 npm run dev:wasm         # Start with the SWC WASM fallback
+npm run local-preview:check # Verify Node, node_modules, and native SWC readiness
 npm run build            # Verify a production build
 npm run build:wasm       # Build with the SWC WASM fallback
 npm run start            # Serve a production build

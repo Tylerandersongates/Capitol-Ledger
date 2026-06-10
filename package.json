@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:wasm": "NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next dev",
+    "dev": "node scripts/check-local-preview-runtime.mjs && next dev",
+    "dev:preview": "node scripts/check-local-preview-runtime.mjs && next dev -H 127.0.0.1 -p 3023",
+    "dev:wasm": "node scripts/check-local-preview-runtime.mjs && NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next dev",
     "build": "prisma generate && next build",
     "build:wasm": "prisma generate && NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next build",
     "start": "next start",
@@ -22,6 +23,7 @@
     "video-links:check": "node scripts/check-video-links.mjs",
     "beta:check": "node scripts/check-beta-readiness.mjs",
     "beta:triage": "node scripts/check-beta-triage.mjs",
+    "local-preview:check": "node scripts/check-local-preview-runtime.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",
     "db:seed": "prisma db seed",
     "sync:congress": "tsx scripts/sync-congress.ts"

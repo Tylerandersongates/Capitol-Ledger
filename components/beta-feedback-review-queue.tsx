@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardCheck, Download, MessageSquarePlus } from "lucide-react";
+import { ClipboardCheck, Copy, Download, MessageSquarePlus, Search } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileCard } from "@/components/mobile-ui";
 import type { BetaFeedbackRecord, BetaFeedbackReleaseDecision, BetaFeedbackStatus } from "@/lib/beta-feedback";
@@ -43,10 +43,11 @@ export function BetaFeedbackReviewQueue({
 }) {
   const [records, setRecords] = useState(initialRecords);
   const [pendingId, setPendingId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [statusText, setStatusText] = useState("");
   const [activeFilter, setActiveFilter] = useState<FeedbackFilter>("open");
   const metrics = useMemo(() => getFeedbackMetrics(records), [records]);
-  const filteredRecords = useMemo(() => filterRecords(records, activeFilter), [activeFilter, records]);
+  const filteredRecords = useMemo(() => searchRecords(filterRecords(records, activeFilter), searchQuery), [activeFilter, records, searchQuery]);
 
   async function updateReview(id: string, patch: { releaseDecision?: BetaFeedbackReleaseDecision; status?: BetaFeedbackStatus }) {
     setPendingId(id);
@@ -88,6 +89,18 @@ export function BetaFeedbackReviewQueue({
       .writeText(summary)
       .then(() => setStatusText("Triage summary copied."))
       .catch(() => setStatusText("Summary copy is not available in this browser."));
+  }
+
+  async function copyReport(record: BetaFeedbackRecord) {
+    if (!navigator.clipboard?.writeText) {
+      setStatusText("Report copy is not available in this browser.");
+      return;
+    }
+
+    await navigator.clipboard
+      .writeText(buildSingleReportSummary(record))
+      .then(() => setStatusText("Feedback report copied."))
+      .catch(() => setStatusText("Report copy is not available in this browser."));
   }
 
   function exportFilteredReports() {
@@ -137,6 +150,20 @@ export function BetaFeedbackReviewQueue({
           <Metric label="Low" value={metrics.low} tone="text-[#8fb5ff]" />
           <Metric label="Open" value={metrics.open} tone="text-[#43ed74]" />
         </div>
+
+        <div
+          className={`mt-4 rounded-2xl border px-4 py-3 text-[13px] leading-snug ${
+            metrics.blockers || metrics.needsDecision
+              ? "border-[#ffb12b]/24 bg-[#ffb12b]/8 text-[#ffd58a]"
+              : "border-[#43ed74]/24 bg-[#43ed74]/10 text-[#56f18a]"
+          }`}
+        >
+          {metrics.blockers || metrics.needsDecision
+            ? `${metrics.blockers} blocker${metrics.blockers === 1 ? "" : "s"} and ${metrics.needsDecision} untriaged report${
+                metrics.needsDecision === 1 ? "" : "s"
+              } need a launch decision.`
+            : "No active blockers or untriaged reports."}
+        </div>
       </MobileCard>
 
       <MobileCard variant="dashboard" className="px-5 py-5">
@@ -157,6 +184,10 @@ export function BetaFeedbackReviewQueue({
           <Metric label="Blocker" value={metrics.byReleaseDecision.launch_blocker} tone="text-[#ff7567]" />
           <Metric label="Beta OK" value={metrics.byReleaseDecision.beta_acceptable} tone="text-[#43ed74]" />
           <Metric label="Later" value={metrics.byReleaseDecision.later} tone="text-[#8fb5ff]" />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Metric label="Needs decision" value={metrics.needsDecision} tone="text-[#ffb12b]" />
+          <Metric label="Oldest open" value={metrics.oldestOpenDays} tone="text-white" />
         </div>
       </MobileCard>
 
@@ -185,6 +216,17 @@ export function BetaFeedbackReviewQueue({
           </div>
         </MobileGlassScrollFrame>
 
+        <label className="relative block">
+          <span className="sr-only">Search feedback reports</span>
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/34" strokeWidth={1.8} aria-hidden="true" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search title, message, page, or contact"
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-[15px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70"
+          />
+        </label>
+
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -207,7 +249,9 @@ export function BetaFeedbackReviewQueue({
         </div>
 
         {filteredRecords.length ? (
-          filteredRecords.map((record) => <FeedbackRecordCard key={record.id} pending={pendingId === record.id} record={record} onReviewChange={updateReview} />)
+          filteredRecords.map((record) => (
+            <FeedbackRecordCard key={record.id} pending={pendingId === record.id} record={record} onCopyReport={copyReport} onReviewChange={updateReview} />
+          ))
         ) : (
           <MobileCard variant="dashboard" className="px-5 py-6 text-center">
             <MessageSquarePlus className="mx-auto h-8 w-8 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
@@ -232,14 +276,19 @@ function Metric({ label, tone, value }: { label: string; tone: string; value: nu
 }
 
 function FeedbackRecordCard({
+  onCopyReport,
   onReviewChange,
   pending,
   record
 }: {
+  onCopyReport: (record: BetaFeedbackRecord) => void;
   onReviewChange: (id: string, patch: { releaseDecision?: BetaFeedbackReleaseDecision; status?: BetaFeedbackStatus }) => void;
   pending: boolean;
   record: BetaFeedbackRecord;
 }) {
+  const browserPath = getContextString(record.context, "browserPath");
+  const screen = getContextString(record.context, "screen");
+
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
       <div className="flex items-start justify-between gap-4">
@@ -292,9 +341,35 @@ function FeedbackRecordCard({
 
       <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-3 border-t border-white/8 pt-4 text-[12px] text-white/42">
         <span className="min-w-0 truncate">{record.pageUrl ?? "No page attached"}</span>
-        <span>{formatDate(record.createdAt)}</span>
+        <span>{formatShortDate(record.createdAt)}</span>
       </div>
+
+      {record.contactEmail || browserPath || screen ? (
+        <div className="mt-3 grid gap-2 text-[12px] text-white/46">
+          {record.contactEmail ? <ReportMeta label="Contact" value={record.contactEmail} /> : null}
+          {browserPath ? <ReportMeta label="Path" value={browserPath} /> : null}
+          {screen ? <ReportMeta label="Screen" value={screen} /> : null}
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={() => onCopyReport(record)}
+        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[13px] font-semibold text-white/62 transition"
+      >
+        <Copy className="mr-2 h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+        Copy report
+      </button>
     </MobileCard>
+  );
+}
+
+function ReportMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-2">
+      <span className="text-white/34">{label}</span>
+      <span className="min-w-0 truncate text-white/58">{value}</span>
+    </div>
   );
 }
 
@@ -311,6 +386,7 @@ function Pill({ label, tone }: { label: string; tone: "gold" | "muted" | "red" }
 
 function getFeedbackMetrics(records: BetaFeedbackRecord[]) {
   const activeRecords = records.filter((record) => record.status !== "resolved");
+  const openRecords = activeRecords.filter((record) => record.status === "new" || record.status === "reviewing");
   const byCategory: Record<BetaFeedbackRecord["category"], number> = {
     bug: 0,
     data: 0,
@@ -333,10 +409,13 @@ function getFeedbackMetrics(records: BetaFeedbackRecord[]) {
   return {
     byCategory,
     byReleaseDecision,
+    blockers: activeRecords.filter((record) => record.releaseDecision === "launch_blocker").length,
     high: activeRecords.filter((record) => record.severity === "high").length,
     low: activeRecords.filter((record) => record.severity === "low").length,
     medium: activeRecords.filter((record) => record.severity === "medium").length,
-    open: activeRecords.filter((record) => record.status === "new" || record.status === "reviewing").length,
+    needsDecision: activeRecords.filter((record) => !record.releaseDecision).length,
+    oldestOpenDays: getOldestAgeDays(openRecords),
+    open: openRecords.length,
     total: records.length
   };
 }
@@ -365,15 +444,40 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
         `${index + 1}. ${record.title}`,
         `   ${record.severity.toUpperCase()} ${record.category} - ${record.status} - ${record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged"}`,
         `   Page: ${record.pageUrl ?? "No page attached"}`,
+        record.contactEmail ? `   Contact: ${record.contactEmail}` : "",
+        getContextString(record.context, "screen") ? `   Screen: ${getContextString(record.context, "screen")}` : "",
         `   ${record.message}`
-      ].join("\n")
+      ]
+        .filter(Boolean)
+        .join("\n")
     )
   ].join("\n");
 }
 
+function buildSingleReportSummary(record: BetaFeedbackRecord) {
+  const browserPath = getContextString(record.context, "browserPath");
+  const screen = getContextString(record.context, "screen");
+  const userAgent = getContextString(record.context, "userAgent");
+
+  return [
+    record.title,
+    `${record.severity.toUpperCase()} ${record.category} - ${record.status} - ${record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged"}`,
+    `Created: ${formatLongDate(record.createdAt)}`,
+    `Page: ${record.pageUrl ?? "No page attached"}`,
+    record.contactEmail ? `Contact: ${record.contactEmail}` : "",
+    browserPath ? `Browser path: ${browserPath}` : "",
+    screen ? `Screen: ${screen}` : "",
+    userAgent ? `User agent: ${userAgent}` : "",
+    "",
+    record.message
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function buildFeedbackCsv(records: BetaFeedbackRecord[]) {
   const rows = [
-    ["title", "category", "severity", "status", "releaseDecision", "pageUrl", "createdAt", "contactEmail", "message"],
+    ["title", "category", "severity", "status", "releaseDecision", "pageUrl", "browserPath", "screen", "createdAt", "contactEmail", "message"],
     ...records.map((record) => [
       record.title,
       record.category,
@@ -381,6 +485,8 @@ function buildFeedbackCsv(records: BetaFeedbackRecord[]) {
       record.status,
       record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "",
       record.pageUrl ?? "",
+      getContextString(record.context, "browserPath"),
+      getContextString(record.context, "screen"),
       record.createdAt,
       record.contactEmail ?? "",
       record.message
@@ -404,6 +510,24 @@ function filterRecords(records: BetaFeedbackRecord[], filter: FeedbackFilter) {
   return records.filter((record) => record.status === filter);
 }
 
+function searchRecords(records: BetaFeedbackRecord[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return records;
+
+  return records.filter((record) =>
+    [
+      record.category,
+      record.contactEmail ?? "",
+      record.message,
+      record.pageUrl ?? "",
+      record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged",
+      record.severity,
+      record.status,
+      record.title
+    ].some((value) => value.toLowerCase().includes(normalizedQuery))
+  );
+}
+
 function formatFilterLabel(filter: FeedbackFilter) {
   if (filter === "all") return "All reports";
   if (filter === "open") return "Open reports";
@@ -420,12 +544,35 @@ function formatReleaseDecision(value: BetaFeedbackReleaseDecision) {
   return "Later";
 }
 
-function formatDate(value: string) {
+function getContextString(context: BetaFeedbackRecord["context"], key: string) {
+  const value = context?.[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getOldestAgeDays(records: BetaFeedbackRecord[]) {
+  const timestamps = records.map((record) => new Date(record.createdAt).getTime()).filter((timestamp) => !Number.isNaN(timestamp));
+  if (!timestamps.length) return 0;
+
+  const oldest = Math.min(...timestamps);
+  return Math.max(0, Math.floor((Date.now() - oldest) / 86_400_000));
+}
+
+function formatShortDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "New";
 
   return new Intl.DateTimeFormat(undefined, {
     day: "numeric",
     month: "short"
+  }).format(date);
+}
+
+function formatLongDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "New";
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
   }).format(date);
 }
