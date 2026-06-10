@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, CheckCircle2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
@@ -39,10 +39,13 @@ type SetupChip = {
   tone: "district" | "interest";
 };
 
+type SyncState = "saved" | "syncing";
+
 export function SearchSetupChips({ focus }: { focus?: string }) {
   const [interests, setInterests] = useState<string[]>([]);
   const [district, setDistrict] = useState<Required<LocalDistrictProfile>>(defaultDistrictProfile);
   const [editing, setEditing] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState>("saved");
 
   useEffect(() => {
     let active = true;
@@ -50,6 +53,7 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
     function refreshSetup() {
       setDistrict(readLocalDistrictProfile());
       setInterests(readLocalIssueInterests());
+      setSyncState(hasPendingIssueInterestSync() ? "syncing" : "saved");
     }
 
     refreshSetup();
@@ -61,6 +65,7 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
     void hydrateIssueInterestsFromAccount().then((accountInterests) => {
       if (!active || !accountInterests) return;
       setInterests(accountInterests);
+      setSyncState(hasPendingIssueInterestSync() ? "syncing" : "saved");
     });
 
     window.addEventListener("storage", refreshSetup);
@@ -79,14 +84,13 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
   const selectedInterestSet = useMemo(() => new Set(interests), [interests]);
 
   function toggleInterest(interest: string) {
-    setInterests((current) => {
-      const selected = new Set(current);
-      const next = selected.has(interest) ? current.filter((item) => item !== interest) : uniqueStrings([...current, interest]);
+    const selected = new Set(interests);
+    const next = selected.has(interest) ? interests.filter((item) => item !== interest) : uniqueStrings([...interests, interest]);
 
-      writeLocalIssueInterests(next, { pendingSync: true });
-      void syncIssueInterestsToAccount(next);
-      return next;
-    });
+    setInterests(next);
+    setSyncState("syncing");
+    writeLocalIssueInterests(next, { pendingSync: true });
+    void syncIssueInterestsToAccount(next);
   }
 
   return (
@@ -98,16 +102,19 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
             Saved interests plus your default district state{district.districtState ? `, currently ${district.districtState}` : ""}.
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing((current) => !current)}
-          className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
-            editing ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/[0.045] text-[#ffb12b]"
-          }`}
-          aria-pressed={editing}
-        >
-          {editing ? "Done" : "Edit interests"}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <SyncBadge state={syncState} />
+          <button
+            type="button"
+            onClick={() => setEditing((current) => !current)}
+            className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+              editing ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/[0.045] text-[#ffb12b]"
+            }`}
+            aria-pressed={editing}
+          >
+            {editing ? "Done" : "Edit interests"}
+          </button>
+        </div>
       </div>
 
       {editing ? (
@@ -159,6 +166,21 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
         </MobileGlassScrollFrame>
       )}
     </div>
+  );
+}
+
+function SyncBadge({ state }: { state: SyncState }) {
+  const syncing = state === "syncing";
+
+  return (
+    <span
+      className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold ${
+        syncing ? "border-[#ffb12b]/28 bg-[#ffb12b]/10 text-[#ffcf54]" : "border-[#43ed74]/24 bg-[#43ed74]/10 text-[#74f49a]"
+      }`}
+    >
+      {syncing ? <RefreshCw className="h-3 w-3 animate-spin" strokeWidth={2} aria-hidden="true" /> : <CheckCircle2 className="h-3 w-3" strokeWidth={2} aria-hidden="true" />}
+      {syncing ? "Syncing" : "Saved"}
+    </span>
   );
 }
 
@@ -230,7 +252,10 @@ async function hydrateIssueInterestsFromAccount() {
 
 async function syncIssueInterestsToAccount(interests: string[]) {
   if (typeof window === "undefined") return;
-  if (!(await hasActiveBrowserSession())) return;
+  if (!(await hasActiveBrowserSession())) {
+    writeLocalIssueInterests(interests, { pendingSync: false });
+    return;
+  }
 
   const syncVersion = ++issueInterestSyncVersion;
   const response = await fetch(accountLedgerEndpoint, {
