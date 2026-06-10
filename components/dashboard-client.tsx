@@ -1052,26 +1052,28 @@ function resolveDashboardFavorites(records: SavedFollowRecord[], targets: Dashbo
   }));
   const delegationKeys = new Set(delegationItems.map((item) => favoriteRecordKey({ id: item.id, type: item.type })));
 
-  const savedItems = uniqueFavoriteRecords(records).map<DashboardFavoriteItem>((record) => {
+  const savedItems = uniqueFavoriteRecords(records).flatMap<DashboardFavoriteItem>((record) => {
     if (record.type === "member") {
       const member = memberMap.get(record.id);
+      if (!member) return [];
 
       return {
         href: `/members/${record.id}`,
         id: record.id,
-        label: member?.fullName ?? "Official profile",
-        meta: member ? `${member.chamber} / ${member.state} / ${member.party}` : "Official profile",
+        label: member.fullName,
+        meta: `${member.chamber} / ${member.state} / ${member.party}`,
         type: "member"
       };
     }
 
     const bill = billMap.get(record.id);
+    if (!bill) return [];
 
     return {
       href: `/bills/${record.id}`,
       id: record.id,
-      label: bill?.shortTitle ?? "Tracked bill",
-      meta: bill ? `${bill.displayNumber} / ${bill.policyArea}` : "Bill detail",
+      label: bill.shortTitle,
+      meta: `${bill.displayNumber} / ${bill.policyArea}`,
       type: "bill"
     };
   });
