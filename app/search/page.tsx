@@ -1,6 +1,6 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { DiscoverySearchForm } from "@/components/discovery-search-form";
 import { SearchSetupChips } from "@/components/search-setup-chips";
@@ -33,7 +33,6 @@ type SearchPageProps = {
     focus?: string;
     party?: string;
     state?: string;
-    expand?: string;
   };
 };
 
@@ -98,12 +97,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { results } = await searchRecordsWithLiveData(searchParams);
   const resultCount = results.members.length + results.bills.length + results.votes.length;
   const activeType = searchParams.type ?? "all";
-  const requestedExpandedType =
-    searchParams.expand === "members" || searchParams.expand === "bills" || searchParams.expand === "votes" ? searchParams.expand : undefined;
   const query = searchParams.q ?? "";
   const hasSmartFilters = Boolean(searchParams.chamber || searchParams.party || searchParams.state);
   const prioritizeResults = searchParams.focus === "results";
-  const expandedType = requestedExpandedType;
 
   return (
     <MobileShell
@@ -130,7 +126,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             <main className="mt-7 space-y-5 pb-8">
               {prioritizeResults ? (
-                <SearchResultBlocks activeType={activeType} expandedType={expandedType} results={results} searchParams={searchParams} />
+                <SearchResultBlocks activeType={activeType} results={results} />
               ) : null}
 
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -155,7 +151,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <Link
                       key={tab.value}
                       href={searchHref(searchParams, {
-                        expand: undefined,
                         type: tab.value,
                         status: tab.value === "bills" || tab.value === "all" ? searchParams.status : undefined
                       })}
@@ -242,7 +237,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </PlanFeatureGate>
 
               {!prioritizeResults ? (
-                <SearchResultBlocks activeType={activeType} expandedType={expandedType} results={results} searchParams={searchParams} />
+                <SearchResultBlocks activeType={activeType} results={results} />
               ) : null}
             </main>
 
@@ -270,28 +265,11 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
 
 function SearchResultBlocks({
   activeType,
-  expandedType,
-  results,
-  searchParams
+  results
 }: {
   activeType: string;
-  expandedType?: "members" | "bills" | "votes";
   results: SearchResultsData;
-  searchParams: SearchPageProps["searchParams"];
 }) {
-  const viewAllHref = (type: "members" | "bills" | "votes") =>
-    searchHref(searchParams, {
-      chamber: undefined,
-      expand: type,
-      focus: "results",
-      party: undefined,
-      q: undefined,
-      state: undefined,
-      status: undefined,
-      type
-    });
-  const collapseHref = searchHref(searchParams, { expand: undefined });
-
   const sectionOrder: Array<"members" | "bills" | "votes"> =
     activeType === "members" || activeType === "bills" || activeType === "votes"
       ? [activeType, ...(["members", "bills", "votes"] as const).filter((kind) => kind !== activeType)]
@@ -305,13 +283,10 @@ function SearchResultBlocks({
             <ResultSection
               key="members"
               title="Representatives"
-              href={viewAllHref("members")}
-              collapseHref={collapseHref}
               count={results.members.length}
-              expanded={expandedType === "members"}
             >
               {results.members.length ? (
-                results.members.slice(0, expandedType === "members" ? 30 : 3).map((member) => (
+                results.members.map((member) => (
                   <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} className={`flex items-center gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
                     {member.photoUrl ? (
                       <Image src={member.photoUrl} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl border border-white/14 object-cover shadow-[0_10px_18px_rgba(0,0,0,0.24)]" />
@@ -338,13 +313,10 @@ function SearchResultBlocks({
             <ResultSection
               key="bills"
               title="Bills"
-              href={viewAllHref("bills")}
-              collapseHref={collapseHref}
               count={results.bills.length}
-              expanded={expandedType === "bills"}
             >
               {results.bills.length ? (
-                results.bills.slice(0, expandedType === "bills" ? 30 : 3).map((bill) => {
+                results.bills.map((bill) => {
                   const sponsor = getBillSponsor(bill);
                   return (
                     <Link key={bill.id} href={`/bills/${bill.id}`} className={`block p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
@@ -378,13 +350,10 @@ function SearchResultBlocks({
           <ResultSection
             key="votes"
             title="Votes"
-            href={viewAllHref("votes")}
-            collapseHref={collapseHref}
             count={results.votes.length}
-            expanded={expandedType === "votes"}
           >
             {results.votes.length ? (
-              results.votes.slice(0, expandedType === "votes" ? 30 : 2).map((vote) => (
+              results.votes.map((vote) => (
                 <Link key={vote.id} href={`/votes/${vote.id}`} className={`flex items-start gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
                     <Vote className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -412,7 +381,7 @@ function searchHref(searchParams: SearchPageProps["searchParams"], updates: Part
   const nextParams = { ...searchParams, ...updates };
   const params = new URLSearchParams();
 
-  (["q", "type", "status", "chamber", "party", "state", "focus", "expand"] as const).forEach((key) => {
+  (["q", "type", "status", "chamber", "party", "state", "focus"] as const).forEach((key) => {
     const value = nextParams[key];
     if (value) params.set(key, value);
   });
@@ -469,19 +438,15 @@ function FilterChip({ active, href, label }: { active?: boolean; href: string; l
 
 function ResultSection({
   children,
-  collapseHref,
   count,
-  expanded = false,
-  href,
   title
 }: {
   children: ReactNode;
-  collapseHref: string;
   count: number;
-  expanded?: boolean;
-  href: string;
   title: string;
 }) {
+  const shouldScroll = count > 3;
+
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="mb-5 flex items-center justify-between">
@@ -490,24 +455,16 @@ function ResultSection({
           <h2 className="mt-2 text-[22px] font-medium leading-none">{title}</h2>
           <div className="mt-2 text-[13px] text-white/46">{count} records</div>
         </div>
-        {expanded ? (
-          <Link href={collapseHref} className={`${mobileViewAllClass} border-white/16 bg-white/[0.06] text-white/68`}>
-            Showing all
-          </Link>
-        ) : (
-          <Link href={href} className={mobileViewAllClass}>
-            View All
-          </Link>
-        )}
+        {shouldScroll ? <span className={premiumPillClass}>Scroll</span> : null}
       </div>
-      {expanded && count > 2 ? (
-        <MobileGlassScrollFrame heightClassName="max-h-[19rem]" className="space-y-3">
+      {shouldScroll ? (
+        <MobileGlassScrollFrame heightClassName="max-h-[19rem]" className="space-y-3" ariaLabel={`${title} search results`}>
           {children}
         </MobileGlassScrollFrame>
       ) : (
         <div className="space-y-3">{children}</div>
       )}
-      {expanded && count > 2 ? (
+      {shouldScroll ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
           <span>Scroll records</span>
           <span>{count} total</span>
