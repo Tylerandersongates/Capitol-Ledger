@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureAccountUser } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
-import { getBetaFeedbackRecords, saveBetaFeedback, updateBetaFeedbackStatus } from "@/lib/beta-feedback";
+import { getBetaFeedbackRecords, saveBetaFeedback, summarizeBetaFeedbackRecords, updateBetaFeedbackStatus } from "@/lib/beta-feedback";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function GET() {
@@ -10,7 +10,8 @@ export async function GET() {
 
   return NextResponse.json({
     mode: feedback.mode,
-    records: feedback.records
+    records: feedback.records,
+    summary: summarizeBetaFeedbackRecords(feedback.records)
   });
 }
 

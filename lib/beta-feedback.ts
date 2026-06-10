@@ -26,6 +26,19 @@ export type BetaFeedbackRecord = BetaFeedbackInput & {
   userId?: string;
 };
 
+export type BetaFeedbackSummary = {
+  active: number;
+  byCategory: Record<BetaFeedbackCategory, number>;
+  byReleaseDecision: Record<BetaFeedbackReleaseDecision, number>;
+  bySeverity: Record<BetaFeedbackSeverity, number>;
+  byStatus: Record<BetaFeedbackStatus, number>;
+  launchBlockers: number;
+  open: number;
+  resolved: number;
+  total: number;
+  untriaged: number;
+};
+
 type DbBetaFeedbackRow = {
   category: BetaFeedbackCategory;
   contactEmail: string | null;
@@ -252,6 +265,55 @@ export async function getBetaFeedbackRecords(user?: AuthUser | null) {
   return {
     mode: "demo" as const,
     records: getBetaFeedbackDemoRecords()
+  };
+}
+
+export function summarizeBetaFeedbackRecords(records: BetaFeedbackRecord[]): BetaFeedbackSummary {
+  const byCategory: Record<BetaFeedbackCategory, number> = {
+    bug: 0,
+    data: 0,
+    design: 0,
+    flow: 0,
+    missing: 0,
+    other: 0
+  };
+  const byReleaseDecision: Record<BetaFeedbackReleaseDecision, number> = {
+    beta_acceptable: 0,
+    later: 0,
+    launch_blocker: 0
+  };
+  const bySeverity: Record<BetaFeedbackSeverity, number> = {
+    high: 0,
+    low: 0,
+    medium: 0
+  };
+  const byStatus: Record<BetaFeedbackStatus, number> = {
+    new: 0,
+    planned: 0,
+    resolved: 0,
+    reviewing: 0
+  };
+
+  for (const record of records) {
+    byCategory[record.category] += 1;
+    bySeverity[record.severity] += 1;
+    byStatus[record.status] += 1;
+    if (record.releaseDecision) byReleaseDecision[record.releaseDecision] += 1;
+  }
+
+  const activeRecords = records.filter((record) => record.status !== "resolved");
+
+  return {
+    active: activeRecords.length,
+    byCategory,
+    byReleaseDecision,
+    bySeverity,
+    byStatus,
+    launchBlockers: activeRecords.filter((record) => record.releaseDecision === "launch_blocker").length,
+    open: activeRecords.filter((record) => record.status === "new" || record.status === "reviewing").length,
+    resolved: byStatus.resolved,
+    total: records.length,
+    untriaged: activeRecords.filter((record) => !record.releaseDecision).length
   };
 }
 
