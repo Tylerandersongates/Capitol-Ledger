@@ -25,6 +25,27 @@ const testerTasks = [
     title: "Read the home view"
   },
   {
+    body: "Create an account from Sign In, then check whether setup, dashboard, and saved choices feel connected.",
+    href: "/sign-in?mode=create&returnTo=%2Fonboarding",
+    label: "Account",
+    reportHref: "/feedback?source=account",
+    title: "Create an account"
+  },
+  {
+    body: "Open Settings, sign out, and report whether the return path is clear.",
+    href: "/settings",
+    label: "Sign Out",
+    reportHref: "/feedback?source=account",
+    title: "Sign out"
+  },
+  {
+    body: "Sign back in and confirm district, interests, alerts, and saved records still feel connected.",
+    href: "/sign-in?returnTo=%2Fdashboard",
+    label: "Sign In",
+    reportHref: "/feedback?source=account",
+    title: "Sign back in"
+  },
+  {
     body: "Search for bills, officials, and votes. Try the filters and note what feels confusing.",
     href: "/search",
     label: "Search",
@@ -117,15 +138,15 @@ export default function BetaTesterPage() {
             title="How to test"
           />
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <MiniMetric label="Tasks" value="8" />
-            <MiniMetric label="Actions" value="2" />
+            <MiniMetric label="Tasks" value="11" />
+            <MiniMetric label="Actions" value="3" />
             <MiniMetric label="Round" value="Beta" />
           </div>
         </MobileCard>
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
-            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">8 flows</span>}
+            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">11 flows</span>}
             description="Open each flow, then report from the same row if something feels off."
             eyebrow="Tester Queue"
             title="Checklist"

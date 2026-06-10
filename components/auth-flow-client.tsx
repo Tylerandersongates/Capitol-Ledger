@@ -76,6 +76,11 @@ const defaultForm: AuthFormState = {
 };
 
 const trustItems = ["Private district setup", "Nonpartisan records", "Source-linked alerts"];
+const authPathItems = [
+  { label: "Create", value: "New account" },
+  { label: "Return", value: "Sign back in" },
+  { label: "Sync", value: "Setup saved" }
+];
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -621,25 +626,36 @@ export function AuthFlowClient({
         <div className={authCardAccentClass} />
         <div className="relative z-10">
           {(mode === "signIn" || mode === "create") && (!accountCreated || allowAccountCreation) ? (
-            <div className="grid grid-cols-2 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(23,67,121,0.34)_0%,rgba(5,19,43,0.72)_100%)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
-              <button
-                type="button"
-                onClick={() => selectMode("signIn")}
-                className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "signIn" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => selectMode("create")}
-                className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "create" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
-              >
-                Create
-              </button>
-            </div>
+            <>
+              <div className="grid grid-cols-2 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(23,67,121,0.34)_0%,rgba(5,19,43,0.72)_100%)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
+                <button
+                  type="button"
+                  onClick={() => selectMode("signIn")}
+                  className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "signIn" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectMode("create")}
+                  className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "create" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
+                >
+                  Create
+                </button>
+              </div>
+
+              <div className={`${authInnerPanelClass} mt-4 grid grid-cols-3 gap-2 px-3 py-3`}>
+                {authPathItems.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2 text-center">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/38">{item.label}</div>
+                    <div className="mt-1 text-[12px] font-semibold leading-tight text-white/66">{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : null}
 
-        <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-4">
           {mode === "create" ? (
             <>
               <Field icon={<UserRound />} label="First name" type="text" placeholder="First name" value={form.firstName} onChange={(value) => updateField("firstName", value)} />
