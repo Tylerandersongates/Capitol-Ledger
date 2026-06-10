@@ -19,11 +19,12 @@ const releaseDecisions: Array<{ label: string; value: BetaFeedbackReleaseDecisio
   { label: "Later", value: "later" }
 ];
 
-type FeedbackFilter = "all" | "open" | "blockers" | "high" | "medium" | "low" | "beta_ok" | "later" | "untriaged" | BetaFeedbackStatus;
+type FeedbackFilter = "all" | "open" | "account" | "blockers" | "high" | "medium" | "low" | "beta_ok" | "later" | "untriaged" | BetaFeedbackStatus;
 
 const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
   { label: "All", value: "all" },
   { label: "Open", value: "open" },
+  { label: "Account", value: "account" },
   { label: "Blockers", value: "blockers" },
   { label: "High", value: "high" },
   { label: "Medium", value: "medium" },
@@ -172,11 +173,12 @@ export function BetaFeedbackReviewQueue({
           <span className="rounded-full bg-white/8 px-3 py-1.5 text-[13px] font-medium text-white/52">{initialMode}</span>
         </div>
 
-        <div className="mt-5 grid grid-cols-4 gap-2">
+        <div className="mt-5 grid grid-cols-5 gap-2">
           <Metric label="High" value={metrics.high} tone="text-[#ff7567]" />
           <Metric label="Medium" value={metrics.medium} tone="text-[#ffb12b]" />
           <Metric label="Low" value={metrics.low} tone="text-[#8fb5ff]" />
           <Metric label="Open" value={metrics.open} tone="text-[#43ed74]" />
+          <Metric label="Account" value={metrics.account} tone="text-[#74dbff]" />
         </div>
 
         <div
@@ -330,6 +332,8 @@ function FeedbackRecordCard({
 }) {
   const browserPath = getContextString(record.context, "browserPath");
   const screen = getContextString(record.context, "screen");
+  const sourceLabel = getFeedbackSourceLabel(record);
+  const accountReport = sourceLabel === "Account / sign-in";
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
@@ -338,6 +342,7 @@ function FeedbackRecordCard({
           <div className="flex flex-wrap gap-2">
             <Pill label={record.category} tone="gold" />
             <Pill label={record.severity} tone={record.severity === "high" ? "red" : record.severity === "medium" ? "gold" : "muted"} />
+            {accountReport ? <Pill label="Account/Auth" tone="blue" /> : null}
             {record.releaseDecision ? <Pill label={formatReleaseDecision(record.releaseDecision)} tone={record.releaseDecision === "launch_blocker" ? "red" : "muted"} /> : null}
           </div>
           <h3 className="mt-3 text-[19px] font-medium leading-tight text-white">{record.title}</h3>
@@ -386,9 +391,10 @@ function FeedbackRecordCard({
         <span>{formatShortDate(record.createdAt)}</span>
       </div>
 
-      {record.contactEmail || browserPath || screen ? (
+      {record.contactEmail || accountReport || browserPath || screen ? (
         <div className="mt-3 grid gap-2 text-[12px] text-white/46">
           {record.contactEmail ? <ReportMeta label="Contact" value={record.contactEmail} /> : null}
+          {accountReport ? <ReportMeta label="Source" value={sourceLabel} /> : null}
           {browserPath ? <ReportMeta label="Path" value={browserPath} /> : null}
           {screen ? <ReportMeta label="Screen" value={screen} /> : null}
         </div>
@@ -415,13 +421,15 @@ function ReportMeta({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Pill({ label, tone }: { label: string; tone: "gold" | "muted" | "red" }) {
+function Pill({ label, tone }: { label: string; tone: "blue" | "gold" | "muted" | "red" }) {
   const toneClass =
     tone === "red"
       ? "border-[#ff7567]/35 bg-[#ff7567]/10 text-[#ff8e83]"
-      : tone === "gold"
-        ? "border-rust/30 bg-rust/10 text-[#ffb12b]"
-        : "border-white/10 bg-white/[0.06] text-white/52";
+      : tone === "blue"
+        ? "border-[#74dbff]/30 bg-[#74dbff]/10 text-[#91e7ff]"
+        : tone === "gold"
+          ? "border-rust/30 bg-rust/10 text-[#ffb12b]"
+          : "border-white/10 bg-white/[0.06] text-white/52";
 
   return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide ${toneClass}`}>{label}</span>;
 }
@@ -451,6 +459,7 @@ function getFeedbackMetrics(records: BetaFeedbackRecord[]) {
   return {
     byCategory,
     byReleaseDecision,
+    account: activeRecords.filter(isAccountFeedback).length,
     blockers: activeRecords.filter((record) => record.releaseDecision === "launch_blocker").length,
     high: activeRecords.filter((record) => record.severity === "high").length,
     low: activeRecords.filter((record) => record.severity === "low").length,
@@ -485,6 +494,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
       [
         `${index + 1}. ${record.title}`,
         `   ${record.severity.toUpperCase()} ${record.category} - ${record.status} - ${record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged"}`,
+        `   Source: ${getFeedbackSourceLabel(record)}`,
         `   Page: ${record.pageUrl ?? "No page attached"}`,
         record.contactEmail ? `   Contact: ${record.contactEmail}` : "",
         getContextString(record.context, "screen") ? `   Screen: ${getContextString(record.context, "screen")}` : "",
@@ -504,6 +514,7 @@ function buildSingleReportSummary(record: BetaFeedbackRecord) {
   return [
     record.title,
     `${record.severity.toUpperCase()} ${record.category} - ${record.status} - ${record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged"}`,
+    `Source: ${getFeedbackSourceLabel(record)}`,
     `Created: ${formatLongDate(record.createdAt)}`,
     `Page: ${record.pageUrl ?? "No page attached"}`,
     record.contactEmail ? `Contact: ${record.contactEmail}` : "",
@@ -519,9 +530,10 @@ function buildSingleReportSummary(record: BetaFeedbackRecord) {
 
 function buildFeedbackCsv(records: BetaFeedbackRecord[]) {
   const rows = [
-    ["title", "category", "severity", "status", "releaseDecision", "pageUrl", "browserPath", "screen", "createdAt", "contactEmail", "message"],
+    ["title", "source", "category", "severity", "status", "releaseDecision", "pageUrl", "browserPath", "screen", "createdAt", "contactEmail", "message"],
     ...records.map((record) => [
       record.title,
+      getFeedbackSourceLabel(record),
       record.category,
       record.severity,
       record.status,
@@ -545,6 +557,7 @@ function csvCell(value: string) {
 function filterRecords(records: BetaFeedbackRecord[], filter: FeedbackFilter) {
   if (filter === "all") return records;
   if (filter === "open") return records.filter((record) => record.status === "new" || record.status === "reviewing");
+  if (filter === "account") return records.filter((record) => record.status !== "resolved" && isAccountFeedback(record));
   if (filter === "blockers") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "launch_blocker");
   if (filter === "high" || filter === "medium" || filter === "low") return records.filter((record) => record.status !== "resolved" && record.severity === filter);
   if (filter === "beta_ok") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "beta_acceptable");
@@ -561,6 +574,7 @@ function searchRecords(records: BetaFeedbackRecord[], query: string) {
     [
       record.category,
       record.contactEmail ?? "",
+      getFeedbackSourceLabel(record),
       record.message,
       record.pageUrl ?? "",
       record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged",
@@ -574,6 +588,7 @@ function searchRecords(records: BetaFeedbackRecord[], query: string) {
 function formatFilterLabel(filter: FeedbackFilter) {
   if (filter === "all") return "All reports";
   if (filter === "open") return "Open reports";
+  if (filter === "account") return "Account/auth reports";
   if (filter === "blockers") return "Launch blockers";
   if (filter === "high") return "High severity reports";
   if (filter === "medium") return "Medium severity reports";
@@ -588,6 +603,26 @@ function formatReleaseDecision(value: BetaFeedbackReleaseDecision) {
   if (value === "launch_blocker") return "Launch blocker";
   if (value === "beta_acceptable") return "Beta acceptable";
   return "Later";
+}
+
+function normalizeFeedbackPath(value?: string) {
+  if (!value) return "";
+
+  try {
+    return new URL(value, "https://capitol-ledger.local").pathname.toLowerCase();
+  } catch {
+    return value.trim().split("?")[0].toLowerCase();
+  }
+}
+
+function isAccountFeedback(record: BetaFeedbackRecord) {
+  const path = normalizeFeedbackPath(record.pageUrl);
+
+  return path === "/account" || path.startsWith("/account/") || path === "/settings" || path.startsWith("/settings/") || path === "/sign-in" || path.startsWith("/sign-in/");
+}
+
+function getFeedbackSourceLabel(record: BetaFeedbackRecord) {
+  return isAccountFeedback(record) ? "Account / sign-in" : "General app";
 }
 
 function getContextString(context: BetaFeedbackRecord["context"], key: string) {

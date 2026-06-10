@@ -7,6 +7,7 @@ import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { PartyAffiliationSelector } from "@/components/party-affiliation-control";
+import { SettingsAccountSyncStatus } from "@/components/settings-account-sync-status";
 import { getCurrentSession } from "@/lib/auth";
 import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
@@ -85,6 +86,8 @@ export default async function SettingsPage() {
       </header>
 
       <main className="mt-7 space-y-4 pb-8">
+        <SettingsAccountSyncStatus authenticated={authenticated} userEmail={session?.user.email} />
+
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumSettingsHeader
             description="Account controls now live here so the profile screen can stay focused on the citizen profile and civic signals."

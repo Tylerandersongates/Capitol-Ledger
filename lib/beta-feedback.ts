@@ -28,6 +28,8 @@ export type BetaFeedbackRecord = BetaFeedbackInput & {
 
 export type BetaFeedbackSummary = {
   active: number;
+  account: number;
+  activeAccount: number;
   byCategory: Record<BetaFeedbackCategory, number>;
   byReleaseDecision: Record<BetaFeedbackReleaseDecision, number>;
   bySeverity: Record<BetaFeedbackSeverity, number>;
@@ -84,6 +86,22 @@ function normalizeStatus(value: unknown): BetaFeedbackStatus | null {
 
 function normalizeReleaseDecision(value: unknown): BetaFeedbackReleaseDecision | null {
   return value === "launch_blocker" || value === "beta_acceptable" || value === "later" ? value : null;
+}
+
+function normalizeFeedbackPath(value?: string) {
+  if (!value) return "";
+
+  try {
+    return new URL(value, "https://capitol-ledger.local").pathname.toLowerCase();
+  } catch {
+    return value.trim().split("?")[0].toLowerCase();
+  }
+}
+
+function isAccountFeedbackRecord(record: Pick<BetaFeedbackRecord, "pageUrl">) {
+  const path = normalizeFeedbackPath(record.pageUrl);
+
+  return path === "/account" || path.startsWith("/account/") || path === "/settings" || path.startsWith("/settings/") || path === "/sign-in" || path.startsWith("/sign-in/");
 }
 
 export function normalizeBetaFeedbackInput(value: Partial<BetaFeedbackInput>): BetaFeedbackInput {
@@ -305,6 +323,8 @@ export function summarizeBetaFeedbackRecords(records: BetaFeedbackRecord[]): Bet
 
   return {
     active: activeRecords.length,
+    account: records.filter(isAccountFeedbackRecord).length,
+    activeAccount: activeRecords.filter(isAccountFeedbackRecord).length,
     byCategory,
     byReleaseDecision,
     bySeverity,
