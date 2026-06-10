@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { badgeIcon, badgeTones } from "@/components/gamification-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
@@ -12,37 +12,67 @@ import {
 import { civicLevelTiers, getBadgeCollections, getImpactActions, type GamificationBadge } from "@/lib/gamification";
 import type { AccountGamificationSnapshot } from "@/lib/account-gamification";
 
+let gamificationSnapshot = readLocalGamificationSnapshot();
+let gamificationSnapshotSignature = JSON.stringify(gamificationSnapshot);
+let gamificationStoreStarted = false;
+let gamificationRefreshPromise: Promise<void> | null = null;
+
+const gamificationListeners = new Set<() => void>();
+
 export function useGamificationSnapshot() {
-  const [snapshot, setSnapshot] = useState<AccountGamificationSnapshot>(() => readLocalGamificationSnapshot());
+  return useSyncExternalStore(subscribeToGamificationSnapshot, getGamificationSnapshot, getGamificationSnapshot);
+}
 
-  useEffect(() => {
-    let active = true;
+function getGamificationSnapshot() {
+  return gamificationSnapshot;
+}
 
-    function refreshLocalSnapshot() {
-      if (active) setSnapshot(readLocalGamificationSnapshot());
-    }
+function subscribeToGamificationSnapshot(listener: () => void) {
+  gamificationListeners.add(listener);
+  startGamificationStore();
+  refreshLocalGamificationSnapshot();
+  void refreshAccountGamificationSnapshot();
 
-    async function refreshAccountSnapshot() {
-      const next = await hydrateGamificationFromAccount();
-      if (active) setSnapshot(next);
-    }
+  return () => {
+    gamificationListeners.delete(listener);
+  };
+}
 
-    void refreshAccountSnapshot();
-    window.addEventListener("storage", refreshLocalSnapshot);
-    window.addEventListener(gamificationChangedEvent, refreshLocalSnapshot);
-    window.addEventListener("focus", refreshAccountSnapshot);
-    window.addEventListener("pageshow", refreshAccountSnapshot);
+function startGamificationStore() {
+  if (gamificationStoreStarted || typeof window === "undefined") return;
 
-    return () => {
-      active = false;
-      window.removeEventListener("storage", refreshLocalSnapshot);
-      window.removeEventListener(gamificationChangedEvent, refreshLocalSnapshot);
-      window.removeEventListener("focus", refreshAccountSnapshot);
-      window.removeEventListener("pageshow", refreshAccountSnapshot);
-    };
-  }, []);
+  gamificationStoreStarted = true;
+  window.addEventListener("storage", refreshLocalGamificationSnapshot);
+  window.addEventListener(gamificationChangedEvent, refreshLocalGamificationSnapshot);
+  window.addEventListener("focus", refreshAccountGamificationSnapshot);
+  window.addEventListener("pageshow", refreshAccountGamificationSnapshot);
+}
 
-  return snapshot;
+function refreshLocalGamificationSnapshot() {
+  publishGamificationSnapshot(readLocalGamificationSnapshot());
+}
+
+async function refreshAccountGamificationSnapshot() {
+  if (gamificationRefreshPromise) return gamificationRefreshPromise;
+
+  gamificationRefreshPromise = hydrateGamificationFromAccount()
+    .then((next) => {
+      publishGamificationSnapshot(next);
+    })
+    .finally(() => {
+      gamificationRefreshPromise = null;
+    });
+
+  return gamificationRefreshPromise;
+}
+
+function publishGamificationSnapshot(snapshot: AccountGamificationSnapshot) {
+  const signature = JSON.stringify(snapshot);
+  if (signature === gamificationSnapshotSignature) return;
+
+  gamificationSnapshot = snapshot;
+  gamificationSnapshotSignature = signature;
+  gamificationListeners.forEach((listener) => listener());
 }
 
 export function AccountGamificationStats({ className = "mt-5 grid grid-cols-3 gap-3" }: { className?: string }) {

@@ -82,6 +82,7 @@ type DatabaseSourceLinkRow = {
 
 const pendingOfficialSummaryText =
   "Official CRS summary not yet published by Congress.gov. Capitol Ledger will display the official summary first when it becomes available.";
+const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 
 const memberCaucusMemberships: Record<string, MemberCaucusMembership[]> = {
   B001302: [
@@ -570,6 +571,46 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function resolveOptionalDatabaseReadTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_DATABASE_READ_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(500, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? 5_000 : 1_500;
+}
+
+async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>) {
+  if (!shouldUseOptionalDatabaseReads()) return null;
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      read(),
+      new Promise<null>((resolve) => {
+        timeoutId = setTimeout(() => resolve(null), optionalDatabaseReadTimeoutMs);
+      })
+    ]);
+  } catch {
+    return null;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function shouldUseOptionalDatabaseReads() {
+  if (!hasDatabaseUrl()) return false;
+  if (process.env.CAPITOL_LEDGER_DISABLE_DATABASE_READS === "true") return false;
+
+  if (process.env.NODE_ENV !== "production") {
+    return process.env.CAPITOL_LEDGER_ENABLE_LOCAL_DATABASE_READS === "true";
+  }
+
+  return true;
+}
+
 export function getMember(bioguideId: string) {
   return members.find((member) => member.bioguideId === bioguideId);
 }
@@ -746,7 +787,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
 }
 
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
-  return (await getDatabaseMemberDetailData(bioguideId)) ?? getDemoMemberDetailData(bioguideId);
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
 }
 
 export function getBillVotes(billId: string) {
@@ -955,7 +996,7 @@ export async function getBillDetailWithLiveData(billId: string): Promise<BillDet
     return demoDetail;
   }
 
-  return (await getDatabaseBillDetailData(billId)) ?? demoDetail;
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? demoDetail;
 }
 
 export function getBillStatus(bill: Bill) {
@@ -1124,7 +1165,7 @@ async function getDatabaseDashboardRecords() {
 }
 
 export async function getDashboardDataWithLiveData() {
-  const liveRecords = await getDatabaseDashboardRecords();
+  const liveRecords = await withOptionalDatabaseReadTimeout(getDatabaseDashboardRecords);
 
   if (!liveRecords) {
     return getDashboardData();
@@ -1277,7 +1318,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
 
 export async function searchRecordsWithLiveData(filters: SearchFilters) {
   const demoResults = searchRecords(filters);
-  const liveResults = await searchDatabaseRecords(filters);
+  const liveResults = await withOptionalDatabaseReadTimeout(() => searchDatabaseRecords(filters));
 
   if (!liveResults) {
     return {
