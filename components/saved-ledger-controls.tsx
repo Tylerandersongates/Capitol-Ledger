@@ -187,7 +187,17 @@ async function hydrateSavedLedgerFromApi() {
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   if (!data?.ledger) return;
 
-  writeLocalLedger(data.ledger);
+  const localLedger = readLocalLedger();
+  const mergedLedger = mergeLedgerSnapshots(localLedger, data.ledger);
+  writeLocalLedger(mergedLedger);
+  if (
+    mergedLedger.follows.length !== data.ledger.follows.length ||
+    mergedLedger.issueInterests.length !== data.ledger.issueInterests.length ||
+    mergedLedger.readAlerts.length !== data.ledger.readAlerts.length ||
+    mergedLedger.savedAlerts.length !== data.ledger.savedAlerts.length
+  ) {
+    void syncLocalLedgerToAccount();
+  }
 }
 
 export function SaveTargetButton({
