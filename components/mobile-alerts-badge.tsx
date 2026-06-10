@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  accountProfileChangedEvent,
+  fetchAccountProfile,
+  readLocalNotificationPreferences,
+  writeLocalNotificationPreferences
+} from "@/lib/browser-account-profile";
+import type { AccountNotificationPreferences } from "@/types/capitol";
 
 const readAlertsKey = "capitol-ledger:read-alerts";
 const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 
+type AlertPreference = keyof Pick<AccountNotificationPreferences, "districtAlerts" | "voteReminders">;
+type AlertSummaryItem = {
+  id: string;
+  preference?: AlertPreference;
+};
 type AlertSummaryResponse = {
+  activeAlerts?: AlertSummaryItem[];
   activeAlertCount?: number;
   activeAlertIds?: string[];
 };
@@ -29,11 +42,21 @@ function readAlertIds() {
   }
 }
 
-function countUnopenedActiveAlerts(activeAlertIds: string[], fallbackCount?: number) {
-  if (!activeAlertIds.length) return Number(fallbackCount ?? 0);
+function alertPreferenceEnabled(preferences: AccountNotificationPreferences, preference?: AlertPreference) {
+  if (!preference) return true;
+  return preferences[preference];
+}
+
+function countUnopenedActiveAlerts(activeAlerts: AlertSummaryItem[], fallbackIds: string[], fallbackCount?: number) {
+  const preferences = readLocalNotificationPreferences();
+  const alerts = activeAlerts.length
+    ? activeAlerts.filter((alert) => alert.id && alertPreferenceEnabled(preferences, alert.preference))
+    : fallbackIds.map((id) => ({ id }));
+
+  if (!alerts.length) return activeAlerts.length || fallbackIds.length ? 0 : Number(fallbackCount ?? 0);
 
   const readIds = new Set(readAlertIds());
-  return activeAlertIds.filter((id) => !readIds.has(id)).length;
+  return alerts.filter((alert) => !readIds.has(alert.id)).length;
 }
 
 async function fetchAlertSummary() {
@@ -46,6 +69,9 @@ async function fetchAlertSummary() {
       const data = (await response.json().catch(() => null)) as AlertSummaryResponse | null;
       if (!data) return null;
       alertSummaryCache = {
+        activeAlerts: Array.isArray(data.activeAlerts)
+          ? data.activeAlerts.filter((alert): alert is AlertSummaryItem => Boolean(alert?.id))
+          : [],
         activeAlertCount: data.activeAlertCount,
         activeAlertIds: Array.isArray(data.activeAlertIds) ? data.activeAlertIds : []
       };
@@ -65,6 +91,7 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
 
   useEffect(() => {
     let active = true;
+    let activeAlerts: AlertSummaryItem[] = [];
     let activeAlertIds: string[] = [];
 
     function updateBadge(count: number) {
@@ -72,28 +99,43 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
     }
 
     function refreshFromLocalReads() {
-      updateBadge(countUnopenedActiveAlerts(activeAlertIds));
+      updateBadge(countUnopenedActiveAlerts(activeAlerts, activeAlertIds));
     }
 
     async function refreshBadge() {
       const data = await fetchAlertSummary();
       if (!active || !data) return;
 
+      activeAlerts = Array.isArray(data?.activeAlerts) ? data.activeAlerts : [];
       activeAlertIds = Array.isArray(data?.activeAlertIds) ? data.activeAlertIds : [];
-      updateBadge(countUnopenedActiveAlerts(activeAlertIds, data?.activeAlertCount));
+      updateBadge(countUnopenedActiveAlerts(activeAlerts, activeAlertIds, data?.activeAlertCount));
+    }
+
+    async function refreshPreferences() {
+      const profile = await fetchAccountProfile();
+      if (!active) return;
+      if (profile) writeLocalNotificationPreferences(profile.notificationPreferences);
+      refreshFromLocalReads();
     }
 
     void refreshBadge();
+    void refreshPreferences();
     window.addEventListener("storage", refreshFromLocalReads);
     window.addEventListener("focus", refreshBadge);
+    window.addEventListener("focus", refreshPreferences);
     window.addEventListener("pageshow", refreshBadge);
+    window.addEventListener("pageshow", refreshPreferences);
+    window.addEventListener(accountProfileChangedEvent, refreshFromLocalReads);
     window.addEventListener(readAlertsChangedEvent, refreshFromLocalReads);
 
     return () => {
       active = false;
       window.removeEventListener("storage", refreshFromLocalReads);
       window.removeEventListener("focus", refreshBadge);
+      window.removeEventListener("focus", refreshPreferences);
       window.removeEventListener("pageshow", refreshBadge);
+      window.removeEventListener("pageshow", refreshPreferences);
+      window.removeEventListener(accountProfileChangedEvent, refreshFromLocalReads);
       window.removeEventListener(readAlertsChangedEvent, refreshFromLocalReads);
     };
   }, []);

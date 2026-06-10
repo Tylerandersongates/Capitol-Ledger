@@ -2,14 +2,13 @@ import {
   AlertsInboxClient,
   type AlertsInboxFilter,
   type AlertsInboxIcon,
-  type AlertsInboxItem,
-  type AlertsInboxPreference
+  type AlertsInboxItem
 } from "@/components/alerts-inbox-client";
 import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileShell } from "@/components/mobile-shell";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { isActionNeededAlertEvent } from "@/lib/alert-summary";
+import { getAlertNotificationPreference, isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
@@ -31,12 +30,6 @@ function eventCategoryLabel(event: ReturnType<typeof getRecentUpdates>[number]) 
   return "Civic Update";
 }
 
-function getNotificationPreference(event: ReturnType<typeof getRecentUpdates>[number]): AlertsInboxPreference {
-  const text = `${event.title} ${event.body}`.toLowerCase();
-  if (text.includes("vote") || text.includes("committee") || text.includes("hearing")) return "voteReminders";
-  return "districtAlerts";
-}
-
 export default async function AlertsPage({ searchParams }: { searchParams?: { filter?: string } }) {
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
   const dashboardData = await getDashboardDataWithLiveData();
@@ -54,7 +47,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
       title: event.title,
       body: `${targetLabel} - ${event.body}`,
       categoryLabel: eventCategoryLabel(event),
-      preference: getNotificationPreference(event),
+      preference: getAlertNotificationPreference(event),
       actionNeeded: isActionNeededAlertEvent(event),
       action: bill ? "View Bill" : member ? "View Profile" : "View Record",
       href,

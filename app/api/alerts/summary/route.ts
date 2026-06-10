@@ -7,6 +7,6 @@ export async function GET() {
   try {
     return NextResponse.json(await getActiveAlertSummary());
   } catch {
-    return NextResponse.json({ activeAlertCount: 0, activeAlertIds: [] });
+    return NextResponse.json({ activeAlerts: [], activeAlertCount: 0, activeAlertIds: [] });
   }
 }
