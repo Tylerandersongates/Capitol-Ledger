@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ClipboardCheck, Copy, Download, MessageSquarePlus, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ClipboardCheck, Copy, Download, MessageSquarePlus, RefreshCw, Search } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileCard } from "@/components/mobile-ui";
 import type { BetaFeedbackRecord, BetaFeedbackReleaseDecision, BetaFeedbackStatus } from "@/lib/beta-feedback";
@@ -46,11 +46,17 @@ export function BetaFeedbackReviewQueue({
 }) {
   const [records, setRecords] = useState(initialRecords);
   const [pendingId, setPendingId] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusText, setStatusText] = useState("");
   const [activeFilter, setActiveFilter] = useState<FeedbackFilter>("open");
+  const [lastChecked, setLastChecked] = useState("");
   const metrics = useMemo(() => getFeedbackMetrics(records), [records]);
   const filteredRecords = useMemo(() => searchRecords(filterRecords(records, activeFilter), searchQuery), [activeFilter, records, searchQuery]);
+
+  useEffect(() => {
+    setLastChecked(formatCheckTime(new Date()));
+  }, []);
 
   async function updateReview(id: string, patch: { releaseDecision?: BetaFeedbackReleaseDecision; status?: BetaFeedbackStatus }) {
     setPendingId(id);
@@ -74,6 +80,25 @@ export function BetaFeedbackReviewQueue({
 
     setRecords((current) => current.map((record) => (record.id === data.record?.id ? data.record : record)));
     setStatusText("Feedback review updated.");
+  }
+
+  async function refreshQueue() {
+    setRefreshing(true);
+    setStatusText("");
+
+    const response = await fetch("/api/feedback", { cache: "no-store" }).catch(() => null);
+    const data = response ? ((await response.json().catch(() => null)) as { error?: string; records?: BetaFeedbackRecord[] } | null) : null;
+
+    setRefreshing(false);
+
+    if (!response?.ok || !Array.isArray(data?.records)) {
+      setStatusText(data?.error ?? "Feedback queue could not be refreshed.");
+      return;
+    }
+
+    setRecords(data.records);
+    setLastChecked(formatCheckTime(new Date()));
+    setStatusText(`${data.records.length} reports loaded.`);
   }
 
   async function copyTriageSummary() {
@@ -198,8 +223,22 @@ export function BetaFeedbackReviewQueue({
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-[24px] font-medium leading-none text-white">Latest Reports</h2>
-          <span className="text-[13px] font-medium text-white/42">{filteredRecords.length} shown</span>
+          <div>
+            <h2 className="text-[24px] font-medium leading-none text-white">Latest Reports</h2>
+            <p className="mt-1 text-[12px] leading-none text-white/36">Last checked {lastChecked || "after load"}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-white/42">{filteredRecords.length} shown</span>
+            <button
+              type="button"
+              onClick={refreshQueue}
+              disabled={refreshing}
+              className="flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] px-3 text-[12px] font-semibold text-white/62 transition disabled:opacity-45"
+            >
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 text-[#ffb12b] ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.9} aria-hidden="true" />
+              {refreshing ? "Refreshing" : "Refresh"}
+            </button>
+          </div>
         </div>
 
         <MobileGlassScrollFrame axis="horizontal" ariaLabel="Feedback filters" frameClassName="">
@@ -582,4 +621,11 @@ function formatLongDate(value: string) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(date);
+}
+
+function formatCheckTime(value: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(value);
 }
