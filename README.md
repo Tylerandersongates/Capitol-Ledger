@@ -39,6 +39,8 @@ npm run sync:congress    # Test server-side Congress.gov access
 
 `CONGRESS_API_KEY` is used only in server-side routes and scripts. Do not expose it through `NEXT_PUBLIC_` variables.
 
+`DATABASE_URL` powers account, feedback, billing, and persistence paths. Synced Congress content remains demo-first unless `CAPITOL_LEDGER_ENABLE_DATABASE_READS=true`; keep that flag off until the live member/bill sync has been reviewed for current, active records.
+
 ## MVP Notes
 
 - Federal data only.

@@ -604,11 +604,10 @@ function shouldUseOptionalDatabaseReads() {
   if (!hasDatabaseUrl()) return false;
   if (process.env.CAPITOL_LEDGER_DISABLE_DATABASE_READS === "true") return false;
 
-  if (process.env.NODE_ENV !== "production") {
-    return process.env.CAPITOL_LEDGER_ENABLE_LOCAL_DATABASE_READS === "true";
-  }
-
-  return true;
+  return (
+    process.env.CAPITOL_LEDGER_ENABLE_DATABASE_READS === "true" ||
+    (process.env.NODE_ENV !== "production" && process.env.CAPITOL_LEDGER_ENABLE_LOCAL_DATABASE_READS === "true")
+  );
 }
 
 export function getMember(bioguideId: string) {
@@ -717,7 +716,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
 
   try {
     const prisma = getPrisma();
-    const memberRow = await prisma.member.findUnique({
+    const memberRow = await prisma.member.findFirst({
       include: {
         cosponsoredBills: {
           include: {
@@ -754,6 +753,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
         }
       },
       where: {
+        active: true,
         bioguideId
       }
     });
@@ -764,6 +764,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
       orderBy: [{ state: "asc" }, { lastName: "asc" }],
       take: 600,
       where: {
+        active: true,
         chamber: memberRow.chamber
       }
     });
@@ -1245,6 +1246,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
             take: 30,
             where: {
               AND: [
+                { active: true },
                 q
                   ? {
                       OR: [
