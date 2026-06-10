@@ -23,7 +23,7 @@ import {
 import { getMemberDetailWithLiveData, type MemberCaucusMembership, type MemberVoteRecord } from "@/lib/data";
 import { calculateMemberScore, type MemberScoreModel } from "@/lib/member-scoring";
 import { getCurrentSession } from "@/lib/auth";
-import { ensureAccountUser, readLedgerFromDatabase, readProfileFromDatabase } from "@/lib/account-database";
+import { ensureAccountUser, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { estimateTermsInOfficeFromCongressLabel, federalElectionDateIso, formatDate, positionTone } from "@/lib/utils";
 import type { Bill, Member } from "@/types/capitol";
@@ -441,17 +441,14 @@ function fallbackNextElectionDate(chamber: Member["chamber"]) {
 
 async function getViewerScoreContext() {
   const session = await getCurrentSession();
-  if (!session) return { viewerDistrictState: undefined, viewerIssueInterests: [] as string[] };
+  if (!session) return { viewerIssueInterests: [] as string[] };
 
   const user = session.user;
   const hasAccountDatabase = await ensureAccountUser(user).catch(() => false);
-  const [databaseLedger, databaseProfile] = hasAccountDatabase
-    ? await Promise.all([readLedgerFromDatabase(user.id), readProfileFromDatabase(user.id)])
-    : [null, null];
+  const databaseLedger = hasAccountDatabase ? await readLedgerFromDatabase(user.id) : null;
   const fallbackLedger = getAccountLedger(user.id);
 
   return {
-    viewerDistrictState: databaseProfile?.districtState ?? databaseProfile?.districtCode ?? undefined,
     viewerIssueInterests: (databaseLedger ?? fallbackLedger).issueInterests
   };
 }

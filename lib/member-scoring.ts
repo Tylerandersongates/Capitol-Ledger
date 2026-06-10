@@ -57,7 +57,6 @@ export type MemberScoreModel = {
 };
 
 type MemberScoreContext = {
-  viewerDistrictState?: string;
   viewerIssueInterests?: string[];
 };
 
@@ -275,11 +274,10 @@ function buildConstituentAlignment({
   member,
   memberVotes,
   sponsoredBills,
-  viewerDistrictState,
   viewerIssueInterests = []
 }: Required<Omit<MemberScoreInput, "context">> &
   MemberScoreContext) {
-  const viewerState = normalizeStateCode(viewerDistrictState) ?? member.state;
+  const viewerState = normalizeStateCode(member.state) ?? member.state;
   const selectedTopics = normalizeViewerTopics(viewerIssueInterests);
   const linkedVoteCount = memberVotes.filter((record) => record.vote).length;
   const tenure = tenureScore(member, linkedVoteCount, sponsoredBills.length);
@@ -394,7 +392,6 @@ export function calculateMemberScore({
     member,
     memberVotes,
     sponsoredBills,
-    viewerDistrictState: context?.viewerDistrictState ?? member.state,
     viewerIssueInterests: context?.viewerIssueInterests ?? []
   });
   const constituentAlignmentScore = weightedAverage(alignment.components);
