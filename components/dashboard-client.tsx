@@ -1,6 +1,7 @@
 "use client";
 
 import { MobileShell } from "@/components/mobile-shell";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
@@ -128,10 +129,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     () => resolveDashboardFavorites(favoriteRecords, data.favoriteTargets, accountProfile),
     [accountProfile, data.favoriteTargets, favoriteRecords]
   );
-  const favoriteItems = resolvedFavoriteItems.slice(0, 3);
   const suggestedFavorites = useMemo(() => getSuggestedDashboardFavorites(data.favoriteTargets, favoriteRecords, accountProfile).slice(0, 2), [accountProfile, data.favoriteTargets, favoriteRecords]);
-  const visibleFavorites = favoriteItems.length ? favoriteItems : suggestedFavorites;
-  const showingSavedFavorites = favoriteItems.length > 0;
+  const visibleFavorites = resolvedFavoriteItems.length ? resolvedFavoriteItems : suggestedFavorites;
+  const showingSavedFavorites = resolvedFavoriteItems.length > 0;
+  const shouldScrollFavorites = showingSavedFavorites && visibleFavorites.length > 3;
 
   useEffect(() => {
     let active = true;
@@ -371,30 +372,15 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     </span>
                   </div>
                   {visibleFavorites.length ? (
-                    <div className="grid gap-1.5">
-                      {visibleFavorites.map((item) => {
-                        const saved = favoriteRecords.some((record) => record.type === item.type && record.id === item.id);
-
-                        return (
-                          <div key={`${item.type}-${item.id}`} className="grid min-h-[58px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
-                            <button
-                              type="button"
-                              onClick={() => toggleFavorite(item)}
-                              className="grid h-9 w-9 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b] transition hover:bg-[#ffb12b]/16"
-                              aria-label={`${saved ? "Remove favorite" : "Favorite"} ${item.label}`}
-                              aria-pressed={saved}
-                            >
-                              <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
-                            </button>
-                            <Link href={item.href} className="min-w-0 py-1">
-                              <span className="block truncate text-[15px] font-medium leading-tight text-white">{item.label}</span>
-                              <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
-                            </Link>
-                            <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />
-                          </div>
-                        );
-                      })}
-                    </div>
+                    shouldScrollFavorites ? (
+                      <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="max-h-[13.25rem]" className="grid gap-1.5" ariaLabel="Saved civic watchlist">
+                        <FavoriteRows favorites={visibleFavorites} favoriteRecords={favoriteRecords} onToggleFavorite={toggleFavorite} />
+                      </MobileGlassScrollFrame>
+                    ) : (
+                      <div className="grid gap-1.5">
+                        <FavoriteRows favorites={visibleFavorites} favoriteRecords={favoriteRecords} onToggleFavorite={toggleFavorite} />
+                      </div>
+                    )
                   ) : (
                     <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3 text-[13px] leading-snug text-white/58">
                       Finish district setup to see local official suggestions.
@@ -770,6 +756,43 @@ function BriefMetricPill({ label, value }: { label: string; value: number }) {
       <div className="text-[18px] font-medium leading-none text-[#ffbd39]">{value}</div>
       <div className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.05em] text-white/52">{label}</div>
     </div>
+  );
+}
+
+function FavoriteRows({
+  favoriteRecords,
+  favorites,
+  onToggleFavorite
+}: {
+  favoriteRecords: SavedFollowRecord[];
+  favorites: DashboardFavoriteItem[];
+  onToggleFavorite: (item: DashboardFavoriteItem) => void;
+}) {
+  return (
+    <>
+      {favorites.map((item) => {
+        const saved = favoriteRecords.some((record) => record.type === item.type && record.id === item.id);
+
+        return (
+          <div key={`${item.type}-${item.id}`} className="grid min-h-[58px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(item)}
+              className="grid h-9 w-9 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b] transition hover:bg-[#ffb12b]/16"
+              aria-label={`${saved ? "Remove favorite" : "Favorite"} ${item.label}`}
+              aria-pressed={saved}
+            >
+              <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+            <Link href={item.href} className="min-w-0 py-1">
+              <span className="block truncate text-[15px] font-medium leading-tight text-white">{item.label}</span>
+              <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
+            </Link>
+            <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />
+          </div>
+        );
+      })}
+    </>
   );
 }
 
