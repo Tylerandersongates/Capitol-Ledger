@@ -16,6 +16,7 @@ type FeedbackSummary = {
   };
   launchBlockers: number;
   open: number;
+  resolved: number;
   total: number;
   untriaged: number;
 };
@@ -36,6 +37,7 @@ const emptySummary: FeedbackSummary = {
   },
   launchBlockers: 0,
   open: 0,
+  resolved: 0,
   total: 0,
   untriaged: 0
 };
@@ -94,18 +96,19 @@ export function BetaReadinessSnapshot() {
         </button>
       </div>
 
-      <div className="mt-5 grid grid-cols-4 gap-2">
+      <div className="mt-5 grid grid-cols-5 gap-2">
         <ReadinessMetric icon={<Activity />} label="Open" tone="green" value={summary.open} />
         <ReadinessMetric icon={<AlertTriangle />} label="Blockers" tone={summary.launchBlockers ? "red" : "muted"} value={summary.launchBlockers} />
         <ReadinessMetric icon={<CheckCircle2 />} label="Known" tone="gold" value={knownIssues} />
         <ReadinessMetric icon={<CopyCheck />} label="Duplicate" tone="blue" value={duplicates} />
+        <ReadinessMetric icon={<CheckCircle2 />} label="Resolved" tone="green" value={summary.resolved} />
       </div>
 
       <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/38">{mode}</div>
           <div className="mt-1 text-[13px] leading-snug text-white/54">
-            {summary.total} total reports{lastChecked ? `, checked ${lastChecked}` : ""}
+            {summary.total} total reports, {summary.resolved} resolved this round{lastChecked ? `, checked ${lastChecked}` : ""}
           </div>
         </div>
         <Link href="/feedback/review" className="shrink-0 rounded-full border border-white/12 bg-white/5 px-3 py-2 text-[12px] font-semibold text-white/68">
