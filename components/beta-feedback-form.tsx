@@ -7,6 +7,11 @@ type FeedbackCategory = "bug" | "flow" | "missing" | "data" | "design" | "other"
 type FeedbackSeverity = "low" | "medium" | "high";
 type FeedbackCategoryChoice = FeedbackCategory | "";
 type FeedbackSeverityChoice = FeedbackSeverity | "";
+type FeedbackArea = {
+  helper?: string;
+  label: string;
+  value: string;
+};
 
 const categories: Array<{ label: string; value: FeedbackCategory }> = [
   { label: "Bug", value: "bug" },
@@ -23,7 +28,7 @@ const severities: Array<{ label: string; value: FeedbackSeverity }> = [
   { label: "High", value: "high" }
 ];
 
-const feedbackAreas = [
+const feedbackAreas: FeedbackArea[] = [
   { label: "Dashboard", value: "/dashboard" },
   { label: "Search / discovery", value: "/search" },
   { label: "Bill detail", value: "/bills" },
@@ -32,7 +37,11 @@ const feedbackAreas = [
   { label: "Badges / impact", value: "/badges" },
   { label: "Subscription", value: "/upgrade" },
   { label: "Team workspace", value: "/team" },
-  { label: "Account / sign-in", value: "/account" },
+  {
+    helper: "Mention whether this happened during account creation, sign out, sign back in, verification, or saved setup sync.",
+    label: "Account / sign-in",
+    value: "/account"
+  },
   { label: "Beta checklist", value: "/beta" },
   { label: "Beta feedback", value: "/feedback" },
   { label: "Other", value: "/other" }
@@ -47,17 +56,21 @@ export function BetaFeedbackForm() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [sourceParam, setSourceParam] = useState("");
   const [state, setState] = useState<SubmissionState>("idle");
   const [statusText, setStatusText] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const source = params.get("source");
+    const source = params.get("source") ?? "";
     const nextPage = source ? `/${source}` : "";
     const matchedArea = feedbackAreas.find((area) => nextPage.startsWith(area.value));
+    setSourceParam(source);
     setPageUrl(matchedArea?.value ?? "");
   }, []);
 
+  const selectedArea = useMemo(() => feedbackAreas.find((area) => area.value === pageUrl), [pageUrl]);
+  const selectedAreaIsAccount = selectedArea?.value === "/account";
   const canSubmit = useMemo(
     () => Boolean(category && severity && pageUrl && title.trim().length > 2 && message.trim().length > 8 && state !== "submitting"),
     [category, message, pageUrl, severity, state, title]
@@ -75,7 +88,11 @@ export function BetaFeedbackForm() {
       contactEmail: contactEmail.trim() || undefined,
       context: {
         browserPath: window.location.pathname,
+        reportSource: sourceParam || selectedArea?.value.replace(/^\//, "") || "manual",
+        reportSourceLabel: selectedArea?.label ?? "Manual selection",
+        reportedArea: selectedArea?.value ?? pageUrl,
         screen: `${window.innerWidth}x${window.innerHeight}`,
+        sourceParam: sourceParam || undefined,
         userAgent: window.navigator.userAgent
       },
       message,
@@ -122,6 +139,16 @@ export function BetaFeedbackForm() {
               Report anything that breaks, feels confusing, looks off, or would make Capitol Ledger more useful.
             </p>
           </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/42">Report target</span>
+            {sourceParam ? <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">From beta</span> : null}
+          </div>
+          <div className="mt-2 text-[17px] font-semibold leading-tight text-white">{selectedArea?.label ?? "Choose app area"}</div>
+          <p className="mt-1 text-[13px] leading-snug text-white/50">
+            {selectedArea?.helper ?? "The selected area is attached to the report so it lands in the right review bucket."}
+          </p>
         </div>
       </section>
 
@@ -178,7 +205,14 @@ export function BetaFeedbackForm() {
               </option>
             ))}
           </select>
-          <p className="mt-2 text-[13px] leading-5 text-white/42">Choose the closest app area so reports are easier to sort during beta review.</p>
+          <p className="mt-2 text-[13px] leading-5 text-white/42">
+            {selectedArea?.helper ?? "Choose the closest app area so reports are easier to sort during beta review."}
+          </p>
+          {selectedAreaIsAccount ? (
+            <div className="mt-3 rounded-2xl border border-[#74dbff]/20 bg-[#74dbff]/10 px-4 py-3 text-[13px] leading-snug text-[#a7ebff]">
+              Account reports are tagged for auth triage and should call out whether setup choices, saved records, or session return felt disconnected.
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-5">

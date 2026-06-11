@@ -98,10 +98,27 @@ function normalizeFeedbackPath(value?: string) {
   }
 }
 
-function isAccountFeedbackRecord(record: Pick<BetaFeedbackRecord, "pageUrl">) {
-  const path = normalizeFeedbackPath(record.pageUrl);
+function getContextString(context: BetaFeedbackRecord["context"], key: string) {
+  const value = context?.[key];
+  return typeof value === "string" ? value.trim() : "";
+}
 
-  return path === "/account" || path.startsWith("/account/") || path === "/settings" || path.startsWith("/settings/") || path === "/sign-in" || path.startsWith("/sign-in/");
+function isAccountFeedbackRecord(record: Pick<BetaFeedbackRecord, "context" | "pageUrl">) {
+  const path = normalizeFeedbackPath(record.pageUrl);
+  const reportSource = getContextString(record.context, "reportSource").toLowerCase();
+  const reportSourceLabel = getContextString(record.context, "reportSourceLabel").toLowerCase();
+
+  return (
+    reportSource === "account" ||
+    reportSourceLabel.includes("account") ||
+    reportSourceLabel.includes("sign-in") ||
+    path === "/account" ||
+    path.startsWith("/account/") ||
+    path === "/settings" ||
+    path.startsWith("/settings/") ||
+    path === "/sign-in" ||
+    path.startsWith("/sign-in/")
+  );
 }
 
 export function normalizeBetaFeedbackInput(value: Partial<BetaFeedbackInput>): BetaFeedbackInput {

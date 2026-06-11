@@ -617,12 +617,24 @@ function normalizeFeedbackPath(value?: string) {
 
 function isAccountFeedback(record: BetaFeedbackRecord) {
   const path = normalizeFeedbackPath(record.pageUrl);
+  const reportSource = getContextString(record.context, "reportSource").toLowerCase();
+  const reportSourceLabel = getContextString(record.context, "reportSourceLabel").toLowerCase();
 
-  return path === "/account" || path.startsWith("/account/") || path === "/settings" || path.startsWith("/settings/") || path === "/sign-in" || path.startsWith("/sign-in/");
+  return (
+    reportSource === "account" ||
+    reportSourceLabel.includes("account") ||
+    reportSourceLabel.includes("sign-in") ||
+    path === "/account" ||
+    path.startsWith("/account/") ||
+    path === "/settings" ||
+    path.startsWith("/settings/") ||
+    path === "/sign-in" ||
+    path.startsWith("/sign-in/")
+  );
 }
 
 function getFeedbackSourceLabel(record: BetaFeedbackRecord) {
-  return isAccountFeedback(record) ? "Account / sign-in" : "General app";
+  return getContextString(record.context, "reportSourceLabel") || (isAccountFeedback(record) ? "Account / sign-in" : "General app");
 }
 
 function getContextString(context: BetaFeedbackRecord["context"], key: string) {
