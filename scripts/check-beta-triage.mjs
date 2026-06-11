@@ -63,6 +63,8 @@ async function main() {
       active: 0,
       betaAcceptable: 0,
       blockers: 0,
+      duplicates: 0,
+      knownIssues: 0,
       later: 0,
       resolved: 0,
       total: 0,
@@ -89,6 +91,10 @@ async function main() {
         totals.betaAcceptable += count;
       } else if (row.releaseDecision === "later") {
         totals.later += count;
+      } else if (row.releaseDecision === "known_issue") {
+        totals.knownIssues += count;
+      } else if (row.releaseDecision === "duplicate") {
+        totals.duplicates += count;
       } else {
         totals.untriaged += count;
       }
@@ -99,10 +105,12 @@ async function main() {
     console.log(formatCount("Active reports", totals.active));
     console.log(formatCount("Resolved", totals.resolved));
 
-    console.log("\nLaunch triage");
+    console.log("\nDecision triage");
     console.log(formatCount("Launch blockers", totals.blockers));
     console.log(formatCount("Beta OK", totals.betaAcceptable));
     console.log(formatCount("Later", totals.later));
+    console.log(formatCount("Known issues", totals.knownIssues));
+    console.log(formatCount("Duplicates", totals.duplicates));
     console.log(formatCount("Untriaged", totals.untriaged));
 
     console.log("\nStatus");

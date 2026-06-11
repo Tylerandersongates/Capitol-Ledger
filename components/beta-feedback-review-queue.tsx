@@ -16,10 +16,12 @@ const statuses: Array<{ label: string; value: BetaFeedbackStatus }> = [
 const releaseDecisions: Array<{ label: string; value: BetaFeedbackReleaseDecision }> = [
   { label: "Blocker", value: "launch_blocker" },
   { label: "Beta OK", value: "beta_acceptable" },
-  { label: "Later", value: "later" }
+  { label: "Later", value: "later" },
+  { label: "Known", value: "known_issue" },
+  { label: "Duplicate", value: "duplicate" }
 ];
 
-type FeedbackFilter = "all" | "open" | "account" | "blockers" | "high" | "medium" | "low" | "beta_ok" | "later" | "untriaged" | BetaFeedbackStatus;
+type FeedbackFilter = "all" | "open" | "account" | "blockers" | "high" | "medium" | "low" | "beta_ok" | "later" | "known_issue" | "duplicate" | "untriaged" | BetaFeedbackStatus;
 
 const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
   { label: "All", value: "all" },
@@ -35,6 +37,8 @@ const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
   { label: "Planned", value: "planned" },
   { label: "Beta OK", value: "beta_ok" },
   { label: "Later", value: "later" },
+  { label: "Known", value: "known_issue" },
+  { label: "Duplicate", value: "duplicate" },
   { label: "Resolved", value: "resolved" }
 ];
 
@@ -209,11 +213,15 @@ export function BetaFeedbackReviewQueue({
       </MobileCard>
 
       <MobileCard variant="dashboard" className="px-5 py-5">
-        <h2 className="text-[21px] font-medium leading-none text-white">Launch Triage</h2>
+        <h2 className="text-[21px] font-medium leading-none text-white">Triage Decisions</h2>
         <div className="mt-5 grid grid-cols-3 gap-2">
           <Metric label="Blocker" value={metrics.byReleaseDecision.launch_blocker} tone="text-[#ff7567]" />
           <Metric label="Beta OK" value={metrics.byReleaseDecision.beta_acceptable} tone="text-[#43ed74]" />
           <Metric label="Later" value={metrics.byReleaseDecision.later} tone="text-[#8fb5ff]" />
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Metric label="Known" value={metrics.byReleaseDecision.known_issue} tone="text-[#ffb12b]" />
+          <Metric label="Duplicate" value={metrics.byReleaseDecision.duplicate} tone="text-white" />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Metric label="Needs decision" value={metrics.needsDecision} tone="text-[#ffb12b]" />
@@ -343,7 +351,7 @@ function FeedbackRecordCard({
             <Pill label={record.category} tone="gold" />
             <Pill label={record.severity} tone={record.severity === "high" ? "red" : record.severity === "medium" ? "gold" : "muted"} />
             {accountReport ? <Pill label="Account/Auth" tone="blue" /> : null}
-            {record.releaseDecision ? <Pill label={formatReleaseDecision(record.releaseDecision)} tone={record.releaseDecision === "launch_blocker" ? "red" : "muted"} /> : null}
+            {record.releaseDecision ? <Pill label={formatReleaseDecision(record.releaseDecision)} tone={releaseDecisionTone(record.releaseDecision)} /> : null}
           </div>
           <h3 className="mt-3 text-[19px] font-medium leading-tight text-white">{record.title}</h3>
           <p className="mt-2 line-clamp-4 text-[14px] leading-snug text-white/58">{record.message}</p>
@@ -368,8 +376,8 @@ function FeedbackRecordCard({
       </div>
 
       <div className="mt-4 border-t border-white/8 pt-4">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-white/36">Launch decision</div>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-white/36">Triage decision</div>
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
           {releaseDecisions.map((decision) => (
             <button
               key={decision.value}
@@ -447,6 +455,8 @@ function getFeedbackMetrics(records: BetaFeedbackRecord[]) {
   };
   const byReleaseDecision: Record<BetaFeedbackReleaseDecision, number> = {
     beta_acceptable: 0,
+    duplicate: 0,
+    known_issue: 0,
     later: 0,
     launch_blocker: 0
   };
@@ -487,7 +497,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
     `Capitol Ledger beta feedback - ${formatFilterLabel(filter)}`,
     `${records.length} reports in this view`,
     `Active severity: ${severityCounts}`,
-    `Launch triage: ${releaseCounts}`,
+    `Decision triage: ${releaseCounts}`,
     `Statuses: ${statusCounts}`,
     "",
     ...records.map((record, index) =>
@@ -562,6 +572,8 @@ function filterRecords(records: BetaFeedbackRecord[], filter: FeedbackFilter) {
   if (filter === "high" || filter === "medium" || filter === "low") return records.filter((record) => record.status !== "resolved" && record.severity === filter);
   if (filter === "beta_ok") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "beta_acceptable");
   if (filter === "later") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "later");
+  if (filter === "known_issue") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "known_issue");
+  if (filter === "duplicate") return records.filter((record) => record.status !== "resolved" && record.releaseDecision === "duplicate");
   if (filter === "untriaged") return records.filter((record) => record.status !== "resolved" && !record.releaseDecision);
   return records.filter((record) => record.status === filter);
 }
@@ -595,6 +607,8 @@ function formatFilterLabel(filter: FeedbackFilter) {
   if (filter === "low") return "Low severity reports";
   if (filter === "beta_ok") return "Beta acceptable reports";
   if (filter === "later") return "Later reports";
+  if (filter === "known_issue") return "Known issue reports";
+  if (filter === "duplicate") return "Duplicate reports";
   if (filter === "untriaged") return "Untriaged reports";
   return `${filter.charAt(0).toUpperCase()}${filter.slice(1)} reports`;
 }
@@ -602,7 +616,16 @@ function formatFilterLabel(filter: FeedbackFilter) {
 function formatReleaseDecision(value: BetaFeedbackReleaseDecision) {
   if (value === "launch_blocker") return "Launch blocker";
   if (value === "beta_acceptable") return "Beta acceptable";
+  if (value === "known_issue") return "Known issue";
+  if (value === "duplicate") return "Duplicate";
   return "Later";
+}
+
+function releaseDecisionTone(value: BetaFeedbackReleaseDecision): "blue" | "gold" | "muted" | "red" {
+  if (value === "launch_blocker") return "red";
+  if (value === "known_issue") return "gold";
+  if (value === "duplicate") return "blue";
+  return "muted";
 }
 
 function normalizeFeedbackPath(value?: string) {

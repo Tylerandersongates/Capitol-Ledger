@@ -4,7 +4,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { AuthUser } from "@/lib/auth-database";
 
 export type BetaFeedbackCategory = "bug" | "flow" | "missing" | "data" | "design" | "other";
-export type BetaFeedbackReleaseDecision = "launch_blocker" | "beta_acceptable" | "later";
+export type BetaFeedbackReleaseDecision = "launch_blocker" | "beta_acceptable" | "later" | "known_issue" | "duplicate";
 export type BetaFeedbackSeverity = "low" | "medium" | "high";
 export type BetaFeedbackStatus = "new" | "reviewing" | "planned" | "resolved";
 
@@ -85,7 +85,7 @@ function normalizeStatus(value: unknown): BetaFeedbackStatus | null {
 }
 
 function normalizeReleaseDecision(value: unknown): BetaFeedbackReleaseDecision | null {
-  return value === "launch_blocker" || value === "beta_acceptable" || value === "later" ? value : null;
+  return value === "launch_blocker" || value === "beta_acceptable" || value === "later" || value === "known_issue" || value === "duplicate" ? value : null;
 }
 
 function normalizeFeedbackPath(value?: string) {
@@ -314,6 +314,8 @@ export function summarizeBetaFeedbackRecords(records: BetaFeedbackRecord[]): Bet
   };
   const byReleaseDecision: Record<BetaFeedbackReleaseDecision, number> = {
     beta_acceptable: 0,
+    duplicate: 0,
+    known_issue: 0,
     later: 0,
     launch_blocker: 0
   };
