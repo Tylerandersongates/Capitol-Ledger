@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: node .tools/pnpm-v11/bin/pnpm.cjs install --frozen-lockfile --store-dir .pnpm-store --package-import-method=copy
+
+      - name: Check local preview runtime
+        run: node scripts/check-local-preview-runtime.mjs
+
+      - name: TypeScript
+        run: node_modules/.bin/tsc --noEmit
+
+      - name: Lint
+        run: node_modules/.bin/next lint
+
+      - name: Beta readiness
+        run: node .tools/pnpm-v11/bin/pnpm.cjs run beta:check
+
+      - name: Build
+        run: node .tools/pnpm-v11/bin/pnpm.cjs run build
