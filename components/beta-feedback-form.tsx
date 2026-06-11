@@ -7,6 +7,7 @@ type FeedbackCategory = "bug" | "flow" | "missing" | "data" | "design" | "other"
 type FeedbackSeverity = "low" | "medium" | "high";
 type FeedbackCategoryChoice = FeedbackCategory | "";
 type FeedbackSeverityChoice = FeedbackSeverity | "";
+type ReproducibilityChoice = "yes" | "no" | "unknown" | "";
 type FeedbackArea = {
   helper?: string;
   label: string;
@@ -26,6 +27,12 @@ const severities: Array<{ label: string; value: FeedbackSeverity }> = [
   { label: "Low", value: "low" },
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" }
+];
+
+const reproducibilityChoices: Array<{ label: string; value: ReproducibilityChoice }> = [
+  { label: "Yes", value: "yes" },
+  { label: "No", value: "no" },
+  { label: "Not sure", value: "unknown" }
 ];
 
 const feedbackAreas: FeedbackArea[] = [
@@ -56,6 +63,7 @@ export function BetaFeedbackForm() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [reproducibility, setReproducibility] = useState<ReproducibilityChoice>("");
   const [sourceParam, setSourceParam] = useState("");
   const [state, setState] = useState<SubmissionState>("idle");
   const [statusText, setStatusText] = useState("");
@@ -91,6 +99,8 @@ export function BetaFeedbackForm() {
         reportSource: sourceParam || selectedArea?.value.replace(/^\//, "") || "manual",
         reportSourceLabel: selectedArea?.label ?? "Manual selection",
         reportedArea: selectedArea?.value ?? pageUrl,
+        reproducibility: reproducibility || undefined,
+        reproducibilityLabel: formatReproducibility(reproducibility),
         screen: `${window.innerWidth}x${window.innerHeight}`,
         sourceParam: sourceParam || undefined,
         userAgent: window.navigator.userAgent
@@ -121,6 +131,7 @@ export function BetaFeedbackForm() {
     setCategory("");
     setSeverity("");
     setPageUrl("");
+    setReproducibility("");
     setTitle("");
     setMessage("");
     setContactEmail("");
@@ -237,6 +248,29 @@ export function BetaFeedbackForm() {
         </div>
 
         <div className="mt-5">
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel label="Can you reproduce it?" />
+            <span className="text-[12px] font-medium text-white/34">Optional</span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {reproducibilityChoices.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={reproducibility === item.value}
+                onClick={() => setReproducibility((current) => (current === item.value ? "" : item.value))}
+                className={`h-11 rounded-xl border text-[14px] font-semibold transition ${
+                  reproducibility === item.value ? "border-[#74dbff] bg-[#74dbff] text-[#061126]" : "border-white/12 bg-white/5 text-white/68"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[13px] leading-5 text-white/42">Reproducible reports are easier to group, verify, and fix.</p>
+        </div>
+
+        <div className="mt-5">
           <FieldLabel label="Contact email optional" />
           <input
             value={contactEmail}
@@ -268,4 +302,11 @@ export function BetaFeedbackForm() {
 
 function FieldLabel({ label }: { label: string }) {
   return <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">{label}</div>;
+}
+
+function formatReproducibility(value: ReproducibilityChoice) {
+  if (value === "yes") return "Yes";
+  if (value === "no") return "No";
+  if (value === "unknown") return "Not sure";
+  return undefined;
 }

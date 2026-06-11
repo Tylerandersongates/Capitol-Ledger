@@ -339,6 +339,7 @@ function FeedbackRecordCard({
   record: BetaFeedbackRecord;
 }) {
   const browserPath = getContextString(record.context, "browserPath");
+  const reproducibility = getReproducibilityLabel(record);
   const screen = getContextString(record.context, "screen");
   const sourceLabel = getFeedbackSourceLabel(record);
   const accountReport = sourceLabel === "Account / sign-in";
@@ -399,10 +400,11 @@ function FeedbackRecordCard({
         <span>{formatShortDate(record.createdAt)}</span>
       </div>
 
-      {record.contactEmail || accountReport || browserPath || screen ? (
+      {record.contactEmail || accountReport || browserPath || reproducibility || screen ? (
         <div className="mt-3 grid gap-2 text-[12px] text-white/46">
           {record.contactEmail ? <ReportMeta label="Contact" value={record.contactEmail} /> : null}
           {accountReport ? <ReportMeta label="Source" value={sourceLabel} /> : null}
+          {reproducibility ? <ReportMeta label="Repro" value={reproducibility} /> : null}
           {browserPath ? <ReportMeta label="Path" value={browserPath} /> : null}
           {screen ? <ReportMeta label="Screen" value={screen} /> : null}
         </div>
@@ -507,6 +509,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
         `   Source: ${getFeedbackSourceLabel(record)}`,
         `   Page: ${record.pageUrl ?? "No page attached"}`,
         record.contactEmail ? `   Contact: ${record.contactEmail}` : "",
+        getReproducibilityLabel(record) ? `   Reproducible: ${getReproducibilityLabel(record)}` : "",
         getContextString(record.context, "screen") ? `   Screen: ${getContextString(record.context, "screen")}` : "",
         `   ${record.message}`
       ]
@@ -518,6 +521,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
 
 function buildSingleReportSummary(record: BetaFeedbackRecord) {
   const browserPath = getContextString(record.context, "browserPath");
+  const reproducibility = getReproducibilityLabel(record);
   const screen = getContextString(record.context, "screen");
   const userAgent = getContextString(record.context, "userAgent");
 
@@ -528,6 +532,7 @@ function buildSingleReportSummary(record: BetaFeedbackRecord) {
     `Created: ${formatLongDate(record.createdAt)}`,
     `Page: ${record.pageUrl ?? "No page attached"}`,
     record.contactEmail ? `Contact: ${record.contactEmail}` : "",
+    reproducibility ? `Reproducible: ${reproducibility}` : "",
     browserPath ? `Browser path: ${browserPath}` : "",
     screen ? `Screen: ${screen}` : "",
     userAgent ? `User agent: ${userAgent}` : "",
@@ -540,7 +545,7 @@ function buildSingleReportSummary(record: BetaFeedbackRecord) {
 
 function buildFeedbackCsv(records: BetaFeedbackRecord[]) {
   const rows = [
-    ["title", "source", "category", "severity", "status", "releaseDecision", "pageUrl", "browserPath", "screen", "createdAt", "contactEmail", "message"],
+    ["title", "source", "category", "severity", "status", "releaseDecision", "reproducibility", "pageUrl", "browserPath", "screen", "createdAt", "contactEmail", "message"],
     ...records.map((record) => [
       record.title,
       getFeedbackSourceLabel(record),
@@ -548,6 +553,7 @@ function buildFeedbackCsv(records: BetaFeedbackRecord[]) {
       record.severity,
       record.status,
       record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "",
+      getReproducibilityLabel(record),
       record.pageUrl ?? "",
       getContextString(record.context, "browserPath"),
       getContextString(record.context, "screen"),
@@ -587,6 +593,7 @@ function searchRecords(records: BetaFeedbackRecord[], query: string) {
       record.category,
       record.contactEmail ?? "",
       getFeedbackSourceLabel(record),
+      getReproducibilityLabel(record),
       record.message,
       record.pageUrl ?? "",
       record.releaseDecision ? formatReleaseDecision(record.releaseDecision) : "Untriaged",
@@ -654,6 +661,17 @@ function isAccountFeedback(record: BetaFeedbackRecord) {
     path === "/sign-in" ||
     path.startsWith("/sign-in/")
   );
+}
+
+function getReproducibilityLabel(record: BetaFeedbackRecord) {
+  const label = getContextString(record.context, "reproducibilityLabel");
+  const value = getContextString(record.context, "reproducibility");
+
+  if (label) return label;
+  if (value === "yes") return "Yes";
+  if (value === "no") return "No";
+  if (value === "unknown") return "Not sure";
+  return "";
 }
 
 function getFeedbackSourceLabel(record: BetaFeedbackRecord) {
