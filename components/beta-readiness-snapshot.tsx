@@ -26,6 +26,11 @@ type FeedbackApiResponse = {
   summary?: FeedbackSummary;
 };
 
+type BetaReadinessSnapshotProps = {
+  roundLabel?: string;
+  roundWindow?: string;
+};
+
 const emptySummary: FeedbackSummary = {
   active: 0,
   byReleaseDecision: {
@@ -42,7 +47,7 @@ const emptySummary: FeedbackSummary = {
   untriaged: 0
 };
 
-export function BetaReadinessSnapshot() {
+export function BetaReadinessSnapshot({ roundLabel = "Round 1", roundWindow = "June 2026" }: BetaReadinessSnapshotProps) {
   const [mode, setMode] = useState<"database" | "demo" | "loading">("loading");
   const [summary, setSummary] = useState<FeedbackSummary>(emptySummary);
   const [statusText, setStatusText] = useState("Checking beta queue...");
@@ -76,6 +81,7 @@ export function BetaReadinessSnapshot() {
 
   const knownIssues = summary.byReleaseDecision.known_issue ?? 0;
   const duplicates = summary.byReleaseDecision.duplicate ?? 0;
+  const roundReference = `${roundLabel} / ${roundWindow}`;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -84,6 +90,10 @@ export function BetaReadinessSnapshot() {
           <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Beta Readiness</div>
           <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Queue snapshot</h2>
           <p className="mt-2 text-[13px] leading-snug text-white/54">{statusText}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-[#ffb12b]/20 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ffc34d]">{roundLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold text-white/54">{roundWindow}</span>
+          </div>
         </div>
         <button
           type="button"
@@ -106,9 +116,12 @@ export function BetaReadinessSnapshot() {
 
       <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/38">{mode}</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/38">
+            {roundReference} / {mode}
+          </div>
           <div className="mt-1 text-[13px] leading-snug text-white/54">
-            {summary.total} total reports, {summary.resolved} resolved this round{lastChecked ? `, checked ${lastChecked}` : ""}
+            {summary.total} total reports, {summary.resolved} resolved in {roundLabel.toLowerCase()}
+            {lastChecked ? `, checked ${lastChecked}` : ""}
           </div>
         </div>
         <Link href="/feedback/review" className="shrink-0 rounded-full border border-white/12 bg-white/5 px-3 py-2 text-[12px] font-semibold text-white/68">

@@ -105,6 +105,10 @@ const premiumHeaderIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-white/8 text-[#ffb12b] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
+const betaRound = {
+  label: "Round 1",
+  window: "June 2026"
+};
 
 export default function BetaTesterPage() {
   return (
@@ -141,11 +145,11 @@ export default function BetaTesterPage() {
           <div className="mt-5 grid grid-cols-3 gap-3">
             <MiniMetric label="Tasks" value="11" />
             <MiniMetric label="Actions" value="3" />
-            <MiniMetric label="Round" value="Beta" />
+            <MiniMetric label={betaRound.window} value="R1" />
           </div>
         </MobileCard>
 
-        <BetaReadinessSnapshot />
+        <BetaReadinessSnapshot roundLabel={betaRound.label} roundWindow={betaRound.window} />
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
