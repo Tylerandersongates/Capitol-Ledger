@@ -15,6 +15,7 @@ import type { ReactNode } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { BetaReadinessSnapshot } from "@/components/beta-readiness-snapshot";
 
 const testerTasks = [
   {
@@ -143,6 +144,8 @@ export default function BetaTesterPage() {
             <MiniMetric label="Round" value="Beta" />
           </div>
         </MobileCard>
+
+        <BetaReadinessSnapshot />
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
