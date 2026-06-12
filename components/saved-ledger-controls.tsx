@@ -132,6 +132,17 @@ function readLocalLedger(): AccountLedgerSnapshot {
   };
 }
 
+function getSavedCounts(snapshot?: AccountLedgerSnapshot | null): SavedCounts {
+  const follows = snapshot?.follows ?? readFollows();
+
+  return {
+    alerts: snapshot?.savedAlerts.length ?? readSavedAlerts().length,
+    bills: follows.filter((record) => record.type === "bill").length,
+    interests: snapshot?.issueInterests.length ?? readIssueInterests().length,
+    officials: follows.filter((record) => record.type === "member").length
+  };
+}
+
 function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
   window.localStorage.setItem(followsKey, JSON.stringify(snapshot.follows));
   window.localStorage.setItem(readAlertsKey, JSON.stringify(snapshot.readAlerts));
@@ -314,12 +325,27 @@ export function IssueInterestChips({ interests }: { interests: string[] }) {
   return <PolicyInterestsEditor interests={interests} compact />;
 }
 
-export function PolicyInterestsEditor({ compact = false, interests }: { compact?: boolean; interests: string[] }) {
-  const [selected, setSelected] = useState<string[]>([]);
+export function PolicyInterestsEditor({
+  compact = false,
+  initialSelectedInterests,
+  interests
+}: {
+  compact?: boolean;
+  initialSelectedInterests?: string[];
+  interests: string[];
+}) {
+  const [selected, setSelected] = useState<string[]>(() => uniqueStrings(initialSelectedInterests ?? []));
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     function refreshInterests() {
+      if (initialSelectedInterests) {
+        const initial = uniqueStrings(initialSelectedInterests);
+        window.localStorage.setItem(interestsKey, JSON.stringify(initial));
+        setSelected(initial);
+        return;
+      }
+
       const storedState = readIssueInterestsState();
       const initial = storedState.hasStoredValue ? storedState.interests : [];
 
@@ -336,7 +362,7 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
       window.removeEventListener("storage", refreshInterests);
       window.removeEventListener(persistenceEvent, refreshInterests);
     };
-  }, [interests]);
+  }, [initialSelectedInterests, interests]);
 
   function toggleInterest(interest: string) {
     if (!editing && !compact) return;
@@ -443,21 +469,16 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
   );
 }
 
-export function SavedLedgerSummary() {
-  const [counts, setCounts] = useState<SavedCounts>({ alerts: 0, bills: 0, interests: 0, officials: 0 });
+export function SavedLedgerSummary({ initialLedger }: { initialLedger?: AccountLedgerSnapshot | null }) {
+  const [counts, setCounts] = useState<SavedCounts>(() => getSavedCounts(initialLedger));
   const [accountSynced, setAccountSynced] = useState(false);
 
   useEffect(() => {
     function refreshCounts() {
-      const follows = readFollows();
-      setCounts({
-        alerts: readSavedAlerts().length,
-        bills: follows.filter((record) => record.type === "bill").length,
-        interests: readIssueInterests().length,
-        officials: follows.filter((record) => record.type === "member").length
-      });
+      setCounts(getSavedCounts());
     }
 
+    if (initialLedger) writeLocalLedger(initialLedger);
     refreshCounts();
     void hasActiveBrowserSession().then(setAccountSynced);
     window.addEventListener("storage", refreshCounts);
@@ -470,7 +491,7 @@ export function SavedLedgerSummary() {
       window.removeEventListener(persistenceEvent, refreshCounts);
       window.removeEventListener("capitol-ledger:follows-changed", refreshCounts);
     };
-  }, []);
+  }, [initialLedger]);
 
   return (
     <div className="space-y-3">

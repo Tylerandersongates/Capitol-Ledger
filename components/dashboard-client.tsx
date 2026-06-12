@@ -94,9 +94,9 @@ function getBillTrackerStagePill(stage: BillTrackerStage) {
   return { bgClass: "bg-[#56a8ff]/12", textClass: "text-[#56a8ff]" };
 }
 
-export function DashboardClient({ data }: { data: DashboardData }) {
-  const [, setUnreadAlertCount] = useState(0);
-  const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>([]);
+export function DashboardClient({ data, initialLedger = null }: { data: DashboardData; initialLedger?: AccountLedgerSnapshot | null }) {
+  const [, setUnreadAlertCount] = useState(() => countAccountUnreadAlertIds(initialLedger));
+  const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>(() => uniqueFavoriteRecords(initialLedger?.follows ?? []));
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
   const selectedVoteFeed = useMemo(
@@ -156,6 +156,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       window.removeEventListener("pageshow", refreshFromAccount);
     };
   }, []);
+
+  useEffect(() => {
+    if (!initialLedger) return;
+    setUnreadAlertCount(countAccountUnreadAlertIds(initialLedger));
+    setFavoriteRecords(uniqueFavoriteRecords(initialLedger.follows));
+    writeDashboardFavoriteRecords(initialLedger.follows, false);
+  }, [initialLedger]);
 
   useEffect(() => {
     if (!accountProfile?.districtCode) return;
