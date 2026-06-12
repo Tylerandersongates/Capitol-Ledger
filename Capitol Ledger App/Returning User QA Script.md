@@ -13,7 +13,8 @@ Confirm that a tester can create an account, leave, come back, and still see the
 - Use the live Vercel beta unless you are specifically testing local preview.
 - Keep Stripe in demo subscription mode until Stripe price IDs are configured.
 - Use a non-secret test email and password.
-- For live Vercel account-creation QA, use an inbox you can access so the verification-email step does not block the pass.
+- For live Vercel new-account QA, use an inbox you can access so the verification-email step does not block the pass.
+- For previous tester accounts, sign in with the already verified account instead of creating a new account or repeating verification.
 - Do not use a real tester's password or personal account for QA.
 - Start from a clean browser profile or private window when testing first-time account creation.
 
@@ -60,7 +61,7 @@ Pass criteria:
 6. Open `/alerts`.
 7. Mark at least one alert as read by opening it.
 8. Open `/profile`.
-9. Confirm badges, saved items, or civic score reflect the activity where supported.
+9. Confirm badges, saved items, days logged in, or civic score reflect the activity where supported.
 10. Open `/account`.
 11. Confirm saved ledger, interests, district, and notification preferences still match the current setup.
 
@@ -98,12 +99,13 @@ Pass criteria:
 9. Open `/alerts`.
 10. Confirm read/unread behavior is reasonable for the returning account.
 11. Open `/profile`.
-12. Confirm civic score, badges, or saved activity are not unexpectedly reset.
+12. Confirm civic score, badges, days logged in, or saved activity are not unexpectedly reset.
 
 Pass criteria:
 
 - Sign-back-in restores the expected account.
 - District and interests do not reset to defaults.
+- Gamification state, including days logged in where shown, does not reset or stall unexpectedly.
 - Search, dashboard, account, and profile tell the same story.
 - Any state that does not persist is documented as a known beta limitation.
 
@@ -126,6 +128,7 @@ Pass criteria:
 - Account creation fails or creates a confusing state.
 - Signed-out users can still view protected account data.
 - Signing back in loses district or policy interests.
+- Signing back in resets badges, score, days logged in, or saved activity unexpectedly.
 - Search setup chips disagree with account setup.
 - Feedback cannot be submitted or reviewed.
 - A tester would need manual coaching to recover from the flow.

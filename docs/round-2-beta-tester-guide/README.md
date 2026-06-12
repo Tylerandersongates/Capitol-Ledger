@@ -22,7 +22,9 @@ https://project-qosv1.vercel.app/feedback?source=round-2
 
 Use test-safe information. Do not enter private personal data you would not want stored in a beta environment.
 
-For account creation, use an email inbox you can access. Capitol Ledger sends a verification link during sign-up. Open that link from your email, then return to Capitol Ledger and sign back in with the verified account before continuing.
+New testers should use an email inbox they can access. Capitol Ledger sends a verification link during sign-up. Open that link from your email, then return to Capitol Ledger and sign back in with the verified account before continuing.
+
+Returning Round 1 testers should sign in with the same account they already verified. Do not create a new account unless you are intentionally testing first-time setup again.
 
 ## What Is Different In Round 2
 
@@ -30,8 +32,9 @@ Round 2 testers should spend less time checking whether the app basically loads 
 
 Please pay special attention to:
 
-- Account creation, email verification, sign-out, and sign-back-in.
-- Whether your district, interests, saved bills, saved officials, alerts, score, badges, and settings stay consistent after returning.
+- New-tester account creation, email verification, sign-out, and sign-back-in.
+- Returning Round 1 tester sign-in, without creating a new account or repeating verification.
+- Whether your district, affiliation if set, interests, saved bills, saved officials, alerts, score, badges, days logged in, and settings stay consistent after returning.
 - Whether the app explains civic data clearly enough to trust it.
 - Whether the saved ledger, dashboard, search, alerts, and profile all tell the same story.
 - Whether Free, Pro Intelligence, and Civic Team language feels clear, even though live Stripe checkout is not turned on yet.
@@ -55,8 +58,9 @@ New tester:
 Returning tester:
 
 1. Sign in with the same account you used before.
-2. Confirm your profile, district, saved items, and settings still make sense.
-3. Report anything that reset unexpectedly.
+2. Confirm your previous profile choices stayed in place, including district, affiliation if set, policy interests, alert preferences, and saved items.
+3. Open Profile, Badges, or Impact and check that gamification still makes sense, especially civic score, badges, saved activity, and days logged in.
+4. Report anything that reset unexpectedly or did not update after this login.
 
 ### 2. Build A Civic Watchlist
 
@@ -73,7 +77,7 @@ Returning tester:
 2. Open at least one alert.
 3. Confirm the unread count changes in a way that makes sense.
 4. Open Profile or Account.
-5. Confirm civic score, badges, saved ledger counts, district, interests, and preferences match the actions you took.
+5. Confirm civic score, badges, days logged in, saved ledger counts, district, interests, and preferences match the actions you took.
 
 ### 4. Leave And Come Back
 
@@ -103,6 +107,8 @@ Good Round 2 feedback includes:
 - "I expected my saved bill to appear on the dashboard, but it only appeared on account."
 - "This score looks important, but I do not understand what it measures."
 - "I signed out and came back, but my district changed."
+- "I was a Round 1 tester, but my interests or affiliation reset."
+- "Days logged in did not update or looked wrong after I signed back in."
 - "This label sounds like a real checkout is live, but it is still demo mode."
 - "The app feels useful here, but I wanted one more data point before trusting it."
 - "This page loaded, but I did not know what to do next."
@@ -133,7 +139,9 @@ If you are testing returning-user behavior, mention whether you were:
 - creating a new account,
 - signing out,
 - signing back in,
+- returning from Round 1,
 - checking persistence,
+- checking days logged in, badges, or score,
 - or reviewing saved activity.
 
 ## Known Beta Limits
@@ -165,6 +173,7 @@ A successful Round 2 test means:
 
 - You could create or return to an account.
 - The app remembered your setup and saved activity.
+- Returning Round 1 accounts kept profile choices and showed reasonable gamification updates, including days logged in.
 - Dashboard, Search, Alerts, Account, and Profile stayed consistent.
 - You understood what was official data, demo data, or planned functionality.
 - You found at least one thing worth improving before a wider beta.
