@@ -163,7 +163,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     const next = mergeDistrictDelegationFavoriteRecords(favoriteRecords, data.favoriteTargets, accountProfile);
     if (favoriteRecordsMatch(favoriteRecords, next)) return;
 
-    setFavoriteRecords(writeDashboardFavoriteRecords(next));
+    setFavoriteRecords(writeDashboardFavoriteRecords(next, false));
   }, [accountProfile, data.favoriteTargets, favoriteRecords]);
 
   useEffect(() => {
@@ -1194,10 +1194,8 @@ async function hydrateDashboardFavoriteRecords() {
   if (!ledger) return local;
 
   const accountFavorites = uniqueFavoriteRecords(ledger.follows);
-  const mergedFavorites = uniqueFavoriteRecords([...local, ...accountFavorites]);
-  if (!favoriteRecordsMatch(local, mergedFavorites)) writeDashboardFavoriteRecords(mergedFavorites, false);
-  if (!favoriteRecordsMatch(accountFavorites, mergedFavorites)) void syncDashboardFavoriteRecordsToAccount(mergedFavorites);
-  return mergedFavorites;
+  if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false);
+  return accountFavorites;
 }
 
 function countAccountUnreadAlertIds(ledger: AccountLedgerSnapshot | null) {

@@ -28,6 +28,8 @@ type SavedCounts = {
   officials: number;
 };
 
+type LedgerStorageKey = typeof alertsKey | typeof followsKey | typeof interestsKey | typeof readAlertsKey;
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
 
@@ -38,10 +40,10 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-function writeJson<T>(key: string, value: T) {
+function writeJson<T>(key: LedgerStorageKey, value: T) {
   window.localStorage.setItem(key, JSON.stringify(value));
   dispatchPersistenceChanged(key);
-  void syncLocalLedgerToAccount();
+  void syncLocalLedgerToAccount(key);
 }
 
 function dispatchPersistenceChanged(key?: string) {
@@ -130,16 +132,6 @@ function readLocalLedger(): AccountLedgerSnapshot {
   };
 }
 
-function mergeLedgerSnapshots(local: AccountLedgerSnapshot, account: AccountLedgerSnapshot): AccountLedgerSnapshot {
-  return {
-    follows: uniqueFollows([...local.follows, ...account.follows]),
-    readAlerts: uniqueStrings([...local.readAlerts, ...account.readAlerts]),
-    savedAlerts: uniqueStrings([...local.savedAlerts, ...account.savedAlerts]),
-    issueInterests: uniqueStrings([...local.issueInterests, ...account.issueInterests]),
-    updatedAt: new Date().toISOString()
-  };
-}
-
 function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
   window.localStorage.setItem(followsKey, JSON.stringify(snapshot.follows));
   window.localStorage.setItem(readAlertsKey, JSON.stringify(snapshot.readAlerts));
@@ -148,7 +140,15 @@ function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
   dispatchPersistenceChanged(followsKey);
 }
 
-async function syncLocalLedgerToAccount() {
+function getLedgerPatchForKey(key?: LedgerStorageKey): Partial<AccountLedgerSnapshot> {
+  if (key === followsKey) return { follows: uniqueFollows(readFollows()) };
+  if (key === alertsKey) return { savedAlerts: uniqueStrings(readSavedAlerts()) };
+  if (key === readAlertsKey) return { readAlerts: uniqueStrings(readReadAlerts()) };
+  if (key === interestsKey) return { issueInterests: uniqueStrings(readIssueInterests()) };
+  return readLocalLedger();
+}
+
+async function syncLocalLedgerToAccount(key?: LedgerStorageKey) {
   if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
 
@@ -157,13 +157,13 @@ async function syncLocalLedgerToAccount() {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(readLocalLedger())
+    body: JSON.stringify(getLedgerPatchForKey(key))
   }).catch(() => null);
 
   if (!response?.ok) return;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  if (data?.ledger) writeLocalLedger(mergeLedgerSnapshots(readLocalLedger(), data.ledger));
+  if (data?.ledger) writeLocalLedger(data.ledger);
 }
 
 async function hydrateSavedLedgerFromAccount() {
@@ -187,17 +187,7 @@ async function hydrateSavedLedgerFromApi() {
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   if (!data?.ledger) return;
 
-  const localLedger = readLocalLedger();
-  const mergedLedger = mergeLedgerSnapshots(localLedger, data.ledger);
-  writeLocalLedger(mergedLedger);
-  if (
-    mergedLedger.follows.length !== data.ledger.follows.length ||
-    mergedLedger.issueInterests.length !== data.ledger.issueInterests.length ||
-    mergedLedger.readAlerts.length !== data.ledger.readAlerts.length ||
-    mergedLedger.savedAlerts.length !== data.ledger.savedAlerts.length
-  ) {
-    void syncLocalLedgerToAccount();
-  }
+  writeLocalLedger(data.ledger);
 }
 
 export function SaveTargetButton({
