@@ -31,8 +31,13 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Install dependencies
-        run: node .tools/pnpm-v11/bin/pnpm.cjs install --frozen-lockfile --store-dir .pnpm-store --package-import-method=copy
+        run: pnpm install --frozen-lockfile --store-dir .pnpm-store --package-import-method=copy
 
       - name: Check local preview runtime
         run: node scripts/check-local-preview-runtime.mjs
@@ -44,7 +49,7 @@ jobs:
         run: node_modules/.bin/next lint
 
       - name: Beta readiness
-        run: node .tools/pnpm-v11/bin/pnpm.cjs run beta:check
+        run: pnpm run beta:check
 
       - name: Build
-        run: node .tools/pnpm-v11/bin/pnpm.cjs run build
+        run: pnpm run build
