@@ -43,9 +43,11 @@ const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
 ];
 
 export function BetaFeedbackReviewQueue({
+  canManageFeedback,
   initialMode,
   initialRecords
 }: {
+  canManageFeedback: boolean;
   initialMode: "database" | "demo";
   initialRecords: BetaFeedbackRecord[];
 }) {
@@ -302,7 +304,14 @@ export function BetaFeedbackReviewQueue({
 
         {filteredRecords.length ? (
           filteredRecords.map((record) => (
-            <FeedbackRecordCard key={record.id} pending={pendingId === record.id} record={record} onCopyReport={copyReport} onReviewChange={updateReview} />
+            <FeedbackRecordCard
+              canManageFeedback={canManageFeedback}
+              key={record.id}
+              pending={pendingId === record.id}
+              record={record}
+              onCopyReport={copyReport}
+              onReviewChange={updateReview}
+            />
           ))
         ) : (
           <MobileCard variant="dashboard" className="px-5 py-6 text-center">
@@ -328,11 +337,13 @@ function Metric({ label, tone, value }: { label: string; tone: string; value: nu
 }
 
 function FeedbackRecordCard({
+  canManageFeedback,
   onCopyReport,
   onReviewChange,
   pending,
   record
 }: {
+  canManageFeedback: boolean;
   onCopyReport: (record: BetaFeedbackRecord) => void;
   onReviewChange: (id: string, patch: { releaseDecision?: BetaFeedbackReleaseDecision; status?: BetaFeedbackStatus }) => void;
   pending: boolean;
@@ -360,40 +371,48 @@ function FeedbackRecordCard({
         <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-1 text-[12px] font-medium text-white/52">{record.status}</span>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-white/8 pt-4">
-        {statuses.map((status) => (
-          <button
-            key={status.value}
-            type="button"
-            disabled={pending || record.status === status.value}
-            onClick={() => onReviewChange(record.id, { status: status.value })}
-            className={`h-9 rounded-xl px-1 text-[11px] font-semibold transition disabled:cursor-default ${
-              record.status === status.value ? "bg-[#ffb12b] text-[#071225]" : "border border-white/10 bg-white/[0.04] text-white/56 disabled:opacity-60"
-            }`}
-          >
-            {pending && record.status !== status.value ? "..." : status.label}
-          </button>
-        ))}
-      </div>
+      {canManageFeedback ? (
+        <>
+          <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-white/8 pt-4">
+            {statuses.map((status) => (
+              <button
+                key={status.value}
+                type="button"
+                disabled={pending || record.status === status.value}
+                onClick={() => onReviewChange(record.id, { status: status.value })}
+                className={`h-9 rounded-xl px-1 text-[11px] font-semibold transition disabled:cursor-default ${
+                  record.status === status.value ? "bg-[#ffb12b] text-[#071225]" : "border border-white/10 bg-white/[0.04] text-white/56 disabled:opacity-60"
+                }`}
+              >
+                {pending && record.status !== status.value ? "..." : status.label}
+              </button>
+            ))}
+          </div>
 
-      <div className="mt-4 border-t border-white/8 pt-4">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-white/36">Triage decision</div>
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          {releaseDecisions.map((decision) => (
-            <button
-              key={decision.value}
-              type="button"
-              disabled={pending || record.releaseDecision === decision.value}
-              onClick={() => onReviewChange(record.id, { releaseDecision: decision.value })}
-              className={`h-9 rounded-xl px-1 text-[11px] font-semibold transition disabled:cursor-default ${
-                record.releaseDecision === decision.value ? "bg-[#ffb12b] text-[#071225]" : "border border-white/10 bg-white/[0.04] text-white/56 disabled:opacity-60"
-              }`}
-            >
-              {pending && record.releaseDecision !== decision.value ? "..." : decision.label}
-            </button>
-          ))}
+          <div className="mt-4 border-t border-white/8 pt-4">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-white/36">Triage decision</div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {releaseDecisions.map((decision) => (
+                <button
+                  key={decision.value}
+                  type="button"
+                  disabled={pending || record.releaseDecision === decision.value}
+                  onClick={() => onReviewChange(record.id, { releaseDecision: decision.value })}
+                  className={`h-9 rounded-xl px-1 text-[11px] font-semibold transition disabled:cursor-default ${
+                    record.releaseDecision === decision.value ? "bg-[#ffb12b] text-[#071225]" : "border border-white/10 bg-white/[0.04] text-white/56 disabled:opacity-60"
+                  }`}
+                >
+                  {pending && record.releaseDecision !== decision.value ? "..." : decision.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-[12px] leading-snug text-white/46">
+          Reviewer access required for status and launch-decision updates.
         </div>
-      </div>
+      )}
 
       <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-3 border-t border-white/8 pt-4 text-[12px] text-white/42">
         <span className="min-w-0 truncate">{record.pageUrl ?? "No page attached"}</span>

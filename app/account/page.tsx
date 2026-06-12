@@ -2,13 +2,12 @@ import { MobileShell } from "@/components/mobile-shell";
 import { AccountDistrictDisplay } from "@/components/account-profile-controls";
 import { GamificationSync } from "@/components/gamification-sync";
 import { AccountGamificationStats } from "@/components/gamification-live-stats";
-import { MobileBottomNav, MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PartyAffiliationDisplay } from "@/components/party-affiliation-control";
 import { PolicyInterestsEditor, SavedLedgerSummary } from "@/components/saved-ledger-controls";
 import { SubscriptionBadge } from "@/components/subscription-controls";
-import { getCurrentSession } from "@/lib/auth";
 import { issueSignals } from "@/lib/issue-signals";
-import Link from "next/link";
+import { requireAccountSession } from "@/lib/route-guards";
 import type { ReactNode } from "react";
 import {
   Bell,
@@ -31,8 +30,7 @@ const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
 export default async function AccountPage() {
-  const session = await getCurrentSession();
-  const authenticated = Boolean(session);
+  const session = await requireAccountSession("/account");
   const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
 
   return (
@@ -49,33 +47,18 @@ export default async function AccountPage() {
       </header>
 
       <main className="mt-7 space-y-4 pb-8">
-              {!authenticated ? (
-                <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-                  <PremiumAccountHeader
-                    aside={
-                      <Link href="/sign-in?returnTo=%2Fprofile" className={`${mobileViewAllClass} shrink-0 px-4 py-2 text-[13px]`}>
-                        Sign in
-                      </Link>
-                    }
-                    description="Sign in to keep your profile synced and access account-backed features."
-                    eyebrow="Local Profile"
-                    title="Browser profile mode"
-                  />
-                </MobileCard>
-              ) : null}
-
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
                 <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-4">
                   <div className="grid justify-items-center gap-2">
                     <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-2 border-[#ffb12b]/70 bg-[#ffb12b]/10 shadow-[0_0_24px_rgba(255,177,43,0.16)]">
                       <UserRound className="h-9 w-9 text-[#ffcf54]" strokeWidth={1.7} aria-hidden="true" />
-                      <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-[#061126] bg-[#43ed74]" aria-label={authenticated ? "Account profile synced" : "Local profile ready"}>
+                      <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-[#061126] bg-[#43ed74]" aria-label="Account profile synced">
                         <CheckCircle2 className="h-4 w-4 text-[#061126]" strokeWidth={2.2} aria-hidden="true" />
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#43ed74]/18 bg-[#43ed74]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74f49a]">
                       <CheckCircle2 className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
-                      {authenticated ? "Synced" : "Ready"}
+                      Synced
                     </span>
                   </div>
                   <div className="min-w-0">

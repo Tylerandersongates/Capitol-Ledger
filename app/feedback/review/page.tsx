@@ -3,7 +3,7 @@ import { ArrowLeft, Bell, FileText, Home, Search, Settings } from "lucide-react"
 import { BetaFeedbackReviewQueue } from "@/components/beta-feedback-review-queue";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
-import { getBetaFeedbackRecords } from "@/lib/beta-feedback";
+import { canReviewAllBetaFeedback, getBetaFeedbackRecords } from "@/lib/beta-feedback";
 import { requireAccountSession } from "@/lib/route-guards";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function FeedbackReviewPage() {
   const session = await requireAccountSession("/feedback/review");
   const feedback = await getBetaFeedbackRecords(session.user);
+  const canManageFeedback = canReviewAllBetaFeedback(session.user);
 
   return (
     <MobileShell
@@ -36,7 +37,7 @@ export default async function FeedbackReviewPage() {
       </section>
 
       <main className="mt-7 space-y-4 pb-8">
-        <BetaFeedbackReviewQueue initialMode={feedback.mode} initialRecords={feedback.records} />
+        <BetaFeedbackReviewQueue canManageFeedback={canManageFeedback} initialMode={feedback.mode} initialRecords={feedback.records} />
       </main>
 
       <MobileBottomNav

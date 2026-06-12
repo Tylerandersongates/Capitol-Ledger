@@ -70,12 +70,24 @@ export function PartyAffiliationSelector() {
   const [party, setParty] = useState("");
 
   useEffect(() => {
-    setParty(readPartyAffiliation());
+    function refreshParty() {
+      setParty(readPartyAffiliation());
+    }
+
+    refreshParty();
     void fetchAccountProfile().then((profile) => {
       if (!profile) return;
       writePartyAffiliation(profile.partyAffiliation);
       setParty(profile.partyAffiliation);
     });
+
+    window.addEventListener("storage", refreshParty);
+    window.addEventListener(accountProfileChangedEvent, refreshParty);
+
+    return () => {
+      window.removeEventListener("storage", refreshParty);
+      window.removeEventListener(accountProfileChangedEvent, refreshParty);
+    };
   }, []);
 
   function handleChange(value: string) {
