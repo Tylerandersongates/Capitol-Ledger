@@ -13,6 +13,7 @@ Confirm that a tester can create an account, leave, come back, and still see the
 - Use the live Vercel beta unless you are specifically testing local preview.
 - Keep Stripe in demo subscription mode until Stripe price IDs are configured.
 - Use a non-secret test email and password.
+- For live Vercel account-creation QA, use an inbox you can access so the verification-email step does not block the pass.
 - Do not use a real tester's password or personal account for QA.
 - Start from a clean browser profile or private window when testing first-time account creation.
 
@@ -44,6 +45,7 @@ Confirm that a tester can create an account, leave, come back, and still see the
 Pass criteria:
 
 - Account creation completes without a dead end.
+- Any verification-email step is clear, and the tester can complete it with the test inbox.
 - The account name appears cleanly.
 - District and policy interests can be saved.
 - Dashboard personalization is visible after setup.

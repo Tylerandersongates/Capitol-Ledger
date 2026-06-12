@@ -36,6 +36,7 @@ Use Round 2 to widen testing only after Capitol Ledger is stable enough that new
 ## Account And Auth Gate
 
 - New account creation works on the live demo.
+- Live account-creation QA uses a test inbox that can receive verification links.
 - Returning-user sign-in works on the live demo.
 - Sign-out works and does not leave a confusing account state behind.
 - Signing back in restores account-backed profile, interests, district, alerts, saved items, and gamification state where supported.
