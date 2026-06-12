@@ -14,14 +14,14 @@ const config: Config = {
         line: "#274464",
         civic: "#2B8DFF",
         rust: "#FF8A00",
-        brass: "#F6D84B",
+        brass: "#D4AF37",
         aurora: "#57C7FF",
         vault: "#020916",
         mist: "#EAF2FF"
       },
       boxShadow: {
         panel: "0 24px 80px rgba(0, 0, 0, 0.36)",
-        glow: "0 0 40px rgba(246, 216, 75, 0.22), 0 0 80px rgba(43, 141, 255, 0.12)"
+        glow: "0 0 40px rgba(212, 175, 55, 0.24), 0 0 80px rgba(43, 141, 255, 0.12)"
       }
     }
   },

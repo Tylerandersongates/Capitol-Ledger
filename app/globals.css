@@ -72,7 +72,7 @@ select {
 }
 
 .surface {
-  border: 1px solid rgba(246, 216, 75, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.18);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035)),
     linear-gradient(180deg, rgba(43, 141, 255, 0.1), rgba(7, 18, 37, 0.22));
@@ -82,7 +82,7 @@ select {
 
 .metric-bar {
   background:
-    linear-gradient(90deg, rgba(246, 216, 75, 0.58), rgba(43, 141, 255, 0.58)),
+    linear-gradient(90deg, rgba(212, 175, 55, 0.6), rgba(43, 141, 255, 0.58)),
     repeating-linear-gradient(90deg, transparent 0 18px, rgba(234, 242, 255, 0.08) 18px 19px);
 }
 
@@ -90,12 +90,12 @@ select {
   min-height: calc(100vh - 4rem);
   background:
     radial-gradient(circle at 14% 12%, rgba(43, 141, 255, 0.2), transparent 22rem),
-    radial-gradient(circle at 86% 8%, rgba(246, 216, 75, 0.12), transparent 20rem),
+    radial-gradient(circle at 86% 8%, rgba(212, 175, 55, 0.13), transparent 20rem),
     linear-gradient(180deg, rgba(8, 24, 44, 0.62), rgba(2, 9, 22, 0.96));
 }
 
 .glass-card {
-  border: 1px solid rgba(246, 216, 75, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.18);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.035)),
     linear-gradient(180deg, rgba(43, 141, 255, 0.08), rgba(2, 9, 22, 0.26));
@@ -108,7 +108,7 @@ select {
   overflow: hidden;
   border: 1px solid rgba(87, 199, 255, 0.18);
   background:
-    linear-gradient(135deg, rgba(87, 199, 255, 0.1), rgba(246, 216, 75, 0.055)),
+    linear-gradient(135deg, rgba(87, 199, 255, 0.1), rgba(212, 175, 55, 0.065)),
     rgba(3, 10, 24, 0.76);
 }
 
@@ -130,7 +130,7 @@ select {
 
 .gold-line {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(246, 216, 75, 0.86), rgba(255, 138, 0, 0.74), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.9), rgba(255, 138, 0, 0.74), transparent);
 }
 
 .orbital-mark {
@@ -141,7 +141,7 @@ select {
 .orbital-mark::after {
   position: absolute;
   inset: 10%;
-  border: 1px solid rgba(246, 216, 75, 0.32);
+  border: 1px solid rgba(212, 175, 55, 0.34);
   border-radius: 999px;
   content: "";
 }
@@ -154,13 +154,13 @@ select {
 
 .heat-cell {
   min-height: 2.65rem;
-  border: 1px solid rgba(246, 216, 75, 0.16);
+  border: 1px solid rgba(212, 175, 55, 0.17);
   border-radius: 0.45rem;
   background: rgba(255, 255, 255, 0.05);
 }
 
 .heat-cell-hot {
-  background: linear-gradient(145deg, rgba(255, 138, 0, 0.88), rgba(246, 216, 75, 0.38));
+  background: linear-gradient(145deg, rgba(255, 138, 0, 0.82), rgba(212, 175, 55, 0.42));
   box-shadow: 0 0 28px rgba(255, 138, 0, 0.28);
 }
 
@@ -170,7 +170,7 @@ select {
 }
 
 .device-shell {
-  border: 1px solid rgba(246, 216, 75, 0.22);
+  border: 1px solid rgba(212, 175, 55, 0.23);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
     #030a18;
@@ -190,7 +190,7 @@ select {
 }
 
 .text-stone-800 {
-  color: #f6d84b !important;
+  color: #d4af37 !important;
 }
 
 .bg-white {
@@ -202,7 +202,7 @@ select {
 }
 
 .border-line {
-  border-color: rgba(246, 216, 75, 0.16) !important;
+  border-color: rgba(212, 175, 55, 0.17) !important;
 }
 
 .surface .text-ink,

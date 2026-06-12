@@ -74,8 +74,8 @@ export default function MapPage({ searchParams }: { searchParams?: { level?: str
             <header className="mt-10 flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <Image src="/capitol-ledger-logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
-                <div className="whitespace-nowrap text-[17px] font-semibold uppercase tracking-[0.22em] text-white">
-                  Capitol <span className="text-[#ffb12b]">Ledger</span>
+                <div className="whitespace-nowrap text-[17px] font-semibold uppercase tracking-normal text-white">
+                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
                 </div>
               </Link>
               <Link href="/alerts" className={`relative ${mobileIconButtonClass}`} aria-label="Alerts">

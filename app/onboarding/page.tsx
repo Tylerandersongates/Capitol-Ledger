@@ -50,8 +50,8 @@ export default function OnboardingPage() {
                   <span className="absolute inset-[-6px] rounded-full border border-[#ffb12b]/42" />
                   <Image src="/capitol-ledger-logo.png" alt="" width={92} height={92} className="h-[90px] w-[90px] rounded-full object-cover" />
                 </div>
-                <div className="min-w-0 whitespace-nowrap text-[16px] font-semibold uppercase tracking-[0.2em] text-white/86">
-                  Capitol <span className="text-brass">Ledger</span>
+                <div className="min-w-0 whitespace-nowrap text-[16px] font-semibold uppercase tracking-normal text-white/86">
+                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
                 </div>
               </div>
               <Link href="/dashboard" className={`${mobileViewAllClass} shrink-0 px-4 py-2 text-[14px] text-white/72`}>

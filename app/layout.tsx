@@ -3,7 +3,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Capitol Ledger",
+  title: "Capitol Ledger CE",
   description: "Track federal lawmakers, bills, votes, and saved legislative updates."
 };
 

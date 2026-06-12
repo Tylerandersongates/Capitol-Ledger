@@ -32,8 +32,8 @@ export default function SignInPage({ searchParams }: { searchParams?: { mode?: s
                   <span className="absolute inset-[-5px] rounded-full border border-[#ffb12b]/42" />
                   <Image src="/capitol-ledger-logo.png" alt="" width={78} height={78} className="h-[76px] w-[76px] rounded-full object-cover" />
                 </div>
-                <div className="min-w-0 whitespace-nowrap text-[15px] font-semibold uppercase tracking-[0.2em] text-white/86">
-                  Capitol <span className="text-brass">Ledger</span>
+                <div className="min-w-0 whitespace-nowrap text-[15px] font-semibold uppercase tracking-normal text-white/86">
+                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
                 </div>
               </div>
               {allowDemoMode ? (

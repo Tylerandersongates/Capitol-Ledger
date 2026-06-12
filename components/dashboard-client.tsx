@@ -266,8 +266,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     className="h-[90px] w-[90px] rounded-full object-cover"
                   />
                 </div>
-                <div className="whitespace-nowrap text-[16px] font-semibold uppercase tracking-[0.2em] text-white/86">
-                  Capitol <span className="text-brass">Ledger</span>
+                <div className="whitespace-nowrap text-[16px] font-semibold uppercase tracking-normal text-white/86">
+                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
                 </div>
               </div>
               <Link

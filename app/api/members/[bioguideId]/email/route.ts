@@ -20,7 +20,7 @@ const emailRequestSchema = z.object({
 const OFFICIAL_MESSAGE_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger";
+  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
 }
 
 function webhookModeEnabled() {

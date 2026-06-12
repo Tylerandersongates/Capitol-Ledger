@@ -50,7 +50,7 @@ export function SiteHeader() {
             height={40}
             className="h-10 w-10 rounded-md border border-brass/40 bg-ink object-cover shadow-glow"
           />
-          <span className="hidden text-sm tracking-wide sm:inline sm:text-base">Capitol Ledger</span>
+          <span className="hidden text-sm tracking-normal sm:inline sm:text-base">Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span></span>
         </Link>
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
