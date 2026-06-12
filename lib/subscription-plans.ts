@@ -60,8 +60,8 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
     description: "Advanced civic tracking",
     demoUseCase: "Show the premium individual experience with AI analysis, deeper filters, and report exports.",
     pricing: {
-      monthly: "$3.99",
-      annual: "$39.99",
+      monthly: "$2.99",
+      annual: "$29.99",
       unit: "/ month"
     },
     highlights: ["Advanced intelligence panels", "Issue and politician tracking", "Exportable civic reports", "Priority vote reminders"],
