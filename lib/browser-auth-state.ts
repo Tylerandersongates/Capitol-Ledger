@@ -32,13 +32,13 @@ export function markBrowserAccountCreated() {
 }
 
 export function setBrowserSessionAuthenticated(authenticated: boolean) {
-  activeSession = authenticated;
-  activeSessionPromise = Promise.resolve(authenticated);
+  activeSession = authenticated ? true : null;
+  activeSessionPromise = authenticated ? Promise.resolve(true) : null;
 }
 
 export async function hasActiveBrowserSession() {
   if (typeof window === "undefined") return false;
-  if (activeSession !== null) return activeSession;
+  if (activeSession === true) return true;
   if (activeSessionPromise) return activeSessionPromise;
 
   activeSessionPromise = fetch("/api/auth/session", { cache: "no-store" })
@@ -49,7 +49,7 @@ export async function hasActiveBrowserSession() {
     })
     .catch(() => false)
     .then((authenticated) => {
-      activeSession = authenticated;
+      activeSession = authenticated ? true : null;
       return authenticated;
     });
 
