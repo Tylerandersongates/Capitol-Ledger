@@ -2,31 +2,50 @@
 
 ## Phase Roadmap
 
+Status: updated June 12, 2026. Capitol Ledger is waiting for Round 2 tester feedback.
+
 ### Phase Status Snapshot
 
-1. Phase 1: Web Beta Readiness - Tester-launch ready; first trusted tester round planned for June 6, 2026.
-2. Phase 2: Account and Auth Stability - Beta-ready; password reset/forgot-password flow verified working.
-3. Phase 3: Design QA and Beta Polish - Beta-ready; move into tester feedback triage.
-4. Phase 4: Subscription Demo Integration - Beta-ready; subscription testing is now part of `/beta`.
-5. Phase 5: Core Civic Data Expansion - Planned.
-6. Phase 6: External Production Services - Planned.
-7. Phase 7: App Store and TestFlight - Planned.
+1. Phase 1: Web Beta Readiness - Complete for controlled beta. Round 1 ran, feedback intake/review works, Vercel and GitHub Actions are green, and the Round 2 guide/download package is live.
+2. Phase 2: Account and Auth Stability - Complete for web beta, monitor during Round 2. New testers use email verification; returning Round 1 testers sign back into already verified accounts and check profile/gamification persistence.
+3. Phase 3: Design QA and Beta Polish - Round 1 blocker pass complete. Remaining work is feedback-driven polish from Round 2.
+4. Phase 4: Subscription Demo Integration - Demo complete for beta. Live Stripe/App Store subscription setup remains on hold until price IDs and the App Store subscription path are chosen.
+5. Phase 5: Core Civic Data Expansion - Partially complete. Live-first search, dashboard, and bill detail paths are connected; more civic surfaces and larger sync passes remain before App Store upload.
+6. Phase 6: External Production Services - Partially complete. Auth/email, billing, Weekly Brief, push, monitoring, and production rate limiting still need final provider decisions and production checks.
+7. Phase 7: App Store and TestFlight - Not started. Begin after Round 2 feedback is triaged and the beta-tested core flow is frozen.
 
-### Phase 1: Web Beta Readiness - Baseline Complete
+### Current Waiting State
+
+We are waiting for Round 2 tester activity. The app-facing priority is to avoid unnecessary pushes while testers may be active, except for minor docs updates or blocker fixes.
+
+Round 2 tester materials:
+
+- Tester guide source: `docs/round-2-beta-tester-guide/README.md`
+- Downloadable tester guide: `https://project-qosv1.vercel.app/downloads/capitol-ledger-round-2-beta-tester-guide.docx`
+- Feedback review queue: `https://project-qosv1.vercel.app/feedback/review`
+- Internal returning-user QA: `Capitol Ledger App/Returning User QA Script.md`
+- Internal Round 2 readiness: `Capitol Ledger App/Round 2 Beta Readiness Checklist.md`
+
+Round 2 asks:
+
+1. New testers create an account, verify by email link, sign back in, and complete setup.
+2. Returning Round 1 testers sign into their already verified accounts without creating a new account.
+3. Returning testers confirm profile choices, affiliation if set, interests, saved items, alerts, badges, score, and days logged in stayed intact or updated reasonably.
+4. All testers report trust, clarity, missing data, confusing labels, and account persistence issues through `/feedback`.
+
+### Phase 1: Web Beta Readiness - Complete
 
 Goal: get Capitol Ledger deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
 
-Current mode: tester intake and triage. First trusted tester round is planned for June 6, 2026.
+Completed:
 
-Before sending tester links:
-
-1. Confirm the latest Vercel deployment for commit `b5106dd` is green.
-2. Open the deployed `/beta` route and confirm the checklist shows 8 flows, including subscriptions.
-3. Sign in with the reviewer account listed in `BETA_REVIEWER_EMAILS`.
-4. Submit one test report from `/feedback`.
-5. Confirm it appears in `/feedback/review`, then mark status and launch decision.
-6. Send testers the beta guide PDF or editable DOCX plus the deployed `/beta` link.
-7. Run `/feedback/review` and `pnpm beta:triage` after each tester session.
+1. Deployed beta is live on Vercel at `https://project-qosv1.vercel.app`.
+2. GitHub Actions quality checks are installed and passing on the latest docs pushes.
+3. `/beta`, `/feedback`, and `/feedback/review` are available for tester intake and reviewer triage.
+4. Reviewer-only access for `/feedback/review` is protected.
+5. Round 1 tester guide exists under `docs/beta-tester-guide`.
+6. Round 2 tester guide exists under `docs/round-2-beta-tester-guide` with a public DOCX download.
+7. The active feedback queue was triaged to zero active blockers before the Round 2 handoff.
 
 Exit criteria:
 
@@ -37,102 +56,144 @@ Exit criteria:
 - `beta:check` passes in production-check mode.
 - `beta:triage` shows zero launch blockers and zero untriaged active reports before widening the tester group.
 
-Current Phase 1 status:
+Maintenance while Round 2 is active:
 
-- GitHub has the initial Capitol Ledger app push on `main`.
-- Vercel deployments are now populating from the GitHub-connected project.
-- The latest design cleanup has darkened the shared mobile shell, simplified `/search`, shortened `/account`, and added a compact dashboard entry point for Weekly Brief.
-- A light performance pass removed duplicate account/profile, gamification, and read-alert hydration paths. No active polling loops were found in the current mobile flow.
-- Speech/video links are wired for the current demo through bill video data, bill detail cards, subscription gating, and gamification. Use `pnpm video-links:check` before demos; no Vercel video-link key is required yet.
-- The first beta tester states are now supported in the demo data and onboarding flow: California, Massachusetts, New York, and Texas.
-- Account creation now captures first name and last name separately for cleaner tester export and future customer records.
-- Search category views now show the fuller list for Bills, Officials, and Votes instead of only preview cards.
-- Vercel production build path includes `prisma generate`, resolving prior Prisma-client deployment mismatches.
-- Local `beta:check` passes the file and core environment checks.
-- Latest pushed commit is `b5106dd Prepare beta tester polish and guide`.
-- `/beta` now includes 8 tester flows, including subscription/upgrade testing.
-- The first-round beta tester guide now exists in Markdown, PDF, and editable DOCX form under `docs/beta-tester-guide`.
-- `BETA_REVIEWER_EMAILS` is confirmed in Vercel from June 1, 2026, and local `.env.local` has been updated for parity without committing the email value.
-- Forgot-password/password reset has been verified working for the beta pass.
-- Phase 1 ongoing maintenance step: run a deployed smoke test after each major push (submit one `/feedback` report and confirm visibility in `/feedback/review`).
-- Local `.env.local` can stay pointed at the local preview; Vercel owns the deployed `NEXT_PUBLIC_APP_URL` value.
-- The database-backed `beta:triage` check should be run from the normal Terminal against Neon because the Codex sandbox can hit local Prisma engine restrictions.
+1. Run `/feedback/review` after tester sessions.
+2. Run `pnpm beta:triage` before each fix pass.
+3. Fix blockers immediately; batch non-blocking polish.
+4. Run a deployed smoke test after any app-facing push.
 
-### Phase 2: Account And Auth Stability
+### Phase 2: Account And Auth Stability - Web Beta Complete, Monitor In Round 2
 
 Goal: keep real account behavior dependable during the trusted beta round.
 
-Current mode: beta QA and follow-up fixes.
+Completed for beta:
 
 1. Password reset/forgot-password is verified working for the beta pass.
-2. Confirm email verification delivery with at least one production account if testers will create new accounts.
-3. Confirm returning users see the clean sign-in screen, while first-time visitors can create an account.
-4. Confirm onboarding, district setup, party affiliation, alert preferences, read alerts, saved ledger, subscription mode, and gamification persist after sign-out/sign-in.
-5. Watch tester reports for account/session confusion and fix anything marked as a launch blocker.
-6. Decide whether the current in-memory rate limiting is enough for beta, or add a provider-backed limiter before public traffic.
+2. Email verification works for new account creation and was part of Round 1.
+3. Returning-user QA confirmed sign-out, protected `/account` redirect, sign-back-in, profile persistence, saved ledger persistence, and district/interests restoration.
+4. `/settings` party affiliation state now stays synced with account profile changes.
+5. `/feedback/review` action controls are reviewer-only for non-reviewer safety.
+6. Auth-sensitive routes have same-origin guards and in-memory rate limiting for beta.
 
-### Phase 3: Design QA And Beta Polish
+Remaining before App Store upload:
+
+1. Watch Round 2 reports for account/session confusion, profile resets, verification confusion, or days-logged-in issues.
+2. Decide whether to replace in-memory rate limiting with an edge/provider-backed limiter before public launch.
+3. Confirm final auth email provider settings for production volume.
+4. Confirm privacy/account deletion expectations for Apple review.
+
+### Phase 3: Design QA And Beta Polish - Round 1 Complete, Round 2 Pending
 
 Goal: remove visual friction reported by testers before a larger beta round.
 
-Current mode: triage-driven polish.
+Completed:
 
-1. Triage `/feedback/review` after each tester session.
-2. Fix anything marked Launch blocker before adding more testers.
-3. Batch Beta OK polish items into short passes instead of interrupting tester intake.
-4. Decide the final Weekly Brief visual treatment once the scheduled delivery service is connected.
-5. Create investor/App Store screenshot layouts from finished mobile pages after the first tester round.
+1. Round 1 `/feedback/review` triage ran and active reports were resolved before the Round 2 handoff.
+2. Round 1 returning-user blockers were fixed and resolved.
+3. Mobile visual rhythm, search, account, alerts, badges, upgrade, and feedback review polish have been through multiple beta-readiness passes.
+4. Round 2 tester instructions now focus on persistence, trust, clarity, missing data, and useful civic workflow.
 
-### Phase 4: Subscription Demo Integration
+Remaining before App Store upload:
+
+1. Triage Round 2 reports into blocker, beta OK, later, duplicate, or resolved.
+2. Fix all launch blockers and high-severity account/data contradictions.
+3. Batch non-blocking copy/spacing polish after Round 2 feedback slows.
+4. Capture final App Store screenshot candidates from stable mobile pages.
+5. Decide final Weekly Brief visual treatment once delivery provider behavior is known.
+
+### Phase 4: Subscription Demo Integration - Demo Complete, Live Billing Pending
 
 Goal: make Free, Pro Intelligence, and Civic Team easy to demonstrate, test, and explain.
 
-Current mode: included in beta testing.
+Completed for beta:
 
-1. Have testers open `/upgrade`, compare Free/Pro/Team, switch billing cycle, and report unclear pricing or locked-feature language.
-2. Triage subscription feedback before live billing work.
-3. Capture demo screenshots for Free, Pro Intelligence, and Civic Team after tester feedback settles.
-4. Prepare an investor-facing timed walkthrough based on `Subscription Demo Guide.md`.
-5. After beta testing, configure the new Stripe account for real checkout: create/check price IDs, add the Stripe secret key and webhook secret in Vercel, and keep the Stripe dashboard password/API key out of git.
+1. `/upgrade` and subscription demo controls are part of the beta checklist.
+2. Free, Pro Intelligence, and Civic Team demo states are visible and entitlement-gated.
+3. `Subscription Demo Guide.md` and `Billing Readiness Guide.md` document the demo and live-billing gates.
+4. Live Stripe setup is intentionally on hold until real price IDs exist.
 
-### Phase 5: Core Civic Data Expansion
+Remaining before App Store upload:
+
+1. Decide whether App Store subscriptions use direct StoreKit/App Store Server API, RevenueCat, or another bridge.
+2. Create final product names, plan copy, prices, and subscription groups.
+3. Configure Stripe only if web checkout remains part of the launch path.
+4. Add live billing secrets and price IDs through Vercel/App Store tooling, not git.
+5. Run `BILLING_REQUIRE_STRIPE=true pnpm billing:check` if Stripe is enabled.
+6. Run subscription purchase/restore/cancel QA in TestFlight or the chosen billing sandbox.
+
+### Phase 5: Core Civic Data Expansion - Partial, App Store Data Hardening Remaining
 
 Goal: expand live-first data beyond the current synced pages.
 
 Estimated time: 2 to 4 days.
 
-1. Run a tiny cosponsor-enabled Congress.gov sync, inspect Neon `Member` and `Cosponsor` rows, then increase limits carefully.
-2. Run a tiny House-vote dry sync, then a tiny House-vote write sync, inspect Neon `Vote` and `MemberVote` rows, and keep Senate vote ingestion as a later blended-source step.
-3. Extend the live-first database path from `/search`, `/dashboard`, and bill detail pages into member detail, vote detail, alerts, and Weekly Brief pages.
-4. Expand search facets for high-volume records: chamber, party, state, policy area, bill status, committee, vote result, and source availability.
-5. Replace deterministic bill pros/cons with live AI policy analysis using official bill text, CRS summaries, vote records, and source links.
-6. Replace deterministic source matching with live source discovery once committee, hearing, video, and member statement feeds are connected.
+Completed:
 
-### Phase 6: External Production Services
+1. Neon migrations are applied.
+2. Congress.gov member, bill, committee, official source-link, bill-summary, cosponsor, House vote, and member vote-position upserts exist behind explicit sync flags.
+3. Tiny write syncs have confirmed live records can persist in Neon.
+4. `/search`, `/dashboard`, and bill detail pages read live-first Neon civic records with demo fallback.
+5. Accountability methodology v0.1 is visible on official profiles.
+
+Remaining before App Store upload:
+
+1. Run controlled larger Congress.gov syncs and inspect Neon row quality after each step.
+2. Extend live-first data into member detail, vote detail, alerts, and Weekly Brief inputs.
+3. Decide how much Senate vote ingestion is required for App Store v1 versus later.
+4. Expand high-volume search facets: chamber, party, state, policy area, bill status, committee, vote result, and source availability.
+5. Replace or clearly label deterministic AI policy analysis with source-grounded live analysis where needed.
+6. Add a data freshness and source limitation note where demo fallback remains.
+
+### Phase 6: External Production Services - Partial, Production Gates Remaining
 
 Goal: connect the outside services needed for paid production use.
 
 Estimated time: 3 to 7 days, depending on provider approvals.
 
-1. Run `backend:check` as the broad outside-service tracker.
-2. Configure the new Stripe account after beta testing: add live price IDs, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` through Vercel environment variables, store the Stripe dashboard password securely outside the repo, then run `BILLING_REQUIRE_STRIPE=true billing:check`.
-3. Choose the Weekly Brief email/push provider bridge, configure the task secret and provider settings, then run `weekly-brief:check` and `weekly-brief:qa`.
-4. Add push notifications attached to alerts: provider choice, permission prompts, device token storage, alert-triggered sends, and preference/unsubscribe controls.
-5. Add remaining gamification triggers once product flows exist: petition signing, representative contact delivery, team invites, and civic learning actions.
-6. Add monitoring/error reporting and production rate limiting before public launch.
+Completed or prepared:
 
-### Phase 7: App Store And TestFlight
+1. `backend:check`, `billing:check`, `auth-email:check`, `weekly-brief:check`, `weekly-brief:qa`, and `congress:check` exist as readiness commands.
+2. Auth email delivery plumbing exists for verification and password reset.
+3. Weekly Brief task route and delivery-history table exist.
+4. Stripe-ready checkout/webhook routes exist in demo-safe mode.
+
+Remaining before App Store upload:
+
+1. Run `pnpm backend:check` as the broad outside-service tracker before production freeze.
+2. Choose final auth email provider settings and verify production delivery.
+3. Choose Weekly Brief email/push provider bridge, configure task secret/provider settings, then run `pnpm weekly-brief:check` and `pnpm weekly-brief:qa`.
+4. Choose push-notification provider and implement device token storage, alert-triggered sends, permission prompts, and unsubscribe/preference controls if push is part of App Store v1.
+5. Add monitoring/error reporting and production rate limiting before public launch.
+6. Confirm privacy policy, support URL, data retention, and account deletion story for Apple review.
+
+### Phase 7: App Store And TestFlight - Remaining Path To Upload
 
 Goal: package the tested product for Apple review and pre-sale testing.
 
 Estimated time: 2 to 5 days after beta feedback is stable.
 
+Prerequisites:
+
+1. Round 2 feedback is triaged.
+2. Zero launch blockers remain open.
+3. Account persistence, saved state, and days-logged-in behavior are acceptable for returning testers.
+4. Subscription/App Store purchase path is chosen.
+5. External production-service gates are either completed or clearly deferred from App Store v1.
+
+Upload checklist:
+
 1. Freeze the beta-tested core flow.
-2. Prepare App Store screenshots and description.
-3. Package the Apple build path.
-4. Run TestFlight on real devices.
-5. Fix TestFlight-only issues.
-6. Decide Android timing after Apple/core flow is solid.
+2. Prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, marketing URL if needed, privacy policy URL, and age/content declarations.
+3. Prepare App Store description, keywords, promotional text, release notes, category, and review notes.
+4. Prepare App Privacy nutrition labels based on actual account, analytics, civic activity, purchase, and notification data use.
+5. Capture final screenshots for required iPhone sizes from the stable mobile pages.
+6. Package the Apple build path and verify production environment settings.
+7. Upload the first build to App Store Connect.
+8. Run TestFlight on real devices.
+9. Fix TestFlight-only issues and re-upload as needed.
+10. Submit for App Review when TestFlight, billing, auth, privacy, and feedback triage are clean.
+11. Decide Android timing after Apple/core flow is solid.
 
 ## Completed Product Work
 
