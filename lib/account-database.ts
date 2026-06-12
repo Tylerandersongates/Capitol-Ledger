@@ -198,6 +198,27 @@ export async function ensureAccountUser(user: { email: string; id: string; name?
   }
 }
 
+export async function getAccountPersistenceUserId(user: { email: string; id: string; name?: string }) {
+  if (!canUseDatabasePersistence()) return user.id;
+
+  try {
+    const prisma = getPrisma();
+    await ensureAccountUser(user);
+    const records = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "User"
+      WHERE lower("email") = lower(${user.email})
+      LIMIT 1
+    `;
+
+    return records[0]?.id ?? user.id;
+  } catch (error) {
+    logDatabaseFallback("getAccountPersistenceUserId", error);
+    if (isDatabaseConnectionError(error)) return user.id;
+    throw error;
+  }
+}
+
 export async function readProfileFromDatabase(userId: string): Promise<AccountProfileSnapshot | null> {
   if (!(await ensureAccountProfileSchema())) return null;
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
-import { ensureAccountUser, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
@@ -17,14 +17,13 @@ export async function GET() {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const databaseSubscription = await ensureAccountUser(user)
-    .then(() => readSubscriptionFromDatabase(user.id))
-    .catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
 
   return NextResponse.json({
     mode: databaseSubscription ? "database" : "account",
     user,
-    subscription: databaseSubscription ?? getAccountSubscription(user.id)
+    subscription: databaseSubscription ?? getAccountSubscription(accountUserId)
   });
 }
 
@@ -39,10 +38,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountSubscriptionSnapshot>;
-  const databaseSubscription = await ensureAccountUser(user)
-    .then(() => writeSubscriptionToDatabase(user.id, body))
-    .catch(() => null);
-  const subscription = databaseSubscription ?? setAccountSubscription(user.id, body);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, body).catch(() => null);
+  const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, body);
 
   return NextResponse.json({
     mode: databaseSubscription ? "database" : "account",

@@ -4,7 +4,7 @@ import {
   setAccountGamification,
   type AccountGamificationSnapshot
 } from "@/lib/account-gamification";
-import { ensureAccountUser, readGamificationFromDatabase, writeGamificationToDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readGamificationFromDatabase, writeGamificationToDatabase } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 
@@ -20,14 +20,13 @@ export async function GET() {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const databaseGamification = await ensureAccountUser(user)
-    .then(() => readGamificationFromDatabase(user.id))
-    .catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseGamification = await readGamificationFromDatabase(accountUserId).catch(() => null);
 
   return NextResponse.json({
     mode: databaseGamification ? "database" : "account",
     user,
-    gamification: databaseGamification ?? getAccountGamification(user.id)
+    gamification: databaseGamification ?? getAccountGamification(accountUserId)
   });
 }
 
@@ -42,10 +41,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountGamificationSnapshot>;
-  const databaseGamification = await ensureAccountUser(user)
-    .then(() => writeGamificationToDatabase(user.id, body))
-    .catch(() => null);
-  const gamification = databaseGamification ?? setAccountGamification(user.id, body);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseGamification = await writeGamificationToDatabase(accountUserId, body).catch(() => null);
+  const gamification = databaseGamification ?? setAccountGamification(accountUserId, body);
 
   return NextResponse.json({
     mode: databaseGamification ? "database" : "account",

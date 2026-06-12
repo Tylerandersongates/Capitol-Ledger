@@ -1,7 +1,7 @@
 import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountProfile } from "@/lib/account-profile";
 import { getAccountSubscription } from "@/lib/account-subscription";
-import { ensureAccountUser, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
 import { getBill, getBillStatus, getDashboardData, getMember, getRecentUpdates } from "@/lib/data";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { formatDate } from "@/lib/utils";
@@ -293,18 +293,18 @@ export function buildWeeklyBrief({
 }
 
 export async function getWeeklyBriefForUser(user: AuthUser) {
-  await ensureAccountUser(user).catch(() => false);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
 
   const [databaseLedger, databaseProfile, databaseSubscription] = await Promise.all([
-    readLedgerFromDatabase(user.id).catch(() => null),
-    readProfileFromDatabase(user.id).catch(() => null),
-    readSubscriptionFromDatabase(user.id).catch(() => null)
+    readLedgerFromDatabase(accountUserId).catch(() => null),
+    readProfileFromDatabase(accountUserId).catch(() => null),
+    readSubscriptionFromDatabase(accountUserId).catch(() => null)
   ]);
 
   return buildWeeklyBrief({
-    ledger: databaseLedger ?? getAccountLedger(user.id),
-    profile: databaseProfile ?? getAccountProfile(user.id),
-    subscription: databaseSubscription ?? getAccountSubscription(user.id)
+    ledger: databaseLedger ?? getAccountLedger(accountUserId),
+    profile: databaseProfile ?? getAccountProfile(accountUserId),
+    subscription: databaseSubscription ?? getAccountSubscription(accountUserId)
   });
 }
 

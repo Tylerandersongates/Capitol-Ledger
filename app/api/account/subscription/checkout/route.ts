@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setAccountSubscription } from "@/lib/account-subscription";
-import { ensureAccountUser, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (plan === "free") {
+    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
     const nextSubscription = {
       cycle,
       plan,
@@ -45,10 +46,8 @@ export async function POST(request: NextRequest) {
       providerSubscriptionId: "demo-free",
       status: "active"
     } as const;
-    const databaseSubscription = await ensureAccountUser(session.user)
-      .then(() => writeSubscriptionToDatabase(session.user.id, nextSubscription))
-      .catch(() => null);
-    const subscription = databaseSubscription ?? setAccountSubscription(session.user.id, nextSubscription);
+    const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
+    const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, nextSubscription);
 
     return NextResponse.json({
       checkoutMode: "demo",
@@ -70,6 +69,7 @@ export async function POST(request: NextRequest) {
   }));
 
   if (!checkout.configured) {
+    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
     const nextSubscription = {
       cycle,
       plan,
@@ -78,10 +78,8 @@ export async function POST(request: NextRequest) {
       providerSubscriptionId: `demo-${plan}-${cycle}`,
       status: "active"
     } as const;
-    const databaseSubscription = await ensureAccountUser(session.user)
-      .then(() => writeSubscriptionToDatabase(session.user.id, nextSubscription))
-      .catch(() => null);
-    const subscription = databaseSubscription ?? setAccountSubscription(session.user.id, nextSubscription);
+    const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
+    const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, nextSubscription);
 
     return NextResponse.json({
       checkoutMode: "demo",

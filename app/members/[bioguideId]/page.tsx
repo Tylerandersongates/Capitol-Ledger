@@ -23,7 +23,7 @@ import {
 import { getMemberDetailWithLiveData, type MemberCaucusMembership, type MemberVoteRecord } from "@/lib/data";
 import { calculateMemberScore, type MemberScoreModel } from "@/lib/member-scoring";
 import { getCurrentSession } from "@/lib/auth";
-import { ensureAccountUser, readLedgerFromDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { estimateTermsInOfficeFromCongressLabel, federalElectionDateIso, formatDate, positionTone } from "@/lib/utils";
 import type { Bill, Member } from "@/types/capitol";
@@ -444,9 +444,9 @@ async function getViewerScoreContext() {
   if (!session) return { viewerIssueInterests: [] as string[] };
 
   const user = session.user;
-  const hasAccountDatabase = await ensureAccountUser(user).catch(() => false);
-  const databaseLedger = hasAccountDatabase ? await readLedgerFromDatabase(user.id) : null;
-  const fallbackLedger = getAccountLedger(user.id);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseLedger = await readLedgerFromDatabase(accountUserId).catch(() => null);
+  const fallbackLedger = getAccountLedger(accountUserId);
 
   return {
     viewerIssueInterests: (databaseLedger ?? fallbackLedger).issueInterests

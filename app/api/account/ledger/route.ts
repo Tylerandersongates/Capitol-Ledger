@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountLedger, mergeAccountLedger } from "@/lib/account-ledger";
-import { ensureAccountUser, mergeLedgerIntoDatabase, readLedgerFromDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, mergeLedgerIntoDatabase, readLedgerFromDatabase } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
@@ -17,14 +17,13 @@ export async function GET() {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const databaseLedger = await ensureAccountUser(user)
-    .then(() => readLedgerFromDatabase(user.id))
-    .catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseLedger = await readLedgerFromDatabase(accountUserId).catch(() => null);
 
   return NextResponse.json({
     mode: databaseLedger ? "database" : "account",
     user,
-    ledger: databaseLedger ?? getAccountLedger(user.id)
+    ledger: databaseLedger ?? getAccountLedger(accountUserId)
   });
 }
 
@@ -39,10 +38,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountLedgerSnapshot>;
-  const databaseLedger = await ensureAccountUser(user)
-    .then(() => mergeLedgerIntoDatabase(user.id, body))
-    .catch(() => null);
-  const ledger = databaseLedger ?? mergeAccountLedger(user.id, body);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseLedger = await mergeLedgerIntoDatabase(accountUserId, body).catch(() => null);
+  const ledger = databaseLedger ?? mergeAccountLedger(accountUserId, body);
 
   return NextResponse.json({
     mode: databaseLedger ? "database" : "account",

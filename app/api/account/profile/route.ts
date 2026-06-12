@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountProfile, setAccountProfile } from "@/lib/account-profile";
-import { ensureAccountUser, readProfileFromDatabase, writeProfileToDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readProfileFromDatabase, writeProfileToDatabase } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import type { AccountProfileSnapshot } from "@/types/capitol";
@@ -17,13 +17,12 @@ export async function GET() {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const databaseProfile = await ensureAccountUser(user)
-    .then(() => readProfileFromDatabase(user.id))
-    .catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseProfile = await readProfileFromDatabase(accountUserId).catch(() => null);
 
   return NextResponse.json({
     mode: databaseProfile ? "database" : "account",
-    profile: databaseProfile ?? getAccountProfile(user.id),
+    profile: databaseProfile ?? getAccountProfile(accountUserId),
     user
   });
 }
@@ -39,10 +38,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountProfileSnapshot>;
-  const databaseProfile = await ensureAccountUser(user)
-    .then(() => writeProfileToDatabase(user.id, body))
-    .catch(() => null);
-  const profile = databaseProfile ?? setAccountProfile(user.id, body);
+  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const databaseProfile = await writeProfileToDatabase(accountUserId, body).catch(() => null);
+  const profile = databaseProfile ?? setAccountProfile(accountUserId, body);
 
   return NextResponse.json({
     mode: databaseProfile ? "database" : "account",

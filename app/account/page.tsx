@@ -7,7 +7,7 @@ import { PartyAffiliationDisplay } from "@/components/party-affiliation-control"
 import { PolicyInterestsEditor, SavedLedgerSummary } from "@/components/saved-ledger-controls";
 import { SubscriptionBadge } from "@/components/subscription-controls";
 import { getAccountLedger } from "@/lib/account-ledger";
-import { ensureAccountUser, readLedgerFromDatabase } from "@/lib/account-database";
+import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { issueSignals } from "@/lib/issue-signals";
 import { requireAccountSession } from "@/lib/route-guards";
 import type { ReactNode } from "react";
@@ -34,10 +34,9 @@ const premiumHeaderGreenIconClass =
 export default async function AccountPage() {
   const session = await requireAccountSession("/account");
   const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
-  const initialLedger = await ensureAccountUser(session.user)
-    .then(() => readLedgerFromDatabase(session.user.id))
-    .catch(() => null);
-  const accountLedger = initialLedger ?? getAccountLedger(session.user.id);
+  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const initialLedger = await readLedgerFromDatabase(accountUserId).catch(() => null);
+  const accountLedger = initialLedger ?? getAccountLedger(accountUserId);
 
   return (
     <MobileShell
