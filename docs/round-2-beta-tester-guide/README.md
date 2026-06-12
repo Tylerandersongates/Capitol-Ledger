@@ -22,7 +22,7 @@ https://project-qosv1.vercel.app/feedback?source=round-2
 
 Use test-safe information. Do not enter private personal data you would not want stored in a beta environment.
 
-For account creation, use an email inbox you can access. Capitol Ledger may send a verification link, and you will need that inbox to complete the account flow.
+For account creation, use an email inbox you can access. Capitol Ledger sends a verification link during sign-up. Open that link from your email, then return to Capitol Ledger and sign back in with the verified account before continuing.
 
 ## What Is Different In Round 2
 
@@ -48,8 +48,9 @@ New tester:
 1. Open the beta link.
 2. Go to Sign In.
 3. Create an account with a test-safe email you can access.
-4. Complete any verification-email step.
-5. Set your district, affiliation if you want, interests, and alert preferences.
+4. Open the verification link emailed to you.
+5. Return to Capitol Ledger and sign back in with the verified email.
+6. Set your district, affiliation if you want, interests, and alert preferences.
 
 Returning tester:
 
