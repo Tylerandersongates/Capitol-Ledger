@@ -222,9 +222,9 @@ export function SaveTargetButton({
     }
 
     refreshSaved();
-    void hydrateSavedLedgerFromAccount();
     window.addEventListener("storage", refreshSaved);
     window.addEventListener(persistenceEvent, refreshSaved);
+    void hydrateSavedLedgerFromAccount().then(refreshSaved);
 
     return () => {
       window.removeEventListener("storage", refreshSaved);
@@ -283,9 +283,9 @@ export function SaveAlertButton({
     }
 
     refreshSaved();
-    void hydrateSavedLedgerFromAccount();
     window.addEventListener("storage", refreshSaved);
     window.addEventListener(persistenceEvent, refreshSaved);
+    void hydrateSavedLedgerFromAccount().then(refreshSaved);
 
     return () => {
       window.removeEventListener("storage", refreshSaved);
@@ -328,9 +328,9 @@ export function PolicyInterestsEditor({ compact = false, interests }: { compact?
     }
 
     refreshInterests();
-    void hydrateSavedLedgerFromAccount();
     window.addEventListener("storage", refreshInterests);
     window.addEventListener(persistenceEvent, refreshInterests);
+    void hydrateSavedLedgerFromAccount().then(refreshInterests);
 
     return () => {
       window.removeEventListener("storage", refreshInterests);
@@ -459,11 +459,11 @@ export function SavedLedgerSummary() {
     }
 
     refreshCounts();
-    void hydrateSavedLedgerFromAccount();
     void hasActiveBrowserSession().then(setAccountSynced);
     window.addEventListener("storage", refreshCounts);
     window.addEventListener(persistenceEvent, refreshCounts);
     window.addEventListener("capitol-ledger:follows-changed", refreshCounts);
+    void hydrateSavedLedgerFromAccount().then(refreshCounts);
 
     return () => {
       window.removeEventListener("storage", refreshCounts);
