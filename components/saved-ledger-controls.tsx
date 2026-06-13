@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell, BookmarkCheck, Check, Star } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
@@ -336,33 +336,38 @@ export function PolicyInterestsEditor({
 }) {
   const [selected, setSelected] = useState<string[]>(() => uniqueStrings(initialSelectedInterests ?? []));
   const [editing, setEditing] = useState(false);
+  const seededInitialInterestsRef = useRef<string | null>(null);
 
   useEffect(() => {
-    function refreshInterests() {
-      if (initialSelectedInterests) {
-        const initial = uniqueStrings(initialSelectedInterests);
-        window.localStorage.setItem(interestsKey, JSON.stringify(initial));
-        setSelected(initial);
-        return;
-      }
+    const seededInitialInterests = uniqueStrings(initialSelectedInterests ?? []);
+    const seededInitialKey = initialSelectedInterests ? JSON.stringify(seededInitialInterests) : null;
 
+    function readCurrentInterests() {
       const storedState = readIssueInterestsState();
-      const initial = storedState.hasStoredValue ? storedState.interests : [];
-
-      setSelected(initial);
-      if (!storedState.hasStoredValue) writeJson(interestsKey, initial);
+      return storedState.hasStoredValue ? storedState.interests : seededInitialInterests;
     }
 
-    refreshInterests();
+    function refreshInterests() {
+      setSelected(readCurrentInterests());
+    }
+
+    if (seededInitialKey && seededInitialInterestsRef.current !== seededInitialKey) {
+      seededInitialInterestsRef.current = seededInitialKey;
+      window.localStorage.setItem(interestsKey, JSON.stringify(seededInitialInterests));
+      setSelected(seededInitialInterests);
+    } else {
+      refreshInterests();
+    }
+
     window.addEventListener("storage", refreshInterests);
     window.addEventListener(persistenceEvent, refreshInterests);
-    void hydrateSavedLedgerFromAccount().then(refreshInterests);
+    if (!initialSelectedInterests) void hydrateSavedLedgerFromAccount().then(refreshInterests);
 
     return () => {
       window.removeEventListener("storage", refreshInterests);
       window.removeEventListener(persistenceEvent, refreshInterests);
     };
-  }, [initialSelectedInterests, interests]);
+  }, [initialSelectedInterests]);
 
   function toggleInterest(interest: string) {
     if (!editing && !compact) return;
