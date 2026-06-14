@@ -7,6 +7,9 @@ export type BillingCycle = "monthly" | "annual";
 export type SubscriptionPlanId = "free" | "pro" | "team";
 export type SubscriptionProvider = "demo" | "stripe" | "revenuecat" | "app-store";
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
+export type TeamWorkspaceRole = "owner" | "analyst" | "viewer";
+export type TeamMemberStatus = "active" | "removed";
+export type TeamInviteStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export type SavedFollowRecord = {
   type: FollowTargetType;
@@ -30,6 +33,40 @@ export type AccountSubscriptionSnapshot = {
   providerSubscriptionId?: string;
   seatCount?: number;
   status: SubscriptionStatus;
+  updatedAt: string;
+};
+
+export type TeamWorkspaceMember = {
+  id: string;
+  email: string;
+  displayName?: string;
+  role: TeamWorkspaceRole;
+  status: TeamMemberStatus;
+  joinedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TeamWorkspaceInvite = {
+  id: string;
+  email: string;
+  role: Exclude<TeamWorkspaceRole, "owner">;
+  status: TeamInviteStatus;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TeamWorkspaceSnapshot = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  seatCount: number;
+  occupiedSeats: number;
+  openSeats: number;
+  members: TeamWorkspaceMember[];
+  invites: TeamWorkspaceInvite[];
+  createdAt: string;
   updatedAt: string;
 };
 

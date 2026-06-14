@@ -77,7 +77,7 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
       unit: "/ seat"
     },
     highlights: ["Seat-managed workspace", "Team alert coordination", "Exportable reports", "Shared watchlist setup"],
-    limits: ["Invites, role assignment, and shared workspace storage are in rollout"]
+    limits: ["Email delivery, invite acceptance, and shared record editing are in rollout"]
   }
 };
 

@@ -16,6 +16,7 @@ import {
   UserRound,
   UsersRound
 } from "lucide-react";
+import { TeamInviteControls } from "@/components/team-invite-controls";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { getAccountLedger } from "@/lib/account-ledger";
@@ -24,8 +25,9 @@ import { getAccountSubscription } from "@/lib/account-subscription";
 import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
 import { requireAccountSession } from "@/lib/route-guards";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import { readOrCreateTeamWorkspaceForOwner } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
-import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
+import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord, TeamWorkspaceInvite, TeamWorkspaceMember, TeamWorkspaceRole } from "@/types/capitol";
 
 export const dynamic = "force-dynamic";
 
@@ -35,16 +37,13 @@ const premiumPanelClass =
 const premiumIconTileClass =
   "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]";
 
-const defaultFocusAreas = [
-  "Affordability",
-  "Border security",
-  "Jobs",
-  "Healthcare",
-  "Infrastructure",
-  "Education"
-];
-
 type Metric = {
+  label: string;
+  value: string;
+};
+
+type RoleMetric = {
+  description: string;
   label: string;
   value: string;
 };
@@ -84,13 +83,21 @@ export default async function TeamWorkspacePage() {
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
   const ownerName = session.user.name?.trim() || session.user.email;
   const workspaceName = ownerName ? `${ownerName}'s team` : "Team workspace";
-  const openSeats = Math.max(seatCount - 1, 0);
+  const teamWorkspaceResult = await readOrCreateTeamWorkspaceForOwner({
+    email: session.user.email,
+    name: session.user.name,
+    seatCount,
+    userId: accountUserId,
+    workspaceName
+  });
+  const teamWorkspace = teamWorkspaceResult.workspace;
+  const openSeats = teamWorkspace.openSeats;
   const watchlistBills = buildWatchlistBills(accountLedger.follows);
   const alertQueue = buildAlertQueue(accountLedger);
-  const focusAreas = accountLedger.issueInterests.length ? accountLedger.issueInterests.slice(0, 6) : defaultFocusAreas;
+  const teamRoles = buildRoleMetrics(teamWorkspace.members, teamWorkspace.invites);
   const teamMetrics: Metric[] = [
-    { label: "Paid seats", value: String(seatCount) },
-    { label: "Assigned", value: "1" },
+    { label: "Paid seats", value: String(teamWorkspace.seatCount) },
+    { label: "Assigned", value: String(teamWorkspace.occupiedSeats) },
     { label: "Open seats", value: String(openSeats) }
   ];
   const setupSteps = [
@@ -105,26 +112,9 @@ export default async function TeamWorkspacePage() {
       value: "Ready"
     },
     {
-      description: `${openSeats} paid seat${openSeats === 1 ? "" : "s"} can be filled when invite management lands.`,
-      label: "Seat capacity reserved",
-      value: `${seatCount} seats`
-    }
-  ];
-  const teamRoles = [
-    {
-      description: `${ownerName || "Workspace owner"} controls billing, setup, and member access.`,
-      label: "Owner",
-      value: "1"
-    },
-    {
-      description: "Analyst seats will build watchlists, prepare briefs, and tag shared alerts.",
-      label: "Analyst",
-      value: "Next"
-    },
-    {
-      description: "Viewer seats will read shared reports, alerts, and accountability scores.",
-      label: "Viewer",
-      value: "Next"
+      description: `${openSeats} open paid seat${openSeats === 1 ? "" : "s"} can be reserved with pending invite records.`,
+      label: "Invite capacity",
+      value: `${teamWorkspace.seatCount} seats`
     }
   ];
 
@@ -151,10 +141,10 @@ export default async function TeamWorkspacePage() {
             <Image src="/capitol-ledger-logo.png" alt="" width={58} height={58} className="h-[58px] w-[58px] rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <div className={premiumEyebrowClass}>Civic Team Workspace</div>
-              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{workspaceName}</h2>
+              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{teamWorkspace.name}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                Your paid Team workspace is active. Seat quantity now comes from checkout, and this setup page prepares the shared work
-                layer for invites, roles, watchlists, and alerts.
+                Your paid Team workspace is active. Seat quantity comes from checkout, and pending invites now reserve open seats in
+                the workspace.
               </p>
             </div>
           </div>
@@ -172,7 +162,7 @@ export default async function TeamWorkspacePage() {
                 Team subscription active
               </div>
               <div className="mt-1 text-[12px] leading-snug text-white/52">
-                {formatProviderLabel(subscription.provider)} record, {formatStatusLabel(subscription.status).toLowerCase()} status, {seatCount} paid seats.
+                {formatProviderLabel(subscription.provider)} record, {formatStatusLabel(subscription.status).toLowerCase()} status, {teamWorkspace.seatCount} paid seats.
               </div>
             </div>
             <Link href="/upgrade" className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
@@ -186,7 +176,7 @@ export default async function TeamWorkspacePage() {
             icon={<ShieldCheck />}
             eyebrow="Workspace Setup"
             title="Team foundation is active"
-            description="Billing and owner access are live. Invite and shared-record services are the next build layer."
+            description="Billing, owner access, and pending invite storage are live for this workspace."
           />
           <div className="mt-5 grid gap-3">
             {setupSteps.map((step) => (
@@ -270,7 +260,7 @@ export default async function TeamWorkspacePage() {
             icon={<UsersRound />}
             eyebrow="Workspace Roles"
             title="Seat model"
-            description="The paid seat count is ready. Role assignment is the next piece of Team account management."
+            description="Active members and pending invites count against paid workspace capacity."
           />
           <div className="mt-5 grid gap-3">
             {teamRoles.map((role) => (
@@ -292,19 +282,10 @@ export default async function TeamWorkspacePage() {
           <SectionHeader
             icon={<UserPlus />}
             eyebrow="Invite Teammates"
-            title="Seat capacity is ready"
-            description={`This workspace has ${openSeats} open paid seat${openSeats === 1 ? "" : "s"} ready for the invite flow.`}
+            title="Reserve paid seats"
+            description={`Pending invites reserve open seats from the ${teamWorkspace.seatCount}-seat Team plan.`}
           />
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Workspace focus</div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {focusAreas.map((area) => (
-                <span key={area} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-semibold text-white/58">
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
+          <TeamInviteControls initialWorkspace={teamWorkspace} />
         </MobileCard>
       </main>
     </TeamShell>
@@ -503,6 +484,47 @@ function formatProviderLabel(provider: AccountSubscriptionSnapshot["provider"]) 
   if (provider === "revenuecat") return "RevenueCat";
   if (provider === "app-store") return "App Store";
   return "Demo";
+}
+
+function buildRoleMetrics(members: TeamWorkspaceMember[], invites: TeamWorkspaceInvite[]): RoleMetric[] {
+  const roleCounts: Record<TeamWorkspaceRole, { active: number; pending: number }> = {
+    owner: { active: 0, pending: 0 },
+    analyst: { active: 0, pending: 0 },
+    viewer: { active: 0, pending: 0 }
+  };
+
+  members.forEach((member) => {
+    roleCounts[member.role].active += 1;
+  });
+  invites.forEach((invite) => {
+    roleCounts[invite.role].pending += 1;
+  });
+
+  return [
+    {
+      description: "Controls billing, setup, and member access.",
+      label: "Owner",
+      value: String(roleCounts.owner.active)
+    },
+    {
+      description: roleSummary("analyst", roleCounts.analyst),
+      label: "Analyst",
+      value: String(roleCounts.analyst.active + roleCounts.analyst.pending)
+    },
+    {
+      description: roleSummary("viewer", roleCounts.viewer),
+      label: "Viewer",
+      value: String(roleCounts.viewer.active + roleCounts.viewer.pending)
+    }
+  ];
+}
+
+function roleSummary(role: Exclude<TeamWorkspaceRole, "owner">, counts: { active: number; pending: number }) {
+  const label = role === "analyst" ? "Analyst" : "Viewer";
+  const active = `${counts.active} active`;
+  const pending = `${counts.pending} pending`;
+
+  return `${label} seats: ${active}, ${pending}.`;
 }
 
 function buildWatchlistBills(follows: SavedFollowRecord[]): WatchlistBillRow[] {

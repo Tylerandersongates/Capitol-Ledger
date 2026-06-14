@@ -53,6 +53,9 @@ model User {
   issueInterests          IssueInterest[]
   gamification            AccountGamification?
   subscription            AccountSubscription?
+  ownedTeamWorkspace      TeamWorkspace?          @relation("OwnedTeamWorkspace")
+  teamMemberships         TeamMember[]            @relation("TeamMemberships")
+  teamInvitesCreated      TeamInvite[]            @relation("TeamInvitesCreated")
   updateEvents            UpdateEvent[]
   weeklyBriefDeliveries   WeeklyBriefDelivery[]
   betaFeedback            BetaFeedback[]
@@ -282,6 +285,59 @@ model AccountSubscription {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeamWorkspace {
+  id          String       @id @default(cuid())
+  ownerUserId String       @unique
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  owner       User         @relation("OwnedTeamWorkspace", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  invites     TeamInvite[]
+
+  @@index([updatedAt])
+}
+
+model TeamMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String?
+  email       String
+  displayName String?
+  role        String
+  status      String
+  joinedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?         @relation("TeamMemberships", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, email])
+  @@index([userId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, role])
+}
+
+model TeamInvite {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  invitedByUserId String?
+  email           String
+  role            String
+  status          String
+  tokenHash       String        @unique
+  expiresAt       DateTime
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  workspace       TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy       User?         @relation("TeamInvitesCreated", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, email])
+  @@index([invitedByUserId])
+  @@index([expiresAt])
 }
 
 model AccountGamification {

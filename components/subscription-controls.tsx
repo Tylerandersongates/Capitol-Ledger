@@ -35,16 +35,16 @@ const teamWorkspaceSignals = [
     value: "3+"
   },
   {
-    detail: "The Team buyer owns setup, billing, and access rollout.",
+    detail: "The Team buyer owns setup, billing, and member access.",
     icon: <Bell />,
     label: "Owner controls",
     value: "Ready"
   },
   {
-    detail: "Watchlists, alerts, and roles are the next shared-workspace layer.",
+    detail: "Pending invites reserve seats against checkout quantity.",
     icon: <ShieldCheck />,
-    label: "Shared records",
-    value: "Next"
+    label: "Invite records",
+    value: "Live"
   }
 ];
 
@@ -565,7 +565,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          Team checkout now opens workspace setup. Invite flow and shared records are the next rollout layer.
+          Team checkout opens workspace setup with owner access, paid seat capacity, and pending invite records.
         </span>
       </div>
 
