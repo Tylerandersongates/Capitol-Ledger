@@ -67,7 +67,9 @@ type AlertQueueRow = {
   title: string;
 };
 
-export default async function TeamWorkspacePage({ searchParams }: { searchParams?: { checkout?: string; plan?: string } }) {
+type TeamPageSearchParams = Record<string, string | string[] | undefined>;
+
+export default async function TeamWorkspacePage({ searchParams }: { searchParams?: TeamPageSearchParams }) {
   const session = await requireAccountSession("/team");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
   const [databaseSubscription, databaseLedger] = await Promise.all([
@@ -76,7 +78,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   ]);
   const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
   const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
-  const teamCheckoutReturn = searchParams?.checkout === "success" && searchParams?.plan === "team";
+  const teamCheckoutReturn = readSearchParam(searchParams, "checkout") === "success" && readSearchParam(searchParams, "plan") === "team";
 
   if (!hasActiveTeamAccess(subscription)) {
     return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
@@ -292,6 +294,11 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
       </main>
     </TeamShell>
   );
+}
+
+function readSearchParam(searchParams: TeamPageSearchParams | undefined, key: string) {
+  const value = searchParams?.[key];
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutReturn?: boolean; subscription: AccountSubscriptionSnapshot }) {

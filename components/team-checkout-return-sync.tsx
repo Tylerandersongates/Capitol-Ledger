@@ -25,7 +25,7 @@ export function TeamCheckoutReturnSync() {
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let timeoutId: number | undefined;
 
     async function refreshSubscription() {
       attempts += 1;
