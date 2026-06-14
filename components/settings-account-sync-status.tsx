@@ -12,14 +12,16 @@ import {
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
-import type { SavedFollowRecord } from "@/types/capitol";
+import type { AccountLedgerSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 const followsKey = "capitol-ledger:follows";
 const interestsKey = "capitol-ledger:issue-interests";
 const issueInterestsPendingSyncKey = "capitol-ledger:issue-interests-pending-sync";
+const readAlertsKey = "capitol-ledger:read-alerts";
 const savedAlertsKey = "capitol-ledger:saved-alerts";
 const persistenceEvent = "capitol-ledger:persistence-changed";
 const followsChangedEvent = "capitol-ledger:follows-changed";
+const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 const setupSignalTotal = 5;
 
 type AccountSyncSnapshot = {
@@ -53,20 +55,32 @@ export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authen
       if (!active) return;
 
       if (currentSignedIn) {
-        const profile = await fetchAccountProfile();
+        const [profile, ledger] = await Promise.all([
+          fetchAccountProfile(),
+          fetchAccountLedger()
+        ]);
         if (profile) writeLocalAccountProfile(profile);
+        if (ledger) writeLocalLedger(ledger);
       }
 
       refreshFromBrowser(false);
     }
 
     const refreshHandler = () => refreshFromBrowser(false);
+    const refetchHandler = () => void refreshSession();
+    const visibilityHandler = () => {
+      if (document.visibilityState === "visible") void refreshSession();
+    };
 
     void refreshSession();
     window.addEventListener("storage", refreshHandler);
     window.addEventListener(accountProfileChangedEvent, refreshHandler);
     window.addEventListener(persistenceEvent, refreshHandler);
     window.addEventListener(followsChangedEvent, refreshHandler);
+    window.addEventListener(readAlertsChangedEvent, refreshHandler);
+    window.addEventListener("focus", refetchHandler);
+    window.addEventListener("pageshow", refetchHandler);
+    document.addEventListener("visibilitychange", visibilityHandler);
 
     return () => {
       active = false;
@@ -74,6 +88,10 @@ export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authen
       window.removeEventListener(accountProfileChangedEvent, refreshHandler);
       window.removeEventListener(persistenceEvent, refreshHandler);
       window.removeEventListener(followsChangedEvent, refreshHandler);
+      window.removeEventListener(readAlertsChangedEvent, refreshHandler);
+      window.removeEventListener("focus", refetchHandler);
+      window.removeEventListener("pageshow", refetchHandler);
+      document.removeEventListener("visibilitychange", visibilityHandler);
     };
   }, [authenticated, userEmail]);
 
@@ -195,6 +213,26 @@ function buildSyncSnapshot(signedIn: boolean, userEmail?: string, checking = fal
     signedIn,
     userEmail
   };
+}
+
+async function fetchAccountLedger() {
+  const response = await fetch("/api/account/ledger", { cache: "no-store" }).catch(() => null);
+  if (!response?.ok) return null;
+
+  const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+  return data?.ledger ?? null;
+}
+
+function writeLocalLedger(ledger: AccountLedgerSnapshot) {
+  const pendingIssueSync = hasPendingIssueSync();
+  window.localStorage.setItem(followsKey, JSON.stringify(ledger.follows));
+  window.localStorage.setItem(readAlertsKey, JSON.stringify(ledger.readAlerts));
+  window.localStorage.setItem(savedAlertsKey, JSON.stringify(ledger.savedAlerts));
+  window.localStorage.setItem(interestsKey, JSON.stringify(pendingIssueSync ? readStringList(interestsKey) : ledger.issueInterests));
+  if (!pendingIssueSync) window.localStorage.removeItem(issueInterestsPendingSyncKey);
+  window.dispatchEvent(new Event(persistenceEvent));
+  window.dispatchEvent(new Event(followsChangedEvent));
+  window.dispatchEvent(new Event(readAlertsChangedEvent));
 }
 
 function readStringList(key: string) {
