@@ -90,7 +90,7 @@ function readSubscription(): AccountSubscriptionSnapshot {
 
 function writeSubscription(next: AccountSubscriptionSnapshot, syncAccount = true) {
   window.localStorage.setItem(storageKey, JSON.stringify(next));
-  window.dispatchEvent(new Event(subscriptionEvent));
+  window.dispatchEvent(new CustomEvent(subscriptionEvent, { detail: next }));
 
   if (syncAccount) void syncSubscriptionToAccount(next);
 }
@@ -170,7 +170,12 @@ export function useSubscriptionState() {
 
     void refresh();
 
-    function refreshSubscription() {
+    function refreshSubscription(event?: Event) {
+      if (event instanceof CustomEvent && event.detail) {
+        setSubscription(normalizeSubscription(event.detail as Partial<AccountSubscriptionSnapshot>));
+        return;
+      }
+
       void refresh();
     }
 
