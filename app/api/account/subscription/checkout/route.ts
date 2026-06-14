@@ -61,12 +61,13 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = request.nextUrl.origin;
+  const successPath = plan === "team" ? "/team" : "/account";
   const checkout = await createStripeCheckoutSession({
     cancelUrl: `${origin}/upgrade?checkout=cancel`,
     cycle,
     plan,
     seatCount,
-    successUrl: `${origin}/account?checkout=success`,
+    successUrl: `${origin}${successPath}?checkout=success&plan=${plan}`,
     user: session.user
   }).catch((error: unknown) => ({
     configured: false as const,

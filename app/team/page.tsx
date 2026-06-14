@@ -16,6 +16,7 @@ import {
   UserRound,
   UsersRound
 } from "lucide-react";
+import { TeamCheckoutReturnSync } from "@/components/team-checkout-return-sync";
 import { TeamInviteControls } from "@/components/team-invite-controls";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
@@ -66,7 +67,7 @@ type AlertQueueRow = {
   title: string;
 };
 
-export default async function TeamWorkspacePage() {
+export default async function TeamWorkspacePage({ searchParams }: { searchParams?: { checkout?: string; plan?: string } }) {
   const session = await requireAccountSession("/team");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
   const [databaseSubscription, databaseLedger] = await Promise.all([
@@ -75,9 +76,10 @@ export default async function TeamWorkspacePage() {
   ]);
   const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
   const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
+  const teamCheckoutReturn = searchParams?.checkout === "success" && searchParams?.plan === "team";
 
   if (!hasActiveTeamAccess(subscription)) {
-    return <TeamAccessGate subscription={subscription} />;
+    return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
   }
 
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
@@ -292,7 +294,7 @@ export default async function TeamWorkspacePage() {
   );
 }
 
-function TeamAccessGate({ subscription }: { subscription: AccountSubscriptionSnapshot }) {
+function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutReturn?: boolean; subscription: AccountSubscriptionSnapshot }) {
   const currentPlan = subscription.plan === "team" ? "Team" : subscription.plan === "pro" ? "Pro" : "Free";
   const metrics: Metric[] = [
     { label: "Current plan", value: currentPlan },
@@ -321,11 +323,14 @@ function TeamAccessGate({ subscription }: { subscription: AccountSubscriptionSna
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
             <div className="min-w-0">
-              <div className={premiumEyebrowClass}>Team Access</div>
-              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">Upgrade to open your workspace</h2>
+              <div className={premiumEyebrowClass}>{checkoutReturn ? "Checkout Return" : "Team Access"}</div>
+              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">
+                {checkoutReturn ? "Finishing Team setup" : "Upgrade to open your workspace"}
+              </h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                Team workspace setup now requires an active Team subscription. Checkout sets the paid seat count, then this page opens
-                the workspace foundation for invites, roles, and shared tracking.
+                {checkoutReturn
+                  ? "Stripe checkout is complete. Capitol Ledger is waiting for the subscription event before opening the workspace."
+                  : "Team workspace setup now requires an active Team subscription. Checkout sets the paid seat count, then this page opens the workspace foundation for invites, roles, and shared tracking."}
               </p>
             </div>
             <span className={premiumIconTileClass}>
@@ -339,9 +344,13 @@ function TeamAccessGate({ subscription }: { subscription: AccountSubscriptionSna
             ))}
           </div>
 
-          <Link href="/upgrade#plans" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
-            Choose Team Plan
-          </Link>
+          {checkoutReturn ? (
+            <TeamCheckoutReturnSync />
+          ) : (
+            <Link href="/upgrade#plans" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
+              Choose Team Plan
+            </Link>
+          )}
         </MobileCard>
 
         <MobileCard variant="rust" className="px-5 py-5">
