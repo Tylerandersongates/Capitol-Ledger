@@ -1,10 +1,12 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { BillingCycle, SubscriptionPlanId, SubscriptionStatus } from "../../types/capitol";
+import { normalizeTeamSeatCount } from "../subscription-seat-count";
 
 type CheckoutInput = {
   cancelUrl: string;
   cycle: BillingCycle;
   plan: Exclude<SubscriptionPlanId, "free">;
+  seatCount?: number;
   successUrl: string;
   user: {
     email: string;
@@ -91,13 +93,15 @@ export async function createStripeCheckoutSession(input: CheckoutInput): Promise
   appendParam(params, "success_url", input.successUrl);
   appendParam(params, "cancel_url", input.cancelUrl);
   appendParam(params, "line_items[0][price]", priceId);
-  appendParam(params, "line_items[0][quantity]", 1);
+  appendParam(params, "line_items[0][quantity]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : 1);
   appendParam(params, "metadata[userId]", input.user.id);
   appendParam(params, "metadata[plan]", input.plan);
   appendParam(params, "metadata[cycle]", input.cycle);
+  appendParam(params, "metadata[seatCount]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : undefined);
   appendParam(params, "subscription_data[metadata][userId]", input.user.id);
   appendParam(params, "subscription_data[metadata][plan]", input.plan);
   appendParam(params, "subscription_data[metadata][cycle]", input.cycle);
+  appendParam(params, "subscription_data[metadata][seatCount]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : undefined);
 
   const response = await fetch(`${STRIPE_API_BASE}/checkout/sessions`, {
     method: "POST",

@@ -19,6 +19,7 @@ DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 AUTH_COOKIE_SECURE="true"
 STRIPE_SECRET_KEY="sk_test_or_live_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_or_live_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 STRIPE_LIVE_MODE="false"
 CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID="price_..."
@@ -41,20 +42,25 @@ BILLING_REQUIRE_STRIPE=true pnpm billing:check
 
 Set `STRIPE_LIVE_MODE=true` only when the configured key and price IDs are live production Stripe values.
 
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is optional for the current server-created Stripe Checkout flow, but keep it configured with the matching test/live mode if client-side Stripe components are added later.
+
 Do not commit Stripe API keys, webhook secrets, or the Stripe dashboard password. Add keys through Vercel environment variables after beta testing, and keep the dashboard password in a secure password manager.
 
 ## Stripe Price Mapping
 
 - Pro monthly: `CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID`
 - Pro annual: `CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID`
-- Civic Team monthly: `CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID`
-- Civic Team annual: `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`
+- Civic Team monthly per seat: `CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID`
+- Civic Team annual per seat: `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`
+
+Civic Team uses one monthly and one annual per-seat Stripe price. The selected seat count is sent to Stripe Checkout as `line_items[0][quantity]`, with a minimum of 3 seats.
 
 The checkout route sends these metadata fields to Stripe:
 
 - `userId`
 - `plan`
 - `cycle`
+- `seatCount` for Civic Team checkouts
 
 The webhook expects that metadata back so it can update the correct account subscription.
 

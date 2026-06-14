@@ -1,4 +1,5 @@
 import type { AccountSubscriptionSnapshot } from "../types/capitol";
+import { normalizeOptionalTeamSeatCount } from "./subscription-seat-count";
 
 const defaultSubscription = (): AccountSubscriptionSnapshot => ({
   cycle: "monthly",
@@ -7,6 +8,7 @@ const defaultSubscription = (): AccountSubscriptionSnapshot => ({
   providerCustomerId: "demo-customer",
   providerEntitlementId: "capitol-ledger-free",
   providerSubscriptionId: "demo-free",
+  seatCount: undefined,
   status: "active",
   updatedAt: new Date().toISOString()
 });
@@ -32,6 +34,7 @@ export function normalizeAccountSubscription(value: Partial<AccountSubscriptionS
     providerCustomerId: value.providerCustomerId ?? "demo-customer",
     providerEntitlementId: value.providerEntitlementId ?? `capitol-ledger-${plan}`,
     providerSubscriptionId: value.providerSubscriptionId ?? `demo-${plan}-${cycle}`,
+    seatCount: normalizeOptionalTeamSeatCount(value.seatCount),
     status,
     updatedAt: new Date().toISOString()
   };

@@ -21,6 +21,7 @@ import {
   PlanActionButton,
   PlanPrice,
   SubscriptionDemoSwitcher,
+  TeamSeatSelector,
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
@@ -241,6 +242,7 @@ function PlanTierCard({
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
+      {plan === "team" ? <TeamSeatSelector className="mt-4" compact /> : null}
       <FeatureList items={planDetails.highlights} />
       <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} className={actionClassName} />
     </MobileCard>

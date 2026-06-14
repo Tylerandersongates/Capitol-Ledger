@@ -155,6 +155,7 @@ function checkData() {
 function checkBilling() {
   console.log("\nSubscriptions and billing");
   optional("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY, "Needed before real paid checkout.");
+  optional("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, "Optional for future client-side Stripe surfaces.");
   optional("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET, "Needed before subscription events can update accounts.");
 
   [

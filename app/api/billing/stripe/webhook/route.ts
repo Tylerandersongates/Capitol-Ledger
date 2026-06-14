@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { setAccountSubscription } from "@/lib/account-subscription";
 import { writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getStripeWebhookSecret, mapStripeStatus, parseStripeWebhookEvent, verifyStripeWebhookSignature } from "@/lib/billing/stripe";
+import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 function readPlan(value?: string): SubscriptionPlanId {
@@ -11,6 +12,10 @@ function readPlan(value?: string): SubscriptionPlanId {
 
 function readCycle(value?: string): BillingCycle {
   return value === "annual" ? "annual" : "monthly";
+}
+
+function readSeatCount(plan: SubscriptionPlanId, value?: string) {
+  return plan === "team" ? normalizeTeamSeatCount(value) : undefined;
 }
 
 export async function POST(request: NextRequest) {
@@ -39,6 +44,7 @@ export async function POST(request: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const plan = readPlan(metadata.plan);
     const cycle = readCycle(metadata.cycle);
+    const seatCount = readSeatCount(plan, metadata.seatCount);
     const nextSubscription = {
       cycle,
       plan,
@@ -46,6 +52,7 @@ export async function POST(request: NextRequest) {
       providerCustomerId: object.customer,
       providerEntitlementId: `capitol-ledger-${plan}`,
       providerSubscriptionId: object.subscription,
+      seatCount,
       status: "active" as const
     };
 
@@ -56,6 +63,7 @@ export async function POST(request: NextRequest) {
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const plan = readPlan(metadata.plan);
     const cycle = readCycle(metadata.cycle);
+    const seatCount = readSeatCount(plan, metadata.seatCount);
     const nextSubscription = {
       cycle,
       plan,
@@ -63,6 +71,7 @@ export async function POST(request: NextRequest) {
       providerCustomerId: object.customer,
       providerEntitlementId: `capitol-ledger-${plan}`,
       providerSubscriptionId: object.id,
+      seatCount,
       status: event.type === "customer.subscription.deleted" ? ("canceled" as const) : mapStripeStatus(object.status)
     };
 

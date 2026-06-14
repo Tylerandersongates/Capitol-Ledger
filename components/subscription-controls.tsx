@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Check, Crown, ListChecks, LockKeyhole, ShieldCheck, Sparkles, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Check, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, Sparkles, UserPlus, UsersRound } from "lucide-react";
 import {
   getPlanEntitlements,
   getSubscriptionFeature,
@@ -12,6 +12,7 @@ import {
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { minimumTeamSeatCount, normalizeOptionalTeamSeatCount, normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 const storageKey = "capitol-ledger:subscription";
@@ -26,7 +27,6 @@ const planSwitcherLabels: Record<SubscriptionPlanId, string> = {
   team: "Team"
 };
 
-const teamSeatOptions = [3, 5, 10] as const;
 const teamWorkspaceSignals = [
   {
     detail: "Bills, officials, and issue areas owned by the workspace.",
@@ -73,6 +73,7 @@ function normalizeSubscription(value: Partial<AccountSubscriptionSnapshot> = {})
     provider,
     providerEntitlementId: value.providerEntitlementId ?? `capitol-ledger-${plan}`,
     providerSubscriptionId: value.providerSubscriptionId ?? `demo-${plan}-${cycle}`,
+    seatCount: normalizeOptionalTeamSeatCount(value.seatCount),
     status
   };
 }
@@ -102,6 +103,7 @@ function subscriptionsMatch(left: AccountSubscriptionSnapshot, right: AccountSub
     left.providerCustomerId === right.providerCustomerId &&
     left.providerEntitlementId === right.providerEntitlementId &&
     left.providerSubscriptionId === right.providerSubscriptionId &&
+    normalizeOptionalTeamSeatCount(left.seatCount) === normalizeOptionalTeamSeatCount(right.seatCount) &&
     left.status === right.status
   );
 }
@@ -271,6 +273,7 @@ export function PlanActionButton({
     const fallbackSubscription = normalizeSubscription({
       ...subscription,
       plan,
+      seatCount: plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : subscription.seatCount,
       updatedAt: new Date().toISOString()
     });
 
@@ -282,7 +285,8 @@ export function PlanActionButton({
         },
         body: JSON.stringify({
           cycle: subscription.cycle,
-          plan
+          plan,
+          seatCount: plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : undefined
         })
       });
 
@@ -328,6 +332,7 @@ export function AccountSubscriptionSummary() {
   const price = subscription.cycle === "annual" ? plan.pricing.annual : plan.pricing.monthly;
   const cycleLabel = subscription.cycle === "annual" ? "annual" : "monthly";
   const providerLabel = subscription.provider === "demo" ? "Demo billing record" : `${subscription.provider} billing record`;
+  const seatCount = subscription.plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : undefined;
 
   return (
     <>
@@ -337,6 +342,7 @@ export function AccountSubscriptionSummary() {
           <h2 className="mt-2 text-[21px] font-medium leading-none">{plan.name}</h2>
           <p className="mt-3 text-[15px] text-white/58">
             {price} {cycleLabel} - {plan.description}
+            {seatCount ? ` - ${seatCount} seats` : ""}
           </p>
           <div className="mt-3 inline-flex rounded-full border border-[#43ed74]/28 bg-[#43ed74]/10 px-3 py-1 text-[12px] font-medium text-[#43ed74]">
             {providerLabel}
@@ -447,14 +453,76 @@ export function SubscriptionDemoSwitcher({ showPreview = true }: { showPreview?:
   );
 }
 
-export function TeamWorkspacePreview() {
-  const [subscription] = useSubscriptionState();
-  const [seatCount, setSeatCount] = useState<(typeof teamSeatOptions)[number]>(5);
+export function TeamSeatSelector({ className = "", compact = false }: { className?: string; compact?: boolean }) {
+  const [subscription, updateSubscription] = useSubscriptionState();
+  const seatCount = normalizeTeamSeatCount(subscription.seatCount);
   const pricePerSeat = subscription.cycle === "annual" ? 59.99 : 5.99;
   const totalPrice = formatCurrency(pricePerSeat * seatCount);
   const seatUnit = subscription.cycle === "annual" ? "seat / year" : "seat / month";
   const totalUnit = subscription.cycle === "annual" ? "workspace / year" : "workspace / month";
 
+  function updateSeatCount(value: unknown) {
+    updateSubscription({ seatCount: normalizeTeamSeatCount(value) });
+  }
+
+  return (
+    <div className={`${className} rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Checkout quantity</div>
+          <div className="mt-1 text-[13px] leading-snug text-white/56">Billed per seat in Stripe. Minimum {minimumTeamSeatCount} seats.</div>
+        </div>
+        <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
+          {seatCount} seats
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2">
+        <button
+          type="button"
+          onClick={() => updateSeatCount(seatCount - 1)}
+          disabled={seatCount <= minimumTeamSeatCount}
+          aria-label="Decrease team seats"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white disabled:opacity-35"
+        >
+          <Minus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+        </button>
+        <input
+          type="number"
+          min={minimumTeamSeatCount}
+          step={1}
+          value={seatCount}
+          onChange={(event) => updateSeatCount(event.target.value)}
+          aria-label="Team seats"
+          className="h-10 min-w-0 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-center text-[15px] font-semibold text-white outline-none transition focus:border-[#ffb12b]/60"
+        />
+        <button
+          type="button"
+          onClick={() => updateSeatCount(seatCount + 1)}
+          aria-label="Increase team seats"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className={`${compact ? "mt-3" : "mt-4"} grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]`}>
+        <div className="min-w-0">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Estimated total</div>
+          <div className="mt-1 text-[12px] leading-snug text-white/48">
+            Stripe quantity {seatCount} x {formatCurrency(pricePerSeat)} / {seatUnit}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className={`${compact ? "text-[22px]" : "text-[26px]"} font-semibold leading-none text-[#ffb12b]`}>{totalPrice}</div>
+          <div className="mt-1 text-[11px] text-white/42">/ {totalUnit}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function TeamWorkspacePreview() {
   return (
     <div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
@@ -471,46 +539,7 @@ export function TeamWorkspacePreview() {
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Seat preview</div>
-            <div className="mt-1 text-[13px] leading-snug text-white/56">Pick a team size to see the workspace total.</div>
-          </div>
-          <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-            Preview
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {teamSeatOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setSeatCount(option)}
-              aria-pressed={seatCount === option}
-              className={`h-10 rounded-xl border text-[13px] font-semibold transition ${
-                seatCount === option ? "border-[#ffb12b] bg-[#ffb12b] text-[#061126]" : "border-white/10 bg-white/[0.045] text-white/62"
-              }`}
-            >
-              {option} seats
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Estimated total</div>
-            <div className="mt-1 text-[12px] leading-snug text-white/48">
-              {seatCount} seats x {formatCurrency(pricePerSeat)} / {seatUnit}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[26px] font-semibold leading-none text-[#ffb12b]">{totalPrice}</div>
-            <div className="mt-1 text-[11px] text-white/42">/ {totalUnit}</div>
-          </div>
-        </div>
-      </div>
+      <TeamSeatSelector className="mt-5" />
 
       <div className="mt-4 grid gap-2">
         {teamWorkspaceSignals.map((item) => (

@@ -28,6 +28,7 @@ export type AccountSubscriptionSnapshot = {
   providerCustomerId?: string;
   providerEntitlementId?: string;
   providerSubscriptionId?: string;
+  seatCount?: number;
   status: SubscriptionStatus;
   updatedAt: string;
 };

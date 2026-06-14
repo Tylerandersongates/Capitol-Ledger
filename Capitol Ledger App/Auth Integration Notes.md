@@ -113,6 +113,7 @@ Use `BILLING_REQUIRE_STRIPE=true pnpm billing:check` before testing real paid ch
 - `WEEKLY_BRIEF_WEBHOOK_SECRET` when the Weekly Brief webhook bridge should validate Capitol Ledger requests
 - `WEEKLY_BRIEF_FROM` for the sending identity shown in Weekly Brief messages
 - `STRIPE_SECRET_KEY` for paid checkout
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` for future client-side Stripe surfaces
 - `STRIPE_WEBHOOK_SECRET` for Stripe subscription event verification
 - `CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID`
 - `CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID`

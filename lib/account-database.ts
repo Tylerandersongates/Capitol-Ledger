@@ -5,6 +5,7 @@ import { normalizeAccountGamification, type AccountGamificationSnapshot } from "
 import { normalizeAccountLedger } from "./account-ledger";
 import { normalizeAccountProfile } from "./account-profile";
 import { normalizeAccountSubscription } from "./account-subscription";
+import { normalizeOptionalTeamSeatCount } from "./subscription-seat-count";
 import {
   normalizeWeeklyBriefDeliveryRecord,
   type WeeklyBriefDeliveryInput,
@@ -23,6 +24,7 @@ type DbSubscription = {
   providerCustomerId: string | null;
   providerEntitlementId: string | null;
   providerSubscriptionId: string | null;
+  seatCount: number | null;
   status: string;
   updatedAt: Date;
 };
@@ -80,6 +82,7 @@ export function canUseDatabasePersistence() {
 }
 
 let profileSchemaReady: Promise<boolean> | null = null;
+let subscriptionSchemaReady: Promise<boolean> | null = null;
 let weeklyBriefDeliverySchemaReady: Promise<boolean> | null = null;
 
 function isDatabaseConnectionError(error: unknown) {
@@ -176,6 +179,28 @@ async function ensureWeeklyBriefDeliverySchema() {
   })();
 
   return weeklyBriefDeliverySchemaReady;
+}
+
+async function ensureAccountSubscriptionSchema() {
+  if (!canUseDatabasePersistence()) return false;
+  if (subscriptionSchemaReady) return subscriptionSchemaReady;
+
+  subscriptionSchemaReady = (async () => {
+    try {
+      const prisma = getPrisma();
+
+      await prisma.$executeRawUnsafe(`ALTER TABLE "AccountSubscription" ADD COLUMN IF NOT EXISTS "seatCount" INTEGER`);
+
+      return true;
+    } catch (error) {
+      logDatabaseFallback("ensureAccountSubscriptionSchema", error);
+      subscriptionSchemaReady = null;
+      if (isDatabaseConnectionError(error)) return false;
+      throw error;
+    }
+  })();
+
+  return subscriptionSchemaReady;
 }
 
 export async function ensureAccountUser(user: { email: string; id: string; name?: string }) {
@@ -442,9 +467,11 @@ export async function readSubscriptionFromDatabase(userId: string): Promise<Acco
   if (!canUseDatabasePersistence()) return null;
 
   return withDatabaseFallback("readSubscriptionFromDatabase", null, async () => {
+    if (!(await ensureAccountSubscriptionSchema())) return null;
+
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbSubscription[]>`
-      SELECT "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "status", "updatedAt"
+      SELECT "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "seatCount", "status", "updatedAt"
       FROM "AccountSubscription"
       WHERE "userId" = ${userId}
       LIMIT 1
@@ -460,6 +487,7 @@ export async function readSubscriptionFromDatabase(userId: string): Promise<Acco
       providerCustomerId: record.providerCustomerId ?? undefined,
       providerEntitlementId: record.providerEntitlementId ?? undefined,
       providerSubscriptionId: record.providerSubscriptionId ?? undefined,
+      seatCount: normalizeOptionalTeamSeatCount(record.seatCount),
       status: record.status as AccountSubscriptionSnapshot["status"],
       updatedAt: record.updatedAt.toISOString()
     });
@@ -470,12 +498,14 @@ export async function writeSubscriptionToDatabase(userId: string, value: Partial
   if (!canUseDatabasePersistence()) return null;
 
   return withDatabaseFallback("writeSubscriptionToDatabase", null, async () => {
+    if (!(await ensureAccountSubscriptionSchema())) return null;
+
     const prisma = getPrisma();
     const subscription = normalizeAccountSubscription(value);
 
     await prisma.$executeRaw`
       INSERT INTO "AccountSubscription" (
-        "id", "userId", "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "status", "createdAt", "updatedAt"
+        "id", "userId", "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "seatCount", "status", "createdAt", "updatedAt"
       )
       VALUES (
         ${randomUUID()},
@@ -486,6 +516,7 @@ export async function writeSubscriptionToDatabase(userId: string, value: Partial
         ${subscription.providerCustomerId ?? null},
         ${subscription.providerEntitlementId ?? null},
         ${subscription.providerSubscriptionId ?? null},
+        ${subscription.seatCount ?? null},
         ${subscription.status},
         NOW(),
         NOW()
@@ -498,6 +529,7 @@ export async function writeSubscriptionToDatabase(userId: string, value: Partial
         "providerCustomerId" = EXCLUDED."providerCustomerId",
         "providerEntitlementId" = EXCLUDED."providerEntitlementId",
         "providerSubscriptionId" = EXCLUDED."providerSubscriptionId",
+        "seatCount" = EXCLUDED."seatCount",
         "status" = EXCLUDED."status",
         "updatedAt" = NOW()
     `;

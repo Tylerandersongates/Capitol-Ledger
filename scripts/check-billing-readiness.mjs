@@ -1,9 +1,30 @@
+import { existsSync, readFileSync } from "fs";
+
+loadLocalEnv();
+
 const paidPriceEnvNames = [
   "CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID"
 ];
+
+function loadLocalEnv() {
+  if (!existsSync(".env.local")) return;
+
+  const lines = readFileSync(".env.local", "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    const rawValue = trimmed.slice(index + 1).trim();
+    if (!key || process.env[key] !== undefined) continue;
+
+    process.env[key] = rawValue.replace(/^['"]|['"]$/g, "");
+  }
+}
 
 const requireStripe = process.env.BILLING_REQUIRE_STRIPE === "true";
 const liveMode = process.env.STRIPE_LIVE_MODE === "true";
@@ -41,6 +62,10 @@ function isValidUrl(value) {
 
 function looksLikeStripeSecret(value) {
   return typeof value === "string" && (value.startsWith("sk_test_") || value.startsWith("sk_live_"));
+}
+
+function looksLikeStripePublishableKey(value) {
+  return typeof value === "string" && (value.startsWith("pk_test_") || value.startsWith("pk_live_"));
 }
 
 function looksLikeStripeWebhookSecret(value) {
@@ -108,6 +133,31 @@ function checkStripeSecretKey() {
   pass("STRIPE_SECRET_KEY is configured", key.startsWith("sk_live_") ? "live key shape" : "test key shape");
 }
 
+function checkStripePublishableKey() {
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+  if (!key) {
+    warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", "Optional for the current server-created Checkout flow.");
+    return;
+  }
+
+  if (!looksLikeStripePublishableKey(key)) {
+    fail("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", "Expected a Stripe publishable key starting with pk_test_ or pk_live_.");
+    return;
+  }
+
+  if (liveMode && !key.startsWith("pk_live_")) {
+    fail("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is live", "STRIPE_LIVE_MODE=true requires a pk_live_ key when a publishable key is set.");
+    return;
+  }
+
+  if (!liveMode && key.startsWith("pk_live_")) {
+    warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY mode", "Live publishable key is present while STRIPE_LIVE_MODE is not true.");
+  }
+
+  pass("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", key.startsWith("pk_live_") ? "live key shape" : "test key shape");
+}
+
 function checkStripeWebhookSecret() {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -169,6 +219,7 @@ function main() {
   checkDatabase();
   checkAppUrl();
   checkStripeSecretKey();
+  checkStripePublishableKey();
   checkStripeWebhookSecret();
   checkStripePriceIds();
   checkProductionCookie();

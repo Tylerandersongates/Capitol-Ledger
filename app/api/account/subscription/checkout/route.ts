@@ -4,6 +4,7 @@ import { getAccountPersistenceUserId, writeSubscriptionToDatabase } from "@/lib/
 import { createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
+import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 function readPlan(value: unknown): SubscriptionPlanId | null {
@@ -28,9 +29,11 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     cycle?: BillingCycle;
     plan?: SubscriptionPlanId;
+    seatCount?: number;
   };
   const plan = readPlan(body.plan);
   const cycle = readCycle(body.cycle);
+  const seatCount = plan === "team" ? normalizeTeamSeatCount(body.seatCount) : undefined;
 
   if (!plan) {
     return NextResponse.json({ error: "Invalid subscription plan." }, { status: 400 });
@@ -44,6 +47,7 @@ export async function POST(request: NextRequest) {
       provider: "demo",
       providerEntitlementId: "capitol-ledger-free",
       providerSubscriptionId: "demo-free",
+      seatCount,
       status: "active"
     } as const;
     const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
@@ -61,6 +65,7 @@ export async function POST(request: NextRequest) {
     cancelUrl: `${origin}/upgrade?checkout=cancel`,
     cycle,
     plan,
+    seatCount,
     successUrl: `${origin}/account?checkout=success`,
     user: session.user
   }).catch((error: unknown) => ({
@@ -76,6 +81,7 @@ export async function POST(request: NextRequest) {
       provider: "demo",
       providerEntitlementId: `capitol-ledger-${plan}`,
       providerSubscriptionId: `demo-${plan}-${cycle}`,
+      seatCount,
       status: "active"
     } as const;
     const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
