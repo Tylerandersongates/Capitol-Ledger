@@ -20,7 +20,6 @@ import {
   BillingCycleToggle,
   PlanActionButton,
   PlanPrice,
-  SubscriptionDemoSwitcher,
   TeamSeatSelector,
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
@@ -112,10 +111,6 @@ export default function UpgradePage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <TeamWorkspacePreview />
-        </MobileCard>
-
-        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-          <SubscriptionDemoSwitcher showPreview={false} />
         </MobileCard>
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
