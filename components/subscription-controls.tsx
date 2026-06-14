@@ -544,9 +544,7 @@ export function TeamWorkspacePreview() {
         </div>
       </div>
 
-      <TeamSeatSelector className="mt-5" />
-
-      <div className="mt-4 grid gap-2">
+      <div className="mt-5 grid gap-2">
         {teamWorkspaceSignals.map((item) => (
           <div key={item.label} className="grid grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
             <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-[#ffb12b] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">
@@ -566,8 +564,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          Invite flow, seat management, and real shared workspace records are coming next. This preview sets the Team value
-          proposition before we add the workspace data model.
+          Invite flow and real shared workspace records are coming next. Seat quantity is selected directly from the Team plan above.
         </span>
       </div>
 
