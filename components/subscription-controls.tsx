@@ -2,12 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Check, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, Sparkles, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Check, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
-  getPlanEntitlements,
   getSubscriptionFeature,
   isPlanFeatureEnabled,
-  subscriptionPlanOrder,
   subscriptionPlans,
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
@@ -20,12 +18,6 @@ const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
 let accountHydrationPromise: Promise<AccountSubscriptionSnapshot | null> | null = null;
-
-const planSwitcherLabels: Record<SubscriptionPlanId, string> = {
-  free: "Free",
-  pro: "Pro",
-  team: "Team"
-};
 
 const teamWorkspaceSignals = [
   {
@@ -376,86 +368,6 @@ export function SubscriptionBadge() {
       <Crown className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
       <span className="min-w-0 truncate">{planName}</span>
     </Link>
-  );
-}
-
-export function SubscriptionDemoSwitcher({ showPreview = true }: { showPreview?: boolean }) {
-  const [subscription, updateSubscription] = useSubscriptionState();
-  const entitlements = getPlanEntitlements(subscription.plan);
-
-  return (
-    <div>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-        <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Plan Preview</div>
-          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">{subscriptionPlans[subscription.plan].name}</h2>
-          <p className="mt-2 text-[13px] leading-snug text-white/54">
-            Switch modes to preview how locked and unlocked features behave.
-          </p>
-        </div>
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/14 bg-white/8 text-[#ffb12b] shadow-[0_12px_28px_rgba(1,8,24,0.3)]">
-          <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-3 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl">
-        {subscriptionPlanOrder.map((plan) => {
-          const active = subscription.plan === plan;
-
-          return (
-            <button
-              key={plan}
-              type="button"
-              onClick={() => updateSubscription({ plan })}
-              className={`h-10 rounded-full px-2 text-center text-[13px] font-semibold leading-none transition ${
-                active ? "bg-[#ffb12b] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.24)]" : "text-white/58"
-              }`}
-              aria-pressed={active}
-            >
-              {planSwitcherLabels[plan]}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-white/10 bg-[#071a38]/62 px-4 py-3 text-[13px] leading-snug text-white/56 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
-        {subscriptionPlans[subscription.plan].demoUseCase}
-      </div>
-
-      {showPreview ? (
-        <div className="mt-5 grid gap-3">
-          <div className="rounded-2xl border border-[#43ed74]/16 bg-[#43ed74]/8 p-4">
-            <div className="flex items-center gap-2 text-[13px] font-medium uppercase tracking-wide text-[#43ed74]">
-              <Check className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              Unlocked in this mode
-            </div>
-            <div className="mt-3 space-y-2">
-              {entitlements.included.slice(0, 4).map((feature) => (
-                <div key={feature.id} className="text-[14px] leading-snug text-white/70">
-                  {feature.label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {entitlements.locked.length ? (
-            <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
-              <div className="flex items-center gap-2 text-[13px] font-medium uppercase tracking-wide text-white/42">
-                <LockKeyhole className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-                Locked preview
-              </div>
-              <div className="mt-3 space-y-2">
-                {entitlements.locked.slice(0, 3).map((feature) => (
-                  <div key={feature.id} className="text-[14px] leading-snug text-white/48">
-                    {feature.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
   );
 }
 

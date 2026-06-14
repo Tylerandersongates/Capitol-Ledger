@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Bell, Crown, LayoutDashboard, Map, Search, UserRound } from "lucide-react";
 
 const navItems = [
@@ -16,8 +17,14 @@ const navItems = [
 
 export function SiteHeader() {
   const pathname = usePathname() ?? "";
+  const [pathnameReady, setPathnameReady] = useState(false);
+
+  useEffect(() => {
+    setPathnameReady(true);
+  }, []);
 
   if (
+    !pathnameReady ||
     pathname === "/" ||
     pathname === "/dashboard" ||
     pathname.startsWith("/alerts") ||

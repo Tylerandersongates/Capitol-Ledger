@@ -22,7 +22,6 @@ export type SubscriptionFeatureId =
 
 export type SubscriptionPlanDetails = {
   description: string;
-  demoUseCase: string;
   highlights: string[];
   limits: string[];
   name: string;
@@ -46,7 +45,6 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   free: {
     name: "Free",
     description: "Basic civic tracking",
-    demoUseCase: "Show the public transparency baseline with light tracking and upgrade prompts.",
     pricing: {
       monthly: "$0",
       annual: "$0",
@@ -58,7 +56,6 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   pro: {
     name: "Pro Intelligence",
     description: "Advanced civic tracking",
-    demoUseCase: "Show the premium individual experience with AI analysis, deeper filters, and report exports.",
     pricing: {
       monthly: "$2.99",
       annual: "$29.99",
@@ -70,7 +67,6 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   team: {
     name: "Civic Team",
     description: "Shared civic workspace",
-    demoUseCase: "Coordinate organization mode for campaigns, nonprofits, advocacy teams, local offices, and civic groups.",
     pricing: {
       monthly: "$5.99",
       annual: "$59.99",
@@ -225,11 +221,4 @@ export function isPlanFeatureEnabled(plan: SubscriptionPlanId, featureId: Subscr
 
 export function getSubscriptionFeature(featureId: SubscriptionFeatureId) {
   return subscriptionFeatureCatalog.find((item) => item.id === featureId);
-}
-
-export function getPlanEntitlements(plan: SubscriptionPlanId) {
-  return {
-    included: subscriptionFeatureCatalog.filter((feature) => isPlanFeatureEnabled(plan, feature.id)),
-    locked: subscriptionFeatureCatalog.filter((feature) => !isPlanFeatureEnabled(plan, feature.id))
-  };
 }
