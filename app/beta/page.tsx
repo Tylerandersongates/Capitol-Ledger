@@ -89,7 +89,7 @@ const testerTasks = [
     title: "Test subscriptions"
   },
   {
-    body: "Open the Team workspace preview. Check whether shared watchlists, alerts, roles, and invite language make sense for organizations.",
+    body: "Open the Team workspace. Check whether setup, paid seats, saved-record seeding, roles, and invite language make sense for organizations.",
     href: "/team",
     label: "Team",
     reportHref: "/feedback?source=team",

@@ -29,22 +29,22 @@ const planSwitcherLabels: Record<SubscriptionPlanId, string> = {
 
 const teamWorkspaceSignals = [
   {
-    detail: "Bills, officials, and issue areas owned by the workspace.",
+    detail: "Checkout quantity sets the paid workspace capacity.",
     icon: <ListChecks />,
-    label: "Shared watchlists",
-    value: "12"
+    label: "Seat-managed setup",
+    value: "3+"
   },
   {
-    detail: "Unread vote, committee, and district updates visible to the team.",
+    detail: "The Team buyer owns setup, billing, and access rollout.",
     icon: <Bell />,
-    label: "Shared alerts",
-    value: "38"
+    label: "Owner controls",
+    value: "Ready"
   },
   {
-    detail: "Owner, analyst, and viewer roles planned for invite rollout.",
+    detail: "Watchlists, alerts, and roles are the next shared-workspace layer.",
     icon: <ShieldCheck />,
-    label: "Workspace roles",
-    value: "3"
+    label: "Shared records",
+    value: "Next"
   }
 ];
 
@@ -564,7 +564,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          Invite flow and real shared workspace records are coming next. Seat quantity is selected directly from the Team plan above.
+          Team checkout now opens workspace setup. Invite flow and shared records are the next rollout layer.
         </span>
       </div>
 

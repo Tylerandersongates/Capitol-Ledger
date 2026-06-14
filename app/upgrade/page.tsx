@@ -102,7 +102,7 @@ export default function UpgradePage() {
             plan="free"
           />
           <PlanTierCard
-            badge="Team Preview"
+            badge="Team Workspace"
             icon={<Sparkles />}
             inactiveLabel="Start Team Plan"
             plan="team"

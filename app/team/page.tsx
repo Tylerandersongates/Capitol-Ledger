@@ -4,20 +4,28 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Bell,
+  CheckCircle2,
   FileText,
   Home,
   ListChecks,
+  LockKeyhole,
   Map,
+  Settings,
   ShieldCheck,
   UserPlus,
-  Settings,
   UserRound,
   UsersRound
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
-import { getAllBills, getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
+import { getAccountLedger } from "@/lib/account-ledger";
+import { getAccountPersistenceUserId, readLedgerFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { getAccountSubscription } from "@/lib/account-subscription";
+import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
+import { requireAccountSession } from "@/lib/route-guards";
+import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { formatDate } from "@/lib/utils";
+import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 export const dynamic = "force-dynamic";
 
@@ -27,19 +35,7 @@ const premiumPanelClass =
 const premiumIconTileClass =
   "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]";
 
-const teamMetrics = [
-  { label: "Seats", value: "4" },
-  { label: "Watchlists", value: "12" },
-  { label: "Shared alerts", value: "38" }
-];
-
-const accountabilitySignals = [
-  { label: "Coverage", value: "78%", tone: "text-[#43ed74]" },
-  { label: "Action items", value: "6", tone: "text-[#ffb12b]" },
-  { label: "Priority votes", value: "4", tone: "text-[#69a8ff]" }
-];
-
-const focusAreas = [
+const defaultFocusAreas = [
   "Affordability",
   "Border security",
   "Jobs",
@@ -48,69 +44,100 @@ const focusAreas = [
   "Education"
 ];
 
-const teamRoles = [
-  {
-    description: "Billing owner, invite manager, and workspace settings.",
-    label: "Owner",
-    value: "1"
-  },
-  {
-    description: "Builds watchlists, prepares briefs, and tags alerts.",
-    label: "Analyst",
-    value: "2"
-  },
-  {
-    description: "Reads shared reports, alerts, and accountability scores.",
-    label: "Viewer",
-    value: "1"
+type Metric = {
+  label: string;
+  value: string;
+};
+
+type WatchlistBillRow = {
+  href: string;
+  id: string;
+  meta: string;
+  status: string;
+  title: string;
+  value: string;
+};
+
+type AlertQueueRow = {
+  body: string;
+  date: string;
+  href: string;
+  id: string;
+  label: string;
+  title: string;
+};
+
+export default async function TeamWorkspacePage() {
+  const session = await requireAccountSession("/team");
+  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const [databaseSubscription, databaseLedger] = await Promise.all([
+    readSubscriptionFromDatabase(accountUserId).catch(() => null),
+    readLedgerFromDatabase(accountUserId).catch(() => null)
+  ]);
+  const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
+
+  if (!hasActiveTeamAccess(subscription)) {
+    return <TeamAccessGate subscription={subscription} />;
   }
-];
 
-export default function TeamWorkspacePage() {
-  const watchlistBills = getAllBills()
-    .slice(0, 3)
-    .map((bill) => ({
-      href: `/bills/${bill.id}`,
-      id: bill.id,
-      meta: bill.committeeName ?? bill.policyArea,
-      status: getBillStatus(bill),
-      title: bill.shortTitle,
-      value: bill.displayNumber
-    }));
-
-  const alertQueue = getRecentUpdates()
-    .slice(0, 4)
-    .map((event) => {
-      const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
-      const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
-      const href = bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search";
-
-      return {
-        body: event.body,
-        date: formatDate(event.occurredAt),
-        href,
-        id: event.id,
-        label: bill?.displayNumber ?? member?.fullName ?? "Civic record",
-        title: event.title
-      };
-    });
+  const seatCount = normalizeTeamSeatCount(subscription.seatCount);
+  const ownerName = session.user.name?.trim() || session.user.email;
+  const workspaceName = ownerName ? `${ownerName}'s team` : "Team workspace";
+  const openSeats = Math.max(seatCount - 1, 0);
+  const watchlistBills = buildWatchlistBills(accountLedger.follows);
+  const alertQueue = buildAlertQueue(accountLedger);
+  const focusAreas = accountLedger.issueInterests.length ? accountLedger.issueInterests.slice(0, 6) : defaultFocusAreas;
+  const teamMetrics: Metric[] = [
+    { label: "Paid seats", value: String(seatCount) },
+    { label: "Assigned", value: "1" },
+    { label: "Open seats", value: String(openSeats) }
+  ];
+  const setupSteps = [
+    {
+      description: `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is connected to this workspace.`,
+      label: "Billing active",
+      value: formatStatusLabel(subscription.status)
+    },
+    {
+      description: `${ownerName || "The signed-in account"} owns billing, workspace setup, and invite rollout.`,
+      label: "Owner seat assigned",
+      value: "Ready"
+    },
+    {
+      description: `${openSeats} paid seat${openSeats === 1 ? "" : "s"} can be filled when invite management lands.`,
+      label: "Seat capacity reserved",
+      value: `${seatCount} seats`
+    }
+  ];
+  const teamRoles = [
+    {
+      description: `${ownerName || "Workspace owner"} controls billing, setup, and member access.`,
+      label: "Owner",
+      value: "1"
+    },
+    {
+      description: "Analyst seats will build watchlists, prepare briefs, and tag shared alerts.",
+      label: "Analyst",
+      value: "Next"
+    },
+    {
+      description: "Viewer seats will read shared reports, alerts, and accountability scores.",
+      label: "Viewer",
+      value: "Next"
+    }
+  ];
 
   return (
-    <MobileShell
-      ambientClassName="bg-[radial-gradient(circle_at_18%_8%,rgba(43,122,203,0.16),transparent_32%),radial-gradient(circle_at_82%_10%,rgba(255,177,43,0.12),transparent_28%),linear-gradient(180deg,rgba(2,10,24,0.16)_0%,rgba(2,9,23,0.58)_54%,rgba(1,6,18,0.82)_100%)]"
-      backgroundClassName="bg-[linear-gradient(180deg,#071a34_0%,#041229_30%,#020b1d_68%,#010817_100%)]"
-      minHeight="min-h-[1180px]"
-      contentClassName="px-8 pb-5 pt-8"
-      statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
-    >
+    <TeamShell>
       <header className="mt-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href="/upgrade" className={mobileIconButtonClass} aria-label="Back to upgrade">
             <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
           </Link>
           <div>
-            <div className={premiumEyebrowClass}>Team Preview</div>
-            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Team Workspace</h1>
+            <div className={premiumEyebrowClass}>Team Workspace</div>
+            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Workspace</h1>
           </div>
         </div>
         <span className={premiumIconTileClass}>
@@ -124,9 +151,10 @@ export default function TeamWorkspacePage() {
             <Image src="/capitol-ledger-logo.png" alt="" width={58} height={58} className="h-[58px] w-[58px] rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <div className={premiumEyebrowClass}>Civic Team Workspace</div>
-              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">Shared government watchlist</h2>
+              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{workspaceName}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                A shared view for campaigns, nonprofits, local offices, and civic groups tracking bills, officials, issues, and alerts together.
+                Your paid Team workspace is active. Seat quantity now comes from checkout, and this setup page prepares the shared work
+                layer for invites, roles, watchlists, and alerts.
               </p>
             </div>
           </div>
@@ -137,13 +165,18 @@ export default function TeamWorkspacePage() {
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#ffb12b]/20 bg-[#ffb12b]/8 px-4 py-3">
+          <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#43ed74]/24 bg-[#43ed74]/8 px-4 py-3">
             <div className="min-w-0">
-              <div className="text-[13px] font-semibold text-[#ffb12b]">Preview workspace</div>
-              <div className="mt-1 text-[12px] leading-snug text-white/52">Invite flow, seat billing, and real shared records are planned next.</div>
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-[#74f49a]">
+                <CheckCircle2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                Team subscription active
+              </div>
+              <div className="mt-1 text-[12px] leading-snug text-white/52">
+                {formatProviderLabel(subscription.provider)} record, {formatStatusLabel(subscription.status).toLowerCase()} status, {seatCount} paid seats.
+              </div>
             </div>
-            <Link href="/upgrade" className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-2 text-[12px] font-semibold text-[#ffb12b]">
-              Plan
+            <Link href="/upgrade" className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
+              Manage
             </Link>
           </div>
         </MobileCard>
@@ -151,26 +184,14 @@ export default function TeamWorkspacePage() {
         <MobileCard variant="rust" className="px-5 py-5">
           <SectionHeader
             icon={<ShieldCheck />}
-            eyebrow="Accountability"
-            title="Team accountability scorecard"
-            description="A preview of how an organization could monitor attention, priority votes, and unresolved civic actions."
+            eyebrow="Workspace Setup"
+            title="Team foundation is active"
+            description="Billing and owner access are live. Invite and shared-record services are the next build layer."
           />
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            {accountabilitySignals.map((signal) => (
-              <div key={signal.label} className={`${premiumPanelClass} px-3 py-3 text-center`}>
-                <div className={`text-[21px] font-semibold leading-none ${signal.tone}`}>{signal.value}</div>
-                <div className="mt-2 text-[10px] leading-tight text-white/46">{signal.label}</div>
-              </div>
+          <div className="mt-5 grid gap-3">
+            {setupSteps.map((step) => (
+              <SetupStep key={step.label} {...step} />
             ))}
-          </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <div className="flex items-center justify-between gap-3 text-[13px] font-semibold text-white/70">
-              <span>Workspace readiness</span>
-              <span className="text-[#ffb12b]">82%</span>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full w-[82%] rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c]" />
-            </div>
           </div>
         </MobileCard>
 
@@ -179,26 +200,35 @@ export default function TeamWorkspacePage() {
             <SectionHeader
               compact
               icon={<ListChecks />}
-              eyebrow="Shared Watchlist"
-              title="Priority legislation"
-              description="Team-owned bill tracking for shared briefings and alerts."
+              eyebrow="Workspace Seed"
+              title="Saved bills"
+              description="Your account watchlist is the starting point for the shared Team watchlist."
             />
             <Link href="/search?type=bills" className={mobileViewAllClass}>Bills</Link>
           </div>
-          <div className="mt-5 divide-y divide-white/8">
-            {watchlistBills.map((bill) => (
-              <Link key={bill.id} href={bill.href} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-4">
-                <span className="min-w-0">
-                  <span className="block text-[16px] font-semibold text-white">{bill.value}</span>
-                  <span className="mt-1 block truncate text-[14px] text-white/66">{bill.title}</span>
-                  <span className="mt-1 block text-[12px] text-white/42">{bill.meta}</span>
-                </span>
-                <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b]">
-                  {bill.status}
-                </span>
-              </Link>
-            ))}
-          </div>
+          {watchlistBills.length ? (
+            <div className="mt-5 divide-y divide-white/8">
+              {watchlistBills.map((bill) => (
+                <Link key={bill.id} href={bill.href} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-4">
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-semibold text-white">{bill.value}</span>
+                    <span className="mt-1 block truncate text-[14px] text-white/66">{bill.title}</span>
+                    <span className="mt-1 block text-[12px] text-white/42">{bill.meta}</span>
+                  </span>
+                  <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b]">
+                    {bill.status}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel
+              actionHref="/search?type=bills"
+              actionLabel="Add bills"
+              description="Save bills to your account to seed the first shared Team watchlist."
+              title="No saved bills yet"
+            />
+          )}
         </MobileCard>
 
         <MobileCard variant="rust" className="px-5 py-5">
@@ -206,32 +236,41 @@ export default function TeamWorkspacePage() {
             <SectionHeader
               compact
               icon={<Bell />}
-              eyebrow="Shared Alert Queue"
-              title="Needs review"
-              description="Alerts the whole workspace can triage."
+              eyebrow="Signal Queue"
+              title="Workspace alert candidates"
+              description="Recent updates tied to saved Team seed records appear here before shared alert routing is added."
             />
             <Link href="/alerts" className={mobileViewAllClass}>Alerts</Link>
           </div>
-          <div className="mt-5 space-y-3">
-            {alertQueue.map((alert) => (
-              <Link key={alert.id} href={alert.href} className={`${premiumPanelClass} block px-4 py-3`}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 text-[14px] font-semibold text-white">{alert.title}</span>
-                  <span className="shrink-0 text-[11px] font-semibold text-white/42">{alert.date}</span>
-                </div>
-                <div className="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">{alert.label}</div>
-                <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-white/54">{alert.body}</p>
-              </Link>
-            ))}
-          </div>
+          {alertQueue.length ? (
+            <div className="mt-5 space-y-3">
+              {alertQueue.map((alert) => (
+                <Link key={alert.id} href={alert.href} className={`${premiumPanelClass} block px-4 py-3`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 text-[14px] font-semibold text-white">{alert.title}</span>
+                    <span className="shrink-0 text-[11px] font-semibold text-white/42">{alert.date}</span>
+                  </div>
+                  <div className="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">{alert.label}</div>
+                  <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-white/54">{alert.body}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel
+              actionHref="/alerts"
+              actionLabel="Open alerts"
+              description="Save bills or officials first, then related updates can feed this Team queue."
+              title="No workspace alert candidates"
+            />
+          )}
         </MobileCard>
 
         <MobileCard variant="rust" className="px-5 py-5">
           <SectionHeader
             icon={<UsersRound />}
             eyebrow="Workspace Roles"
-            title="Clear team permissions"
-            description="Simple roles keep collaboration useful before we add full organization management."
+            title="Seat model"
+            description="The paid seat count is ready. Role assignment is the next piece of Team account management."
           />
           <div className="mt-5 grid gap-3">
             {teamRoles.map((role) => (
@@ -253,24 +292,122 @@ export default function TeamWorkspacePage() {
           <SectionHeader
             icon={<UserPlus />}
             eyebrow="Invite Teammates"
-            title="Invite flow coming next"
-            description="This page defines the Team workspace experience first. The next build can add invitations, seat management, and shared workspace storage."
+            title="Seat capacity is ready"
+            description={`This workspace has ${openSeats} open paid seat${openSeats === 1 ? "" : "s"} ready for the invite flow.`}
           />
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            {focusAreas.map((area) => (
-              <span key={area} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-semibold text-white/58">
-                {area}
-              </span>
-            ))}
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Workspace focus</div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {focusAreas.map((area) => (
+                <span key={area} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-semibold text-white/58">
+                  {area}
+                </span>
+              ))}
+            </div>
           </div>
         </MobileCard>
       </main>
+    </TeamShell>
+  );
+}
 
+function TeamAccessGate({ subscription }: { subscription: AccountSubscriptionSnapshot }) {
+  const currentPlan = subscription.plan === "team" ? "Team" : subscription.plan === "pro" ? "Pro" : "Free";
+  const metrics: Metric[] = [
+    { label: "Current plan", value: currentPlan },
+    { label: "Team seats", value: "3+" },
+    { label: "Status", value: formatStatusLabel(subscription.status) }
+  ];
+
+  return (
+    <TeamShell minHeight="min-h-[980px]">
+      <header className="mt-8 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/upgrade" className={mobileIconButtonClass} aria-label="Back to upgrade">
+            <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
+          </Link>
+          <div>
+            <div className={premiumEyebrowClass}>Team Workspace</div>
+            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Workspace</h1>
+          </div>
+        </div>
+        <span className={premiumIconTileClass}>
+          <LockKeyhole className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+        </span>
+      </header>
+
+      <main className="mt-7 space-y-5 pb-8">
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+            <div className="min-w-0">
+              <div className={premiumEyebrowClass}>Team Access</div>
+              <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">Upgrade to open your workspace</h2>
+              <p className="mt-3 text-[15px] leading-snug text-white/60">
+                Team workspace setup now requires an active Team subscription. Checkout sets the paid seat count, then this page opens
+                the workspace foundation for invites, roles, and shared tracking.
+              </p>
+            </div>
+            <span className={premiumIconTileClass}>
+              <UsersRound className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {metrics.map((metric) => (
+              <MetricTile key={metric.label} {...metric} />
+            ))}
+          </div>
+
+          <Link href="/upgrade#plans" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
+            Choose Team Plan
+          </Link>
+        </MobileCard>
+
+        <MobileCard variant="rust" className="px-5 py-5">
+          <SectionHeader
+            icon={<ShieldCheck />}
+            eyebrow="What Unlocks"
+            title="Seat-managed collaboration"
+            description="Team checkout unlocks the workspace setup state, paid seat capacity, owner controls, and the path to shared watchlists."
+          />
+          <div className="mt-5 grid gap-3">
+            <SetupStep
+              description="The Team plan starts at 3 seats and uses checkout quantity for billing."
+              label="Paid seat count"
+              value="Required"
+            />
+            <SetupStep
+              description="The signed-in buyer becomes the workspace owner for setup and invite rollout."
+              label="Owner workspace"
+              value="Included"
+            />
+            <SetupStep
+              description="Saved account records become the seed list for the shared Team workspace."
+              label="Workspace seed"
+              value="Included"
+            />
+          </div>
+        </MobileCard>
+      </main>
+    </TeamShell>
+  );
+}
+
+function TeamShell({ children, minHeight = "min-h-[1180px]" }: { children: ReactNode; minHeight?: string }) {
+  return (
+    <MobileShell
+      ambientClassName="bg-[radial-gradient(circle_at_18%_8%,rgba(43,122,203,0.16),transparent_32%),radial-gradient(circle_at_82%_10%,rgba(255,177,43,0.12),transparent_28%),linear-gradient(180deg,rgba(2,10,24,0.16)_0%,rgba(2,9,23,0.58)_54%,rgba(1,6,18,0.82)_100%)]"
+      backgroundClassName="bg-[linear-gradient(180deg,#071a34_0%,#041229_30%,#020b1d_68%,#010817_100%)]"
+      minHeight={minHeight}
+      contentClassName="px-8 pb-5 pt-8"
+      statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
+    >
+      {children}
       <MobileBottomNav
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { active: true, href: "/map", icon: <Map />, label: "Map" },
+          { href: "/map", icon: <Map />, label: "Map" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
@@ -304,11 +441,110 @@ function SectionHeader({
   );
 }
 
-function MetricTile({ label, value }: { label: string; value: string }) {
+function MetricTile({ label, value }: Metric) {
   return (
     <div className={`${premiumPanelClass} px-3 py-3 text-center`}>
       <div className="truncate text-[21px] font-semibold leading-none text-[#ffb12b]">{value}</div>
       <div className="mt-2 truncate text-[10px] leading-tight text-white/46">{label}</div>
     </div>
   );
+}
+
+function SetupStep({ description, label, value }: { description: string; label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-[#43ed74]">
+        <CheckCircle2 className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[14px] font-semibold text-white">{label}</span>
+        <span className="mt-1 block text-[12px] leading-snug text-white/48">{description}</span>
+      </span>
+      <span className="text-[12px] font-semibold text-[#ffb12b]">{value}</span>
+    </div>
+  );
+}
+
+function EmptyPanel({
+  actionHref,
+  actionLabel,
+  description,
+  title
+}: {
+  actionHref: string;
+  actionLabel: string;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4">
+      <div className="text-[14px] font-semibold text-white">{title}</div>
+      <p className="mt-2 text-[13px] leading-snug text-white/52">{description}</p>
+      <Link href={actionHref} className="mt-4 inline-flex h-9 items-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 text-[13px] font-semibold text-[#ffb12b]">
+        {actionLabel}
+      </Link>
+    </div>
+  );
+}
+
+function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
+  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+}
+
+function formatStatusLabel(status: AccountSubscriptionSnapshot["status"]) {
+  if (status === "past_due") return "Past due";
+  if (status === "trialing") return "Trialing";
+  if (status === "canceled") return "Canceled";
+  return "Active";
+}
+
+function formatProviderLabel(provider: AccountSubscriptionSnapshot["provider"]) {
+  if (provider === "stripe") return "Stripe";
+  if (provider === "revenuecat") return "RevenueCat";
+  if (provider === "app-store") return "App Store";
+  return "Demo";
+}
+
+function buildWatchlistBills(follows: SavedFollowRecord[]): WatchlistBillRow[] {
+  return follows
+    .filter((record) => record.type === "bill")
+    .slice(0, 3)
+    .flatMap((record) => {
+      const bill = getBill(record.id);
+      if (!bill) return [];
+
+      return [
+        {
+          href: `/bills/${bill.id}`,
+          id: bill.id,
+          meta: bill.committeeName ?? bill.policyArea,
+          status: getBillStatus(bill),
+          title: bill.shortTitle,
+          value: bill.displayNumber
+        }
+      ];
+    });
+}
+
+function buildAlertQueue(ledger: AccountLedgerSnapshot): AlertQueueRow[] {
+  const followKeys = new Set(ledger.follows.map((record) => `${record.type}:${record.id}`));
+  const savedAlerts = new Set(ledger.savedAlerts);
+
+  return getRecentUpdates()
+    .filter((event) => savedAlerts.has(event.id) || followKeys.has(`${event.targetType}:${event.targetId}`))
+    .slice(0, 4)
+    .map((event) => {
+      const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
+      const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
+      const href = bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search";
+
+      return {
+        body: event.body,
+        date: formatDate(event.occurredAt),
+        href,
+        id: event.id,
+        label: bill?.displayNumber ?? member?.fullName ?? "Civic record",
+        title: event.title
+      };
+    });
 }

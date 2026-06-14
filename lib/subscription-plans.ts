@@ -70,14 +70,14 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   team: {
     name: "Civic Team",
     description: "Shared civic workspace",
-    demoUseCase: "Preview organization mode for campaigns, nonprofits, advocacy teams, local offices, and civic groups.",
+    demoUseCase: "Coordinate organization mode for campaigns, nonprofits, advocacy teams, local offices, and civic groups.",
     pricing: {
       monthly: "$5.99",
       annual: "$59.99",
       unit: "/ seat"
     },
-    highlights: ["Shared team watchlists", "Team alert coordination", "Exportable reports", "Multi-seat workspace preview"],
-    limits: ["Seat billing, team invites, and shared workspace data are preview-only"]
+    highlights: ["Seat-managed workspace", "Team alert coordination", "Exportable reports", "Shared watchlist setup"],
+    limits: ["Invites, role assignment, and shared workspace storage are in rollout"]
   }
 };
 
