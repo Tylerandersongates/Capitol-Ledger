@@ -40,7 +40,7 @@ type AccountSyncSnapshot = {
 };
 
 export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authenticated: boolean; userEmail?: string }) {
-  const [snapshot, setSnapshot] = useState<AccountSyncSnapshot>(() => buildSyncSnapshot(authenticated, userEmail, true));
+  const [snapshot, setSnapshot] = useState<AccountSyncSnapshot>(() => buildInitialSyncSnapshot(authenticated, userEmail));
 
   useEffect(() => {
     let active = true;
@@ -184,6 +184,21 @@ function SyncMetric({
       <div className="mt-1 text-[10px] leading-tight opacity-70">{detail}</div>
     </div>
   );
+}
+
+function buildInitialSyncSnapshot(signedIn: boolean, userEmail?: string): AccountSyncSnapshot {
+  return {
+    checking: true,
+    districtLabel: "District",
+    enabledAlertCount: 0,
+    issueCount: 0,
+    memberCount: 0,
+    pendingSync: false,
+    savedCount: 0,
+    setupCount: 0,
+    signedIn,
+    userEmail
+  };
 }
 
 function buildSyncSnapshot(signedIn: boolean, userEmail?: string, checking = false): AccountSyncSnapshot {

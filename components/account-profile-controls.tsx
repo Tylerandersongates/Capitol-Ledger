@@ -8,6 +8,7 @@ import { AlertCircle, Bell, Check, CheckCircle2, ChevronRight, Flag, LocateFixed
 import {
   accountProfileChangedEvent,
   defaultDistrictProfile,
+  defaultNotificationPreferences,
   fetchAccountProfile,
   readLocalAccountProfile,
   readLocalDistrictProfile,
@@ -776,7 +777,7 @@ export function OnboardingSetupFlow() {
 
 export function NotificationPreferencesEditor({ compact = false, dense = false }: { compact?: boolean; dense?: boolean }) {
   const [subscription] = useSubscriptionState();
-  const [preferences, setPreferences] = useState(readLocalNotificationPreferences);
+  const [preferences, setPreferences] = useState(defaultNotificationPreferences);
   const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "weeklyBrief");
 
   useEffect(() => {
