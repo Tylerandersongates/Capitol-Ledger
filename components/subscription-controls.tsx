@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Check, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   getSubscriptionFeature,
   isPlanFeatureEnabled,
