@@ -8,7 +8,7 @@ import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 const subscriptionStorageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
 
-function hasActiveTeamAccess(subscription?: AccountSubscriptionSnapshot) {
+function hasActiveTeamAccess(subscription?: AccountSubscriptionSnapshot): subscription is AccountSubscriptionSnapshot {
   return subscription?.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
 }
 
