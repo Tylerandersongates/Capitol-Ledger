@@ -174,6 +174,7 @@ export function AlertsInboxClient({
 }) {
   const [subscription] = useSubscriptionState();
   const [readIds, setReadIds] = useState<string[]>([]);
+  const [readStateReady, setReadStateReady] = useState(false);
   const [notificationPreferences, setNotificationPreferences] = useState(defaultNotificationPreferences);
   const priorityAlertsEnabled = isPlanFeatureEnabled(subscription.plan, "priorityAlerts");
 
@@ -202,31 +203,43 @@ export function AlertsInboxClient({
   }, []);
 
   useEffect(() => {
+    let active = true;
+
     function refreshFromLocalReads() {
+      if (!active) return;
       setReadIds(readAlertIds());
+      setReadStateReady(true);
     }
 
-    function refetchReadAlerts() {
-      refreshFromLocalReads();
-      void hydrateReadAlertsFromAccount().then(setReadIds);
+    function refetchReadAlerts(showLoading = false) {
+      if (showLoading) setReadStateReady(false);
+      if (active) setReadIds(readAlertIds());
+      void hydrateReadAlertsFromAccount().then((ids) => {
+        if (!active) return;
+        setReadIds(ids);
+        setReadStateReady(true);
+      });
     }
 
     function visibilityHandler() {
       if (document.visibilityState === "visible") refetchReadAlerts();
     }
 
-    refetchReadAlerts();
+    const refetchHandler = () => refetchReadAlerts();
+
+    refetchReadAlerts(true);
     window.addEventListener("storage", refreshFromLocalReads);
     window.addEventListener(readAlertsChangedEvent, refreshFromLocalReads);
-    window.addEventListener("focus", refetchReadAlerts);
-    window.addEventListener("pageshow", refetchReadAlerts);
+    window.addEventListener("focus", refetchHandler);
+    window.addEventListener("pageshow", refetchHandler);
     document.addEventListener("visibilitychange", visibilityHandler);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshFromLocalReads);
       window.removeEventListener(readAlertsChangedEvent, refreshFromLocalReads);
-      window.removeEventListener("focus", refetchReadAlerts);
-      window.removeEventListener("pageshow", refetchReadAlerts);
+      window.removeEventListener("focus", refetchHandler);
+      window.removeEventListener("pageshow", refetchHandler);
       document.removeEventListener("visibilitychange", visibilityHandler);
     };
   }, []);
@@ -320,7 +333,9 @@ export function AlertsInboxClient({
           </PlanFeatureGate>
         ) : null}
 
-        {filteredNotifications.length ? (
+        {!readStateReady ? (
+          <LoadingNotifications />
+        ) : filteredNotifications.length ? (
           <>
             {priorityNotifications.length ? (
               <section className="space-y-4">
@@ -389,6 +404,18 @@ function EmptyNotifications({ activeFilter }: { activeFilter: AlertsInboxFilter 
       </div>
       <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">No {label.toLowerCase()} yet</h2>
       <p className="mt-2 text-[15px] leading-6 text-white/56">New civic activity will appear here as bills, votes, and official updates are tracked.</p>
+    </MobileCard>
+  );
+}
+
+function LoadingNotifications() {
+  return (
+    <MobileCard variant="dashboard" className="px-5 py-6 text-center">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-[#ffb12b]">
+        <Bell className="h-6 w-6 animate-pulse" strokeWidth={1.8} aria-hidden="true" />
+      </div>
+      <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">Syncing alerts</h2>
+      <p className="mt-2 text-[15px] leading-6 text-white/56">Checking your account ledger before showing unread updates.</p>
     </MobileCard>
   );
 }

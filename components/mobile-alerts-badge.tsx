@@ -79,8 +79,8 @@ async function fetchAlertSummary() {
   return alertSummaryPromise;
 }
 
-export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string }) {
-  const [badge, setBadge] = useState(fallbackBadge ?? "");
+export function MobileAlertsBadge({ fallbackBadge: _fallbackBadge }: { fallbackBadge?: string }) {
+  const [badge, setBadge] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -96,18 +96,15 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
     }
 
     async function refreshBadge() {
-      const data = await fetchAlertSummary();
+      const [data] = await Promise.all([
+        fetchAlertSummary(),
+        hydrateAccountLedgerFromAccount()
+      ]);
       if (!active || !data) return;
 
       activeAlerts = Array.isArray(data?.activeAlerts) ? data.activeAlerts : [];
       activeAlertIds = Array.isArray(data?.activeAlertIds) ? data.activeAlertIds : [];
       updateBadge(countUnopenedActiveAlerts(activeAlerts, activeAlertIds, data?.activeAlertCount));
-    }
-
-    async function refreshAccountReads() {
-      await hydrateAccountLedgerFromAccount();
-      if (!active) return;
-      refreshFromLocalReads();
     }
 
     async function refreshPreferences() {
@@ -120,20 +117,16 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
     function visibilityHandler() {
       if (document.visibilityState === "visible") {
         void refreshBadge();
-        void refreshAccountReads();
         void refreshPreferences();
       }
     }
 
     void refreshBadge();
-    void refreshAccountReads();
     void refreshPreferences();
     window.addEventListener("storage", refreshFromLocalReads);
     window.addEventListener("focus", refreshBadge);
-    window.addEventListener("focus", refreshAccountReads);
     window.addEventListener("focus", refreshPreferences);
     window.addEventListener("pageshow", refreshBadge);
-    window.addEventListener("pageshow", refreshAccountReads);
     window.addEventListener("pageshow", refreshPreferences);
     window.addEventListener(accountProfileChangedEvent, refreshFromLocalReads);
     window.addEventListener(readAlertsChangedEvent, refreshFromLocalReads);
@@ -143,10 +136,8 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
       active = false;
       window.removeEventListener("storage", refreshFromLocalReads);
       window.removeEventListener("focus", refreshBadge);
-      window.removeEventListener("focus", refreshAccountReads);
       window.removeEventListener("focus", refreshPreferences);
       window.removeEventListener("pageshow", refreshBadge);
-      window.removeEventListener("pageshow", refreshAccountReads);
       window.removeEventListener("pageshow", refreshPreferences);
       window.removeEventListener(accountProfileChangedEvent, refreshFromLocalReads);
       window.removeEventListener(readAlertsChangedEvent, refreshFromLocalReads);
