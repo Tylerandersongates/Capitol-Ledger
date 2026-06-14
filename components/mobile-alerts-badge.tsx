@@ -7,10 +7,8 @@ import {
   readLocalNotificationPreferences,
   writeLocalNotificationPreferences
 } from "@/lib/browser-account-profile";
+import { hydrateAccountLedgerFromAccount, readAlertsChangedEvent, readReadAlertIds } from "@/lib/browser-account-ledger";
 import type { AccountNotificationPreferences } from "@/types/capitol";
-
-const readAlertsKey = "capitol-ledger:read-alerts";
-const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 
 type AlertPreference = keyof Pick<AccountNotificationPreferences, "districtAlerts" | "voteReminders">;
 type AlertSummaryItem = {
@@ -34,12 +32,7 @@ function formatBadgeValue(value: number) {
 }
 
 function readAlertIds() {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(readAlertsKey) ?? "[]") as unknown;
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
+  return readReadAlertIds();
 }
 
 function alertPreferenceEnabled(preferences: AccountNotificationPreferences, preference?: AlertPreference) {
@@ -111,6 +104,12 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
       updateBadge(countUnopenedActiveAlerts(activeAlerts, activeAlertIds, data?.activeAlertCount));
     }
 
+    async function refreshAccountReads() {
+      await hydrateAccountLedgerFromAccount();
+      if (!active) return;
+      refreshFromLocalReads();
+    }
+
     async function refreshPreferences() {
       const profile = await fetchAccountProfile();
       if (!active) return;
@@ -118,25 +117,40 @@ export function MobileAlertsBadge({ fallbackBadge }: { fallbackBadge?: string })
       refreshFromLocalReads();
     }
 
+    function visibilityHandler() {
+      if (document.visibilityState === "visible") {
+        void refreshBadge();
+        void refreshAccountReads();
+        void refreshPreferences();
+      }
+    }
+
     void refreshBadge();
+    void refreshAccountReads();
     void refreshPreferences();
     window.addEventListener("storage", refreshFromLocalReads);
     window.addEventListener("focus", refreshBadge);
+    window.addEventListener("focus", refreshAccountReads);
     window.addEventListener("focus", refreshPreferences);
     window.addEventListener("pageshow", refreshBadge);
+    window.addEventListener("pageshow", refreshAccountReads);
     window.addEventListener("pageshow", refreshPreferences);
     window.addEventListener(accountProfileChangedEvent, refreshFromLocalReads);
     window.addEventListener(readAlertsChangedEvent, refreshFromLocalReads);
+    document.addEventListener("visibilitychange", visibilityHandler);
 
     return () => {
       active = false;
       window.removeEventListener("storage", refreshFromLocalReads);
       window.removeEventListener("focus", refreshBadge);
+      window.removeEventListener("focus", refreshAccountReads);
       window.removeEventListener("focus", refreshPreferences);
       window.removeEventListener("pageshow", refreshBadge);
+      window.removeEventListener("pageshow", refreshAccountReads);
       window.removeEventListener("pageshow", refreshPreferences);
       window.removeEventListener(accountProfileChangedEvent, refreshFromLocalReads);
       window.removeEventListener(readAlertsChangedEvent, refreshFromLocalReads);
+      document.removeEventListener("visibilitychange", visibilityHandler);
     };
   }, []);
 

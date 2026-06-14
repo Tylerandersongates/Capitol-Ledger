@@ -11,17 +11,19 @@ import {
   readLocalNotificationPreferences,
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
+import {
+  fetchAccountLedger,
+  followsChangedEvent,
+  hasPendingIssueSync,
+  interestsKey,
+  persistenceEvent,
+  readAlertsChangedEvent,
+  readSavedFollowRecords,
+  readStringList,
+  savedAlertsKey,
+  writeLocalAccountLedger
+} from "@/lib/browser-account-ledger";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
-import type { AccountLedgerSnapshot, SavedFollowRecord } from "@/types/capitol";
-
-const followsKey = "capitol-ledger:follows";
-const interestsKey = "capitol-ledger:issue-interests";
-const issueInterestsPendingSyncKey = "capitol-ledger:issue-interests-pending-sync";
-const readAlertsKey = "capitol-ledger:read-alerts";
-const savedAlertsKey = "capitol-ledger:saved-alerts";
-const persistenceEvent = "capitol-ledger:persistence-changed";
-const followsChangedEvent = "capitol-ledger:follows-changed";
-const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 const setupSignalTotal = 5;
 
 type AccountSyncSnapshot = {
@@ -60,7 +62,7 @@ export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authen
           fetchAccountLedger()
         ]);
         if (profile) writeLocalAccountProfile(profile);
-        if (ledger) writeLocalLedger(ledger);
+        if (ledger) writeLocalAccountLedger(ledger);
       }
 
       refreshFromBrowser(false);
@@ -213,56 +215,4 @@ function buildSyncSnapshot(signedIn: boolean, userEmail?: string, checking = fal
     signedIn,
     userEmail
   };
-}
-
-async function fetchAccountLedger() {
-  const response = await fetch("/api/account/ledger", { cache: "no-store" }).catch(() => null);
-  if (!response?.ok) return null;
-
-  const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  return data?.ledger ?? null;
-}
-
-function writeLocalLedger(ledger: AccountLedgerSnapshot) {
-  const pendingIssueSync = hasPendingIssueSync();
-  window.localStorage.setItem(followsKey, JSON.stringify(ledger.follows));
-  window.localStorage.setItem(readAlertsKey, JSON.stringify(ledger.readAlerts));
-  window.localStorage.setItem(savedAlertsKey, JSON.stringify(ledger.savedAlerts));
-  window.localStorage.setItem(interestsKey, JSON.stringify(pendingIssueSync ? readStringList(interestsKey) : ledger.issueInterests));
-  if (!pendingIssueSync) window.localStorage.removeItem(issueInterestsPendingSyncKey);
-  window.dispatchEvent(new Event(persistenceEvent));
-  window.dispatchEvent(new Event(followsChangedEvent));
-  window.dispatchEvent(new Event(readAlertsChangedEvent));
-}
-
-function readStringList(key: string) {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) ?? "[]") as unknown;
-    return Array.isArray(parsed) ? Array.from(new Set(parsed.filter((value): value is string => typeof value === "string" && value.trim().length > 0))) : [];
-  } catch {
-    return [];
-  }
-}
-
-function readSavedFollowRecords() {
-  if (typeof window === "undefined") return [] as SavedFollowRecord[];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(followsKey) ?? "[]") as unknown;
-    return Array.isArray(parsed) ? (parsed as SavedFollowRecord[]).filter((record) => (record.type === "member" || record.type === "bill") && Boolean(record.id)) : [];
-  } catch {
-    return [];
-  }
-}
-
-function hasPendingIssueSync() {
-  if (typeof window === "undefined") return false;
-
-  try {
-    return window.localStorage.getItem(issueInterestsPendingSyncKey) === "1";
-  } catch {
-    return false;
-  }
 }

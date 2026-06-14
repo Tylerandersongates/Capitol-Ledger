@@ -16,6 +16,15 @@ import {
   readLocalNotificationPreferences,
   writeLocalNotificationPreferences
 } from "@/lib/browser-account-profile";
+import {
+  hydrateAccountLedgerFromAccount,
+  readAlertsChangedEvent,
+  readReadAlertIds,
+  sameStringSet,
+  uniqueStrings,
+  writeLocalAccountLedger,
+  writeReadAlertIds
+} from "@/lib/browser-account-ledger";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
 
 export type AlertsInboxFilter = "all" | "action" | "unread";
@@ -37,9 +46,7 @@ export type AlertsInboxItem = {
   title: string;
 };
 
-const readAlertKey = "capitol-ledger:read-alerts";
 const accountLedgerEndpoint = "/api/account/ledger";
-const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 let readAlertsHydrationPromise: Promise<string[]> | null = null;
 
 const notificationFilters: Array<{ label: string; value: AlertsInboxFilter }> = [
@@ -98,34 +105,11 @@ function shouldShowInPriorityLane(notification: AlertsInboxItem) {
 }
 
 function readAlertIds() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const stored = window.localStorage?.getItem(readAlertKey);
-    const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
+  return readReadAlertIds();
 }
 
 function writeAlertIds(ids: string[]) {
-  try {
-    window.localStorage?.setItem(readAlertKey, JSON.stringify(uniqueStrings(ids)));
-    window.dispatchEvent(new Event(readAlertsChangedEvent));
-  } catch {
-    // Restricted browser contexts can still render notifications without persistence.
-  }
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean)));
-}
-
-function sameStringSet(left: string[], right: string[]) {
-  if (left.length !== right.length) return false;
-  const rightSet = new Set(right);
-  return left.every((value) => rightSet.has(value));
+  writeReadAlertIds(ids);
 }
 
 async function syncReadAlertsToAccount(ids = readAlertIds()) {
@@ -144,7 +128,11 @@ async function syncReadAlertsToAccount(ids = readAlertIds()) {
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   const accountReadAlerts = uniqueStrings(data?.ledger?.readAlerts ?? ids);
   readAlertsHydrationPromise = Promise.resolve(accountReadAlerts);
-  if (!sameStringSet(ids, accountReadAlerts)) writeAlertIds(accountReadAlerts);
+  if (data?.ledger) {
+    writeLocalAccountLedger(data.ledger);
+  } else if (!sameStringSet(ids, accountReadAlerts)) {
+    writeAlertIds(accountReadAlerts);
+  }
   return accountReadAlerts;
 }
 
@@ -152,23 +140,10 @@ async function hydrateReadAlertsFromAccount() {
   if (!(await hasActiveBrowserSession())) return readAlertIds();
   if (readAlertsHydrationPromise) return readAlertsHydrationPromise;
 
-  readAlertsHydrationPromise = hydrateReadAlertsFromApi();
-  return readAlertsHydrationPromise;
-}
-
-async function hydrateReadAlertsFromApi() {
-  const response = await fetch(accountLedgerEndpoint, { cache: "no-store" }).catch(() => null);
-  const local = readAlertIds();
-
-  if (!response?.ok) {
+  readAlertsHydrationPromise = hydrateAccountLedgerFromAccount().then((ledger) => uniqueStrings(ledger?.readAlerts ?? readAlertIds()));
+  return readAlertsHydrationPromise.finally(() => {
     readAlertsHydrationPromise = null;
-    return local;
-  }
-
-  const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  const accountReadAlerts = uniqueStrings(data?.ledger?.readAlerts ?? []);
-  if (!sameStringSet(local, accountReadAlerts)) writeAlertIds(accountReadAlerts);
-  return accountReadAlerts;
+  });
 }
 
 export function markAlertIdRead(id: string) {
@@ -227,8 +202,33 @@ export function AlertsInboxClient({
   }, []);
 
   useEffect(() => {
-    setReadIds(readAlertIds());
-    void hydrateReadAlertsFromAccount().then(setReadIds);
+    function refreshFromLocalReads() {
+      setReadIds(readAlertIds());
+    }
+
+    function refetchReadAlerts() {
+      refreshFromLocalReads();
+      void hydrateReadAlertsFromAccount().then(setReadIds);
+    }
+
+    function visibilityHandler() {
+      if (document.visibilityState === "visible") refetchReadAlerts();
+    }
+
+    refetchReadAlerts();
+    window.addEventListener("storage", refreshFromLocalReads);
+    window.addEventListener(readAlertsChangedEvent, refreshFromLocalReads);
+    window.addEventListener("focus", refetchReadAlerts);
+    window.addEventListener("pageshow", refetchReadAlerts);
+    document.addEventListener("visibilitychange", visibilityHandler);
+
+    return () => {
+      window.removeEventListener("storage", refreshFromLocalReads);
+      window.removeEventListener(readAlertsChangedEvent, refreshFromLocalReads);
+      window.removeEventListener("focus", refetchReadAlerts);
+      window.removeEventListener("pageshow", refetchReadAlerts);
+      document.removeEventListener("visibilitychange", visibilityHandler);
+    };
   }, []);
 
   function isUnread(notification: AlertsInboxItem) {
