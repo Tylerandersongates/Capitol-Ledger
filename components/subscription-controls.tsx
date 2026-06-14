@@ -111,6 +111,7 @@ function subscriptionsMatch(left: AccountSubscriptionSnapshot, right: AccountSub
 async function syncSubscriptionToAccount(subscription = readSubscription()) {
   if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
+  if (subscription.plan !== "free" || subscription.provider !== "demo") return;
 
   const response = await fetch(accountSubscriptionEndpoint, {
     method: "POST",
@@ -296,7 +297,7 @@ export function PlanActionButton({
       });
 
       if (!response.ok) {
-        updateSubscription({ plan });
+        if (plan === "free") updateSubscription({ plan });
         return;
       }
 
@@ -318,7 +319,7 @@ export function PlanActionButton({
 
       applySubscriptionSnapshot(fallbackSubscription);
     } catch {
-      updateSubscription({ plan });
+      if (plan === "free") updateSubscription({ plan });
     } finally {
       setPending(false);
     }

@@ -30,6 +30,10 @@ import type { SubscriptionPlanId } from "@/types/capitol";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+const stripeLiveMode = process.env.STRIPE_LIVE_MODE === "true";
+const showStripeSandboxNotice = stripePublishableKey.startsWith("pk_test_") && !stripeLiveMode;
+
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
 const premiumCardDescriptionClass = "mt-2 text-[13px] leading-snug text-white/54";
@@ -87,6 +91,17 @@ export default function UpgradePage() {
             </div>
           </MobileCard>
         </div>
+
+        {showStripeSandboxNotice ? (
+          <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+            <PremiumUpgradeHeader
+              description="Stripe is in test mode for demos. Use test card 4242 4242 4242 4242 with any future expiration, any CVC, and any ZIP code."
+              eyebrow="Sandbox Checkout"
+              icon={<ShieldCheck />}
+              title="No real payment information"
+            />
+          </MobileCard>
+        ) : null}
 
         <section className="space-y-3" aria-label="Subscription plans">
           <PlanTierCard

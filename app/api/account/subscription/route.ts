@@ -10,6 +10,13 @@ async function readSession() {
   return session?.user ?? null;
 }
 
+function isClientWritableSubscription(value: Partial<AccountSubscriptionSnapshot>) {
+  const plan = value.plan === "pro" || value.plan === "team" ? value.plan : "free";
+  const provider = value.provider === "stripe" || value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
+
+  return plan === "free" && provider === "demo";
+}
+
 export async function GET() {
   const user = await readSession();
 
@@ -39,6 +46,22 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountSubscriptionSnapshot>;
   const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+
+  if (!isClientWritableSubscription(body)) {
+    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
+    const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+
+    return NextResponse.json(
+      {
+        error: "Paid subscriptions must be changed through checkout.",
+        mode: databaseSubscription ? "database" : "account",
+        user,
+        subscription
+      },
+      { status: 403 }
+    );
+  }
+
   const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, body).catch(() => null);
   const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, body);
 
