@@ -124,6 +124,27 @@ node scripts/check-beta-readiness.mjs
 node scripts/check-beta-triage.mjs
 ```
 
+## June 15, 2026 QA Run
+
+Status: production Round 3 pass completed against `https://project-qosv1.vercel.app`.
+
+- Code diagnostic found and removed stale beta/subscription code in commit `f2fc089`.
+- Billing readiness, beta readiness, production auth QA, beta triage, and Team safe QA passed.
+- Production smoke passed for `/beta`, `/settings`, `/alerts`, `/upgrade`, `/team`, `/team/accept?teamQa=missing`, `/feedback`, and `/feedback/review` with no active console errors.
+- Pro checkout opened Stripe Checkout, canceled back to `/upgrade?checkout=cancel`, completed to `/account?checkout=success&plan=pro`, and hydrated as `provider=stripe`, `plan=pro`.
+- Pro cancellation webhook updated the QA account to `plan=free`, `status=canceled`, and the upgrade page offered Pro again.
+- Team checkout completed to `/team?checkout=success&plan=team`; invite creation, invite delivery, invite acceptance, and accepted member `/team` access passed.
+- Stripe webhook endpoint was updated in test mode to deliver `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+- Stripe Billing Portal configuration was updated in test mode to allow Team quantity-only subscription updates; the portal now shows `Update subscription` with quantity controls.
+- Over-capacity QA passed: Team quantity increased to 5, a fourth occupied seat was accepted, quantity reduced to 3, `/team` showed 3 paid seats and 4 occupied seats, new invites were blocked, and existing member access stayed predictable.
+- Team downgrade/cancel QA passed: changing the Team subscription to Pro removed owner invite access and member Team access; canceling the subscription updated the owner to `plan=free`, `status=canceled`, with Team access still removed.
+- Beta triage snapshot showed 11 total reports, 11 resolved, 0 active, 0 launch blockers, and 0 untriaged.
+
+Notes:
+
+- The destructive Stripe QA accounts used in this pass were intentionally downgraded or canceled after verification. Future full Team checkout QA should create a fresh Team owner and invitee account.
+- Local `check-beta-triage` needs network/database access; the escalated production run passed.
+
 ## Exit Criteria
 
 - One full Team checkout to accepted member flow passes in production.
