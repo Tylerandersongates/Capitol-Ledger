@@ -39,6 +39,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
+import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillSourceMatch, BillVideo, Member, Vote, VotePosition } from "@/types/capitol";
@@ -284,7 +285,7 @@ function getPersonalStatusLine(bill: Bill) {
 }
 
 export default async function BillPage({ params, searchParams }: BillPageProps) {
-  const detail = await getBillDetailWithLiveData(params.billId);
+  const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentAccountSubscription()]);
   if (!detail) notFound();
 
   const { bill, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
@@ -374,13 +375,13 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
         {activeTab === "details" ? (
           <>
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
-            <PlanFeatureGate feature="aiPolicyLens">
+            <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
               <AiPolicyLensCard analysis={buildAiBillAnalysis(bill, billSummary.text)} />
             </PlanFeatureGate>
-            <PlanFeatureGate feature="sourceMap">
+            <PlanFeatureGate feature="sourceMap" initialSubscription={initialSubscription}>
               <SourceMapCard sourceMatches={sourceMatches} />
             </PlanFeatureGate>
-            <PlanFeatureGate feature="speechVideo">
+            <PlanFeatureGate feature="speechVideo" initialSubscription={initialSubscription}>
               <VideoCard billVideos={billVideos} />
             </PlanFeatureGate>
           </>

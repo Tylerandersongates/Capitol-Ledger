@@ -146,20 +146,25 @@ async function hydrateSubscriptionFromAccount() {
   return subscription;
 }
 
-export function useSubscriptionState() {
-  const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(defaultSubscription);
+export function useSubscriptionState(initialSubscription?: AccountSubscriptionSnapshot | null) {
+  const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(() => normalizeSubscription(initialSubscription ?? defaultSubscription));
 
   useEffect(() => {
     let active = true;
+    const normalizedInitialSubscription = initialSubscription ? normalizeSubscription(initialSubscription) : null;
 
     async function refresh() {
+      if (normalizedInitialSubscription && !subscriptionsMatch(readSubscription(), normalizedInitialSubscription)) {
+        writeSubscription(normalizedInitialSubscription, false);
+      }
+
       if (await hasActiveBrowserSession()) {
         const accountSubscription = await hydrateSubscriptionFromAccount();
-        if (active) setSubscription(accountSubscription ?? defaultSubscription);
+        if (active) setSubscription(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
         return;
       }
 
-      if (active) setSubscription(readSubscription());
+      if (active) setSubscription(normalizedInitialSubscription ?? readSubscription());
     }
 
     void refresh();
@@ -181,7 +186,7 @@ export function useSubscriptionState() {
       window.removeEventListener("storage", refreshSubscription);
       window.removeEventListener(subscriptionEvent, refreshSubscription);
     };
-  }, []);
+  }, [initialSubscription]);
 
   function updateSubscription(next: Partial<AccountSubscriptionSnapshot>) {
     const updated = normalizeSubscription({
@@ -226,8 +231,8 @@ async function openBillingPortal() {
   return true;
 }
 
-export function BillingCycleToggle() {
-  const [subscription, updateSubscription] = useSubscriptionState();
+export function BillingCycleToggle({ initialSubscription = null }: { initialSubscription?: AccountSubscriptionSnapshot | null }) {
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
 
   return (
     <div className="grid grid-cols-2 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl">
@@ -253,14 +258,16 @@ export function PlanPrice({
   className = "mt-5 flex items-end gap-2",
   plan,
   priceClassName,
-  unitClassName = "pb-2 text-[17px] text-white/56"
+  unitClassName = "pb-2 text-[17px] text-white/56",
+  initialSubscription = null
 }: {
   className?: string;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
   priceClassName?: string;
   unitClassName?: string;
 }) {
-  const [subscription] = useSubscriptionState();
+  const [subscription] = useSubscriptionState(initialSubscription);
   const planDetails = subscriptionPlans[plan];
   const price = subscription.cycle === "annual" ? planDetails.pricing.annual : planDetails.pricing.monthly;
   const unit = plan === "free" ? "" : subscription.cycle === "annual" ? (plan === "team" ? "/ seat / year" : "/ year") : planDetails.pricing.unit;
@@ -278,13 +285,15 @@ export function PlanPrice({
 export function PlanActionButton({
   className,
   inactiveLabel,
+  initialSubscription = null,
   plan
 }: {
   className: string;
   inactiveLabel: string;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
 }) {
-  const [subscription, updateSubscription] = useSubscriptionState();
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
   const [pending, setPending] = useState(false);
   const active = subscription.plan === plan;
   const billingPortalManaged = shouldUseBillingPortal(subscription);
@@ -364,8 +373,8 @@ export function PlanActionButton({
   );
 }
 
-export function SubscriptionBadge() {
-  const [subscription] = useSubscriptionState();
+export function SubscriptionBadge({ initialSubscription = null }: { initialSubscription?: AccountSubscriptionSnapshot | null }) {
+  const [subscription] = useSubscriptionState(initialSubscription);
   const planName = subscriptionPlans[subscription.plan].name;
 
   return (
@@ -380,8 +389,16 @@ export function SubscriptionBadge() {
   );
 }
 
-export function TeamSeatSelector({ className = "", compact = false }: { className?: string; compact?: boolean }) {
-  const [subscription, updateSubscription] = useSubscriptionState();
+export function TeamSeatSelector({
+  className = "",
+  compact = false,
+  initialSubscription = null
+}: {
+  className?: string;
+  compact?: boolean;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+}) {
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
   const pricePerSeat = subscription.cycle === "annual" ? 59.99 : 5.99;
   const totalPrice = formatCurrency(pricePerSeat * seatCount);
@@ -511,13 +528,15 @@ function formatCurrency(value: number) {
 export function PlanFeatureGate({
   children,
   fallback,
-  feature
+  feature,
+  initialSubscription
 }: {
   children: ReactNode;
   fallback?: ReactNode;
   feature: SubscriptionFeatureId;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
 }) {
-  const [subscription] = useSubscriptionState();
+  const [subscription] = useSubscriptionState(initialSubscription);
 
   if (isPlanFeatureEnabled(subscription.plan, feature)) return <>{children}</>;
   return fallback ?? <LockedPlanPreview feature={feature} />;

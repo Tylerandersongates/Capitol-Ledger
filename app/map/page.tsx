@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, Building2, CheckCircle2, ChevronRight, Home, Landmark, Map, Settings, UsersRound } from "lucide-react";
 import { getAllBills, getBillStatus, getDemoStats } from "@/lib/data";
+import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 
 const levelFilters = [
   {
@@ -37,6 +38,8 @@ const layerToggles = [
   ["Elections", false]
 ] as const;
 
+export const dynamic = "force-dynamic";
+
 const mapPoints = [
   ["12%", "45%", "#ffb12b"],
   ["22%", "37%", "#69a8ff"],
@@ -48,8 +51,9 @@ const mapPoints = [
   ["84%", "48%", "#ffb12b"]
 ] as const;
 
-export default function MapPage({ searchParams }: { searchParams?: { level?: string } }) {
+export default async function MapPage({ searchParams }: { searchParams?: { level?: string } }) {
   const activeLevel = levelFilters.some((level) => level.value === searchParams?.level) ? searchParams?.level : "federal";
+  const initialSubscription = await getCurrentAccountSubscription();
   const stats = getDemoStats();
   const trackedBills = getAllBills()
     .slice(0, 3)
@@ -96,7 +100,7 @@ export default function MapPage({ searchParams }: { searchParams?: { level?: str
                 </div>
               </MobileCard>
 
-              <PlanFeatureGate feature="teamDashboard">
+              <PlanFeatureGate feature="teamDashboard" initialSubscription={initialSubscription}>
                 <MobileCard className="px-5 py-5">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                     <div>

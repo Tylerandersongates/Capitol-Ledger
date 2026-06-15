@@ -35,6 +35,7 @@ import { getDefaultAccountGamification, type AccountGamificationSnapshot } from 
 import type { getDashboardData } from "@/lib/data";
 import type {
   AccountLedgerSnapshot,
+  AccountSubscriptionSnapshot,
   AccountProfileSnapshot,
   FollowTargetType,
   SavedFollowRecord
@@ -94,7 +95,15 @@ function getBillTrackerStagePill(stage: BillTrackerStage) {
   return { bgClass: "bg-[#56a8ff]/12", textClass: "text-[#56a8ff]" };
 }
 
-export function DashboardClient({ data, initialLedger = null }: { data: DashboardData; initialLedger?: AccountLedgerSnapshot | null }) {
+export function DashboardClient({
+  data,
+  initialLedger = null,
+  initialSubscription = null
+}: {
+  data: DashboardData;
+  initialLedger?: AccountLedgerSnapshot | null;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+}) {
   const [, setUnreadAlertCount] = useState(() => countAccountUnreadAlertIds(initialLedger));
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>(() => uniqueFavoriteRecords(initialLedger?.follows ?? []));
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
@@ -400,6 +409,7 @@ export function DashboardClient({ data, initialLedger = null }: { data: Dashboar
             <div className="mt-5">
               <PlanFeatureGate
                 feature="aiPolicyLens"
+                initialSubscription={initialSubscription}
                 fallback={
                   <MobileCard variant="dashboard" className="relative overflow-hidden px-4 py-4">
                     <div className={dashboardCardAccentClass} />
@@ -495,6 +505,7 @@ export function DashboardClient({ data, initialLedger = null }: { data: Dashboar
 
             <PlanFeatureGate
               feature="weeklyBrief"
+              initialSubscription={initialSubscription}
               fallback={
                 <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
                   <div className={dashboardCardAccentClass} />

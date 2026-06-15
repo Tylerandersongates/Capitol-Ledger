@@ -24,8 +24,9 @@ import {
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
+import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
-import type { SubscriptionPlanId } from "@/types/capitol";
+import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,7 +44,9 @@ const premiumHeaderIconClass =
 const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
-export default function UpgradePage() {
+export default async function UpgradePage() {
+  const initialSubscription = await getCurrentAccountSubscription();
+
   return (
     <MobileShell
       minHeight="min-h-[1080px]"
@@ -87,7 +90,7 @@ export default function UpgradePage() {
               title="Plan cycle"
             />
             <div className="mt-5">
-              <BillingCycleToggle />
+              <BillingCycleToggle initialSubscription={initialSubscription} />
             </div>
           </MobileCard>
         </div>
@@ -109,17 +112,20 @@ export default function UpgradePage() {
             featured
             icon={<Crown />}
             inactiveLabel="Upgrade to Pro"
+            initialSubscription={initialSubscription}
             plan="pro"
           />
           <PlanTierCard
             icon={<ShieldCheck />}
             inactiveLabel="Switch to Free"
+            initialSubscription={initialSubscription}
             plan="free"
           />
           <PlanTierCard
             badge="Team Workspace"
             icon={<Sparkles />}
             inactiveLabel="Start Team Plan"
+            initialSubscription={initialSubscription}
             plan="team"
           />
         </section>
@@ -219,12 +225,14 @@ function PlanTierCard({
   featured = false,
   icon,
   inactiveLabel,
+  initialSubscription,
   plan
 }: {
   badge?: string;
   featured?: boolean;
   icon: ReactNode;
   inactiveLabel: string;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
 }) {
   const planDetails = subscriptionPlans[plan];
@@ -248,13 +256,14 @@ function PlanTierCard({
       </div>
       <PlanPrice
         plan={plan}
+        initialSubscription={initialSubscription}
         className="mt-4 flex items-end gap-2"
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
-      {plan === "team" ? <TeamSeatSelector className="mt-4" compact /> : null}
+      {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} /> : null}
       <FeatureList items={planDetails.highlights} />
-      <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} className={actionClassName} />
+      <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} className={actionClassName} />
     </MobileCard>
   );
 }

@@ -10,6 +10,7 @@ import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase } from "@/lib/account-database";
 import { issueSignals } from "@/lib/issue-signals";
 import { requireAccountSession } from "@/lib/route-guards";
+import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import type { ReactNode } from "react";
 import {
   Bell,
@@ -35,9 +36,10 @@ export default async function AccountPage() {
   const session = await requireAccountSession("/account");
   const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const [initialLedger, initialProfile] = await Promise.all([
+  const [initialLedger, initialProfile, initialSubscription] = await Promise.all([
     readLedgerFromDatabase(accountUserId).catch(() => null),
-    readProfileFromDatabase(accountUserId).catch(() => null)
+    readProfileFromDatabase(accountUserId).catch(() => null),
+    getSubscriptionForAccountUser(session.user).catch(() => null)
   ]);
   const accountLedger = initialLedger ?? getAccountLedger(accountUserId);
   const initialAlertCount = initialProfile
@@ -82,7 +84,7 @@ export default async function AccountPage() {
                     <AccountDistrictDisplay />
                     <div className="mt-3 grid max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 [&>*]:mt-0 [&>*]:min-w-0 [&>*]:px-2 [&>*]:py-1 [&>*]:text-[10px]">
                       <PartyAffiliationDisplay />
-                      <SubscriptionBadge />
+                      <SubscriptionBadge initialSubscription={initialSubscription} />
                     </div>
                   </div>
                 </div>

@@ -22,6 +22,7 @@ import {
   Vote
 } from "lucide-react";
 import { getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
+import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { formatDate } from "@/lib/utils";
 
 type SearchPageProps = {
@@ -94,7 +95,7 @@ const smartFilterGroups: Array<{
 ];
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { results } = await searchRecordsWithLiveData(searchParams);
+  const [{ results }, initialSubscription] = await Promise.all([searchRecordsWithLiveData(searchParams), getCurrentAccountSubscription()]);
   const resultCount = results.members.length + results.bills.length + results.votes.length;
   const activeType = searchParams.type ?? "all";
   const query = searchParams.q ?? "";
@@ -169,6 +170,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
                 <PlanFeatureGate
                   feature="advancedSearch"
+                  initialSubscription={initialSubscription}
                   fallback={
                     <div className={`mt-4 flex items-center justify-between gap-3 px-4 py-3 ${premiumPanelClass}`}>
                       <span className="flex items-center gap-2 text-[13px] font-medium text-white/56">
@@ -216,7 +218,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <MiniMetric value={String(results.bills.length)} label="Bills" />
               </div>
 
-              <PlanFeatureGate feature="exportReports">
+              <PlanFeatureGate feature="exportReports" initialSubscription={initialSubscription}>
                 <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                     <div>

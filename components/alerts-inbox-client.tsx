@@ -25,7 +25,7 @@ import {
   writeLocalAccountLedger,
   writeReadAlertIds
 } from "@/lib/browser-account-ledger";
-import type { AccountLedgerSnapshot } from "@/types/capitol";
+import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot } from "@/types/capitol";
 
 export type AlertsInboxFilter = "all" | "action" | "unread";
 export type AlertsInboxGroup = "today" | "yesterday" | "earlier";
@@ -167,12 +167,14 @@ function notificationIcon(icon: AlertsInboxIcon) {
 
 export function AlertsInboxClient({
   activeFilter,
+  initialSubscription = null,
   notifications
 }: {
   activeFilter: AlertsInboxFilter;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
   notifications: AlertsInboxItem[];
 }) {
-  const [subscription] = useSubscriptionState();
+  const [subscription] = useSubscriptionState(initialSubscription);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [readStateReady, setReadStateReady] = useState(false);
   const [notificationPreferences, setNotificationPreferences] = useState(defaultNotificationPreferences);
@@ -308,7 +310,7 @@ export function AlertsInboxClient({
 
       <main className="mt-7 space-y-4 pb-8">
         {activeFilter === "all" ? (
-          <PlanFeatureGate feature="priorityAlerts">
+          <PlanFeatureGate feature="priorityAlerts" initialSubscription={initialSubscription}>
             <MobileCard variant="dashboard" className="px-5 py-5">
               <div className="grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3">
                 <div className="pt-1 text-[#ffb12b]">
