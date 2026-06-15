@@ -9,6 +9,7 @@ import {
   syncAccountProfile,
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
+import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 
 export const partyOptions = [
   { value: "", label: "Not selected", display: "Not selected" },
@@ -33,28 +34,43 @@ function writePartyAffiliation(value: string) {
   writeLocalAccountProfile({ partyAffiliation: value });
 }
 
-export function PartyAffiliationDisplay() {
+function useSyncedPartyAffiliation() {
   const [party, setParty] = useState("");
 
   useEffect(() => {
+    let active = true;
+
     function refreshParty() {
-      setParty(readPartyAffiliation());
+      if (active) setParty(readPartyAffiliation());
     }
 
-    refreshParty();
-    void fetchAccountProfile().then((profile) => {
-      if (!profile) return;
-      writePartyAffiliation(profile.partyAffiliation);
-      setParty(profile.partyAffiliation);
-    });
+    async function hydrateParty() {
+      if (await hasActiveBrowserSession()) {
+        const profile = await fetchAccountProfile();
+        if (!active) return;
+        setParty(profile?.partyAffiliation ?? "");
+        return;
+      }
+
+      refreshParty();
+    }
+
+    void hydrateParty();
     window.addEventListener("storage", refreshParty);
     window.addEventListener(accountProfileChangedEvent, refreshParty);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshParty);
       window.removeEventListener(accountProfileChangedEvent, refreshParty);
     };
   }, []);
+
+  return [party, setParty] as const;
+}
+
+export function PartyAffiliationDisplay() {
+  const [party] = useSyncedPartyAffiliation();
 
   return (
     <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] font-medium text-white/52">
@@ -67,28 +83,7 @@ export function PartyAffiliationDisplay() {
 }
 
 export function PartyAffiliationSelector() {
-  const [party, setParty] = useState("");
-
-  useEffect(() => {
-    function refreshParty() {
-      setParty(readPartyAffiliation());
-    }
-
-    refreshParty();
-    void fetchAccountProfile().then((profile) => {
-      if (!profile) return;
-      writePartyAffiliation(profile.partyAffiliation);
-      setParty(profile.partyAffiliation);
-    });
-
-    window.addEventListener("storage", refreshParty);
-    window.addEventListener(accountProfileChangedEvent, refreshParty);
-
-    return () => {
-      window.removeEventListener("storage", refreshParty);
-      window.removeEventListener(accountProfileChangedEvent, refreshParty);
-    };
-  }, []);
+  const [party, setParty] = useSyncedPartyAffiliation();
 
   function handleChange(value: string) {
     setParty(value);
@@ -125,27 +120,7 @@ export function PartyAffiliationSelector() {
 }
 
 export function OnboardingPartyAffiliationSelector() {
-  const [party, setParty] = useState("");
-
-  useEffect(() => {
-    function refreshParty() {
-      setParty(readPartyAffiliation());
-    }
-
-    refreshParty();
-    void fetchAccountProfile().then((profile) => {
-      if (!profile) return;
-      writePartyAffiliation(profile.partyAffiliation);
-      setParty(profile.partyAffiliation);
-    });
-    window.addEventListener("storage", refreshParty);
-    window.addEventListener(accountProfileChangedEvent, refreshParty);
-
-    return () => {
-      window.removeEventListener("storage", refreshParty);
-      window.removeEventListener(accountProfileChangedEvent, refreshParty);
-    };
-  }, []);
+  const [party, setParty] = useSyncedPartyAffiliation();
 
   function handleSelect(value: string) {
     setParty(value);

@@ -395,15 +395,26 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 function EmptyNotifications({ activeFilter }: { activeFilter: AlertsInboxFilter }) {
-  const label = notificationFilters.find((filter) => filter.value === activeFilter)?.label ?? "Notifications";
+  const title =
+    activeFilter === "all"
+      ? "No alerts yet"
+      : activeFilter === "action"
+        ? "No action needed yet"
+        : "No unread alerts yet";
+  const description =
+    activeFilter === "all"
+      ? "New civic activity will appear here as bills, votes, and official updates are tracked."
+      : activeFilter === "action"
+        ? "Alerts that need a response will appear here when tracked civic activity requires attention."
+        : "Unread alerts will appear here when new tracked civic activity arrives.";
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-6 text-center">
       <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-[#ffb12b]">
         <Bell className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
       </div>
-      <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">No {label.toLowerCase()} yet</h2>
-      <p className="mt-2 text-[15px] leading-6 text-white/56">New civic activity will appear here as bills, votes, and official updates are tracked.</p>
+      <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">{title}</h2>
+      <p className="mt-2 text-[15px] leading-6 text-white/56">{description}</p>
     </MobileCard>
   );
 }

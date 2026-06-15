@@ -60,6 +60,8 @@ export function BetaFeedbackReviewQueue({
   const [lastChecked, setLastChecked] = useState("");
   const metrics = useMemo(() => getFeedbackMetrics(records), [records]);
   const filteredRecords = useMemo(() => searchRecords(filterRecords(records, activeFilter), searchQuery), [activeFilter, records, searchQuery]);
+  const reportsLabel = canManageFeedback ? "tester reports" : "submitted reports";
+  const listTitle = canManageFeedback ? "Latest Reports" : "My Reports";
 
   useEffect(() => {
     setLastChecked(formatCheckTime(new Date()));
@@ -164,13 +166,19 @@ export function BetaFeedbackReviewQueue({
           <div>
             <div className="flex items-center gap-2 text-[#ffb12b]">
               <MessageSquarePlus className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-              <span className="text-[13px] font-medium uppercase tracking-wide">Feedback Intake</span>
+              <span className="text-[13px] font-medium uppercase tracking-wide">{canManageFeedback ? "Feedback Intake" : "Feedback History"}</span>
             </div>
-            <h2 className="mt-3 text-[22px] font-medium leading-tight text-white">{metrics.total} tester reports</h2>
+            <h2 className="mt-3 text-[22px] font-medium leading-tight text-white">
+              {metrics.total} {reportsLabel}
+            </h2>
             <p className="mt-2 text-[14px] leading-snug text-white/56">
-              {initialMode === "database" ? "Reading from the beta feedback database queue." : "Demo-mode reports are stored in this preview session."}
+              {canManageFeedback
+                ? initialMode === "database"
+                  ? "Reading from the beta feedback database queue."
+                  : "Demo-mode reports are stored in this preview session."
+                : "Showing reports submitted from this account. Reviewer-only triage controls are hidden."}
             </p>
-            {initialMode === "database" && metrics.total === 0 ? (
+            {canManageFeedback && initialMode === "database" && metrics.total === 0 ? (
               <p className="mt-2 text-[13px] leading-snug text-white/42">
                 If a submitted report is missing, confirm this signed-in email is listed in `BETA_REVIEWER_EMAILS` and that the report was sent from this deployed app.
               </p>
@@ -236,7 +244,7 @@ export function BetaFeedbackReviewQueue({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-[24px] font-medium leading-none text-white">Latest Reports</h2>
+            <h2 className="text-[24px] font-medium leading-none text-white">{listTitle}</h2>
             <p className="mt-1 text-[12px] leading-none text-white/36">Last checked {lastChecked || "after load"}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -316,9 +324,13 @@ export function BetaFeedbackReviewQueue({
         ) : (
           <MobileCard variant="dashboard" className="px-5 py-6 text-center">
             <MessageSquarePlus className="mx-auto h-8 w-8 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-            <h3 className="mt-4 text-[20px] font-medium text-white">{records.length ? "No matching reports" : "No reports yet"}</h3>
+            <h3 className="mt-4 text-[20px] font-medium text-white">{records.length ? "No matching reports" : canManageFeedback ? "No reports yet" : "No submitted reports yet"}</h3>
             <p className="mt-2 text-[14px] leading-snug text-white/54">
-              {records.length ? "Change the filter to see more beta feedback." : "Tester feedback will appear here after the first report is submitted."}
+              {records.length
+                ? "Change the filter to see more beta feedback."
+                : canManageFeedback
+                  ? "Tester feedback will appear here after the first report is submitted."
+                  : "Feedback submitted from this account will appear here."}
             </p>
           </MobileCard>
         )}

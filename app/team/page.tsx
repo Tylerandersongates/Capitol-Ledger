@@ -341,10 +341,11 @@ function readSearchParam(searchParams: TeamPageSearchParams | undefined, key: st
 
 function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutReturn?: boolean; subscription: AccountSubscriptionSnapshot }) {
   const currentPlan = subscription.plan === "team" ? "Team" : subscription.plan === "pro" ? "Pro" : "Free";
+  const teamPlanSelected = subscription.plan === "team";
   const metrics: Metric[] = [
     { label: "Current plan", value: currentPlan },
-    { label: "Team seats", value: "3+" },
-    { label: "Status", value: formatStatusLabel(subscription.status) }
+    { label: "Team seats", value: teamPlanSelected ? String(normalizeTeamSeatCount(subscription.seatCount)) : "3+" },
+    { label: "Status", value: checkoutReturn ? "Syncing" : teamPlanSelected ? formatStatusLabel(subscription.status) : "Upgrade" }
   ];
 
   return (

@@ -5,6 +5,7 @@ import { Bell, BookmarkCheck, Check, Star } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { readLocalNotificationPreferences } from "@/lib/browser-account-profile";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
 
@@ -122,6 +123,11 @@ function uniqueFollows(values: SavedFollowRecord[]) {
   return follows;
 }
 
+function countEnabledNotificationPreferences() {
+  const preferences = readLocalNotificationPreferences();
+  return [preferences.districtAlerts, preferences.voteReminders, preferences.weeklyBrief].filter(Boolean).length;
+}
+
 function readLocalLedger(): AccountLedgerSnapshot {
   return {
     follows: uniqueFollows(readFollows()),
@@ -132,11 +138,11 @@ function readLocalLedger(): AccountLedgerSnapshot {
   };
 }
 
-function getSavedCounts(snapshot?: AccountLedgerSnapshot | null): SavedCounts {
+function getSavedCounts(snapshot?: AccountLedgerSnapshot | null, alertCount?: number): SavedCounts {
   const follows = snapshot?.follows ?? readFollows();
 
   return {
-    alerts: snapshot?.savedAlerts.length ?? readSavedAlerts().length,
+    alerts: alertCount ?? countEnabledNotificationPreferences(),
     bills: follows.filter((record) => record.type === "bill").length,
     interests: snapshot?.issueInterests.length ?? readIssueInterests().length,
     officials: follows.filter((record) => record.type === "member").length
@@ -356,12 +362,16 @@ export function PolicyInterestsEditor({
       window.localStorage.setItem(interestsKey, JSON.stringify(seededInitialInterests));
       setSelected(seededInitialInterests);
     } else {
-      refreshInterests();
+      async function hydrateInterestsBeforeRefresh() {
+        if (await hasActiveBrowserSession()) await hydrateSavedLedgerFromAccount();
+        refreshInterests();
+      }
+
+      void hydrateInterestsBeforeRefresh();
     }
 
     window.addEventListener("storage", refreshInterests);
     window.addEventListener(persistenceEvent, refreshInterests);
-    if (!initialSelectedInterests) void hydrateSavedLedgerFromAccount().then(refreshInterests);
 
     return () => {
       window.removeEventListener("storage", refreshInterests);
@@ -474,8 +484,8 @@ export function PolicyInterestsEditor({
   );
 }
 
-export function SavedLedgerSummary({ initialLedger }: { initialLedger?: AccountLedgerSnapshot | null }) {
-  const [counts, setCounts] = useState<SavedCounts>(() => getSavedCounts(initialLedger));
+export function SavedLedgerSummary({ initialAlertCount, initialLedger }: { initialAlertCount?: number; initialLedger?: AccountLedgerSnapshot | null }) {
+  const [counts, setCounts] = useState<SavedCounts>(() => getSavedCounts(initialLedger, initialAlertCount));
   const [accountSynced, setAccountSynced] = useState(false);
 
   useEffect(() => {

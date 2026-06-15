@@ -311,9 +311,9 @@ export function DashboardClient({ data, initialLedger = null }: { data: Dashboar
                   <Link
                     href="/search?type=bills&focus=results"
                     className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
-                    aria-label={`Open ${data.updateCount} live docket bill results`}
+                    aria-label={`Open ${data.billsInAction} live docket bill results`}
                   >
-                    <span>{data.updateCount}</span>
+                    <span>{data.billsInAction}</span>
                     <ChevronRight className="h-5 w-5 text-white/46" aria-hidden="true" />
                   </Link>
                 </div>

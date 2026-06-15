@@ -61,6 +61,10 @@ function writeJson<T>(key: string, value: T) {
   window.dispatchEvent(new Event(accountProfileChangedEvent));
 }
 
+function hasOwn(value: Partial<AccountProfileSnapshot>, key: keyof AccountProfileSnapshot) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
 function toBoolean(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback;
 }
@@ -113,8 +117,8 @@ export function readLocalAccountProfile(): Partial<AccountProfileSnapshot> {
 }
 
 export function writeLocalAccountProfile(profile: Partial<AccountProfileSnapshot>) {
-  if (profile.notificationPreferences) writeLocalNotificationPreferences(profile.notificationPreferences);
-  if (profile.districtCode || profile.districtLabel || profile.districtState) writeLocalDistrictProfile(profile);
+  if (hasOwn(profile, "notificationPreferences")) writeLocalNotificationPreferences(profile.notificationPreferences ?? defaultNotificationPreferences);
+  if (hasOwn(profile, "districtCode") || hasOwn(profile, "districtLabel") || hasOwn(profile, "districtState")) writeLocalDistrictProfile(profile);
   if (typeof window !== "undefined" && typeof profile.partyAffiliation === "string") {
     window.localStorage.setItem(partyAffiliationKey, profile.partyAffiliation);
     window.dispatchEvent(new Event(accountProfileChangedEvent));
@@ -162,6 +166,7 @@ async function fetchAccountProfileFromApi() {
   if (data?.profile) {
     accountProfileCache = data.profile;
     accountProfileCacheUpdatedAt = Date.now();
+    writeLocalAccountProfile(data.profile);
   }
   return data?.profile ?? null;
 }

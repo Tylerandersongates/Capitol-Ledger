@@ -12,6 +12,7 @@ export default async function FeedbackReviewPage() {
   const session = await requireAccountSession("/feedback/review");
   const feedback = await getBetaFeedbackRecords(session.user);
   const canManageFeedback = canReviewAllBetaFeedback(session.user);
+  const pageTitle = canManageFeedback ? "Review Queue" : "My Feedback";
 
   return (
     <MobileShell
@@ -30,9 +31,11 @@ export default async function FeedbackReviewPage() {
 
       <section className="mt-10">
         <div className="text-[18px] uppercase tracking-wide text-white/54">Beta Testing</div>
-        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Review Queue</h1>
+        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">{pageTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Track tester reports by severity and type before each beta fix pass.
+          {canManageFeedback
+            ? "Track tester reports by severity and type before each beta fix pass."
+            : "Review the feedback reports submitted from this account."}
         </p>
       </section>
 

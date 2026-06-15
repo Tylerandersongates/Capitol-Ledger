@@ -19,8 +19,9 @@ import {
   type LocalDistrictProfile
 } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hydrateAccountLedgerFromAccount } from "@/lib/browser-account-ledger";
 import { useSubscriptionState } from "@/components/subscription-controls";
-import { recordCompletedDistrictSetupIfReady } from "@/lib/browser-gamification";
+import { recordCompletedDistrictSetupIfReady, recordGamificationEvent } from "@/lib/browser-gamification";
 import {
   betaDistrictPresets,
   betaDistrictZipExamples,
@@ -169,13 +170,16 @@ function saveDistrictDelegationFollows(members: Member[], districtCode?: string)
   if (!districtFollows.length) return 0;
 
   const current = readSavedFollowRecords();
+  const currentKeys = new Set(current.map((record) => `${record.type}:${record.id}`));
+  const newlyAddedFollows = districtFollows.filter((record) => !currentKeys.has(`${record.type}:${record.id}`));
   const next = uniqueFollowRecords([...districtFollows, ...current]);
   window.localStorage.setItem(followsKey, JSON.stringify(next));
   window.dispatchEvent(new Event(persistenceEvent));
   window.dispatchEvent(new Event(followsChangedEvent));
   void syncFollowRecordsToAccount(next);
+  newlyAddedFollows.forEach((record) => recordGamificationEvent("save-official", record.id));
 
-  return districtFollows.length;
+  return newlyAddedFollows.length;
 }
 
 function degreesToRadians(value: number) {
@@ -291,20 +295,37 @@ function useDistrictProfile() {
   const [district, setDistrict] = useState(defaultDistrictProfile);
 
   useEffect(() => {
+    let active = true;
+
     function refreshDistrict() {
-      setDistrict(readLocalDistrictProfile());
+      if (active) setDistrict(readLocalDistrictProfile());
     }
 
-    refreshDistrict();
-    void fetchAccountProfile().then((profile) => {
-      if (!profile) return;
-      writeLocalDistrictProfile(profile);
-      setDistrict(readLocalDistrictProfile());
-    });
+    async function hydrateDistrict() {
+      if (await hasActiveBrowserSession()) {
+        const profile = await fetchAccountProfile();
+        if (!active) return;
+        setDistrict(
+          profile
+            ? {
+                districtCode: profile.districtCode,
+                districtLabel: profile.districtLabel,
+                districtState: profile.districtState
+              }
+            : defaultDistrictProfile
+        );
+        return;
+      }
+
+      refreshDistrict();
+    }
+
+    void hydrateDistrict();
     window.addEventListener("storage", refreshDistrict);
     window.addEventListener(accountProfileChangedEvent, refreshDistrict);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshDistrict);
       window.removeEventListener(accountProfileChangedEvent, refreshDistrict);
     };
@@ -586,7 +607,10 @@ function useSetupMetrics(members: Member[]) {
   const officialsCount = district.districtCode ? getMatchedOfficials(members, district.districtCode).length : 0;
 
   useEffect(() => {
+    let active = true;
+
     function refreshSetupSignals() {
+      if (!active) return;
       const interests = readIssueInterestsForSetup();
       const preferences = readLocalNotificationPreferences();
       const enabledCount = [preferences.voteReminders, preferences.districtAlerts, preferences.weeklyBrief].filter(Boolean).length;
@@ -597,14 +621,21 @@ function useSetupMetrics(members: Member[]) {
       setPartyAffiliation(profile.partyAffiliation ?? "");
     }
 
-    refreshSetupSignals();
-    void fetchAccountProfile().then(() => refreshSetupSignals());
+    async function hydrateSetupSignals() {
+      if (await hasActiveBrowserSession()) {
+        await Promise.all([fetchAccountProfile(), hydrateAccountLedgerFromAccount()]);
+      }
+      refreshSetupSignals();
+    }
+
+    void hydrateSetupSignals();
 
     window.addEventListener("storage", refreshSetupSignals);
     window.addEventListener(accountProfileChangedEvent, refreshSetupSignals);
     window.addEventListener(persistenceEvent, refreshSetupSignals);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshSetupSignals);
       window.removeEventListener(accountProfileChangedEvent, refreshSetupSignals);
       window.removeEventListener(persistenceEvent, refreshSetupSignals);
@@ -781,20 +812,23 @@ export function NotificationPreferencesEditor({ compact = false, dense = false }
   const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "weeklyBrief");
 
   useEffect(() => {
+    let active = true;
+
     function refreshPreferences() {
-      setPreferences(readLocalNotificationPreferences());
+      if (active) setPreferences(readLocalNotificationPreferences());
     }
 
-    refreshPreferences();
-    void fetchAccountProfile().then((profile) => {
-      if (!profile) return;
-      writeLocalNotificationPreferences(profile.notificationPreferences);
-      setPreferences(readLocalNotificationPreferences());
-    });
+    async function hydratePreferences() {
+      if (await hasActiveBrowserSession()) await fetchAccountProfile();
+      refreshPreferences();
+    }
+
+    void hydratePreferences();
     window.addEventListener("storage", refreshPreferences);
     window.addEventListener(accountProfileChangedEvent, refreshPreferences);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", refreshPreferences);
       window.removeEventListener(accountProfileChangedEvent, refreshPreferences);
     };
