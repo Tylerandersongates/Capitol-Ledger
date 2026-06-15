@@ -17,7 +17,7 @@ type TeamInviteEmailPayload = {
 
 type TeamInviteDelivery =
   | { delivered: false; mode: "disabled" | "manual_demo"; actionUrl?: string }
-  | { delivered: true; mode: "resend" | "webhook" };
+  | { delivered: true; mode: "resend" | "webhook"; actionUrl?: string };
 
 function appBaseUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -37,6 +37,10 @@ function sender() {
 
 function shouldExposeManualLinks() {
   return deliveryMode() === "manual_demo" || process.env.NODE_ENV !== "production";
+}
+
+function shouldExposeQaInviteLink(email: string) {
+  return email.trim().toLowerCase().endsWith(".test");
 }
 
 export function buildTeamInviteUrl(token: string) {
@@ -112,7 +116,11 @@ export async function deliverTeamInviteEmail({
       to: payload.to
     });
 
-    return { delivered: true, mode: "resend" };
+    return {
+      actionUrl: shouldExposeQaInviteLink(payload.to) ? payload.actionUrl : undefined,
+      delivered: true,
+      mode: "resend"
+    };
   }
 
   if (mode === "webhook") {
@@ -133,7 +141,11 @@ export async function deliverTeamInviteEmail({
       throw new Error(`Team invite webhook failed with status ${response.status}.`);
     }
 
-    return { delivered: true, mode: "webhook" };
+    return {
+      actionUrl: shouldExposeQaInviteLink(payload.to) ? payload.actionUrl : undefined,
+      delivered: true,
+      mode: "webhook"
+    };
   }
 
   if (mode === "manual_demo") {
