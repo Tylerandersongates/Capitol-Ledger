@@ -15,6 +15,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "production-auth:check": "node scripts/check-production-auth.mjs",
     "production-auth:qa": "node scripts/qa-production-auth.mjs",
+    "team:qa": "node scripts/qa-team-flow.mjs",
     "auth-email:check": "node scripts/check-auth-email-delivery.mjs",
     "weekly-brief:check": "node scripts/check-weekly-brief-delivery.mjs",
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
