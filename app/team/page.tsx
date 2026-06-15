@@ -105,8 +105,8 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
     : memberWorkspaceResult;
   if (!teamWorkspaceResult) return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
   const teamWorkspace = teamWorkspaceResult.workspace;
-  const viewerMembership = "membership" in teamWorkspaceResult ? teamWorkspaceResult.membership : undefined;
   const canManageInvites = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
+  const viewerMembership: TeamWorkspaceMember | undefined = canManageInvites ? undefined : memberWorkspaceResult?.membership;
   const openSeats = teamWorkspace.openSeats;
   const watchlistBills = buildWatchlistBills(accountLedger.follows);
   const alertQueue = buildAlertQueue(accountLedger);
