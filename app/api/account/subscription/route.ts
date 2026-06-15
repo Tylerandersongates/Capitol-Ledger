@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: "Paid subscriptions must be changed through checkout.",
+        error: "Paid subscriptions must be changed through checkout or billing management.",
         mode: databaseSubscription ? "database" : "account",
         user,
         subscription

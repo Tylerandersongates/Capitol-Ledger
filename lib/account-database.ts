@@ -494,6 +494,34 @@ export async function readSubscriptionFromDatabase(userId: string): Promise<Acco
   });
 }
 
+export async function findSubscriptionUserIdByProvider({
+  customerId,
+  subscriptionId
+}: {
+  customerId?: string | null;
+  subscriptionId?: string | null;
+}): Promise<string | null> {
+  if (!canUseDatabasePersistence() || (!customerId && !subscriptionId)) return null;
+
+  return withDatabaseFallback("findSubscriptionUserIdByProvider", null, async () => {
+    if (!(await ensureAccountSubscriptionSchema())) return null;
+
+    const prisma = getPrisma();
+    const customer = customerId ?? "";
+    const subscription = subscriptionId ?? "";
+    const records = await prisma.$queryRaw<Array<{ userId: string }>>`
+      SELECT "userId"
+      FROM "AccountSubscription"
+      WHERE (${customer} <> '' AND "providerCustomerId" = ${customer})
+         OR (${subscription} <> '' AND "providerSubscriptionId" = ${subscription})
+      ORDER BY "updatedAt" DESC
+      LIMIT 1
+    `;
+
+    return records[0]?.userId ?? null;
+  });
+}
+
 export async function writeSubscriptionToDatabase(userId: string, value: Partial<AccountSubscriptionSnapshot>): Promise<AccountSubscriptionSnapshot | null> {
   if (!canUseDatabasePersistence()) return null;
 

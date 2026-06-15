@@ -17,6 +17,7 @@ const storageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
+const billingPortalEndpoint = "/api/account/subscription/portal";
 let accountHydrationPromise: Promise<AccountSubscriptionSnapshot | null> | null = null;
 
 const teamWorkspaceSignals = [
@@ -202,6 +203,29 @@ function applySubscriptionSnapshot(subscription: AccountSubscriptionSnapshot) {
   return normalized;
 }
 
+function shouldUseBillingPortal(subscription: AccountSubscriptionSnapshot) {
+  return subscription.provider === "stripe" && subscription.plan !== "free";
+}
+
+async function openBillingPortal() {
+  const returnPath = `${window.location.pathname}${window.location.search}`;
+  const response = await fetch(billingPortalEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ returnPath })
+  });
+
+  if (!response.ok) return false;
+
+  const data = (await response.json().catch(() => null)) as { portalUrl?: string } | null;
+  if (!data?.portalUrl) return false;
+
+  window.location.assign(data.portalUrl);
+  return true;
+}
+
 export function BillingCycleToggle() {
   const [subscription, updateSubscription] = useSubscriptionState();
 
@@ -263,9 +287,10 @@ export function PlanActionButton({
   const [subscription, updateSubscription] = useSubscriptionState();
   const [pending, setPending] = useState(false);
   const active = subscription.plan === plan;
+  const billingPortalManaged = shouldUseBillingPortal(subscription);
 
   async function handlePlanAction() {
-    if (active || pending) return;
+    if (pending || (active && !billingPortalManaged)) return;
     setPending(true);
 
     const fallbackSubscription = normalizeSubscription({
@@ -276,6 +301,11 @@ export function PlanActionButton({
     });
 
     try {
+      if (billingPortalManaged) {
+        await openBillingPortal();
+        return;
+      }
+
       const response = await fetch(checkoutEndpoint, {
         method: "POST",
         headers: {
@@ -317,9 +347,19 @@ export function PlanActionButton({
     }
   }
 
+  const actionLabel = billingPortalManaged
+    ? active
+      ? "Manage Billing"
+      : plan === "free"
+        ? "Downgrade in Billing"
+        : "Change in Billing"
+    : active
+      ? "Current Plan"
+      : inactiveLabel;
+
   return (
     <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
-      {pending ? "Preparing..." : active ? "Current Plan" : inactiveLabel}
+      {pending ? "Preparing..." : actionLabel}
     </button>
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setAccountSubscription } from "@/lib/account-subscription";
-import { writeSubscriptionToDatabase } from "@/lib/account-database";
-import { getStripeWebhookSecret, mapStripeStatus, parseStripeWebhookEvent, verifyStripeWebhookSignature } from "@/lib/billing/stripe";
+import { findSubscriptionUserIdByProvider, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getStripeWebhookSecret, parseStripeWebhookEvent, readStripeSubscriptionDetails, verifyStripeWebhookSignature } from "@/lib/billing/stripe";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
@@ -35,9 +35,20 @@ export async function POST(request: NextRequest) {
   const event = parseStripeWebhookEvent(payload);
   const object = event.data?.object;
   const metadata = object?.metadata ?? {};
-  const userId = metadata.userId ?? object?.client_reference_id;
 
-  if (!object || !userId) {
+  if (!object) {
+    return NextResponse.json({ received: true, ignored: true });
+  }
+
+  const userId =
+    metadata.userId ??
+    object.client_reference_id ??
+    (await findSubscriptionUserIdByProvider({
+      customerId: object.customer,
+      subscriptionId: object.id ?? object.subscription
+    }).catch(() => null));
+
+  if (!userId) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
@@ -61,18 +72,20 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    const plan = readPlan(metadata.plan);
-    const cycle = readCycle(metadata.cycle);
-    const seatCount = readSeatCount(plan, metadata.seatCount);
+    const details = readStripeSubscriptionDetails({
+      items: object.items,
+      metadata,
+      status: event.type === "customer.subscription.deleted" ? "canceled" : object.status
+    });
     const nextSubscription = {
-      cycle,
-      plan,
+      cycle: details.cycle,
+      plan: details.plan,
       provider: "stripe" as const,
       providerCustomerId: object.customer,
-      providerEntitlementId: `capitol-ledger-${plan}`,
+      providerEntitlementId: `capitol-ledger-${details.plan}`,
       providerSubscriptionId: object.id,
-      seatCount,
-      status: event.type === "customer.subscription.deleted" ? ("canceled" as const) : mapStripeStatus(object.status)
+      seatCount: details.seatCount,
+      status: details.status
     };
 
     await writeSubscriptionToDatabase(userId, nextSubscription).catch(() => null);

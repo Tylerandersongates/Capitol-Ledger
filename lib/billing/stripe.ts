@@ -25,6 +25,22 @@ type CheckoutResult =
       sessionId: string;
     };
 
+type BillingPortalInput = {
+  customerId?: string;
+  returnUrl: string;
+};
+
+type BillingPortalResult =
+  | {
+      configured: false;
+      missing: string[];
+    }
+  | {
+      configured: true;
+      portalUrl: string;
+      sessionId: string;
+    };
+
 type StripeCheckoutSession = {
   customer?: string;
   id: string;
@@ -32,11 +48,27 @@ type StripeCheckoutSession = {
   url?: string;
 };
 
+type StripePortalSession = {
+  id: string;
+  url?: string;
+};
+
+type StripeSubscriptionItem = {
+  price?: {
+    id?: string;
+  };
+  quantity?: number;
+};
+
 type StripeWebhookEvent = {
   data?: {
     object?: StripeCheckoutSession & {
       client_reference_id?: string;
       customer?: string;
+      id?: string;
+      items?: {
+        data?: StripeSubscriptionItem[];
+      };
       metadata?: Record<string, string | undefined>;
       status?: string;
       subscription?: string;
@@ -64,6 +96,18 @@ function getStripeSecretKey() {
 
 function getPriceId(plan: Exclude<SubscriptionPlanId, "free">, cycle: BillingCycle) {
   return process.env[priceEnvByPlanCycle[plan][cycle]];
+}
+
+function getPlanCycleForPrice(priceId?: string): { cycle: BillingCycle; plan: Exclude<SubscriptionPlanId, "free"> } | null {
+  if (!priceId) return null;
+
+  for (const plan of Object.keys(priceEnvByPlanCycle) as Array<Exclude<SubscriptionPlanId, "free">>) {
+    for (const cycle of Object.keys(priceEnvByPlanCycle[plan]) as BillingCycle[]) {
+      if (getPriceId(plan, cycle) === priceId) return { cycle, plan };
+    }
+  }
+
+  return null;
 }
 
 function appendParam(params: URLSearchParams, key: string, value?: string | number) {
@@ -127,6 +171,45 @@ export async function createStripeCheckoutSession(input: CheckoutInput): Promise
   };
 }
 
+export async function createStripeBillingPortalSession(input: BillingPortalInput): Promise<BillingPortalResult> {
+  const secretKey = getStripeSecretKey();
+  const missing = [!secretKey ? "STRIPE_SECRET_KEY" : "", !input.customerId ? "Stripe customer ID" : ""].filter(Boolean);
+
+  if (!secretKey || !input.customerId) {
+    return {
+      configured: false,
+      missing
+    };
+  }
+
+  const params = new URLSearchParams();
+  appendParam(params, "customer", input.customerId);
+  appendParam(params, "return_url", input.returnUrl);
+
+  const response = await fetch(`${STRIPE_API_BASE}/billing_portal/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "Stripe billing portal failed.");
+    throw new Error(message);
+  }
+
+  const session = (await response.json()) as StripePortalSession;
+  if (!session.url) throw new Error("Stripe did not return a billing portal URL.");
+
+  return {
+    configured: true,
+    portalUrl: session.url,
+    sessionId: session.id
+  };
+}
+
 function parseStripeSignature(signature: string) {
   return signature.split(",").reduce(
     (values, part) => {
@@ -162,6 +245,29 @@ export function mapStripeStatus(status?: string): SubscriptionStatus {
   if (status === "past_due" || status === "unpaid") return "past_due";
   if (status === "canceled" || status === "incomplete_expired") return "canceled";
   return "active";
+}
+
+export function readStripeSubscriptionDetails(object?: {
+  items?: {
+    data?: StripeSubscriptionItem[];
+  };
+  metadata?: Record<string, string | undefined>;
+  status?: string;
+}) {
+  const metadata = object?.metadata ?? {};
+  const item = object?.items?.data?.[0];
+  const matchedPrice = getPlanCycleForPrice(item?.price?.id);
+  const status = mapStripeStatus(object?.status);
+  const plan = matchedPrice?.plan ?? (metadata.plan === "pro" || metadata.plan === "team" ? metadata.plan : "free");
+  const activePlan = status === "canceled" ? "free" : plan;
+  const cycle = matchedPrice?.cycle ?? (metadata.cycle === "annual" ? "annual" : "monthly");
+
+  return {
+    cycle,
+    plan: activePlan,
+    seatCount: activePlan === "team" ? normalizeTeamSeatCount(item?.quantity ?? metadata.seatCount) : undefined,
+    status
+  };
 }
 
 export function parseStripeWebhookEvent(payload: string) {
