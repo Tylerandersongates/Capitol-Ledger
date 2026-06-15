@@ -140,7 +140,7 @@ function InviteCard({
             <div className={premiumEyebrowClass}>Seat Rules</div>
             <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Paid capacity applies</h2>
             <p className="mt-2 text-[13px] leading-snug text-white/54">
-              Acceptance checks the workspace owner's current Team subscription before assigning this seat.
+              Acceptance checks current Team billing for the workspace owner before assigning this seat.
             </p>
           </div>
           <span className={premiumIconTileClass}>
