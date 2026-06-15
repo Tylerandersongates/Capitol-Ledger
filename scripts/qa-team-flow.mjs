@@ -3,6 +3,7 @@ const shouldCreateAccounts = process.env.TEAM_QA_CREATE_ACCOUNTS === "true";
 const shouldCheckCheckout = process.env.TEAM_QA_CHECKOUT === "true";
 const requireActiveTeam = process.env.TEAM_QA_REQUIRE_ACTIVE_TEAM === "true";
 const requireInviteAcceptance = process.env.TEAM_QA_ACCEPT_INVITE === "true";
+const shouldPrintLinks = process.env.TEAM_QA_PRINT_LINKS === "true";
 const timestamp = Date.now();
 
 const results = [];
@@ -57,6 +58,10 @@ function warn(name, detail = "") {
 
 function skip(name, detail = "") {
   pass(name, `skipped${detail ? `; ${detail}` : ""}`);
+}
+
+function info(name, detail = "") {
+  console.log(`INFO ${name}${detail ? ` - ${detail}` : ""}`);
 }
 
 function formatStatus(response, data) {
@@ -153,6 +158,8 @@ async function ensureAccount(kind) {
     return null;
   }
 
+  if (shouldCreateAccounts) info(`${kind} QA email`, email);
+
   if (shouldCreateAccounts) {
     const created = await createAccount(kind, jar, email, password);
     if (created.ok) return { email, jar, password };
@@ -229,6 +236,7 @@ async function runCheckoutCheck(owner) {
 
   if (result.data?.checkoutMode === "stripe" && result.data.checkoutUrl) {
     pass("Team checkout uses Stripe", "checkout URL returned");
+    if (shouldPrintLinks) info("Team checkout URL", result.data.checkoutUrl);
     return result.data.checkoutUrl;
   }
 
@@ -277,6 +285,7 @@ async function runInviteCheck(owner, invitee) {
     pass("Team invite delivery is configured", delivery.mode ?? "sent");
   } else if (delivery?.inviteLink) {
     pass("Team invite manual link is available", delivery.mode ?? "manual");
+    if (shouldPrintLinks) info("Team invite link", delivery.inviteLink);
   } else {
     const detail = delivery?.error || "no manual link returned";
     if (requireInviteAcceptance) fail("Team invite link is available for acceptance QA", detail);
