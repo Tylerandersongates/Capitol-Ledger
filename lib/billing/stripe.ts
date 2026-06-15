@@ -110,6 +110,11 @@ function getPlanCycleForPrice(priceId?: string): { cycle: BillingCycle; plan: Ex
   return null;
 }
 
+function readMetadataPlan(value?: string): SubscriptionPlanId {
+  if (value === "pro" || value === "team") return value;
+  return "free";
+}
+
 function appendParam(params: URLSearchParams, key: string, value?: string | number) {
   if (value === undefined || value === "") return;
   params.append(key, String(value));
@@ -253,12 +258,12 @@ export function readStripeSubscriptionDetails(object?: {
   };
   metadata?: Record<string, string | undefined>;
   status?: string;
-}) {
+}): { cycle: BillingCycle; plan: SubscriptionPlanId; seatCount?: number; status: SubscriptionStatus } {
   const metadata = object?.metadata ?? {};
   const item = object?.items?.data?.[0];
   const matchedPrice = getPlanCycleForPrice(item?.price?.id);
   const status = mapStripeStatus(object?.status);
-  const plan = matchedPrice?.plan ?? (metadata.plan === "pro" || metadata.plan === "team" ? metadata.plan : "free");
+  const plan = matchedPrice?.plan ?? readMetadataPlan(metadata.plan);
   const activePlan = status === "canceled" ? "free" : plan;
   const cycle = matchedPrice?.cycle ?? (metadata.cycle === "annual" ? "annual" : "monthly");
 
