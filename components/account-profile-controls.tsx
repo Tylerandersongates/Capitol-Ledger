@@ -308,9 +308,10 @@ function useDistrictProfile() {
         setDistrict(
           profile
             ? {
-                districtCode: profile.districtCode,
-                districtLabel: profile.districtLabel,
-                districtState: profile.districtState
+                ...defaultDistrictProfile,
+                districtCode: profile.districtCode ?? defaultDistrictProfile.districtCode,
+                districtLabel: profile.districtLabel ?? defaultDistrictProfile.districtLabel,
+                districtState: profile.districtState ?? defaultDistrictProfile.districtState
               }
             : defaultDistrictProfile
         );
