@@ -47,7 +47,7 @@ const emptySummary: FeedbackSummary = {
   untriaged: 0
 };
 
-export function BetaReadinessSnapshot({ roundLabel = "Round 1", roundWindow = "June 2026" }: BetaReadinessSnapshotProps) {
+export function BetaReadinessSnapshot({ roundLabel = "Round 3", roundWindow = "June 2026" }: BetaReadinessSnapshotProps) {
   const [mode, setMode] = useState<"database" | "demo" | "loading">("loading");
   const [summary, setSummary] = useState<FeedbackSummary>(emptySummary);
   const [statusText, setStatusText] = useState("Checking beta queue...");

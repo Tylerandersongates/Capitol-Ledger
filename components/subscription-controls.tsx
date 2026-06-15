@@ -364,37 +364,6 @@ export function PlanActionButton({
   );
 }
 
-export function AccountSubscriptionSummary() {
-  const [subscription] = useSubscriptionState();
-  const plan = subscriptionPlans[subscription.plan];
-  const price = subscription.cycle === "annual" ? plan.pricing.annual : plan.pricing.monthly;
-  const cycleLabel = subscription.cycle === "annual" ? "annual" : "monthly";
-  const providerLabel = subscription.provider === "demo" ? "Demo billing record" : `${subscription.provider} billing record`;
-  const seatCount = subscription.plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : undefined;
-
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Current Plan</div>
-          <h2 className="mt-2 text-[21px] font-medium leading-none">{plan.name}</h2>
-          <p className="mt-3 text-[15px] text-white/58">
-            {price} {cycleLabel} - {plan.description}
-            {seatCount ? ` - ${seatCount} seats` : ""}
-          </p>
-          <div className="mt-3 inline-flex rounded-full border border-[#43ed74]/28 bg-[#43ed74]/10 px-3 py-1 text-[12px] font-medium text-[#43ed74]">
-            {providerLabel}
-          </div>
-        </div>
-        <Crown className="h-8 w-8 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-      </div>
-      <Link href="/upgrade" className="mt-5 flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
-        Manage Subscription
-      </Link>
-    </>
-  );
-}
-
 export function SubscriptionBadge() {
   const [subscription] = useSubscriptionState();
   const planName = subscriptionPlans[subscription.plan].name;
