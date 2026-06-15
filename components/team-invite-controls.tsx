@@ -17,6 +17,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
   const [role, setRole] = useState<InviteRole>("analyst");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [pending, setPending] = useState(false);
   const rosterRows = useMemo(() => [...workspace.members, ...workspace.invites], [workspace.invites, workspace.members]);
   const inviteDisabled = pending || workspace.openSeats <= 0 || !email.trim();
@@ -27,6 +28,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
     setPending(true);
     setMessage("");
     setError("");
+    setInviteLink("");
 
     try {
       const response = await fetch("/api/team/invites", {
@@ -39,7 +41,16 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           role
         })
       });
-      const data = (await response.json().catch(() => null)) as { error?: string; workspace?: TeamWorkspaceSnapshot } | null;
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        inviteDelivery?: {
+          error?: string;
+          inviteLink?: string;
+          mode?: string;
+          sent?: boolean;
+        };
+        workspace?: TeamWorkspaceSnapshot;
+      } | null;
 
       if (!response.ok || !data?.workspace) {
         setError(data?.error ?? "Unable to create the invite.");
@@ -48,7 +59,16 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
 
       setWorkspace(data.workspace);
       setEmail("");
-      setMessage("Pending invite saved.");
+      setInviteLink(data.inviteDelivery?.inviteLink ?? "");
+      setMessage(
+        data.inviteDelivery?.sent
+          ? "Invite sent."
+          : data.inviteDelivery?.inviteLink
+            ? "Invite link prepared."
+            : data.inviteDelivery?.error
+              ? "Seat reserved, but invite delivery needs attention."
+              : "Seat reserved. Email delivery is not configured."
+      );
     } catch {
       setError("Unable to reach the invite service.");
     } finally {
@@ -140,6 +160,14 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
         </button>
 
         {message ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">{message}</div> : null}
+        {inviteLink ? (
+          <a
+            href={inviteLink}
+            className="mt-3 block truncate rounded-xl border border-[#ffb12b]/20 bg-[#ffb12b]/10 px-3 py-2 text-[12px] font-semibold text-[#ffb12b]"
+          >
+            {inviteLink}
+          </a>
+        ) : null}
         {error ? <div className="mt-3 rounded-xl border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 px-3 py-2 text-[12px] font-semibold text-[#ff9b9b]">{error}</div> : null}
       </div>
     </div>

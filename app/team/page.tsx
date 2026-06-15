@@ -26,7 +26,7 @@ import { getAccountSubscription } from "@/lib/account-subscription";
 import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
 import { requireAccountSession } from "@/lib/route-guards";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
-import { readOrCreateTeamWorkspaceForOwner } from "@/lib/team-workspace";
+import { readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord, TeamWorkspaceInvite, TeamWorkspaceMember, TeamWorkspaceRole } from "@/types/capitol";
 
@@ -79,22 +79,34 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
   const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
   const teamCheckoutReturn = readSearchParam(searchParams, "checkout") === "success" && readSearchParam(searchParams, "plan") === "team";
+  const ownerAccess = hasActiveTeamAccess(subscription);
+  const memberWorkspaceResult = ownerAccess
+    ? null
+    : await readTeamWorkspaceForMember({
+        email: session.user.email,
+        userId: accountUserId
+      }).catch(() => null);
 
-  if (!hasActiveTeamAccess(subscription)) {
+  if (!ownerAccess && !memberWorkspaceResult) {
     return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
   }
 
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
   const ownerName = session.user.name?.trim() || session.user.email;
   const workspaceName = ownerName ? `${ownerName}'s team` : "Team workspace";
-  const teamWorkspaceResult = await readOrCreateTeamWorkspaceForOwner({
-    email: session.user.email,
-    name: session.user.name,
-    seatCount,
-    userId: accountUserId,
-    workspaceName
-  });
+  const teamWorkspaceResult = ownerAccess
+    ? await readOrCreateTeamWorkspaceForOwner({
+        email: session.user.email,
+        name: session.user.name,
+        seatCount,
+        userId: accountUserId,
+        workspaceName
+      })
+    : memberWorkspaceResult;
+  if (!teamWorkspaceResult) return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
   const teamWorkspace = teamWorkspaceResult.workspace;
+  const viewerMembership = "membership" in teamWorkspaceResult ? teamWorkspaceResult.membership : undefined;
+  const canManageInvites = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
   const openSeats = teamWorkspace.openSeats;
   const watchlistBills = buildWatchlistBills(accountLedger.follows);
   const alertQueue = buildAlertQueue(accountLedger);
@@ -106,18 +118,24 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   ];
   const setupSteps = [
     {
-      description: `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is connected to this workspace.`,
+      description: canManageInvites
+        ? `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is connected to this workspace.`
+        : "The workspace owner has active Team billing for this paid seat.",
       label: "Billing active",
-      value: formatStatusLabel(subscription.status)
+      value: canManageInvites ? formatStatusLabel(subscription.status) : "Active"
     },
     {
-      description: `${ownerName || "The signed-in account"} owns billing, workspace setup, and invite rollout.`,
-      label: "Owner seat assigned",
-      value: "Ready"
+      description: canManageInvites
+        ? `${ownerName || "The signed-in account"} owns billing, workspace setup, and invite rollout.`
+        : `${session.user.email} is assigned as ${formatRoleLabel(viewerMembership?.role)}.`,
+      label: canManageInvites ? "Owner seat assigned" : "Member seat assigned",
+      value: canManageInvites ? "Ready" : "Accepted"
     },
     {
-      description: `${openSeats} open paid seat${openSeats === 1 ? "" : "s"} can be reserved with pending invite records.`,
-      label: "Invite capacity",
+      description: canManageInvites
+        ? `${openSeats} open paid seat${openSeats === 1 ? "" : "s"} can be reserved with pending invite records.`
+        : `${teamWorkspace.occupiedSeats} of ${teamWorkspace.seatCount} paid seats are assigned or pending in this workspace.`,
+      label: canManageInvites ? "Invite capacity" : "Workspace capacity",
       value: `${teamWorkspace.seatCount} seats`
     }
   ];
@@ -147,8 +165,9 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               <div className={premiumEyebrowClass}>Civic Team Workspace</div>
               <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{teamWorkspace.name}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                Your paid Team workspace is active. Seat quantity comes from checkout, and pending invites now reserve open seats in
-                the workspace.
+                {canManageInvites
+                  ? "Your paid Team workspace is active. Seat quantity comes from checkout, and pending invites now reserve open seats in the workspace."
+                  : "Your Team seat is active. Shared workspace records, roles, and alert candidates are available through the owner-paid plan."}
               </p>
             </div>
           </div>
@@ -163,15 +182,19 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[13px] font-semibold text-[#74f49a]">
                 <CheckCircle2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                Team subscription active
+                {canManageInvites ? "Team subscription active" : "Team seat active"}
               </div>
               <div className="mt-1 text-[12px] leading-snug text-white/52">
-                {formatProviderLabel(subscription.provider)} record, {formatStatusLabel(subscription.status).toLowerCase()} status, {teamWorkspace.seatCount} paid seats.
+                {canManageInvites
+                  ? `${formatProviderLabel(subscription.provider)} record, ${formatStatusLabel(subscription.status).toLowerCase()} status, ${teamWorkspace.seatCount} paid seats.`
+                  : `${formatRoleLabel(viewerMembership?.role)} access, ${teamWorkspace.occupiedSeats}/${teamWorkspace.seatCount} seats assigned.`}
               </div>
             </div>
-            <Link href="/upgrade" className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
-              Manage
-            </Link>
+            {canManageInvites ? (
+              <Link href="/upgrade" className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
+                Manage
+              </Link>
+            ) : null}
           </div>
         </MobileCard>
 
@@ -282,15 +305,30 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
           </div>
         </MobileCard>
 
-        <MobileCard variant="rust" className="px-5 py-5">
-          <SectionHeader
-            icon={<UserPlus />}
-            eyebrow="Invite Teammates"
-            title="Reserve paid seats"
-            description={`Pending invites reserve open seats from the ${teamWorkspace.seatCount}-seat Team plan.`}
-          />
-          <TeamInviteControls initialWorkspace={teamWorkspace} />
-        </MobileCard>
+        {canManageInvites ? (
+          <MobileCard variant="rust" className="px-5 py-5">
+            <SectionHeader
+              icon={<UserPlus />}
+              eyebrow="Invite Teammates"
+              title="Reserve paid seats"
+              description={`Pending invites reserve open seats from the ${teamWorkspace.seatCount}-seat Team plan.`}
+            />
+            <TeamInviteControls initialWorkspace={teamWorkspace} />
+          </MobileCard>
+        ) : (
+          <MobileCard variant="rust" className="px-5 py-5">
+            <SectionHeader
+              icon={<CheckCircle2 />}
+              eyebrow="Member Access"
+              title="Your seat is assigned"
+              description="The workspace owner manages billing and invites. Your accepted seat counts against paid Team capacity."
+            />
+            <div className="mt-5 rounded-2xl border border-[#43ed74]/24 bg-[#43ed74]/8 px-4 py-3">
+              <div className="text-[14px] font-semibold text-white">{session.user.email}</div>
+              <div className="mt-1 text-[12px] leading-snug text-white/48">{formatRoleLabel(viewerMembership?.role)} access in {teamWorkspace.name}.</div>
+            </div>
+          </MobileCard>
+        )}
       </main>
     </TeamShell>
   );
@@ -500,6 +538,12 @@ function formatProviderLabel(provider: AccountSubscriptionSnapshot["provider"]) 
   if (provider === "revenuecat") return "RevenueCat";
   if (provider === "app-store") return "App Store";
   return "Demo";
+}
+
+function formatRoleLabel(role?: TeamWorkspaceRole) {
+  if (role === "owner") return "Owner";
+  if (role === "viewer") return "Viewer";
+  return "Analyst";
 }
 
 function buildRoleMetrics(members: TeamWorkspaceMember[], invites: TeamWorkspaceInvite[]): RoleMetric[] {

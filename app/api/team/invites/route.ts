@@ -4,6 +4,7 @@ import { getAccountSubscription } from "@/lib/account-subscription";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import { deliverTeamInviteEmail } from "@/lib/team-invite-email";
 import { createTeamWorkspaceInvite, readOrCreateTeamWorkspaceForOwner, TeamWorkspaceError } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
@@ -92,8 +93,34 @@ export async function POST(request: NextRequest) {
       seatCount,
       userId: account.accountUserId
     });
+    const inviteDelivery = await deliverTeamInviteEmail({
+      invitedBy: {
+        email: account.session.user.email,
+        name: account.session.user.name
+      },
+      role: result.invite.role,
+      to: result.invite.email,
+      token: result.invite.token,
+      workspaceName: result.workspace.name
+    }).catch((error: unknown) => ({
+      delivered: false as const,
+      error: error instanceof Error ? error.message : "Team invite delivery failed.",
+      mode: "disabled" as const
+    }));
 
     return NextResponse.json({
+      inviteDelivery:
+        "actionUrl" in inviteDelivery
+          ? {
+              inviteLink: inviteDelivery.actionUrl,
+              mode: inviteDelivery.mode,
+              sent: inviteDelivery.delivered
+            }
+          : {
+              error: "error" in inviteDelivery ? inviteDelivery.error : undefined,
+              mode: inviteDelivery.mode,
+              sent: inviteDelivery.delivered
+            },
       mode: result.mode,
       subscriptionMode: account.mode,
       workspace: result.workspace

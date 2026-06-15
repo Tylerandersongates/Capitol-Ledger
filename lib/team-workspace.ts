@@ -1,7 +1,9 @@
-import { createHash, randomUUID } from "crypto";
+import { createHash, randomBytes, randomUUID } from "crypto";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
+import { getAccountSubscription } from "@/lib/account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type {
+  AccountSubscriptionSnapshot,
   TeamInviteStatus,
   TeamMemberStatus,
   TeamWorkspaceInvite,
@@ -15,6 +17,37 @@ type TeamWorkspaceMode = "database" | "memory";
 export type TeamWorkspaceResult = {
   mode: TeamWorkspaceMode;
   workspace: TeamWorkspaceSnapshot;
+};
+
+export type TeamWorkspaceInviteResult = TeamWorkspaceResult & {
+  invite: {
+    email: string;
+    expiresAt: string;
+    role: Exclude<TeamWorkspaceRole, "owner">;
+    token: string;
+  };
+};
+
+export type TeamWorkspaceAcceptancePreview = {
+  invite: TeamWorkspaceInvite;
+  mode: TeamWorkspaceMode;
+  owner: {
+    email?: string;
+    name?: string;
+  };
+  workspace: {
+    id: string;
+    name: string;
+    ownerUserId: string;
+  };
+};
+
+export type TeamWorkspaceAcceptanceResult = TeamWorkspaceResult & {
+  membership: TeamWorkspaceMember;
+};
+
+export type TeamWorkspaceMemberAccessResult = TeamWorkspaceResult & {
+  membership: TeamWorkspaceMember;
 };
 
 type TeamWorkspaceOwnerInput = {
@@ -59,8 +92,41 @@ type DbTeamInvite = {
   updatedAt: Date;
 };
 
+type DbTeamInviteAcceptance = DbTeamInvite & {
+  ownerEmail: string | null;
+  ownerName: string | null;
+  ownerUserId: string;
+  workspaceCreatedAt: Date;
+  workspaceId: string;
+  workspaceName: string;
+  workspaceUpdatedAt: Date;
+};
+
+type DbOwnerSubscription = {
+  plan: string;
+  provider: string;
+  seatCount: number | null;
+  status: string;
+};
+
+type DbMemberAccess = DbTeamMember & {
+  ownerUserId: string;
+  workspaceCreatedAt: Date;
+  workspaceId: string;
+  workspaceName: string;
+  workspaceUpdatedAt: Date;
+};
+
 type CountRecord = {
   count: bigint | number | string;
+};
+
+type RawQueryClient = {
+  $queryRaw: <T = unknown>(strings: TemplateStringsArray, ...values: unknown[]) => Promise<T>;
+};
+
+type MemoryTeamWorkspaceInvite = TeamWorkspaceInvite & {
+  tokenHash?: string;
 };
 
 type MemoryTeamWorkspace = {
@@ -68,7 +134,7 @@ type MemoryTeamWorkspace = {
   ownerUserId: string;
   name: string;
   members: TeamWorkspaceMember[];
-  invites: TeamWorkspaceInvite[];
+  invites: MemoryTeamWorkspaceInvite[];
   createdAt: string;
   updatedAt: string;
 };
@@ -159,10 +225,33 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function newInviteToken() {
+  return randomBytes(32).toString("base64url");
+}
+
 function inviteExpiresAt() {
   const date = new Date();
   date.setDate(date.getDate() + 30);
   return date;
+}
+
+function hasActiveTeamAccess(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
+  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+}
+
+function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined, ownerUserId: string) {
+  const fallback = getAccountSubscription(ownerUserId);
+
+  if (!record) return fallback;
+
+  return {
+    ...fallback,
+    plan: record.plan === "team" || record.plan === "pro" ? record.plan : "free",
+    provider:
+      record.provider === "stripe" || record.provider === "revenuecat" || record.provider === "app-store" ? record.provider : "demo",
+    seatCount: record.seatCount ?? undefined,
+    status: record.status === "trialing" || record.status === "past_due" || record.status === "canceled" ? record.status : "active"
+  } satisfies AccountSubscriptionSnapshot;
 }
 
 function sortMembers(members: TeamWorkspaceMember[]) {
@@ -409,6 +498,22 @@ async function readWorkspaceSnapshotFromDatabase(workspace: DbTeamWorkspace, sea
   });
 }
 
+async function readOwnerTeamSeatCount(ownerUserId: string, client: RawQueryClient = getPrisma()) {
+  const records = await client.$queryRaw<DbOwnerSubscription[]>`
+    SELECT "plan", "provider", "seatCount", "status"
+    FROM "AccountSubscription"
+    WHERE "userId" = ${ownerUserId}
+    LIMIT 1
+  `;
+  const subscription = normalizeOwnerSubscription(records[0], ownerUserId);
+
+  if (!hasActiveTeamAccess(subscription)) {
+    throw new TeamWorkspaceError("The workspace owner needs an active Team subscription before this seat can be used.", 403);
+  }
+
+  return normalizeTeamSeatCount(subscription.seatCount);
+}
+
 async function readOrCreateDatabaseTeamWorkspace(input: TeamWorkspaceOwnerInput): Promise<TeamWorkspaceResult> {
   if (!(await ensureTeamWorkspaceSchema())) return readOrCreateMemoryTeamWorkspace(input);
 
@@ -466,10 +571,12 @@ export async function readOrCreateTeamWorkspaceForOwner(input: TeamWorkspaceOwne
   return readOrCreateDatabaseTeamWorkspace(input);
 }
 
-function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceResult {
-  const existingResult = readOrCreateMemoryTeamWorkspace(input);
+function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceInviteResult {
+  readOrCreateMemoryTeamWorkspace(input);
   const workspace = memoryWorkspaceStore.get(input.userId);
-  if (!workspace) return existingResult;
+  if (!workspace) {
+    throw new TeamWorkspaceError("Unable to prepare the Team workspace.", 500);
+  }
 
   const email = normalizeTeamInviteEmail(input.inviteEmail);
   if (!isValidTeamInviteEmail(email)) throw new TeamWorkspaceError("Enter a valid teammate email.", 400);
@@ -479,10 +586,14 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceR
 
   const now = new Date().toISOString();
   const role = normalizeTeamInviteRole(input.role);
+  const inviteToken = newInviteToken();
+  const expiresAt = inviteExpiresAt();
   const existingInvite = workspace.invites.find((invite) => invite.status === "pending" && invite.email === email && Date.parse(invite.expiresAt) > Date.now());
 
   if (existingInvite) {
     existingInvite.role = role;
+    existingInvite.tokenHash = tokenHash(inviteToken);
+    existingInvite.expiresAt = expiresAt.toISOString();
     existingInvite.updatedAt = now;
   } else {
     const current = snapshotFromParts({
@@ -497,7 +608,8 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceR
       email,
       role,
       status: "pending",
-      expiresAt: inviteExpiresAt().toISOString(),
+      tokenHash: tokenHash(inviteToken),
+      expiresAt: expiresAt.toISOString(),
       createdAt: now,
       updatedAt: now
     });
@@ -506,6 +618,12 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceR
   workspace.updatedAt = now;
 
   return {
+    invite: {
+      email,
+      expiresAt: expiresAt.toISOString(),
+      role,
+      token: inviteToken
+    },
     mode: "memory",
     workspace: snapshotFromParts({
       ...workspace,
@@ -514,7 +632,7 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceR
   };
 }
 
-async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promise<TeamWorkspaceResult> {
+async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promise<TeamWorkspaceInviteResult> {
   if (!(await ensureTeamWorkspaceSchema())) return createMemoryTeamInvite(input);
 
   const email = normalizeTeamInviteEmail(input.inviteEmail);
@@ -526,6 +644,8 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
   const prisma = getPrisma();
   const role = normalizeTeamInviteRole(input.role);
   const seatCount = normalizeTeamSeatCount(input.seatCount);
+  const inviteToken = newInviteToken();
+  const expiresAt = inviteExpiresAt();
 
   try {
     await prisma.$executeRaw`
@@ -556,7 +676,7 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
     if (existingInvites[0]) {
       await prisma.$executeRaw`
         UPDATE "TeamInvite"
-        SET "role" = ${role}, "updatedAt" = NOW()
+        SET "role" = ${role}, "tokenHash" = ${tokenHash(inviteToken)}, "expiresAt" = ${expiresAt}, "updatedAt" = NOW()
         WHERE "id" = ${existingInvites[0].id}
       `;
     } else {
@@ -571,10 +691,9 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
 
       if (occupiedSeats >= seatCount) throw new TeamWorkspaceError("All paid Team seats are already assigned or invited.", 409);
 
-      const inviteToken = randomUUID();
       await prisma.$executeRaw`
         INSERT INTO "TeamInvite" ("id", "workspaceId", "invitedByUserId", "email", "role", "status", "tokenHash", "expiresAt", "createdAt", "updatedAt")
-        VALUES (${randomUUID()}, ${workspaceResult.workspace.id}, ${input.userId}, ${email}, ${role}, 'pending', ${tokenHash(inviteToken)}, ${inviteExpiresAt()}, NOW(), NOW())
+        VALUES (${randomUUID()}, ${workspaceResult.workspace.id}, ${input.userId}, ${email}, ${role}, 'pending', ${tokenHash(inviteToken)}, ${expiresAt}, NOW(), NOW())
       `;
     }
 
@@ -588,6 +707,12 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
     if (!workspace) throw new TeamWorkspaceError("Unable to reload the Team workspace.", 500);
 
     return {
+      invite: {
+        email,
+        expiresAt: expiresAt.toISOString(),
+        role,
+        token: inviteToken
+      },
       mode: "database",
       workspace: await readWorkspaceSnapshotFromDatabase(workspace, seatCount)
     };
@@ -599,7 +724,447 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
   }
 }
 
-export async function createTeamWorkspaceInvite(input: TeamWorkspaceInviteInput): Promise<TeamWorkspaceResult> {
+export async function createTeamWorkspaceInvite(input: TeamWorkspaceInviteInput): Promise<TeamWorkspaceInviteResult> {
   if (!hasDatabaseUrl()) return createMemoryTeamInvite(input);
   return createDatabaseTeamInvite(input);
+}
+
+function invitePreviewFromRecord(record: DbTeamInviteAcceptance): TeamWorkspaceAcceptancePreview {
+  return {
+    invite: inviteFromDb(record),
+    mode: "database",
+    owner: {
+      email: record.ownerEmail ?? undefined,
+      name: record.ownerName ?? undefined
+    },
+    workspace: {
+      id: record.workspaceId,
+      name: record.workspaceName,
+      ownerUserId: record.ownerUserId
+    }
+  };
+}
+
+function assertPendingInvite(record: Pick<DbTeamInviteAcceptance, "expiresAt" | "id" | "status">) {
+  const status = normalizeInviteStatus(record.status);
+
+  if (status === "accepted") throw new TeamWorkspaceError("This Team invite has already been accepted.", 409);
+  if (status === "revoked") throw new TeamWorkspaceError("This Team invite has been revoked.", 410);
+  if (status === "expired" || record.expiresAt.getTime() <= Date.now()) {
+    throw new TeamWorkspaceError("This Team invite has expired.", 410);
+  }
+  if (status !== "pending") throw new TeamWorkspaceError("This Team invite is not available.", 410);
+}
+
+async function readDatabaseInviteAcceptance(token: string): Promise<TeamWorkspaceAcceptancePreview> {
+  if (!(await ensureTeamWorkspaceSchema())) return readMemoryInviteAcceptance(token);
+
+  const prisma = getPrisma();
+
+  try {
+    const records = await prisma.$queryRaw<DbTeamInviteAcceptance[]>`
+      SELECT
+        "TeamInvite"."id",
+        "TeamInvite"."workspaceId",
+        "TeamInvite"."email",
+        "TeamInvite"."role",
+        "TeamInvite"."status",
+        "TeamInvite"."expiresAt",
+        "TeamInvite"."createdAt",
+        "TeamInvite"."updatedAt",
+        "TeamWorkspace"."name" AS "workspaceName",
+        "TeamWorkspace"."ownerUserId",
+        "TeamWorkspace"."createdAt" AS "workspaceCreatedAt",
+        "TeamWorkspace"."updatedAt" AS "workspaceUpdatedAt",
+        "User"."email" AS "ownerEmail",
+        "User"."name" AS "ownerName"
+      FROM "TeamInvite"
+      JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamInvite"."workspaceId"
+      LEFT JOIN "User" ON "User"."id" = "TeamWorkspace"."ownerUserId"
+      WHERE "TeamInvite"."tokenHash" = ${tokenHash(token)}
+      LIMIT 1
+    `;
+    const record = records[0];
+    if (!record) throw new TeamWorkspaceError("This Team invite link is invalid.", 404);
+
+    if (normalizeInviteStatus(record.status) === "pending" && record.expiresAt.getTime() <= Date.now()) {
+      await prisma.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'expired', "updatedAt" = NOW()
+        WHERE "id" = ${record.id}
+      `;
+      record.status = "expired";
+    }
+
+    assertPendingInvite(record);
+
+    return invitePreviewFromRecord(record);
+  } catch (error) {
+    if (error instanceof TeamWorkspaceError) throw error;
+    if (!isDatabaseConnectionError(error)) throw error;
+    logTeamWorkspaceFallback("readDatabaseInviteAcceptance", error);
+    return readMemoryInviteAcceptance(token);
+  }
+}
+
+function readMemoryInviteAcceptance(token: string): TeamWorkspaceAcceptancePreview {
+  const hash = tokenHash(token);
+
+  for (const workspace of memoryWorkspaceStore.values()) {
+    const invite = workspace.invites.find((candidate) => candidate.tokenHash === hash);
+    if (!invite) continue;
+
+    if (invite.status === "pending" && Date.parse(invite.expiresAt) <= Date.now()) {
+      invite.status = "expired";
+      invite.updatedAt = new Date().toISOString();
+    }
+
+    const expiresAt = new Date(invite.expiresAt);
+    assertPendingInvite({
+      expiresAt,
+      id: invite.id,
+      status: invite.status
+    });
+
+    const owner = workspace.members.find((member) => member.role === "owner");
+
+    return {
+      invite,
+      mode: "memory",
+      owner: {
+        email: owner?.email,
+        name: owner?.displayName
+      },
+      workspace: {
+        id: workspace.id,
+        name: workspace.name,
+        ownerUserId: workspace.ownerUserId
+      }
+    };
+  }
+
+  throw new TeamWorkspaceError("This Team invite link is invalid.", 404);
+}
+
+export async function readTeamWorkspaceInviteAcceptance({ token }: { token: string }): Promise<TeamWorkspaceAcceptancePreview> {
+  if (!token?.trim()) throw new TeamWorkspaceError("Team invite token is missing.", 400);
+  if (!hasDatabaseUrl()) return readMemoryInviteAcceptance(token);
+  return readDatabaseInviteAcceptance(token);
+}
+
+function acceptMemoryInvite({
+  email,
+  name,
+  token,
+  userId
+}: {
+  email: string;
+  name?: string;
+  token: string;
+  userId: string;
+}): TeamWorkspaceAcceptanceResult {
+  const preview = readMemoryInviteAcceptance(token);
+  const workspace = memoryWorkspaceStore.get(preview.workspace.ownerUserId);
+  if (!workspace) throw new TeamWorkspaceError("This Team workspace is no longer available.", 404);
+
+  const invite = workspace.invites.find((candidate) => candidate.tokenHash === tokenHash(token));
+  if (!invite) throw new TeamWorkspaceError("This Team invite link is invalid.", 404);
+
+  const memberEmail = normalizeTeamInviteEmail(email);
+  if (memberEmail !== invite.email) {
+    throw new TeamWorkspaceError(`Sign in with ${invite.email} to accept this Team invite.`, 403);
+  }
+
+  const current = snapshotFromParts({
+    ...workspace,
+    seatCount: normalizeTeamSeatCount(undefined)
+  });
+  const existingMember = workspace.members.find((member) => member.email === memberEmail && member.status === "active");
+  const occupiedAfterAcceptance = existingMember ? current.occupiedSeats - 1 : current.occupiedSeats;
+  if (occupiedAfterAcceptance > current.seatCount) {
+    throw new TeamWorkspaceError("This workspace has no open paid Team seats. Ask the owner to add seats, then retry the invite.", 409);
+  }
+
+  const now = new Date().toISOString();
+  let membership = existingMember;
+  if (membership) {
+    membership.displayName = name?.trim() || membership.displayName;
+    membership.role = invite.role;
+    membership.status = "active";
+    membership.joinedAt = membership.joinedAt ?? now;
+    membership.updatedAt = now;
+  } else {
+    membership = {
+      id: randomUUID(),
+      email: memberEmail,
+      displayName: name?.trim() || undefined,
+      role: invite.role,
+      status: "active",
+      joinedAt: now,
+      createdAt: now,
+      updatedAt: now
+    };
+    workspace.members.push(membership);
+  }
+
+  invite.status = "accepted";
+  invite.updatedAt = now;
+  workspace.updatedAt = now;
+
+  return {
+    membership,
+    mode: "memory",
+    workspace: snapshotFromParts({
+      ...workspace,
+      seatCount: current.seatCount
+    })
+  };
+}
+
+async function acceptDatabaseInvite({
+  email,
+  name,
+  token,
+  userId
+}: {
+  email: string;
+  name?: string;
+  token: string;
+  userId: string;
+}): Promise<TeamWorkspaceAcceptanceResult> {
+  if (!(await ensureTeamWorkspaceSchema())) return acceptMemoryInvite({ email, name, token, userId });
+
+  const prisma = getPrisma();
+  const memberEmail = normalizeTeamInviteEmail(email);
+
+  if (!isValidTeamInviteEmail(memberEmail)) throw new TeamWorkspaceError("Sign in with the invited email address.", 403);
+
+  try {
+    let acceptedWorkspace: DbTeamWorkspace | null = null;
+    let acceptedSeatCount = normalizeTeamSeatCount(undefined);
+    let acceptedMembershipId = "";
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'expired', "updatedAt" = NOW()
+        WHERE "status" = 'pending' AND "expiresAt" <= NOW()
+      `;
+
+      const records = await transaction.$queryRaw<DbTeamInviteAcceptance[]>`
+        SELECT
+          "TeamInvite"."id",
+          "TeamInvite"."workspaceId",
+          "TeamInvite"."email",
+          "TeamInvite"."role",
+          "TeamInvite"."status",
+          "TeamInvite"."expiresAt",
+          "TeamInvite"."createdAt",
+          "TeamInvite"."updatedAt",
+          "TeamWorkspace"."name" AS "workspaceName",
+          "TeamWorkspace"."ownerUserId",
+          "TeamWorkspace"."createdAt" AS "workspaceCreatedAt",
+          "TeamWorkspace"."updatedAt" AS "workspaceUpdatedAt",
+          "User"."email" AS "ownerEmail",
+          "User"."name" AS "ownerName"
+        FROM "TeamInvite"
+        JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamInvite"."workspaceId"
+        LEFT JOIN "User" ON "User"."id" = "TeamWorkspace"."ownerUserId"
+        WHERE "TeamInvite"."tokenHash" = ${tokenHash(token)}
+        LIMIT 1
+        FOR UPDATE OF "TeamInvite"
+      `;
+      const invite = records[0];
+      if (!invite) throw new TeamWorkspaceError("This Team invite link is invalid.", 404);
+
+      assertPendingInvite(invite);
+
+      if (normalizeTeamInviteEmail(invite.email) !== memberEmail) {
+        throw new TeamWorkspaceError(`Sign in with ${invite.email} to accept this Team invite.`, 403);
+      }
+
+      acceptedSeatCount = await readOwnerTeamSeatCount(invite.ownerUserId, transaction);
+
+      const occupiedRecords = await transaction.$queryRaw<CountRecord[]>`
+        SELECT
+          (
+            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'active') +
+            (SELECT COUNT(*) FROM "TeamInvite" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'pending' AND "expiresAt" > NOW())
+          ) AS "count"
+      `;
+      const activeRecords = await transaction.$queryRaw<CountRecord[]>`
+        SELECT COUNT(*) AS "count"
+        FROM "TeamMember"
+        WHERE "workspaceId" = ${invite.workspaceId} AND "email" = ${memberEmail} AND "status" = 'active'
+      `;
+      const occupiedSeats = toCount(occupiedRecords[0]?.count ?? 0);
+      const existingActiveSeats = toCount(activeRecords[0]?.count ?? 0);
+      const occupiedAfterAcceptance = existingActiveSeats > 0 ? occupiedSeats - 1 : occupiedSeats;
+
+      if (occupiedAfterAcceptance > acceptedSeatCount) {
+        throw new TeamWorkspaceError("This workspace has no open paid Team seats. Ask the owner to add seats, then retry the invite.", 409);
+      }
+
+      const memberships = await transaction.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO "TeamMember" ("id", "workspaceId", "userId", "email", "displayName", "role", "status", "joinedAt", "createdAt", "updatedAt")
+        VALUES (${randomUUID()}, ${invite.workspaceId}, ${userId}, ${memberEmail}, ${name?.trim() || null}, ${normalizeTeamInviteRole(invite.role)}, 'active', NOW(), NOW(), NOW())
+        ON CONFLICT ("workspaceId", "email") DO UPDATE
+        SET
+          "userId" = EXCLUDED."userId",
+          "displayName" = COALESCE(EXCLUDED."displayName", "TeamMember"."displayName"),
+          "role" = EXCLUDED."role",
+          "status" = 'active',
+          "joinedAt" = COALESCE("TeamMember"."joinedAt", NOW()),
+          "updatedAt" = NOW()
+        RETURNING "id"
+      `;
+
+      acceptedMembershipId = memberships[0]?.id ?? "";
+
+      await transaction.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'accepted', "updatedAt" = NOW()
+        WHERE "id" = ${invite.id}
+      `;
+
+      acceptedWorkspace = {
+        createdAt: invite.workspaceCreatedAt,
+        id: invite.workspaceId,
+        name: invite.workspaceName,
+        ownerUserId: invite.ownerUserId,
+        updatedAt: new Date()
+      };
+    });
+
+    if (!acceptedWorkspace || !acceptedMembershipId) {
+      throw new TeamWorkspaceError("Unable to accept this Team invite.", 500);
+    }
+
+    const workspace = await readWorkspaceSnapshotFromDatabase(acceptedWorkspace, acceptedSeatCount);
+    const membership = workspace.members.find((member) => member.id === acceptedMembershipId || member.email === memberEmail);
+    if (!membership) throw new TeamWorkspaceError("Unable to load the accepted Team seat.", 500);
+
+    return {
+      membership,
+      mode: "database",
+      workspace
+    };
+  } catch (error) {
+    if (error instanceof TeamWorkspaceError) throw error;
+    if (!isDatabaseConnectionError(error)) throw error;
+    logTeamWorkspaceFallback("acceptDatabaseInvite", error);
+    return acceptMemoryInvite({ email, name, token, userId });
+  }
+}
+
+export async function acceptTeamWorkspaceInvite(input: {
+  email: string;
+  name?: string;
+  token: string;
+  userId: string;
+}): Promise<TeamWorkspaceAcceptanceResult> {
+  if (!input.token?.trim()) throw new TeamWorkspaceError("Team invite token is missing.", 400);
+  if (!hasDatabaseUrl()) return acceptMemoryInvite(input);
+  return acceptDatabaseInvite(input);
+}
+
+function readMemoryTeamWorkspaceForMember({
+  email
+}: {
+  email: string;
+  userId: string;
+}): TeamWorkspaceMemberAccessResult | null {
+  const memberEmail = normalizeTeamInviteEmail(email);
+
+  for (const workspace of memoryWorkspaceStore.values()) {
+    const membership = workspace.members.find((member) => member.status === "active" && member.email === memberEmail);
+    if (!membership) continue;
+
+    return {
+      membership,
+      mode: "memory",
+      workspace: snapshotFromParts({
+        ...workspace,
+        seatCount: normalizeTeamSeatCount(undefined)
+      })
+    };
+  }
+
+  return null;
+}
+
+async function readDatabaseTeamWorkspaceForMember({
+  email,
+  userId
+}: {
+  email: string;
+  userId: string;
+}): Promise<TeamWorkspaceMemberAccessResult | null> {
+  if (!(await ensureTeamWorkspaceSchema())) return readMemoryTeamWorkspaceForMember({ email, userId });
+
+  const prisma = getPrisma();
+  const memberEmail = normalizeTeamInviteEmail(email);
+
+  try {
+    const memberships = await prisma.$queryRaw<DbMemberAccess[]>`
+      SELECT
+        "TeamMember"."id",
+        "TeamMember"."email",
+        "TeamMember"."displayName",
+        "TeamMember"."role",
+        "TeamMember"."status",
+        "TeamMember"."joinedAt",
+        "TeamMember"."createdAt",
+        "TeamMember"."updatedAt",
+        "TeamWorkspace"."id" AS "workspaceId",
+        "TeamWorkspace"."name" AS "workspaceName",
+        "TeamWorkspace"."ownerUserId",
+        "TeamWorkspace"."createdAt" AS "workspaceCreatedAt",
+        "TeamWorkspace"."updatedAt" AS "workspaceUpdatedAt"
+      FROM "TeamMember"
+      JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamMember"."workspaceId"
+      WHERE "TeamMember"."status" = 'active'
+        AND ("TeamMember"."userId" = ${userId} OR "TeamMember"."email" = ${memberEmail})
+      ORDER BY "TeamMember"."updatedAt" DESC
+      LIMIT 5
+    `;
+
+    for (const membershipRecord of memberships) {
+      const seatCount = await readOwnerTeamSeatCount(membershipRecord.ownerUserId).catch(() => null);
+      if (!seatCount) continue;
+
+      const workspace = await readWorkspaceSnapshotFromDatabase(
+        {
+          createdAt: membershipRecord.workspaceCreatedAt,
+          id: membershipRecord.workspaceId,
+          name: membershipRecord.workspaceName,
+          ownerUserId: membershipRecord.ownerUserId,
+          updatedAt: membershipRecord.workspaceUpdatedAt
+        },
+        seatCount
+      );
+      const membership = workspace.members.find((member) => member.id === membershipRecord.id || member.email === memberEmail);
+      if (!membership) continue;
+
+      return {
+        membership,
+        mode: "database",
+        workspace
+      };
+    }
+
+    return null;
+  } catch (error) {
+    if (!isDatabaseConnectionError(error)) throw error;
+    logTeamWorkspaceFallback("readDatabaseTeamWorkspaceForMember", error);
+    return readMemoryTeamWorkspaceForMember({ email, userId });
+  }
+}
+
+export async function readTeamWorkspaceForMember(input: {
+  email: string;
+  userId: string;
+}): Promise<TeamWorkspaceMemberAccessResult | null> {
+  if (!hasDatabaseUrl()) return readMemoryTeamWorkspaceForMember(input);
+  return readDatabaseTeamWorkspaceForMember(input);
 }
