@@ -82,18 +82,32 @@ const testerTasks = [
     title: "Check gamification"
   },
   {
-    body: "Open Upgrade, compare Free, Pro, and Team, switch billing cycle, preview plan actions, and report unclear pricing or locked feature language.",
+    body: "Open Upgrade, compare Free, Pro, and Team, switch billing cycle, and report unclear pricing, portal, or locked-feature language.",
     href: "/upgrade",
     label: "Plans",
     reportHref: "/feedback?source=upgrade",
     title: "Test subscriptions"
   },
   {
-    body: "Open the Team workspace. Check whether setup, paid seats, saved-record seeding, roles, and invite language make sense for organizations.",
+    body: "For a paid Team owner, confirm checkout return, active billing, paid seat count, open seats, and invite controls make sense.",
     href: "/team",
     label: "Team",
     reportHref: "/feedback?source=team",
-    title: "Review team workspace"
+    title: "Review Team owner workspace"
+  },
+  {
+    body: "Use a generated Team invite link as the invited account, accept the seat, then confirm /team opens as a member with the expected role.",
+    href: "/team",
+    label: "Invite",
+    reportHref: "/feedback?source=team-invite",
+    title: "Accept a Team invite"
+  },
+  {
+    body: "For Stripe-backed accounts, use billing management to check downgrade, cancel, and Team seat quantity wording without completing unsafe changes.",
+    href: "/upgrade",
+    label: "Billing",
+    reportHref: "/feedback?source=billing",
+    title: "Check downgrade paths"
   }
 ];
 
@@ -106,7 +120,7 @@ const premiumHeaderIconClass =
 const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 const betaRound = {
-  label: "Round 1",
+  label: "Round 3",
   window: "June 2026"
 };
 
@@ -130,7 +144,7 @@ export default function BetaTesterPage() {
         <div className={premiumEyebrowClass}>Beta Testing</div>
         <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Test Run</h1>
         <p className="mt-3 max-w-[25rem] text-[14px] leading-snug text-white/54">
-          Use this checklist to find bugs, confusing flows, missing content, and polish issues before Capitol Ledger moves toward store testing.
+          Use this checklist to test account persistence, Stripe subscriptions, Team workspaces, invites, downgrades, and the core civic flows before Capitol Ledger moves toward store testing.
         </p>
       </section>
 
@@ -138,14 +152,14 @@ export default function BetaTesterPage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
             description="Move through each flow like a normal citizen. Report anything that breaks, slows you down, or feels unclear."
-            eyebrow="Testing Brief"
+            eyebrow="Round 3 Testing Brief"
             icon={<ClipboardCheck />}
             title="How to test"
           />
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <MiniMetric label="Tasks" value="11" />
-            <MiniMetric label="Actions" value="3" />
-            <MiniMetric label={betaRound.window} value="R1" />
+            <MiniMetric label="Tasks" value="13" />
+            <MiniMetric label="New flows" value="5" />
+            <MiniMetric label={betaRound.window} value="R3" />
           </div>
         </MobileCard>
 
@@ -153,7 +167,7 @@ export default function BetaTesterPage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
-            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">11 flows</span>}
+            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">13 flows</span>}
             description="Open each flow, then report from the same row if something feels off."
             eyebrow="Tester Queue"
             title="Checklist"
