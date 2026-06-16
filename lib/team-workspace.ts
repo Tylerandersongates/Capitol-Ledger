@@ -830,11 +830,12 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
   const seatType = normalizeSeatType(input.seatType);
   const seatId = normalizeSeatId(input.seatId);
   const seatCount = normalizeTeamSeatCount(input.seatCount);
-  let release: TeamWorkspaceSeatReleaseResult["release"] | null = null;
-  let releasedUserId: string | null = null;
 
   try {
-    await prisma.$transaction(async (transaction) => {
+    const releasedSeat = await prisma.$transaction(async (transaction): Promise<{
+      release: TeamWorkspaceSeatReleaseResult["release"];
+      userId: string | null;
+    }> => {
       await transaction.$executeRaw`
         UPDATE "TeamInvite"
         SET "status" = 'expired', "updatedAt" = NOW()
@@ -859,52 +860,80 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
           WHERE "id" = ${member.id}
         `;
 
-        releasedUserId = member.userId ?? (await findUserIdByEmail(member.email, transaction));
-        release = {
-          accountConvertedToFree: Boolean(releasedUserId),
-          email: member.email,
-          id: member.id,
-          status: "removed",
-          type: "member"
-        };
-      } else {
-        const invites = await transaction.$queryRaw<DbTeamInvite[]>`
-          SELECT "id", "email", "role", "status", "expiresAt", "createdAt", "updatedAt"
-          FROM "TeamInvite"
-          WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "id" = ${seatId}
+        const userRecords = await transaction.$queryRaw<Array<{ id: string }>>`
+          SELECT "id"
+          FROM "User"
+          WHERE lower("email") = lower(${member.email})
           LIMIT 1
-          FOR UPDATE
         `;
-        const invite = invites[0];
-        if (!invite) throw new TeamWorkspaceError("That Team invite is not available.", 404);
-
-        assertPendingSeatInvite(invite);
+        const userId = member.userId ?? userRecords[0]?.id ?? null;
 
         await transaction.$executeRaw`
-          UPDATE "TeamInvite"
-          SET "status" = 'revoked', "updatedAt" = NOW()
-          WHERE "id" = ${invite.id}
+          UPDATE "TeamWorkspace"
+          SET "updatedAt" = NOW()
+          WHERE "id" = ${workspaceResult.workspace.id}
         `;
 
-        releasedUserId = await findUserIdByEmail(invite.email, transaction);
-        release = {
-          accountConvertedToFree: Boolean(releasedUserId),
-          email: invite.email,
-          id: invite.id,
-          status: "revoked",
-          type: "invite"
+        return {
+          release: {
+            accountConvertedToFree: Boolean(userId),
+            email: member.email,
+            id: member.id,
+            status: "removed",
+            type: "member"
+          },
+          userId
         };
       }
+
+      const invites = await transaction.$queryRaw<DbTeamInvite[]>`
+        SELECT "id", "email", "role", "status", "expiresAt", "createdAt", "updatedAt"
+        FROM "TeamInvite"
+        WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "id" = ${seatId}
+        LIMIT 1
+        FOR UPDATE
+      `;
+      const invite = invites[0];
+      if (!invite) throw new TeamWorkspaceError("That Team invite is not available.", 404);
+
+      assertPendingSeatInvite(invite);
+
+      await transaction.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'revoked', "updatedAt" = NOW()
+        WHERE "id" = ${invite.id}
+      `;
+
+      const userRecords = await transaction.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "User"
+        WHERE lower("email") = lower(${invite.email})
+        LIMIT 1
+      `;
+      const userId = userRecords[0]?.id ?? null;
 
       await transaction.$executeRaw`
         UPDATE "TeamWorkspace"
         SET "updatedAt" = NOW()
         WHERE "id" = ${workspaceResult.workspace.id}
       `;
+
+      return {
+        release: {
+          accountConvertedToFree: Boolean(userId),
+          email: invite.email,
+          id: invite.id,
+          status: "revoked",
+          type: "invite"
+        },
+        userId
+      };
     });
 
-    if (!release) throw new TeamWorkspaceError("Unable to release this Team seat.", 500);
-    release.accountConvertedToFree = await convertAccountToFree(releasedUserId);
+    const release = {
+      ...releasedSeat.release,
+      accountConvertedToFree: await convertAccountToFree(releasedSeat.userId)
+    };
 
     const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
       SELECT "id", "ownerUserId", "name", "createdAt", "updatedAt"
@@ -988,17 +1017,6 @@ async function convertAccountToFree(userId?: string | null) {
   await writeSubscriptionToDatabase(userId, releasedSeatFreeSubscription).catch(() => null);
   setAccountSubscription(userId, releasedSeatFreeSubscription);
   return true;
-}
-
-async function findUserIdByEmail(email: string, client: RawQueryClient = getPrisma()) {
-  const records = await client.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "User"
-    WHERE lower("email") = lower(${email})
-    LIMIT 1
-  `;
-
-  return records[0]?.id ?? null;
 }
 
 async function readDatabaseInviteAcceptance(token: string): Promise<TeamWorkspaceAcceptancePreview> {
