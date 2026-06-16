@@ -29,6 +29,7 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 ## Beta Readiness Before Invites
 - Run the DB-backed beta readiness check with `BETA_CHECK_DATABASE=true`.
 - Inbox-verify one live auth email path before expecting tester email flows to work.
+  - Verified on production with a registered real account password-reset email.
 - Confirm deployed auth cookies are `Secure`, `HttpOnly`, and `SameSite=lax`.
   - Verified on production with an existing fake QA sign-in.
 - Review the beta checklist page and make sure unresolved private billing/API items are not marked resolved in tester-facing materials.

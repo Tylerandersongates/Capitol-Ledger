@@ -82,6 +82,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Production auth database schema is ready; local config still warns that `AUTH_COOKIE_SECURE` is not set to `true`.
 - Safe production auth endpoint QA passed against `https://project-qosv1.vercel.app`; live account creation and rate-limit stress were intentionally skipped.
 - Confirmed deployed production sign-in sets secure auth cookies using the existing fake QA owner account: `capitol-ledger-auth-session` returned `Secure`, `HttpOnly`, and `SameSite=lax`.
+- Live password-reset email delivery was inbox-verified on a registered real account: production returned `200`, delivery mode `resend`, and the message arrived.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -144,6 +145,10 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Production auth QA with the existing fake QA owner account passed:
   - sign-in returned `200`.
   - auth session cookie is `Secure`, `HttpOnly`, and `SameSite=lax`.
+- Production password-reset email delivery was verified with a registered real account:
+  - `/api/auth/password-reset` returned `200`.
+  - response delivery mode was `resend`.
+  - message arrived in the target inbox.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -153,11 +158,9 @@ Generated at the break on June 16, 2026 for the next continuation.
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
-- Live auth email receipt has not been inbox-verified in this pass; strict provider readiness is configured, and safe production auth endpoint QA passed.
 - Local config still warns `AUTH_COOKIE_SECURE` is not `true`, but deployed production sign-in sets `Secure` auth cookies because `VERCEL_ENV=production` also enables secure cookies.
 
 ## Next Best Steps
-1. Inbox-verify one live auth email path before relying on tester email flows; safe endpoint QA passed, but live receipt was not tested.
-2. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
-3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-4. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
+1. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+2. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
+3. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
