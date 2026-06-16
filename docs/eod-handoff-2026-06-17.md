@@ -64,6 +64,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Browser console errors on locked `/team`: none.
 - Real account Billing Portal opened successfully for a Checkout-created Team subscription.
 - Real account Billing Portal showed `Cancels Jul 14` and `Your service will end on July 14, 2026`; production still showed active Team before the fix because the app ignored Stripe `cancel_at_period_end`.
+- After pushing the cancellation-sync fix and customer-ID fallback, production `/team?realCancelQa=14a78f0` still showed the real account as active Team in the in-app browser. Deployment/log status could not be inspected locally because `vercel`, `gh`, and `.vercel` metadata are unavailable.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -108,14 +109,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - API references checked in QA scripts point to existing app routes.
 
 ## Known Issues
-- After deploy, the real canceled Team account still needs production recheck to confirm `/team` now syncs Stripe and returns to the access gate.
+- After deploy/log inspection, the real canceled Team account still needs production recheck to confirm `/team` syncs Stripe and returns to the access gate.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
 - Production email delivery is disabled by current config.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
-1. After deploy, reload the logged-in real account on `/team` and confirm Stripe pending-cancel sync returns the owner to the Team access gate.
-2. Confirm Team invites and Team seats APIs return `403` for the canceled owner after sync.
-3. If Admin/Analyst seats are present on a real canceled owner workspace, confirm their `/team` access also locks through the owner subscription sync.
+1. Inspect the Vercel deployment/logs for commit `ed4b23c` and confirm whether `project-qosv1.vercel.app` is serving the latest pushed code.
+2. After deployment is confirmed, reload the logged-in real account on `/team` and confirm Stripe pending-cancel sync returns the owner to the Team access gate.
+3. Confirm Team invites and Team seats APIs return `403` for the canceled owner after sync.
 4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable enough for DB-backed diagnostics.
