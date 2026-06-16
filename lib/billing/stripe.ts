@@ -63,6 +63,7 @@ type StripeSubscriptionItem = {
 type StripeSubscriptionObject = StripeCheckoutSession & {
   cancel_at_period_end?: boolean;
   client_reference_id?: string;
+  created?: number;
   customer?: string;
   id?: string;
   items?: {
@@ -78,6 +79,10 @@ type StripeWebhookEvent = {
     object?: StripeSubscriptionObject;
   };
   type?: string;
+};
+
+type StripeSubscriptionList = {
+  data?: StripeSubscriptionObject[];
 };
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
@@ -284,6 +289,11 @@ export function parseStripeWebhookEvent(payload: string) {
   return JSON.parse(payload) as StripeWebhookEvent;
 }
 
+function isCapitolLedgerStripeSubscription(subscription: StripeSubscriptionObject) {
+  const metadataPlan = readMetadataPlan(subscription.metadata?.plan);
+  return metadataPlan !== "free" || Boolean(getPlanCycleForPrice(subscription.items?.data?.[0]?.price?.id));
+}
+
 export async function readStripeSubscription(subscriptionId: string): Promise<StripeSubscriptionObject> {
   const secretKey = getStripeSecretKey();
   if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured.");
@@ -300,4 +310,30 @@ export async function readStripeSubscription(subscriptionId: string): Promise<St
   }
 
   return (await response.json()) as StripeSubscriptionObject;
+}
+
+export async function readStripeCustomerSubscription(customerId: string): Promise<StripeSubscriptionObject | null> {
+  const secretKey = getStripeSecretKey();
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured.");
+
+  const params = new URLSearchParams({
+    customer: customerId,
+    limit: "10",
+    status: "all"
+  });
+
+  const response = await fetch(`${STRIPE_API_BASE}/subscriptions?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${secretKey}`
+    }
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "Stripe customer subscription lookup failed.");
+    throw new Error(message);
+  }
+
+  const subscriptions = ((await response.json()) as StripeSubscriptionList).data ?? [];
+  const matchingSubscriptions = subscriptions.filter(isCapitolLedgerStripeSubscription);
+  return matchingSubscriptions[0] ?? subscriptions[0] ?? null;
 }

@@ -1,7 +1,7 @@
 import { getAccountSubscription } from "@/lib/account-subscription";
 import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
-import { readStripeSubscription, readStripeSubscriptionDetails } from "@/lib/billing/stripe";
+import { readStripeCustomerSubscription, readStripeSubscription, readStripeSubscriptionDetails } from "@/lib/billing/stripe";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 type AccountSubscriptionUser = {
@@ -13,7 +13,10 @@ type AccountSubscriptionUser = {
 type PersistedSubscriptionState = Omit<AccountSubscriptionSnapshot, "updatedAt">;
 
 function canSyncStripeSubscription(subscription: AccountSubscriptionSnapshot) {
-  return subscription.provider === "stripe" && Boolean(subscription.providerSubscriptionId?.startsWith("sub_"));
+  return (
+    subscription.provider === "stripe" &&
+    (Boolean(subscription.providerSubscriptionId?.startsWith("sub_")) || Boolean(subscription.providerCustomerId?.startsWith("cus_")))
+  );
 }
 
 function hasSamePersistedSubscriptionState(left: AccountSubscriptionSnapshot, right: PersistedSubscriptionState) {
@@ -29,10 +32,25 @@ function hasSamePersistedSubscriptionState(left: AccountSubscriptionSnapshot, ri
   );
 }
 
-export async function syncStripeSubscriptionForAccount(userId: string, subscription: AccountSubscriptionSnapshot) {
-  if (!canSyncStripeSubscription(subscription) || !subscription.providerSubscriptionId) return subscription;
+async function readStripeSubscriptionForSnapshot(subscription: AccountSubscriptionSnapshot) {
+  if (subscription.providerSubscriptionId?.startsWith("sub_")) {
+    return readStripeSubscription(subscription.providerSubscriptionId).catch((error: unknown) => {
+      if (!subscription.providerCustomerId?.startsWith("cus_")) throw error;
+      return readStripeCustomerSubscription(subscription.providerCustomerId);
+    });
+  }
 
-  const stripeSubscription = await readStripeSubscription(subscription.providerSubscriptionId);
+  if (subscription.providerCustomerId?.startsWith("cus_")) {
+    return readStripeCustomerSubscription(subscription.providerCustomerId);
+  }
+
+  return null;
+}
+
+export async function syncStripeSubscriptionForAccount(userId: string, subscription: AccountSubscriptionSnapshot) {
+  if (!canSyncStripeSubscription(subscription)) return subscription;
+
+  const stripeSubscription = await readStripeSubscriptionForSnapshot(subscription);
   if (!stripeSubscription?.id) return subscription;
 
   const details = readStripeSubscriptionDetails(stripeSubscription);
