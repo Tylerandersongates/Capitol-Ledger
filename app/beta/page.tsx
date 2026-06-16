@@ -103,11 +103,32 @@ const testerTasks = [
     title: "Accept a Team invite"
   },
   {
-    body: "For Stripe-backed accounts, use billing management to check downgrade, cancel, and Team seat quantity wording without completing unsafe changes.",
+    body: "As the Team owner, delegate an Admin seat and confirm the Admin can manage workspace members without seeing owner billing controls.",
+    href: "/team",
+    label: "Admin",
+    reportHref: "/feedback?source=team-admin",
+    title: "Delegate Team admin"
+  },
+  {
+    body: "As a Viewer, open the Team workspace and confirm shared watchlists and alerts are readable but cannot be changed by the Viewer.",
+    href: "/team",
+    label: "Viewer",
+    reportHref: "/feedback?source=team-viewer",
+    title: "Verify Viewer read-only access"
+  },
+  {
+    body: "Remove a Viewer or former teammate, then confirm the removed account returns to Free and the paid Team seat reopens.",
+    href: "/team",
+    label: "Seats",
+    reportHref: "/feedback?source=team-seat-removal",
+    title: "Remove a Team seat"
+  },
+  {
+    body: "For a Stripe-backed Team owner, check downgrade or cancel behavior with Admin and Analyst seats present, then confirm the Team workspace locks when billing is no longer active.",
     href: "/upgrade",
     label: "Billing",
-    reportHref: "/feedback?source=billing",
-    title: "Check downgrade paths"
+    reportHref: "/feedback?source=team-owner-downgrade",
+    title: "Check owner downgrade lock"
   },
   {
     body: "With a 6-seat Team workspace, remove two former employees, add one replacement, then confirm one paid seat remains open and removed accounts are Free.",
@@ -132,6 +153,8 @@ const betaRound = {
 };
 
 export default function BetaTesterPage() {
+  const taskCount = testerTasks.length.toString();
+
   return (
     <MobileShell
       minHeight="min-h-[1080px]"
@@ -164,8 +187,8 @@ export default function BetaTesterPage() {
             title="How to test"
           />
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <MiniMetric label="Tasks" value="13" />
-            <MiniMetric label="New flows" value="5" />
+            <MiniMetric label="Tasks" value={taskCount} />
+            <MiniMetric label="New flows" value="9" />
             <MiniMetric label={betaRound.window} value="R3" />
           </div>
         </MobileCard>
@@ -174,7 +197,7 @@ export default function BetaTesterPage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumBetaHeader
-            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">13 flows</span>}
+            aside={<span className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[12px] font-semibold text-white/50">{taskCount} flows</span>}
             description="Open each flow, then report from the same row if something feels off."
             eyebrow="Tester Queue"
             title="Checklist"
