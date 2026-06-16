@@ -68,6 +68,9 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Real account Billing Portal showed `Cancels Jul 14` and `Your service will end on July 14, 2026`; production still showed active Team before the fix because the app ignored Stripe `cancel_at_period_end`.
 - After pushing the cancellation-sync fix and customer-ID fallback, production `/team?realCancelQa=14a78f0` still showed the real account as active Team in the in-app browser. Deployment/log status could not be inspected locally because `vercel`, `gh`, and `.vercel` metadata are unavailable.
 - After deploying `3de89ae`, production `/team?realCancelQa=<fresh>` showed the Team access gate for the real account with `Current plan: Free`; browser console errors: none.
+- After Vercel redeploy confirmation, production `/team?realCancelQa=<fresh>` still showed the Team access gate for the real account with `Current plan: Free`.
+- Production `/upgrade?realCancelQa=<fresh>` showed Free as `Current Plan`, Pro as `Upgrade to Pro`, Team as `Start Team Plan`, and Team checkout quantity reset to the 3-seat minimum; browser console errors: none.
+- Direct browser navigation to `/api/team/invites` for the logged-in account was blocked by the in-app browser client with `net::ERR_BLOCKED_BY_CLIENT`, so the management API `403` status was not runtime-observed in-browser. Source path uses the same synced subscription guard for Team page, invites API, seats API, and member workspace access.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -124,7 +127,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
-1. Confirm Team invites and Team seats APIs return `403` for the canceled owner after sync.
+1. Confirm Team invites and Team seats APIs return `403` for the canceled owner using a same-session API harness or Vercel logs, since direct in-app browser API navigation is blocked.
 2. If Admin/Analyst seats are present on a real canceled owner workspace, confirm their `/team` access also locks through the owner subscription sync.
 3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 4. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable enough for DB-backed diagnostics.
