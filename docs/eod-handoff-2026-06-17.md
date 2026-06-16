@@ -71,6 +71,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - After Vercel redeploy confirmation, production `/team?realCancelQa=<fresh>` still showed the Team access gate for the real account with `Current plan: Free`.
 - Production `/upgrade?realCancelQa=<fresh>` showed Free as `Current Plan`, Pro as `Upgrade to Pro`, Team as `Start Team Plan`, and Team checkout quantity reset to the 3-seat minimum; browser console errors: none.
 - Direct browser navigation to `/api/team/invites` for the logged-in account was blocked by the in-app browser client with `net::ERR_BLOCKED_BY_CLIENT`, so the management API `403` status was not runtime-observed in-browser. Source path uses the same synced subscription guard for Team page, invites API, seats API, and member workspace access.
+- Source-level guard check confirmed Team invites and seats APIs both call `getSubscriptionForAccountUser`, require active/trialing Team owner access, and otherwise only allow an Admin membership; the canceled owner path returns the shared `403` forbidden response because the owner membership is not an Admin membership.
+- Source-level member access check confirmed `readTeamWorkspaceForMember` calls `readOwnerTeamSeatCount`, which syncs the owner Stripe subscription before allowing member seats; pending-canceled owners throw a `403` Team workspace error, so Admin/Analyst/Viewer access should also lock once owner billing syncs.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -127,8 +129,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
-1. Confirm Team invites and Team seats APIs return `403` for the canceled owner using a same-session API harness or Vercel logs, since direct in-app browser API navigation is blocked.
-2. If Admin/Analyst seats are present on a real canceled owner workspace, confirm their `/team` access also locks through the owner subscription sync.
+1. If possible, confirm Team invites and Team seats APIs return `403` for the canceled owner using Vercel logs or a same-session API harness outside the in-app browser, since direct in-app browser API navigation is blocked.
+2. If Admin/Analyst seats are present on a real canceled owner workspace, runtime-confirm their `/team` access locks through the owner subscription sync; source guard path already covers this.
 3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 4. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable enough for DB-backed diagnostics.
 5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
