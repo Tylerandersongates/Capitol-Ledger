@@ -61,6 +61,7 @@ type StripeSubscriptionItem = {
 };
 
 type StripeSubscriptionObject = StripeCheckoutSession & {
+  cancel_at?: number | null;
   cancel_at_period_end?: boolean;
   client_reference_id?: string;
   created?: number;
@@ -253,8 +254,8 @@ export function getStripeWebhookSecret() {
   return process.env.STRIPE_WEBHOOK_SECRET;
 }
 
-export function mapStripeStatus(status?: string, cancelAtPeriodEnd = false): SubscriptionStatus {
-  if (cancelAtPeriodEnd) return "canceled";
+export function mapStripeStatus(status?: string, cancelAtPeriodEnd = false, cancelAt?: number | null): SubscriptionStatus {
+  if (cancelAtPeriodEnd || Boolean(cancelAt)) return "canceled";
   if (status === "trialing") return "trialing";
   if (status === "past_due" || status === "unpaid") return "past_due";
   if (status === "canceled" || status === "incomplete_expired") return "canceled";
@@ -262,6 +263,7 @@ export function mapStripeStatus(status?: string, cancelAtPeriodEnd = false): Sub
 }
 
 export function readStripeSubscriptionDetails(object?: {
+  cancel_at?: number | null;
   cancel_at_period_end?: boolean;
   items?: {
     data?: StripeSubscriptionItem[];
@@ -272,7 +274,7 @@ export function readStripeSubscriptionDetails(object?: {
   const metadata = object?.metadata ?? {};
   const item = object?.items?.data?.[0];
   const matchedPrice = getPlanCycleForPrice(item?.price?.id);
-  const status = mapStripeStatus(object?.status, object?.cancel_at_period_end);
+  const status = mapStripeStatus(object?.status, object?.cancel_at_period_end, object?.cancel_at);
   const plan = matchedPrice?.plan ?? readMetadataPlan(metadata.plan);
   const activePlan = status === "canceled" ? "free" : plan;
   const cycle = matchedPrice?.cycle ?? (metadata.cycle === "annual" ? "annual" : "monthly");
@@ -292,6 +294,14 @@ export function parseStripeWebhookEvent(payload: string) {
 function isCapitolLedgerStripeSubscription(subscription: StripeSubscriptionObject) {
   const metadataPlan = readMetadataPlan(subscription.metadata?.plan);
   return metadataPlan !== "free" || Boolean(getPlanCycleForPrice(subscription.items?.data?.[0]?.price?.id));
+}
+
+function isPendingCancellation(subscription: StripeSubscriptionObject) {
+  return Boolean(subscription.cancel_at_period_end || subscription.cancel_at);
+}
+
+function isUsableSubscription(subscription: StripeSubscriptionObject) {
+  return subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due" || subscription.status === "unpaid";
 }
 
 export async function readStripeSubscription(subscriptionId: string): Promise<StripeSubscriptionObject> {
@@ -335,5 +345,13 @@ export async function readStripeCustomerSubscription(customerId: string): Promis
 
   const subscriptions = ((await response.json()) as StripeSubscriptionList).data ?? [];
   const matchingSubscriptions = subscriptions.filter(isCapitolLedgerStripeSubscription);
-  return matchingSubscriptions[0] ?? subscriptions[0] ?? null;
+  return (
+    matchingSubscriptions.find(isPendingCancellation) ??
+    matchingSubscriptions.find(isUsableSubscription) ??
+    matchingSubscriptions[0] ??
+    subscriptions.find(isPendingCancellation) ??
+    subscriptions.find(isUsableSubscription) ??
+    subscriptions[0] ??
+    null
+  );
 }

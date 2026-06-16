@@ -40,6 +40,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Confirmed Stripe Portal cancellation schedules end-of-period cancellation (`Cancels Jul 14`) while Stripe subscription `status` remains active.
 - Fixed app billing sync so Stripe `cancel_at_period_end=true` maps to `stripe/free/canceled` and Team access checks refresh Stripe before allowing owner/member workspace access.
 - Added a Stripe customer subscription lookup fallback for older records that have a `cus_` customer ID but no stored `sub_` subscription ID.
+- Tightened Stripe customer subscription selection to prefer pending-cancel subscriptions and treat `cancel_at` as a cancellation signal too.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -96,12 +97,18 @@ Generated at the break on June 16, 2026 for the next continuation.
 - In the real Documents workspace, `pnpm lint` now exits but fails while reading dependency package configs such as `eslint-plugin-import/package.json` or `es-abstract/package.json`; plain Node can parse those same JSON files, and the same lint command passes in `/private/tmp`.
 - Stripe subscription parsing now treats `cancel_at_period_end=true` as canceled for Capitol Ledger access, so Portal-canceled Team plans become Free/canceled even while Stripe reports `status=active` before period end.
 - Server subscription reads now refresh Stripe-backed subscription IDs before returning account subscription state; if no `sub_` ID is stored, they fall back to the Stripe customer subscription list.
+- Stripe customer fallback now prefers matching subscriptions with `cancel_at_period_end` or `cancel_at` so stale active subscriptions do not win over a pending-cancel Team subscription.
 - `/team`, Team invites API, Team seats API, and member workspace access now use the synced subscription path before granting Team owner/admin/member access.
 - Focused parser check passed: active Team stays `team/active/4 seats`; active Team with `cancel_at_period_end=true` becomes `free/canceled` with no Team seat count.
 - Clean `/private/tmp/capitol-ledger-remote-check` verification after the cancellation fix and customer-ID fallback:
   - `pnpm lint` passed with no ESLint warnings or errors.
   - `pnpm exec tsc --noEmit --pretty false` passed.
   - `pnpm run build` passed.
+- Clean `/private/tmp/capitol-ledger-remote-check` verification after the pending-cancel selection tightening:
+  - `pnpm lint` passed with no ESLint warnings or errors.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
+  - Focused parser check passed for both `cancel_at` and `cancel_at_period_end`.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
