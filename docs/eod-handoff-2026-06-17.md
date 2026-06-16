@@ -14,7 +14,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 ## Baseline
 - Repo: `/Users/tylergates/Documents/Capitol Ledger`
 - Branch: `main`
-- HEAD: `14a78f0 (HEAD -> main, origin/main) Update Round 3 beta Team checklist`
+- HEAD at start of runtime continuation: `5c4e1c2 (HEAD -> main, origin/main) Record Team downgrade QA results`
 - Origin sync: `0 0`
 - Worktree: no intentional app-code changes after Admin QA; `git status` can hang in this shell.
 - Production target: `https://project-qosv1.vercel.app`
@@ -30,6 +30,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Added Admin delegation, Viewer read-only, seat removal, and owner downgrade rows to the live Round 3 Beta checklist.
 - Confirmed owner downgrade lock behavior with Admin and Analyst seats present.
 - Confirmed fake signed-webhook customer IDs cannot validate Stripe Billing Portal because Stripe rejects the synthetic customer ID.
+- Installed official Node `v22.22.3` for Apple Silicon into ignored local tooling at `.tools/node-v22.22.3-darwin-arm64`.
+- Confirmed the local preview runtime guard passes under Node `v22.22.3`.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -62,6 +64,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Continuation runtime check found no `node` on PATH, no Homebrew Node 20/22, and bundled Codex Node is still `v24.14.0`.
 - `pnpm lint` and full `tsc --noEmit` hung under Node 24 and were stopped.
 - `scripts/check-local-preview-runtime.mjs` passed repo-local `node_modules`, duplicate-link, and SWC signature checks; Node 24 remains the one blocking issue.
+- Official Node `v22.22.3` tarball was downloaded from `nodejs.org`, SHA-256 verified, and extracted into ignored `.tools`.
+- `scripts/check-local-preview-runtime.mjs` passed under `.tools/node-v22.22.3-darwin-arm64/bin/node`.
+- Vendored pnpm under `.tools/pnpm-v11` reports `11.1.2`.
+- `next lint` hung silently for 60 seconds under Node 22 and was stopped.
+- Direct ESLint (`node_modules/.bin/eslint app components lib scripts --ext .js,.jsx,.ts,.tsx`) also hung silently for 60 seconds and was stopped.
+- Direct TypeScript starts instantly for `--version` (`5.9.3`), but `tsc --noEmit --pretty false` and `tsc --noEmit --pretty false --incremental false` both hung silently and were stopped.
+- `tsc --traceResolution` showed progress through `@types/node@20.19.41` and `undici-types@6.21.0`, repeatedly failing to resolve built-in module names such as `url`, `stream`, `events`, `buffer`, and `stream/web` under `moduleResolution: "bundler"` before it was stopped.
+- `prisma generate` also hung silently for 60 seconds under Node 22 and was stopped.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -70,13 +80,13 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Known Issues
 - Stripe Billing Portal still needs real Stripe Checkout-created customer/subscription QA; the fake signed-webhook customer cannot exercise portal sessions.
-- Local diagnostic/build tooling is unreliable until the shell uses Node 20 or 22.
+- Local diagnostic/build tooling is still unreliable even after installing Node 22; dependency CLIs hang silently and likely need a clean dependency install or focused module-resolution/tooling fix.
 - Production email delivery is disabled by current config.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
-1. Fix local runtime to Node 20 or 22, then rerun `pnpm lint`, `pnpm exec tsc --noEmit --pretty false`, and `pnpm run build`.
-2. Create or use a real Stripe test-mode Checkout-created Team subscription, then request Billing Portal and test downgrade/cancel from that real Stripe customer.
-3. Confirm Stripe downgrade/cancel webhooks from the real customer also lock owner, Admin, and Analyst workspace access.
-4. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime is fixed.
-5. Keep the signed-webhook fake owner downgraded as evidence of the lock path unless a fresh Team QA workspace is needed.
+1. Diagnose the local dependency/tooling hang now that Node 22 passes the runtime guard; likely start with a clean dependency install or the `@types/node`/`undici-types` bundler-resolution path.
+2. Once tooling runs, rerun `next lint`, `tsc --noEmit --pretty false`, `prisma generate`, and `next build` under `.tools/node-v22.22.3-darwin-arm64`.
+3. Create or use a real Stripe test-mode Checkout-created Team subscription, then request Billing Portal and test downgrade/cancel from that real Stripe customer.
+4. Confirm Stripe downgrade/cancel webhooks from the real customer also lock owner, Admin, and Analyst workspace access.
+5. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable.
