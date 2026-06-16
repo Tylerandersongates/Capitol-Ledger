@@ -36,6 +36,9 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Reinstalled repo-local dependencies successfully with Node `v22.22.3`, Corepack, and pnpm `9.15.9`.
 - Removed the stale `node_modules.provenance-slow-20260616b` backup tree created during dependency repair.
 - Verified lint, typecheck, and production build in a clean `/private/tmp` clone with the same app code and workspace config.
+- Confirmed a real Stripe Checkout-created Team subscription can open Billing Portal.
+- Confirmed Stripe Portal cancellation schedules end-of-period cancellation (`Cancels Jul 14`) while Stripe subscription `status` remains active.
+- Fixed app billing sync so Stripe `cancel_at_period_end=true` maps to `stripe/free/canceled` and Team access checks refresh Stripe before allowing owner/member workspace access.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -58,6 +61,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Owner, Admin, and Analyst management APIs returned `403` after owner downgrade.
 - Owner, Admin, and Analyst `/team` pages showed the access gate after owner downgrade.
 - Browser console errors on locked `/team`: none.
+- Real account Billing Portal opened successfully for a Checkout-created Team subscription.
+- Real account Billing Portal showed `Cancels Jul 14` and `Your service will end on July 14, 2026`; production still showed active Team before the fix because the app ignored Stripe `cancel_at_period_end`.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -87,6 +92,14 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `pnpm run build` passed: Prisma Client generated, Next compiled, lint/type validity ran, and 56 static pages generated.
 - In the real Documents workspace, `pnpm exec tsc --noEmit --pretty false` still becomes a no-output slow/stalled process and was stopped; this appears workspace/filesystem-specific because the same command passes quickly in `/private/tmp`.
 - In the real Documents workspace, `pnpm lint` now exits but fails while reading dependency package configs such as `eslint-plugin-import/package.json` or `es-abstract/package.json`; plain Node can parse those same JSON files, and the same lint command passes in `/private/tmp`.
+- Stripe subscription parsing now treats `cancel_at_period_end=true` as canceled for Capitol Ledger access, so Portal-canceled Team plans become Free/canceled even while Stripe reports `status=active` before period end.
+- Server subscription reads now refresh Stripe-backed subscription IDs before returning account subscription state.
+- `/team`, Team invites API, Team seats API, and member workspace access now use the synced subscription path before granting Team owner/admin/member access.
+- Focused parser check passed: active Team stays `team/active/4 seats`; active Team with `cancel_at_period_end=true` becomes `free/canceled` with no Team seat count.
+- Clean `/private/tmp/capitol-ledger-remote-check` verification after the cancellation fix:
+  - `pnpm lint` passed with no ESLint warnings or errors.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -94,14 +107,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - API references checked in QA scripts point to existing app routes.
 
 ## Known Issues
-- Stripe Billing Portal still needs real Stripe Checkout-created customer/subscription QA; the fake signed-webhook customer cannot exercise portal sessions.
+- After deploy, the real canceled Team account still needs production recheck to confirm `/team` now syncs Stripe and returns to the access gate.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
 - Production email delivery is disabled by current config.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
-1. Create or use a real Stripe test-mode Checkout-created Team subscription, then request Billing Portal and test downgrade/cancel from that real Stripe customer.
-2. Confirm Stripe downgrade/cancel webhooks from the real customer also lock owner, Admin, and Analyst workspace access.
-3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-4. Investigate the Documents workspace filesystem/tooling drag separately from app correctness; local runtime guard and Prisma generation now pass, but lint/typecheck still fail or stall there.
+1. After deploy, reload the logged-in real account on `/team` and confirm Stripe pending-cancel sync returns the owner to the Team access gate.
+2. Confirm Team invites and Team seats APIs return `403` for the canceled owner after sync.
+3. If Admin/Analyst seats are present on a real canceled owner workspace, confirm their `/team` access also locks through the owner subscription sync.
+4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable enough for DB-backed diagnostics.

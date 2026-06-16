@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountPersistenceUserId, readSubscriptionFromDatabase } from "@/lib/account-database";
-import { getAccountSubscription } from "@/lib/account-subscription";
+import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
+import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember, releaseTeamWorkspaceSeat, TeamWorkspaceError } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
@@ -16,12 +16,11 @@ async function readTeamAccount() {
   if (!session) return null;
 
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
-  const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const subscription = await getSubscriptionForAccountUser(session.user);
 
   return {
     accountUserId,
-    mode: databaseSubscription ? "database" : "account",
+    mode: "synced",
     session,
     subscription
   };

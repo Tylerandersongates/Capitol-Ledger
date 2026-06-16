@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "crypto";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
 import { writeSubscriptionToDatabase } from "@/lib/account-database";
+import { syncStripeSubscriptionForAccount } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type {
   AccountSubscriptionSnapshot,
@@ -125,6 +126,9 @@ type DbTeamInviteAcceptance = DbTeamInvite & {
 type DbOwnerSubscription = {
   plan: string;
   provider: string;
+  providerCustomerId: string | null;
+  providerEntitlementId: string | null;
+  providerSubscriptionId: string | null;
   seatCount: number | null;
   status: string;
 };
@@ -281,6 +285,9 @@ function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined, own
     plan: record.plan === "team" || record.plan === "pro" ? record.plan : "free",
     provider:
       record.provider === "stripe" || record.provider === "revenuecat" || record.provider === "app-store" ? record.provider : "demo",
+    providerCustomerId: record.providerCustomerId ?? undefined,
+    providerEntitlementId: record.providerEntitlementId ?? undefined,
+    providerSubscriptionId: record.providerSubscriptionId ?? undefined,
     seatCount: record.seatCount ?? undefined,
     status: record.status === "trialing" || record.status === "past_due" || record.status === "canceled" ? record.status : "active"
   } satisfies AccountSubscriptionSnapshot;
@@ -536,12 +543,13 @@ async function readWorkspaceSnapshotFromDatabase(workspace: DbTeamWorkspace, sea
 
 async function readOwnerTeamSeatCount(ownerUserId: string, client: RawQueryClient = getPrisma()) {
   const records = await client.$queryRaw<DbOwnerSubscription[]>`
-    SELECT "plan", "provider", "seatCount", "status"
+    SELECT "plan", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "seatCount", "status"
     FROM "AccountSubscription"
     WHERE "userId" = ${ownerUserId}
     LIMIT 1
   `;
-  const subscription = normalizeOwnerSubscription(records[0], ownerUserId);
+  const ownerSubscription = normalizeOwnerSubscription(records[0], ownerUserId);
+  const subscription = await syncStripeSubscriptionForAccount(ownerUserId, ownerSubscription).catch(() => ownerSubscription);
 
   if (!hasActiveTeamAccess(subscription)) {
     throw new TeamWorkspaceError("The workspace owner needs an active Team subscription before this seat can be used.", 403);

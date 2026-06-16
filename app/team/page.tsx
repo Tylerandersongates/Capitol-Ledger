@@ -21,10 +21,10 @@ import { TeamInviteControls } from "@/components/team-invite-controls";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { getAccountLedger } from "@/lib/account-ledger";
-import { getAccountPersistenceUserId, readLedgerFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
-import { getAccountSubscription } from "@/lib/account-subscription";
+import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
 import { requireAccountSession } from "@/lib/route-guards";
+import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
@@ -72,11 +72,10 @@ type TeamPageSearchParams = Record<string, string | string[] | undefined>;
 export default async function TeamWorkspacePage({ searchParams }: { searchParams?: TeamPageSearchParams }) {
   const session = await requireAccountSession("/team");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const [databaseSubscription, databaseLedger] = await Promise.all([
-    readSubscriptionFromDatabase(accountUserId).catch(() => null),
+  const [subscription, databaseLedger] = await Promise.all([
+    getSubscriptionForAccountUser(session.user),
     readLedgerFromDatabase(accountUserId).catch(() => null)
   ]);
-  const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
   const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
   const teamCheckoutReturn = readSearchParam(searchParams, "checkout") === "success" && readSearchParam(searchParams, "plan") === "team";
   const ownerAccess = hasActiveTeamAccess(subscription);

@@ -60,19 +60,22 @@ type StripeSubscriptionItem = {
   quantity?: number;
 };
 
+type StripeSubscriptionObject = StripeCheckoutSession & {
+  cancel_at_period_end?: boolean;
+  client_reference_id?: string;
+  customer?: string;
+  id?: string;
+  items?: {
+    data?: StripeSubscriptionItem[];
+  };
+  metadata?: Record<string, string | undefined>;
+  status?: string;
+  subscription?: string;
+};
+
 type StripeWebhookEvent = {
   data?: {
-    object?: StripeCheckoutSession & {
-      client_reference_id?: string;
-      customer?: string;
-      id?: string;
-      items?: {
-        data?: StripeSubscriptionItem[];
-      };
-      metadata?: Record<string, string | undefined>;
-      status?: string;
-      subscription?: string;
-    };
+    object?: StripeSubscriptionObject;
   };
   type?: string;
 };
@@ -245,7 +248,8 @@ export function getStripeWebhookSecret() {
   return process.env.STRIPE_WEBHOOK_SECRET;
 }
 
-export function mapStripeStatus(status?: string): SubscriptionStatus {
+export function mapStripeStatus(status?: string, cancelAtPeriodEnd = false): SubscriptionStatus {
+  if (cancelAtPeriodEnd) return "canceled";
   if (status === "trialing") return "trialing";
   if (status === "past_due" || status === "unpaid") return "past_due";
   if (status === "canceled" || status === "incomplete_expired") return "canceled";
@@ -253,6 +257,7 @@ export function mapStripeStatus(status?: string): SubscriptionStatus {
 }
 
 export function readStripeSubscriptionDetails(object?: {
+  cancel_at_period_end?: boolean;
   items?: {
     data?: StripeSubscriptionItem[];
   };
@@ -262,7 +267,7 @@ export function readStripeSubscriptionDetails(object?: {
   const metadata = object?.metadata ?? {};
   const item = object?.items?.data?.[0];
   const matchedPrice = getPlanCycleForPrice(item?.price?.id);
-  const status = mapStripeStatus(object?.status);
+  const status = mapStripeStatus(object?.status, object?.cancel_at_period_end);
   const plan = matchedPrice?.plan ?? readMetadataPlan(metadata.plan);
   const activePlan = status === "canceled" ? "free" : plan;
   const cycle = matchedPrice?.cycle ?? (metadata.cycle === "annual" ? "annual" : "monthly");
@@ -277,4 +282,22 @@ export function readStripeSubscriptionDetails(object?: {
 
 export function parseStripeWebhookEvent(payload: string) {
   return JSON.parse(payload) as StripeWebhookEvent;
+}
+
+export async function readStripeSubscription(subscriptionId: string): Promise<StripeSubscriptionObject> {
+  const secretKey = getStripeSecretKey();
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured.");
+
+  const response = await fetch(`${STRIPE_API_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+    headers: {
+      Authorization: `Bearer ${secretKey}`
+    }
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "Stripe subscription lookup failed.");
+    throw new Error(message);
+  }
+
+  return (await response.json()) as StripeSubscriptionObject;
 }
