@@ -107,6 +107,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   const teamWorkspace = teamWorkspaceResult.workspace;
   const canManageInvites = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
   const viewerMembership: TeamWorkspaceMember | undefined = canManageInvites ? undefined : memberWorkspaceResult?.membership;
+  const canSeedWorkspaceLedger = canManageInvites || viewerMembership?.role === "analyst";
   const openSeats = teamWorkspace.openSeats;
   const workspaceLedger = await readSharedWorkspaceLedger(teamWorkspace.members, teamWorkspace.ownerUserId, accountUserId, accountLedger);
   const watchlistBills = buildWatchlistBills(workspaceLedger.follows);
@@ -220,7 +221,11 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               icon={<ListChecks />}
               eyebrow="Workspace Seed"
               title="Saved bills"
-              description="Your account watchlist is the starting point for the shared Team watchlist."
+              description={
+                canSeedWorkspaceLedger
+                  ? "Owner and analyst account watchlists seed the shared Team watchlist."
+                  : "Owner and analyst watchlists seed the shared Team workspace for Viewer seats."
+              }
             />
             <Link href="/search?type=bills" className={mobileViewAllClass}>Bills</Link>
           </div>
@@ -243,7 +248,11 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             <EmptyPanel
               actionHref="/search?type=bills"
               actionLabel="Add bills"
-              description="Save bills to your account to seed the first shared Team watchlist."
+              description={
+                canSeedWorkspaceLedger
+                  ? "Save bills to your account to seed the first shared Team watchlist."
+                  : "Owner and analyst saves will appear here once they seed the shared Team watchlist."
+              }
               title="No saved bills yet"
             />
           )}
@@ -595,9 +604,7 @@ async function readSharedWorkspaceLedger(
   currentUserId: string,
   currentLedger: AccountLedgerSnapshot
 ): Promise<AccountLedgerSnapshot> {
-  const memberUserIds = Array.from(
-    new Set([ownerUserId, currentUserId, ...members.map((member) => member.userId).filter((userId): userId is string => Boolean(userId))])
-  );
+  const memberUserIds = readSharedWorkspaceLedgerContributorIds(members, ownerUserId);
   const ledgers = await Promise.all(
     memberUserIds.map(async (userId) => {
       if (userId === currentUserId) return currentLedger;
@@ -606,6 +613,18 @@ async function readSharedWorkspaceLedger(
   );
 
   return mergeLedgerSnapshots(ledgers);
+}
+
+function readSharedWorkspaceLedgerContributorIds(members: TeamWorkspaceMember[], ownerUserId: string) {
+  return Array.from(
+    new Set([
+      ownerUserId,
+      ...members
+        .filter((member) => member.role === "owner" || member.role === "analyst")
+        .map((member) => member.userId)
+        .filter((userId): userId is string => Boolean(userId))
+    ])
+  );
 }
 
 function mergeLedgerSnapshots(ledgers: AccountLedgerSnapshot[]): AccountLedgerSnapshot {
