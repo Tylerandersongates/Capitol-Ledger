@@ -1,9 +1,30 @@
+import { existsSync, readFileSync } from "fs";
+
+loadLocalEnv();
+
 const baseUrl = (process.env.AUTH_QA_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3020").replace(/\/$/, "");
 const shouldCreateAccount = process.env.AUTH_QA_CREATE_ACCOUNT === "true";
 const shouldTestRateLimit = process.env.AUTH_QA_RATE_LIMIT === "true";
 
 const results = [];
 const cookieJar = new Map();
+
+function loadLocalEnv() {
+  if (!existsSync(".env.local")) return;
+
+  const lines = readFileSync(".env.local", "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    const rawValue = trimmed.slice(index + 1).trim();
+    if (!key || process.env[key] !== undefined) continue;
+
+    process.env[key] = rawValue.replace(/^['"]|['"]$/g, "");
+  }
+}
 
 function origin() {
   return new URL(baseUrl).origin;

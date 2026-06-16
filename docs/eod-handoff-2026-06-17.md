@@ -75,6 +75,12 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Source-level guard check confirmed Team invites and seats APIs both call `getSubscriptionForAccountUser`, require active/trialing Team owner access, and otherwise only allow an Admin membership; the canceled owner path returns the shared `403` forbidden response because the owner membership is not an Admin membership.
 - Source-level member access check confirmed `readTeamWorkspaceForMember` calls `readOwnerTeamSeatCount`, which syncs the owner Stripe subscription before allowing member seats; pending-canceled owners throw a `403` Team workspace error, so Admin/Analyst/Viewer access should also lock once owner billing syncs.
 - The real pending-cancel workspace last showed only the owner seat (`1/4`) and zero Admin/Analyst/Viewer seats before lockout, so there is no current real Admin/Analyst seat on that workspace to runtime-test.
+- Added Tyler-only private follow-up items to `docs/tyler-personal-beta-test-guide.md` so the blocked API probe and real-member cancellation checks stay out of tester-facing beta instructions until Tyler's pre-tester pass.
+- DB-backed beta readiness passed with `BETA_CHECK_DATABASE=true`: `BetaFeedback` table and `releaseDecision` column are present.
+- Production-mode beta readiness passed with `BETA_REQUIRE_PRODUCTION=true`: feedback intake files, required env, reviewer config, and beta feedback database schema are all configured.
+- Strict auth email provider readiness passed after aligning the script with other readiness checks so it loads `.env.local`: Resend mode, API key, sender, app URL, DB, and auth secret are configured.
+- Production auth database schema is ready; local config still warns that `AUTH_COOKIE_SECURE` is not set to `true`.
+- Safe production auth endpoint QA passed against `https://project-qosv1.vercel.app`; live account creation and rate-limit stress were intentionally skipped.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -118,6 +124,21 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `pnpm exec tsc --noEmit --pretty false` passed.
   - `pnpm run build` passed.
   - Focused parser check passed for both `cancel_at` and `cancel_at_period_end`.
+- DB-backed beta readiness check passed under Node `v22.22.3` with network access:
+  - `BetaFeedback` table is present.
+  - `BetaFeedback.releaseDecision` column is present.
+- Production-mode beta readiness check passed under Node `v22.22.3` with network access.
+- `scripts/check-auth-email-delivery.mjs`, `scripts/check-production-auth.mjs`, and `scripts/qa-production-auth.mjs` now load `.env.local` before running so diagnostics do not report false missing-env blockers when launched from package scripts.
+- `AUTH_EMAIL_REQUIRE_PROVIDER=true pnpm auth-email:check` passed under Node `v22.22.3`.
+- `pnpm production-auth:check` passed against the configured database; warning only: `AUTH_COOKIE_SECURE` is not `true` in local config.
+- `pnpm production-auth:qa` passed safe deployed endpoint checks:
+  - session endpoint responds.
+  - protected account endpoint requires auth.
+  - cross-origin sign-in is rejected.
+  - wrong-password sign-in is production-shaped.
+  - password reset request and invalid-token confirmation are production-shaped.
+  - live account creation skipped by default.
+  - rate-limit stress skipped by default.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -127,12 +148,12 @@ Generated at the break on June 16, 2026 for the next continuation.
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
-- Production email delivery is disabled by current config.
-- Full database beta table check was not run in this diagnostic pass.
+- Live auth email receipt has not been inbox-verified in this pass; strict provider readiness is configured, and safe production auth endpoint QA passed.
+- Local config warns `AUTH_COOKIE_SECURE` is not `true`; confirm deployed HTTPS env has secure auth cookies before external testers.
 
 ## Next Best Steps
-1. If possible, confirm Team invites and Team seats APIs return `403` for the canceled owner using Vercel logs or a same-session API harness outside the in-app browser; direct API navigation and bookmarklet probes are blocked by the in-app browser policy.
-2. Runtime-test Admin/Analyst lockout only when a real canceled owner workspace actually has those seats; the current real pending-cancel workspace has no Admin/Analyst seats.
-3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-4. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime/tooling path is stable enough for DB-backed diagnostics.
+1. Inbox-verify one live auth email path before relying on tester email flows; safe endpoint QA passed, but live receipt was not tested.
+2. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+3. Confirm deployed `AUTH_COOKIE_SECURE=true` for HTTPS auth cookies, or set it before external testers.
+4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

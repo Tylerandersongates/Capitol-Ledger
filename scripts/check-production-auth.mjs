@@ -1,4 +1,7 @@
+import { existsSync, readFileSync } from "fs";
 import { PrismaClient } from "@prisma/client";
+
+loadLocalEnv();
 
 const requiredColumns = {
   AccountGamification: ["userId", "civicScore", "dayStreak", "eventCounts", "earnedBadgeIds"],
@@ -13,6 +16,23 @@ const requiredColumns = {
   User: ["email", "name", "firstName", "lastName", "passwordHash", "emailVerifiedAt", "partyAffiliation", "districtLabel", "districtState", "districtCode", "notificationPreferences"],
   WeeklyBriefDelivery: ["userId", "status", "deliveryMode", "plan", "preparedAt", "sentAt", "failedAt"]
 };
+
+function loadLocalEnv() {
+  if (!existsSync(".env.local")) return;
+
+  const lines = readFileSync(".env.local", "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    const rawValue = trimmed.slice(index + 1).trim();
+    if (!key || process.env[key] !== undefined) continue;
+
+    process.env[key] = rawValue.replace(/^['"]|['"]$/g, "");
+  }
+}
 
 async function main() {
   if (!process.env.DATABASE_URL) {
