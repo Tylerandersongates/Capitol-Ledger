@@ -14,11 +14,11 @@ Generated at the break on June 16, 2026 for the next continuation.
 ## Baseline
 - Repo: `/Users/tylergates/Documents/Capitol Ledger`
 - Branch: `main`
-- HEAD: `d14b838 (HEAD -> main, origin/main) Add Team admin workspace role`
+- HEAD: `14a78f0 (HEAD -> main, origin/main) Update Round 3 beta Team checklist`
 - Origin sync: `0 0`
 - Worktree: no intentional app-code changes after Admin QA; `git status` can hang in this shell.
 - Production target: `https://project-qosv1.vercel.app`
-- Browser state: in-app browser open on `/team`, signed in as the fresh fake Admin QA account from the latest production Team test.
+- Browser state: in-app browser open on `/team?downgradeQa=14a78f0`; Team access gate is visible after owner downgrade QA.
 
 ## Completed Today
 - Added Team Admin role so an owner can delegate workspace management without giving away billing control.
@@ -27,7 +27,9 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Confirmed Viewers are read-only for shared Team workspace seed data.
 - Confirmed Admin cannot remove the owner seat.
 - Confirmed removing a Viewer seat converts that account back to Free and reopens one paid seat.
-- Left Stripe portal downgrade/cancel as a known issue to revisit intentionally.
+- Added Admin delegation, Viewer read-only, seat removal, and owner downgrade rows to the live Round 3 Beta checklist.
+- Confirmed owner downgrade lock behavior with Admin and Analyst seats present.
+- Confirmed fake signed-webhook customer IDs cannot validate Stripe Billing Portal because Stripe rejects the synthetic customer ID.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -42,6 +44,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Admin removed Viewer; Viewer subscription became Free/demo and `/team` returned to the access gate.
 - Final Team capacity after removal: `3/4 occupied`, `1 open`.
 - QA state file: `/private/tmp/capitol-ledger-team-admin-qa.json`
+- Production `/beta?check=14a78f0` showed `17 flows` with Admin delegation, Viewer read-only, seat removal, and owner downgrade rows.
+- Owner downgrade QA started with owner/admin/analyst active in the 4-seat workspace.
+- Owner billing portal request returned `503` because the fake owner subscription used a synthetic customer ID; Stripe test mode returned `resource_missing`.
+- Signed `customer.subscription.deleted` webhook was accepted for the fake owner.
+- Owner subscription became `stripe/free/canceled`.
+- Owner, Admin, and Analyst management APIs returned `403` after owner downgrade.
+- Owner, Admin, and Analyst `/team` pages showed the access gate after owner downgrade.
+- Browser console errors on locked `/team`: none.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -49,7 +59,9 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Backend readiness completed with configuration warnings only: auth email disabled, Congress API/sync dry-run, weekly brief delivery disabled, Redis/Sentry/OpenAI optional/missing.
 - Auth email delivery check passed demo-safe mode; production email provider is disabled.
 - Local preview runtime check failed because this shell uses Node `v24.14.0`; repo check requires Node 20 or 22 to avoid Next route-compilation hangs.
+- Continuation runtime check found no `node` on PATH, no Homebrew Node 20/22, and bundled Codex Node is still `v24.14.0`.
 - `pnpm lint` and full `tsc --noEmit` hung under Node 24 and were stopped.
+- `scripts/check-local-preview-runtime.mjs` passed repo-local `node_modules`, duplicate-link, and SWC signature checks; Node 24 remains the one blocking issue.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -57,14 +69,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - API references checked in QA scripts point to existing app routes.
 
 ## Known Issues
-- Stripe billing portal/downgrade/cancel remains a known issue.
+- Stripe Billing Portal still needs real Stripe Checkout-created customer/subscription QA; the fake signed-webhook customer cannot exercise portal sessions.
 - Local diagnostic/build tooling is unreliable until the shell uses Node 20 or 22.
 - Production email delivery is disabled by current config.
 - Full database beta table check was not run in this diagnostic pass.
 
 ## Next Best Steps
 1. Fix local runtime to Node 20 or 22, then rerun `pnpm lint`, `pnpm exec tsc --noEmit --pretty false`, and `pnpm run build`.
-2. Run owner downgrade/cancel behavior with Admin and Analyst present.
-3. Confirm Team workspace locks when owner loses active Team billing.
-4. Add Admin delegation, Viewer read-only, seat removal, and owner downgrade to the Round 3 Beta checklist.
-5. Revisit Stripe billing portal/downgrade flow deliberately after Team owner downgrade QA.
+2. Create or use a real Stripe test-mode Checkout-created Team subscription, then request Billing Portal and test downgrade/cancel from that real Stripe customer.
+3. Confirm Stripe downgrade/cancel webhooks from the real customer also lock owner, Admin, and Analyst workspace access.
+4. Run full database beta table check with `BETA_CHECK_DATABASE=true` once the runtime is fixed.
+5. Keep the signed-webhook fake owner downgraded as evidence of the lock path unless a fresh Team QA workspace is needed.
