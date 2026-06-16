@@ -78,7 +78,7 @@ function InviteCard({
   const signInHref = `/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
   const createHref = `/sign-in?mode=create&returnTo=${encodeURIComponent(returnTo)}`;
   const emailMatches = Boolean(sessionEmail && sessionEmail.trim().toLowerCase() === preview.invite.email);
-  const roleLabel = preview.invite.role === "viewer" ? "Viewer" : "Analyst";
+  const roleLabel = preview.invite.role === "admin" ? "Admin" : preview.invite.role === "viewer" ? "Viewer" : "Analyst";
 
   return (
     <>

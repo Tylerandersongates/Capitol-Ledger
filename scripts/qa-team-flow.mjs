@@ -116,6 +116,12 @@ function configuredName(kind) {
   };
 }
 
+function configuredInviteRole() {
+  const role = process.env.TEAM_QA_INVITE_ROLE;
+  if (role === "admin" || role === "viewer") return role;
+  return "analyst";
+}
+
 async function createAccount(kind, jar, email, password) {
   const name = configuredName(kind);
   return assertStatus(
@@ -293,7 +299,7 @@ async function runInviteCheck(owner, invitee) {
     {
       body: {
         email: invitee.email,
-        role: process.env.TEAM_QA_INVITE_ROLE === "viewer" ? "viewer" : "analyst"
+        role: configuredInviteRole()
       },
       jar: owner.jar,
       method: "POST"

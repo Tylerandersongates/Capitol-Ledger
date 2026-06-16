@@ -68,6 +68,7 @@ type TeamWorkspaceOwnerInput = {
   name?: string;
   seatCount: number;
   userId: string;
+  workspaceId?: string;
   workspaceName?: string;
 };
 
@@ -200,12 +201,13 @@ function teamWorkspaceName(input: TeamWorkspaceOwnerInput) {
 }
 
 function normalizeRole(value: unknown): TeamWorkspaceRole {
-  if (value === "owner" || value === "viewer") return value;
+  if (value === "owner" || value === "admin" || value === "viewer") return value;
   return "analyst";
 }
 
 export function normalizeTeamInviteRole(value: unknown): Exclude<TeamWorkspaceRole, "owner"> {
-  return value === "viewer" ? "viewer" : "analyst";
+  if (value === "admin" || value === "viewer") return value;
+  return "analyst";
 }
 
 export function normalizeTeamInviteEmail(value: unknown) {
@@ -287,8 +289,9 @@ function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined, own
 function sortMembers(members: TeamWorkspaceMember[]) {
   const roleRank: Record<TeamWorkspaceRole, number> = {
     owner: 0,
-    analyst: 1,
-    viewer: 2
+    admin: 1,
+    analyst: 2,
+    viewer: 3
   };
 
   return [...members].sort((left, right) => roleRank[left.role] - roleRank[right.role] || left.email.localeCompare(right.email));
@@ -507,7 +510,7 @@ async function readWorkspaceSnapshotFromDatabase(workspace: DbTeamWorkspace, sea
       FROM "TeamMember"
       WHERE "workspaceId" = ${workspace.id} AND "status" = 'active'
       ORDER BY
-        CASE "role" WHEN 'owner' THEN 0 WHEN 'analyst' THEN 1 ELSE 2 END,
+        CASE "role" WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'analyst' THEN 2 ELSE 3 END,
         "email" ASC
     `,
     prisma.$queryRaw<DbTeamInvite[]>`
@@ -604,12 +607,51 @@ export async function readOrCreateTeamWorkspaceForOwner(input: TeamWorkspaceOwne
   return readOrCreateDatabaseTeamWorkspace(input);
 }
 
-function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceInviteResult {
+function readMemoryTeamWorkspaceForManagement(input: TeamWorkspaceOwnerInput): MemoryTeamWorkspace {
+  if (input.workspaceId) {
+    const workspace = Array.from(memoryWorkspaceStore.values()).find((candidate) => candidate.id === input.workspaceId);
+    if (workspace) return workspace;
+    throw new TeamWorkspaceError("Unable to load the Team workspace.", 404);
+  }
+
   readOrCreateMemoryTeamWorkspace(input);
   const workspace = memoryWorkspaceStore.get(input.userId);
-  if (!workspace) {
-    throw new TeamWorkspaceError("Unable to prepare the Team workspace.", 500);
+  if (!workspace) throw new TeamWorkspaceError("Unable to prepare the Team workspace.", 500);
+  return workspace;
+}
+
+async function readDatabaseTeamWorkspaceForManagement(input: TeamWorkspaceOwnerInput): Promise<TeamWorkspaceResult> {
+  if (!input.workspaceId) return readOrCreateDatabaseTeamWorkspace(input);
+  if (!(await ensureTeamWorkspaceSchema())) {
+    const workspace = readMemoryTeamWorkspaceForManagement(input);
+
+    return {
+      mode: "memory",
+      workspace: snapshotFromParts({
+        ...workspace,
+        seatCount: input.seatCount
+      })
+    };
   }
+
+  const prisma = getPrisma();
+  const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
+    SELECT "id", "ownerUserId", "name", "createdAt", "updatedAt"
+    FROM "TeamWorkspace"
+    WHERE "id" = ${input.workspaceId} AND "ownerUserId" = ${input.userId}
+    LIMIT 1
+  `;
+  const workspace = workspaces[0];
+  if (!workspace) throw new TeamWorkspaceError("Unable to load the Team workspace.", 404);
+
+  return {
+    mode: "database",
+    workspace: await readWorkspaceSnapshotFromDatabase(workspace, input.seatCount)
+  };
+}
+
+function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceInviteResult {
+  const workspace = readMemoryTeamWorkspaceForManagement(input);
 
   const email = normalizeTeamInviteEmail(input.inviteEmail);
   if (!isValidTeamInviteEmail(email)) throw new TeamWorkspaceError("Enter a valid teammate email.", 400);
@@ -671,7 +713,7 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
   const email = normalizeTeamInviteEmail(input.inviteEmail);
   if (!isValidTeamInviteEmail(email)) throw new TeamWorkspaceError("Enter a valid teammate email.", 400);
 
-  const workspaceResult = await readOrCreateDatabaseTeamWorkspace(input);
+  const workspaceResult = await readDatabaseTeamWorkspaceForManagement(input);
   if (workspaceResult.mode !== "database") return createMemoryTeamInvite(input);
 
   const prisma = getPrisma();
@@ -763,9 +805,7 @@ export async function createTeamWorkspaceInvite(input: TeamWorkspaceInviteInput)
 }
 
 function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorkspaceSeatReleaseResult {
-  readOrCreateMemoryTeamWorkspace(input);
-  const workspace = memoryWorkspaceStore.get(input.userId);
-  if (!workspace) throw new TeamWorkspaceError("Unable to prepare the Team workspace.", 500);
+  const workspace = readMemoryTeamWorkspaceForManagement(input);
 
   const seatType = normalizeSeatType(input.seatType);
   const seatId = normalizeSeatId(input.seatId);
@@ -823,7 +863,7 @@ function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorksp
 async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Promise<TeamWorkspaceSeatReleaseResult> {
   if (!(await ensureTeamWorkspaceSchema())) return releaseMemoryTeamSeat(input);
 
-  const workspaceResult = await readOrCreateDatabaseTeamWorkspace(input);
+  const workspaceResult = await readDatabaseTeamWorkspaceForManagement(input);
   if (workspaceResult.mode !== "database") return releaseMemoryTeamSeat(input);
 
   const prisma = getPrisma();

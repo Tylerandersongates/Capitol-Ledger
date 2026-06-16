@@ -7,7 +7,7 @@ export type BillingCycle = "monthly" | "annual";
 export type SubscriptionPlanId = "free" | "pro" | "team";
 export type SubscriptionProvider = "demo" | "stripe" | "revenuecat" | "app-store";
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
-export type TeamWorkspaceRole = "owner" | "analyst" | "viewer";
+export type TeamWorkspaceRole = "owner" | "admin" | "analyst" | "viewer";
 export type TeamMemberStatus = "active" | "removed";
 export type TeamInviteStatus = "pending" | "accepted" | "revoked" | "expired";
 

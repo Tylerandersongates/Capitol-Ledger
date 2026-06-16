@@ -105,9 +105,10 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
     : memberWorkspaceResult;
   if (!teamWorkspaceResult) return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
   const teamWorkspace = teamWorkspaceResult.workspace;
-  const canManageInvites = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
-  const viewerMembership: TeamWorkspaceMember | undefined = canManageInvites ? undefined : memberWorkspaceResult?.membership;
-  const canSeedWorkspaceLedger = canManageInvites || viewerMembership?.role === "analyst";
+  const canManageBilling = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
+  const viewerMembership: TeamWorkspaceMember | undefined = canManageBilling ? undefined : memberWorkspaceResult?.membership;
+  const canManageTeam = canManageBilling || viewerMembership?.role === "admin";
+  const canSeedWorkspaceLedger = canManageTeam || viewerMembership?.role === "analyst";
   const openSeats = teamWorkspace.openSeats;
   const workspaceLedger = await readSharedWorkspaceLedger(teamWorkspace.members, teamWorkspace.ownerUserId, accountUserId, accountLedger);
   const watchlistBills = buildWatchlistBills(workspaceLedger.follows);
@@ -120,24 +121,24 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   ];
   const setupSteps = [
     {
-      description: canManageInvites
+      description: canManageBilling
         ? `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is connected to this workspace.`
         : "The workspace owner has active Team billing for this paid seat.",
       label: "Billing active",
-      value: canManageInvites ? formatStatusLabel(subscription.status) : "Active"
+      value: canManageBilling ? formatStatusLabel(subscription.status) : "Active"
     },
     {
-      description: canManageInvites
+      description: canManageBilling
         ? `${ownerName || "The signed-in account"} owns billing, workspace setup, and invite rollout.`
         : `${session.user.email} is assigned as ${formatRoleLabel(viewerMembership?.role)}.`,
-      label: canManageInvites ? "Owner seat assigned" : "Member seat assigned",
-      value: canManageInvites ? "Ready" : "Accepted"
+      label: canManageBilling ? "Owner seat assigned" : `${formatRoleLabel(viewerMembership?.role)} seat assigned`,
+      value: canManageBilling ? "Ready" : viewerMembership?.role === "admin" ? "Manager" : "Accepted"
     },
     {
-      description: canManageInvites
+      description: canManageTeam
         ? `${openSeats} open paid seat${openSeats === 1 ? "" : "s"} can be reserved with pending invite records.`
         : `${teamWorkspace.occupiedSeats} of ${teamWorkspace.seatCount} paid seats are assigned or pending in this workspace.`,
-      label: canManageInvites ? "Invite capacity" : "Workspace capacity",
+      label: canManageTeam ? "Invite capacity" : "Workspace capacity",
       value: `${teamWorkspace.seatCount} seats`
     }
   ];
@@ -167,8 +168,10 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               <div className={premiumEyebrowClass}>Civic Team Workspace</div>
               <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{teamWorkspace.name}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                {canManageInvites
+                {canManageBilling
                   ? "Your paid Team workspace is active. Seat quantity comes from checkout, and pending invites now reserve open seats in the workspace."
+                  : canManageTeam
+                    ? "Your Team admin seat is active. You can manage invites, seats, shared watchlists, and alert candidates while the owner keeps billing control."
                   : "Your Team seat is active. Shared workspace records, roles, and alert candidates are available through the owner-paid plan."}
               </p>
             </div>
@@ -184,15 +187,15 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[13px] font-semibold text-[#74f49a]">
                 <CheckCircle2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                {canManageInvites ? "Team subscription active" : "Team seat active"}
+                {canManageBilling ? "Team subscription active" : canManageTeam ? "Team admin active" : "Team seat active"}
               </div>
               <div className="mt-1 text-[12px] leading-snug text-white/52">
-                {canManageInvites
+                {canManageBilling
                   ? `${formatProviderLabel(subscription.provider)} record, ${formatStatusLabel(subscription.status).toLowerCase()} status, ${teamWorkspace.seatCount} paid seats.`
                   : `${formatRoleLabel(viewerMembership?.role)} access, ${teamWorkspace.occupiedSeats}/${teamWorkspace.seatCount} seats assigned.`}
               </div>
             </div>
-            {canManageInvites ? (
+            {canManageBilling ? (
               <Link href="/upgrade" className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
                 Manage
               </Link>
@@ -223,8 +226,8 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               title="Saved bills"
               description={
                 canSeedWorkspaceLedger
-                  ? "Owner and analyst account watchlists seed the shared Team watchlist."
-                  : "Owner and analyst watchlists seed the shared Team workspace for Viewer seats."
+                  ? "Owner, admin, and analyst account watchlists seed the shared Team watchlist."
+                  : "Owner, admin, and analyst watchlists seed the shared Team workspace for Viewer seats."
               }
             />
             <Link href="/search?type=bills" className={mobileViewAllClass}>Bills</Link>
@@ -251,7 +254,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               description={
                 canSeedWorkspaceLedger
                   ? "Save bills to your account to seed the first shared Team watchlist."
-                  : "Owner and analyst saves will appear here once they seed the shared Team watchlist."
+                  : "Owner, admin, and analyst saves will appear here once they seed the shared Team watchlist."
               }
               title="No saved bills yet"
             />
@@ -315,7 +318,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
           </div>
         </MobileCard>
 
-        {canManageInvites ? (
+        {canManageTeam ? (
           <MobileCard variant="rust" className="px-5 py-5">
             <SectionHeader
               icon={<UserPlus />}
@@ -553,6 +556,7 @@ function formatProviderLabel(provider: AccountSubscriptionSnapshot["provider"]) 
 
 function formatRoleLabel(role?: TeamWorkspaceRole) {
   if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
   if (role === "viewer") return "Viewer";
   return "Analyst";
 }
@@ -560,6 +564,7 @@ function formatRoleLabel(role?: TeamWorkspaceRole) {
 function buildRoleMetrics(members: TeamWorkspaceMember[], invites: TeamWorkspaceInvite[]): RoleMetric[] {
   const roleCounts: Record<TeamWorkspaceRole, { active: number; pending: number }> = {
     owner: { active: 0, pending: 0 },
+    admin: { active: 0, pending: 0 },
     analyst: { active: 0, pending: 0 },
     viewer: { active: 0, pending: 0 }
   };
@@ -578,6 +583,11 @@ function buildRoleMetrics(members: TeamWorkspaceMember[], invites: TeamWorkspace
       value: String(roleCounts.owner.active)
     },
     {
+      description: roleSummary("admin", roleCounts.admin),
+      label: "Admin",
+      value: String(roleCounts.admin.active + roleCounts.admin.pending)
+    },
+    {
       description: roleSummary("analyst", roleCounts.analyst),
       label: "Analyst",
       value: String(roleCounts.analyst.active + roleCounts.analyst.pending)
@@ -591,7 +601,7 @@ function buildRoleMetrics(members: TeamWorkspaceMember[], invites: TeamWorkspace
 }
 
 function roleSummary(role: Exclude<TeamWorkspaceRole, "owner">, counts: { active: number; pending: number }) {
-  const label = role === "analyst" ? "Analyst" : "Viewer";
+  const label = role === "admin" ? "Admin" : role === "analyst" ? "Analyst" : "Viewer";
   const active = `${counts.active} active`;
   const pending = `${counts.pending} pending`;
 
@@ -620,7 +630,7 @@ function readSharedWorkspaceLedgerContributorIds(members: TeamWorkspaceMember[],
     new Set([
       ownerUserId,
       ...members
-        .filter((member) => member.role === "owner" || member.role === "analyst")
+        .filter((member) => member.role === "owner" || member.role === "admin" || member.role === "analyst")
         .map((member) => member.userId)
         .filter((userId): userId is string => Boolean(userId))
     ])

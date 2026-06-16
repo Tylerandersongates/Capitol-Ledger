@@ -5,7 +5,7 @@ import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { deliverTeamInviteEmail } from "@/lib/team-invite-email";
-import { createTeamWorkspaceInvite, readOrCreateTeamWorkspaceForOwner, TeamWorkspaceError } from "@/lib/team-workspace";
+import { createTeamWorkspaceInvite, readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember, TeamWorkspaceError } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
@@ -28,10 +28,56 @@ async function readTeamAccount() {
   };
 }
 
+async function readTeamManagerAccount() {
+  const account = await readTeamAccount();
+  if (!account) return null;
+
+  if (hasActiveTeamAccess(account.subscription)) {
+    const seatCount = normalizeTeamSeatCount(account.subscription.seatCount);
+    const result = await readOrCreateTeamWorkspaceForOwner({
+      email: account.session.user.email,
+      name: account.session.user.name,
+      seatCount,
+      userId: account.accountUserId
+    });
+
+    return {
+      ...account,
+      managerRole: "owner" as const,
+      seatCount,
+      workspace: result.workspace,
+      workspaceMode: result.mode
+    };
+  }
+
+  const memberResult = await readTeamWorkspaceForMember({
+    email: account.session.user.email,
+    userId: account.accountUserId
+  }).catch(() => null);
+
+  if (memberResult?.membership.role !== "admin") {
+    return {
+      ...account,
+      managerRole: null,
+      seatCount: 0,
+      workspace: null,
+      workspaceMode: null
+    };
+  }
+
+  return {
+    ...account,
+    managerRole: "admin" as const,
+    seatCount: memberResult.workspace.seatCount,
+    workspace: memberResult.workspace,
+    workspaceMode: memberResult.mode
+  };
+}
+
 function forbiddenTeamResponse(subscription: AccountSubscriptionSnapshot) {
   return NextResponse.json(
     {
-      error: "An active Team subscription is required for workspace invites.",
+      error: "Team owner or admin access is required for workspace invites.",
       subscription
     },
     { status: 403 }
@@ -39,26 +85,19 @@ function forbiddenTeamResponse(subscription: AccountSubscriptionSnapshot) {
 }
 
 export async function GET() {
-  const account = await readTeamAccount();
+  const account = await readTeamManagerAccount();
 
   if (!account) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  if (!hasActiveTeamAccess(account.subscription)) return forbiddenTeamResponse(account.subscription);
-
-  const seatCount = normalizeTeamSeatCount(account.subscription.seatCount);
-  const result = await readOrCreateTeamWorkspaceForOwner({
-    email: account.session.user.email,
-    name: account.session.user.name,
-    seatCount,
-    userId: account.accountUserId
-  });
+  if (!account.managerRole || !account.workspace) return forbiddenTeamResponse(account.subscription);
 
   return NextResponse.json({
-    mode: result.mode,
+    managerRole: account.managerRole,
+    mode: account.workspaceMode,
     subscriptionMode: account.mode,
-    workspace: result.workspace
+    workspace: account.workspace
   });
 }
 
@@ -70,19 +109,18 @@ export async function POST(request: NextRequest) {
   });
   if (guard) return guard;
 
-  const account = await readTeamAccount();
+  const account = await readTeamManagerAccount();
 
   if (!account) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  if (!hasActiveTeamAccess(account.subscription)) return forbiddenTeamResponse(account.subscription);
+  if (!account.managerRole || !account.workspace) return forbiddenTeamResponse(account.subscription);
 
   const body = (await request.json().catch(() => ({}))) as {
     email?: string;
     role?: string;
   };
-  const seatCount = normalizeTeamSeatCount(account.subscription.seatCount);
 
   try {
     const result = await createTeamWorkspaceInvite({
@@ -90,8 +128,9 @@ export async function POST(request: NextRequest) {
       inviteEmail: body.email ?? "",
       name: account.session.user.name,
       role: body.role,
-      seatCount,
-      userId: account.accountUserId
+      seatCount: account.seatCount,
+      userId: account.workspace.ownerUserId,
+      workspaceId: account.workspace.id
     });
     const inviteDelivery = await deliverTeamInviteEmail({
       invitedBy: {
@@ -122,6 +161,7 @@ export async function POST(request: NextRequest) {
               sent: inviteDelivery.delivered
             },
       mode: result.mode,
+      managerRole: account.managerRole,
       subscriptionMode: account.mode,
       workspace: result.workspace
     });

@@ -4,7 +4,7 @@ import { getAccountSubscription } from "@/lib/account-subscription";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
-import { releaseTeamWorkspaceSeat, TeamWorkspaceError } from "@/lib/team-workspace";
+import { readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember, releaseTeamWorkspaceSeat, TeamWorkspaceError } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
@@ -27,10 +27,56 @@ async function readTeamAccount() {
   };
 }
 
+async function readTeamManagerAccount() {
+  const account = await readTeamAccount();
+  if (!account) return null;
+
+  if (hasActiveTeamAccess(account.subscription)) {
+    const seatCount = normalizeTeamSeatCount(account.subscription.seatCount);
+    const result = await readOrCreateTeamWorkspaceForOwner({
+      email: account.session.user.email,
+      name: account.session.user.name,
+      seatCount,
+      userId: account.accountUserId
+    });
+
+    return {
+      ...account,
+      managerRole: "owner" as const,
+      seatCount,
+      workspace: result.workspace,
+      workspaceMode: result.mode
+    };
+  }
+
+  const memberResult = await readTeamWorkspaceForMember({
+    email: account.session.user.email,
+    userId: account.accountUserId
+  }).catch(() => null);
+
+  if (memberResult?.membership.role !== "admin") {
+    return {
+      ...account,
+      managerRole: null,
+      seatCount: 0,
+      workspace: null,
+      workspaceMode: null
+    };
+  }
+
+  return {
+    ...account,
+    managerRole: "admin" as const,
+    seatCount: memberResult.workspace.seatCount,
+    workspace: memberResult.workspace,
+    workspaceMode: memberResult.mode
+  };
+}
+
 function forbiddenTeamResponse(subscription: AccountSubscriptionSnapshot) {
   return NextResponse.json(
     {
-      error: "An active Team subscription is required to manage workspace seats.",
+      error: "Team owner or admin access is required to manage workspace seats.",
       subscription
     },
     { status: 403 }
@@ -49,25 +95,27 @@ export async function DELETE(request: NextRequest) {
   });
   if (guard) return guard;
 
-  const account = await readTeamAccount();
+  const account = await readTeamManagerAccount();
 
   if (!account) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  if (!hasActiveTeamAccess(account.subscription)) return forbiddenTeamResponse(account.subscription);
+  if (!account.managerRole || !account.workspace) return forbiddenTeamResponse(account.subscription);
 
   try {
     const result = await releaseTeamWorkspaceSeat({
       email: account.session.user.email,
       name: account.session.user.name,
-      seatCount: normalizeTeamSeatCount(account.subscription.seatCount),
+      seatCount: account.seatCount,
       seatId: body.seatId ?? "",
       seatType: body.seatType,
-      userId: account.accountUserId
+      userId: account.workspace.ownerUserId,
+      workspaceId: account.workspace.id
     });
 
     return NextResponse.json({
+      managerRole: account.managerRole,
       mode: result.mode,
       release: result.release,
       subscriptionMode: account.mode,

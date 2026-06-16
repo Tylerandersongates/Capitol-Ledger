@@ -50,6 +50,7 @@ export function buildTeamInviteUrl(token: string) {
 }
 
 function roleLabel(role: string) {
+  if (role === "admin") return "Admin";
   return role === "viewer" ? "Viewer" : "Analyst";
 }
 

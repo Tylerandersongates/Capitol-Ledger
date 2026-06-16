@@ -8,6 +8,7 @@ type InviteRole = Exclude<TeamWorkspaceRole, "owner">;
 type RosterRowRecord = TeamWorkspaceMember | TeamWorkspaceInvite;
 
 const roleOptions: Array<{ label: string; value: InviteRole }> = [
+  { label: "Admin", value: "admin" },
   { label: "Analyst", value: "analyst" },
   { label: "Viewer", value: "viewer" }
 ];
@@ -165,7 +166,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]">
+        <div className="mt-4 grid grid-cols-3 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]">
           {roleOptions.map((option) => {
             const active = role === option.value;
 
@@ -243,7 +244,7 @@ function RosterRow({
   row: RosterRowRecord;
 }) {
   const pendingInvite = "expiresAt" in row;
-  const roleLabel = row.role === "owner" ? "Owner" : row.role === "viewer" ? "Viewer" : "Analyst";
+  const roleLabel = row.role === "owner" ? "Owner" : row.role === "admin" ? "Admin" : row.role === "viewer" ? "Viewer" : "Analyst";
   const canRelease = pendingInvite || row.role !== "owner";
   const releaseLabel = pendingInvite ? `Revoke invite for ${row.email}` : `Remove ${row.email} from team`;
 
