@@ -5,6 +5,7 @@ loadLocalEnv();
 const baseUrl = (process.env.AUTH_QA_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3020").replace(/\/$/, "");
 const shouldCreateAccount = process.env.AUTH_QA_CREATE_ACCOUNT === "true";
 const shouldTestRateLimit = process.env.AUTH_QA_RATE_LIMIT === "true";
+const authSessionCookie = "capitol-ledger-auth-session";
 
 const results = [];
 const cookieJar = new Map();
@@ -56,6 +57,38 @@ function rememberCookies(response) {
     }
     cookieJar.set(key.trim(), value.trim());
   });
+}
+
+function splitSetCookieHeader(header) {
+  if (!header) return [];
+  return header.split(/,\s*(?=[^;]+?=)/).filter(Boolean);
+}
+
+function parseSetCookie(response) {
+  const headers =
+    typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : splitSetCookieHeader(response.headers.get("set-cookie"));
+
+  return headers.map((cookie) => {
+    const parts = cookie.split(";").map((part) => part.trim());
+    const name = (parts[0] ?? "").split("=")[0];
+    const attributes = new Set(parts.slice(1).map((part) => part.toLowerCase()));
+    return {
+      attributes,
+      name,
+      sameSite: parts.slice(1).find((part) => part.toLowerCase().startsWith("samesite=")) ?? ""
+    };
+  });
+}
+
+function assertAuthCookieFlags(name, response) {
+  const authCookie = parseSetCookie(response).find((cookie) => cookie.name === authSessionCookie);
+  const ok =
+    Boolean(authCookie) &&
+    authCookie.attributes.has("httponly") &&
+    authCookie.attributes.has("secure") &&
+    authCookie.sameSite.toLowerCase() === "samesite=lax";
+
+  record(name, ok, ok ? "Secure, HttpOnly, SameSite=lax" : "expected Secure, HttpOnly, SameSite=lax");
 }
 
 async function request(path, options = {}) {
@@ -137,6 +170,8 @@ async function runAccountCreationCheck() {
     {
       body: {
         email,
+        firstName: "Production",
+        lastName: "Auth QA",
         name: "Production Auth QA",
         password
       },
@@ -146,6 +181,7 @@ async function runAccountCreationCheck() {
   );
 
   if (!registration.ok) return;
+  assertAuthCookieFlags("Registration auth cookie is secure", registration.response);
 
   const verificationLink = registration.data.verificationLink;
   if (verificationLink) {
@@ -157,7 +193,21 @@ async function runAccountCreationCheck() {
   }
 
   await assertStatus("Sign out production test account", "/api/auth/sign-out", { method: "DELETE" }, [200]);
-  await assertStatus("Sign in production test account", "/api/auth/sign-in", { body: { email, password }, method: "POST" }, [200]);
+  const signedIn = await assertStatus("Sign in production test account", "/api/auth/sign-in", { body: { email, password }, method: "POST" }, [200]);
+  if (signedIn.ok) assertAuthCookieFlags("Sign-in auth cookie is secure", signedIn.response);
+}
+
+async function runExistingAccountSignInCheck() {
+  const email = process.env.AUTH_QA_EMAIL;
+  const password = process.env.AUTH_QA_PASSWORD;
+
+  if (!email || !password) {
+    record("Sign in existing production test account", true, "skipped; set AUTH_QA_EMAIL and AUTH_QA_PASSWORD to run");
+    return;
+  }
+
+  const signedIn = await assertStatus("Sign in existing production test account", "/api/auth/sign-in", { body: { email, password }, method: "POST" }, [200]);
+  if (signedIn.ok) assertAuthCookieFlags("Existing account sign-in auth cookie is secure", signedIn.response);
 }
 
 async function runRateLimitCheck() {
@@ -182,7 +232,8 @@ async function main() {
   if (shouldCreateAccount) {
     await runAccountCreationCheck();
   } else {
-    record("Create/sign-in live test account", true, "skipped; set AUTH_QA_CREATE_ACCOUNT=true to run");
+    record("Create live test account", true, "skipped; set AUTH_QA_CREATE_ACCOUNT=true to run");
+    await runExistingAccountSignInCheck();
   }
 
   if (shouldTestRateLimit) {
