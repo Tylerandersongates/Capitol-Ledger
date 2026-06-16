@@ -73,6 +73,7 @@ type DbTeamWorkspace = {
 
 type DbTeamMember = {
   id: string;
+  userId: string | null;
   email: string;
   displayName: string | null;
   role: string;
@@ -307,6 +308,7 @@ function snapshotFromParts({
 function memberFromDb(record: DbTeamMember): TeamWorkspaceMember {
   return {
     id: record.id,
+    userId: record.userId ?? undefined,
     email: record.email,
     displayName: record.displayName ?? undefined,
     role: normalizeRole(record.role),
@@ -411,6 +413,7 @@ function readOrCreateMemoryTeamWorkspace(input: TeamWorkspaceOwnerInput): TeamWo
   if (existing) {
     const ownerMember = existing.members.find((member) => member.role === "owner") ?? existing.members[0];
     if (ownerMember) {
+      ownerMember.userId = input.userId;
       ownerMember.email = ownerEmail;
       ownerMember.displayName = input.name?.trim() || ownerMember.displayName;
       ownerMember.status = "active";
@@ -434,6 +437,7 @@ function readOrCreateMemoryTeamWorkspace(input: TeamWorkspaceOwnerInput): TeamWo
     members: [
       {
         id: randomUUID(),
+        userId: input.userId,
         email: ownerEmail,
         displayName: input.name?.trim() || undefined,
         role: "owner",
@@ -470,7 +474,7 @@ async function readWorkspaceSnapshotFromDatabase(workspace: DbTeamWorkspace, sea
 
   const [members, invites] = await Promise.all([
     prisma.$queryRaw<DbTeamMember[]>`
-      SELECT "id", "email", "displayName", "role", "status", "joinedAt", "createdAt", "updatedAt"
+      SELECT "id", "userId", "email", "displayName", "role", "status", "joinedAt", "createdAt", "updatedAt"
       FROM "TeamMember"
       WHERE "workspaceId" = ${workspace.id} AND "status" = 'active'
       ORDER BY
@@ -896,6 +900,7 @@ function acceptMemoryInvite({
   } else {
     membership = {
       id: randomUUID(),
+      userId,
       email: memberEmail,
       displayName: name?.trim() || undefined,
       role: invite.role,
@@ -1109,6 +1114,7 @@ async function readDatabaseTeamWorkspaceForMember({
     const memberships = await prisma.$queryRaw<DbMemberAccess[]>`
       SELECT
         "TeamMember"."id",
+        "TeamMember"."userId",
         "TeamMember"."email",
         "TeamMember"."displayName",
         "TeamMember"."role",

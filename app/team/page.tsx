@@ -108,8 +108,9 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   const canManageInvites = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
   const viewerMembership: TeamWorkspaceMember | undefined = canManageInvites ? undefined : memberWorkspaceResult?.membership;
   const openSeats = teamWorkspace.openSeats;
-  const watchlistBills = buildWatchlistBills(accountLedger.follows);
-  const alertQueue = buildAlertQueue(accountLedger);
+  const workspaceLedger = await readSharedWorkspaceLedger(teamWorkspace.members, teamWorkspace.ownerUserId, accountUserId, accountLedger);
+  const watchlistBills = buildWatchlistBills(workspaceLedger.follows);
+  const alertQueue = buildAlertQueue(workspaceLedger);
   const teamRoles = buildRoleMetrics(teamWorkspace.members, teamWorkspace.invites);
   const teamMetrics: Metric[] = [
     { label: "Paid seats", value: String(teamWorkspace.seatCount) },
@@ -586,6 +587,51 @@ function roleSummary(role: Exclude<TeamWorkspaceRole, "owner">, counts: { active
   const pending = `${counts.pending} pending`;
 
   return `${label} seats: ${active}, ${pending}.`;
+}
+
+async function readSharedWorkspaceLedger(
+  members: TeamWorkspaceMember[],
+  ownerUserId: string,
+  currentUserId: string,
+  currentLedger: AccountLedgerSnapshot
+): Promise<AccountLedgerSnapshot> {
+  const memberUserIds = Array.from(
+    new Set([ownerUserId, currentUserId, ...members.map((member) => member.userId).filter((userId): userId is string => Boolean(userId))])
+  );
+  const ledgers = await Promise.all(
+    memberUserIds.map(async (userId) => {
+      if (userId === currentUserId) return currentLedger;
+      return (await readLedgerFromDatabase(userId).catch(() => null)) ?? getAccountLedger(userId);
+    })
+  );
+
+  return mergeLedgerSnapshots(ledgers);
+}
+
+function mergeLedgerSnapshots(ledgers: AccountLedgerSnapshot[]): AccountLedgerSnapshot {
+  const follows = new Map<string, SavedFollowRecord>();
+  const readAlerts = new Set<string>();
+  const savedAlerts = new Set<string>();
+  const issueInterests = new Set<string>();
+
+  ledgers.forEach((ledger) => {
+    ledger.follows.forEach((record) => {
+      if ((record.type === "bill" || record.type === "member") && record.id) {
+        follows.set(`${record.type}:${record.id}`, record);
+      }
+    });
+    ledger.readAlerts.forEach((alertId) => readAlerts.add(alertId));
+    ledger.savedAlerts.forEach((alertId) => savedAlerts.add(alertId));
+    ledger.issueInterests.forEach((interest) => issueInterests.add(interest));
+  });
+
+  return {
+    follows: Array.from(follows.values()),
+    readAlerts: Array.from(readAlerts),
+    savedAlerts: Array.from(savedAlerts),
+    issueInterests: Array.from(issueInterests),
+    updatedAt: new Date().toISOString()
+  };
 }
 
 function buildWatchlistBills(follows: SavedFollowRecord[]): WatchlistBillRow[] {

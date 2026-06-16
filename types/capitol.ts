@@ -38,6 +38,7 @@ export type AccountSubscriptionSnapshot = {
 
 export type TeamWorkspaceMember = {
   id: string;
+  userId?: string;
   email: string;
   displayName?: string;
   role: TeamWorkspaceRole;
