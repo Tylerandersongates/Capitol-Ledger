@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Mail, UserPlus } from "lucide-react";
+import { CheckCircle2, Clock3, Mail, UserMinus, UserPlus, XCircle } from "lucide-react";
 import type { TeamWorkspaceInvite, TeamWorkspaceMember, TeamWorkspaceRole, TeamWorkspaceSnapshot } from "@/types/capitol";
 
 type InviteRole = Exclude<TeamWorkspaceRole, "owner">;
+type RosterRowRecord = TeamWorkspaceMember | TeamWorkspaceInvite;
 
 const roleOptions: Array<{ label: string; value: InviteRole }> = [
   { label: "Analyst", value: "analyst" },
@@ -19,8 +20,13 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
   const [error, setError] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [pending, setPending] = useState(false);
+  const [releasePendingId, setReleasePendingId] = useState("");
   const rosterRows = useMemo(() => [...workspace.members, ...workspace.invites], [workspace.invites, workspace.members]);
   const inviteDisabled = pending || workspace.openSeats <= 0 || !email.trim();
+
+  function rowKey(row: RosterRowRecord) {
+    return `${"expiresAt" in row ? "invite" : "member"}:${row.id}`;
+  }
 
   async function submitInvite() {
     if (inviteDisabled) return;
@@ -76,6 +82,50 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
     }
   }
 
+  async function releaseSeat(row: RosterRowRecord) {
+    const pendingInvite = "expiresAt" in row;
+    if (!pendingInvite && row.role === "owner") return;
+
+    const key = rowKey(row);
+    setReleasePendingId(key);
+    setMessage("");
+    setError("");
+    setInviteLink("");
+
+    try {
+      const response = await fetch("/api/team/seats", {
+        body: JSON.stringify({
+          seatId: row.id,
+          seatType: pendingInvite ? "invite" : "member"
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "DELETE"
+      });
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        release?: {
+          accountConvertedToFree?: boolean;
+          type?: string;
+        };
+        workspace?: TeamWorkspaceSnapshot;
+      } | null;
+
+      if (!response.ok || !data?.workspace) {
+        setError(data?.error ?? "Unable to release this Team seat.");
+        return;
+      }
+
+      setWorkspace(data.workspace);
+      setMessage(data.release?.type === "invite" ? "Invite revoked. Seat reopened." : "Seat removed. Account returned to Free.");
+    } catch {
+      setError("Unable to reach the seat management service.");
+    } finally {
+      setReleasePendingId("");
+    }
+  }
+
   return (
     <div className="mt-5 space-y-4">
       <div className="grid grid-cols-3 gap-2">
@@ -97,7 +147,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
 
         <div className="mt-3 divide-y divide-white/8">
           {rosterRows.map((row) => (
-            <RosterRow key={`${"expiresAt" in row ? "invite" : "member"}-${row.id}`} row={row} />
+            <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />
           ))}
         </div>
       </div>
@@ -183,12 +233,22 @@ function SeatMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RosterRow({ row }: { row: TeamWorkspaceMember | TeamWorkspaceInvite }) {
+function RosterRow({
+  onRelease,
+  releasePending,
+  row
+}: {
+  onRelease: (row: RosterRowRecord) => void;
+  releasePending: boolean;
+  row: RosterRowRecord;
+}) {
   const pendingInvite = "expiresAt" in row;
   const roleLabel = row.role === "owner" ? "Owner" : row.role === "viewer" ? "Viewer" : "Analyst";
+  const canRelease = pendingInvite || row.role !== "owner";
+  const releaseLabel = pendingInvite ? `Revoke invite for ${row.email}` : `Remove ${row.email} from team`;
 
   return (
-    <div className="grid grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 py-3">
+    <div className="grid grid-cols-[38px_minmax(0,1fr)_auto_36px] items-center gap-3 py-3">
       <span className={`grid h-9 w-9 place-items-center rounded-xl border ${pendingInvite ? "border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]" : "border-[#43ed74]/18 bg-[#43ed74]/8 text-[#74f49a]"}`}>
         {pendingInvite ? <Clock3 className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" /> : <CheckCircle2 className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
       </span>
@@ -203,6 +263,26 @@ function RosterRow({ row }: { row: TeamWorkspaceMember | TeamWorkspaceInvite }) 
           {pendingInvite ? "Pending" : "Active"}
         </span>
       </span>
+      {canRelease ? (
+        <button
+          type="button"
+          onClick={() => onRelease(row)}
+          disabled={releasePending}
+          title={releaseLabel}
+          aria-label={releaseLabel}
+          className="grid h-9 w-9 place-items-center rounded-xl border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 text-[#ff9b9b] transition hover:brightness-110 disabled:opacity-45"
+        >
+          {releasePending ? (
+            <Clock3 className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+          ) : pendingInvite ? (
+            <XCircle className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+          ) : (
+            <UserMinus className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+          )}
+        </button>
+      ) : (
+        <span className="h-9 w-9" aria-hidden="true" />
+      )}
     </div>
   );
 }

@@ -89,7 +89,7 @@ const testerTasks = [
     title: "Test subscriptions"
   },
   {
-    body: "For a paid Team owner, confirm checkout return, active billing, paid seat count, open seats, and invite controls make sense.",
+    body: "For a paid Team owner, confirm checkout return, active billing, paid seat count, open seats, invite controls, and seat removal make sense.",
     href: "/team",
     label: "Team",
     reportHref: "/feedback?source=team",
@@ -108,6 +108,13 @@ const testerTasks = [
     label: "Billing",
     reportHref: "/feedback?source=billing",
     title: "Check downgrade paths"
+  },
+  {
+    body: "With a 6-seat Team workspace, remove two former employees, add one replacement, then confirm one paid seat remains open and removed accounts are Free.",
+    href: "/team",
+    label: "Seats",
+    reportHref: "/feedback?source=team-seats",
+    title: "Test Team seat replacement"
   }
 ];
 

@@ -3,6 +3,7 @@ const shouldCreateAccounts = process.env.TEAM_QA_CREATE_ACCOUNTS === "true";
 const shouldCheckCheckout = process.env.TEAM_QA_CHECKOUT === "true";
 const requireActiveTeam = process.env.TEAM_QA_REQUIRE_ACTIVE_TEAM === "true";
 const requireInviteAcceptance = process.env.TEAM_QA_ACCEPT_INVITE === "true";
+const shouldRunSeatReplacementScenario = process.env.TEAM_QA_SEAT_REPLACEMENT_SCENARIO === "true";
 const shouldPrintLinks = process.env.TEAM_QA_PRINT_LINKS === "true";
 const timestamp = Date.now();
 
@@ -208,6 +209,28 @@ async function runSafeChecks() {
     },
     [403]
   );
+
+  await assertStatus(
+    "Unauthenticated seat release requires auth",
+    "/api/team/seats",
+    {
+      body: { seatId: "blocked", seatType: "member" },
+      method: "DELETE"
+    },
+    [401]
+  );
+
+  await assertStatus(
+    "Cross-origin seat release is rejected",
+    "/api/team/seats",
+    {
+      body: { seatId: "blocked", seatType: "member" },
+      headers: { Origin: "https://example.invalid" },
+      method: "DELETE",
+      sameOrigin: false
+    },
+    [403]
+  );
 }
 
 async function runCheckoutCheck(owner) {
@@ -333,6 +356,186 @@ async function runInviteAcceptance(invitee, inviteLink) {
   record(ok ? "pass" : "fail", "Accepted member can open /team", `status ${memberTeamPage.response.status}`);
 }
 
+function scenarioAccountEmail(index) {
+  return `qa-team-seat-${timestamp}-${index}@capitolledger.test`;
+}
+
+async function createScenarioAccount(index) {
+  const email = scenarioAccountEmail(index);
+  const password = process.env.TEAM_QA_SCENARIO_PASSWORD || "CapitolLedgerTeamQA123!";
+  const jar = new CookieJar();
+  const created = await assertStatus(
+    `Create seat scenario account ${index}`,
+    "/api/auth/register",
+    {
+      body: {
+        email,
+        firstName: `Seat${index}`,
+        lastName: "QA",
+        name: `Seat${index} QA`,
+        password
+      },
+      jar,
+      method: "POST"
+    },
+    [200, 409]
+  );
+
+  if (created.response.status === 409) {
+    const signedIn = await signIn(`seat scenario ${index}`, jar, email, password);
+    if (!signedIn.ok) return null;
+  }
+
+  return { email, jar, password };
+}
+
+function inviteTokenFromResponse(data) {
+  const inviteLink = data?.inviteDelivery?.inviteLink;
+  if (!inviteLink) return null;
+
+  try {
+    return new URL(inviteLink).searchParams.get("token");
+  } catch {
+    return null;
+  }
+}
+
+async function createAndAcceptScenarioSeat(owner, account, index) {
+  const invite = await assertStatus(
+    `Create 6-seat scenario invite ${index}`,
+    "/api/team/invites",
+    {
+      body: {
+        email: account.email,
+        role: index % 2 === 0 ? "viewer" : "analyst"
+      },
+      jar: owner.jar,
+      method: "POST"
+    },
+    [200]
+  );
+  if (!invite.ok) return null;
+
+  const token = inviteTokenFromResponse(invite.data);
+  if (!token) {
+    fail(`6-seat scenario invite ${index} exposes acceptance token`, "manual invite link missing");
+    return null;
+  }
+
+  const accepted = await assertStatus(
+    `Accept 6-seat scenario invite ${index}`,
+    "/api/team/invites/accept",
+    {
+      body: { token },
+      jar: account.jar,
+      method: "POST"
+    },
+    [200]
+  );
+
+  return accepted.ok ? accepted.data?.workspace ?? null : null;
+}
+
+async function readOwnerWorkspace(owner, name) {
+  const result = await assertStatus(name, "/api/team/invites", { jar: owner.jar, method: "GET" }, [200, 403]);
+  return result.ok && result.response.status === 200 ? result.data?.workspace ?? null : null;
+}
+
+async function runSeatReplacementScenario(owner) {
+  if (!shouldRunSeatReplacementScenario) {
+    skip("6-seat Team replacement scenario", "set TEAM_QA_SEAT_REPLACEMENT_SCENARIO=true to create extra QA accounts and release seats");
+    return;
+  }
+
+  const initialWorkspace = await readOwnerWorkspace(owner, "6-seat scenario owner workspace is available");
+  if (!initialWorkspace) return;
+
+  if (initialWorkspace.seatCount !== 6) {
+    fail("6-seat scenario has exactly 6 paid seats", `${initialWorkspace.seatCount} seats found`);
+    return;
+  }
+
+  if (initialWorkspace.occupiedSeats > 6) {
+    fail("6-seat scenario starts within paid capacity", `${initialWorkspace.occupiedSeats}/6 occupied`);
+    return;
+  }
+
+  const scenarioAccounts = [];
+  const seatsToCreate = Math.max(0, 6 - initialWorkspace.occupiedSeats);
+  for (let index = 1; index <= seatsToCreate; index += 1) {
+    const account = await createScenarioAccount(index);
+    if (!account) return;
+    scenarioAccounts.push(account);
+    await createAndAcceptScenarioSeat(owner, account, index);
+  }
+
+  const fullWorkspace = await readOwnerWorkspace(owner, "6-seat scenario reaches full capacity");
+  if (!fullWorkspace) return;
+  const fullOk = fullWorkspace.seatCount === 6 && fullWorkspace.occupiedSeats === 6 && fullWorkspace.openSeats === 0;
+  record(fullOk ? "pass" : "fail", "6-seat scenario has 6 occupied and 0 open", `${fullWorkspace.occupiedSeats}/6 occupied, ${fullWorkspace.openSeats} open`);
+  if (!fullOk) return;
+
+  const generatedEmails = new Set(scenarioAccounts.map((account) => account.email));
+  const removableMembers = (fullWorkspace.members ?? []).filter((member) => member.role !== "owner" && generatedEmails.has(member.email));
+  if (removableMembers.length < 2) {
+    fail("6-seat scenario has two generated members to remove", `${removableMembers.length} generated removable members found`);
+    return;
+  }
+
+  const removedAccounts = [];
+  for (const member of removableMembers.slice(0, 2)) {
+    const removed = await assertStatus(
+      `Remove fired employee seat ${member.email}`,
+      "/api/team/seats",
+      {
+        body: { seatId: member.id, seatType: "member" },
+        jar: owner.jar,
+        method: "DELETE"
+      },
+      [200]
+    );
+    const account = scenarioAccounts.find((candidate) => candidate.email === member.email);
+    if (account) removedAccounts.push(account);
+    if (removed.ok && removed.data?.release?.accountConvertedToFree) {
+      pass(`Removed employee account converted to Free ${member.email}`);
+    }
+  }
+
+  const afterRemoval = await readOwnerWorkspace(owner, "6-seat scenario workspace after removals");
+  if (!afterRemoval) return;
+  const removalOk = afterRemoval.occupiedSeats === 4 && afterRemoval.openSeats === 2;
+  record(removalOk ? "pass" : "fail", "Removing two employees opens two seats", `${afterRemoval.occupiedSeats}/6 occupied, ${afterRemoval.openSeats} open`);
+
+  for (const account of removedAccounts) {
+    const subscription = await assertStatus(
+      `Removed employee subscription is Free ${account.email}`,
+      "/api/account/subscription",
+      { jar: account.jar, method: "GET" },
+      [200]
+    );
+    const freeOk = subscription.data?.subscription?.plan === "free" && subscription.data?.subscription?.provider === "demo";
+    record(freeOk ? "pass" : "fail", `Removed employee is on Free ${account.email}`, subscription.data?.subscription?.plan ?? "missing subscription");
+
+    const memberTeamPage = await request("/team", {
+      jar: account.jar,
+      method: "GET",
+      redirect: "manual",
+      sameOrigin: false
+    });
+    const relocked = memberTeamPage.response.status === 200 && memberTeamPage.text.includes("Upgrade to open your workspace") && !memberTeamPage.text.includes("Team seat active");
+    record(relocked ? "pass" : "fail", `Removed employee loses Team access ${account.email}`, `status ${memberTeamPage.response.status}`);
+  }
+
+  const replacement = await createScenarioAccount("replacement");
+  if (!replacement) return;
+  await createAndAcceptScenarioSeat(owner, replacement, "replacement");
+
+  const afterReplacement = await readOwnerWorkspace(owner, "6-seat scenario workspace after replacement");
+  if (!afterReplacement) return;
+  const replacementOk = afterReplacement.occupiedSeats === 5 && afterReplacement.openSeats === 1;
+  record(replacementOk ? "pass" : "fail", "Adding one replacement leaves one open seat", `${afterReplacement.occupiedSeats}/6 occupied, ${afterReplacement.openSeats} open`);
+}
+
 async function main() {
   console.log(`Running Capitol Ledger Team QA against ${baseUrl}`);
   await runSafeChecks();
@@ -345,6 +548,7 @@ async function main() {
     const invitee = await ensureAccount("invitee");
     const inviteLink = await runInviteCheck(owner, invitee);
     await runInviteAcceptance(invitee, inviteLink);
+    await runSeatReplacementScenario(owner);
   }
 
   const failures = results.filter((result) => result.kind === "fail");
