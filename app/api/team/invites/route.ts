@@ -4,7 +4,7 @@ import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
-import { deliverTeamInviteEmail } from "@/lib/team-invite-email";
+import { buildTeamInviteUrl, deliverTeamInviteEmail } from "@/lib/team-invite-email";
 import { createTeamWorkspaceInvite, readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember, TeamWorkspaceError } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
       token: result.invite.token,
       workspaceName: result.workspace.name
     }).catch((error: unknown) => ({
+      actionUrl: buildTeamInviteUrl(result.invite.token),
       delivered: false as const,
       error: error instanceof Error ? error.message : "Team invite delivery failed.",
       mode: "disabled" as const
@@ -150,6 +151,7 @@ export async function POST(request: NextRequest) {
       inviteDelivery:
         "actionUrl" in inviteDelivery
           ? {
+              error: "error" in inviteDelivery ? inviteDelivery.error : undefined,
               inviteLink: inviteDelivery.actionUrl,
               mode: inviteDelivery.mode,
               sent: inviteDelivery.delivered

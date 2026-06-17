@@ -176,12 +176,14 @@ async function postJson<T>(url: string, body: unknown) {
 
 export function AuthFlowClient({
   allowDemoMode = false,
+  initialEmail = "",
   initialMode,
   resetToken = "",
   returnTo = "/dashboard",
   verifyToken = ""
 }: {
   allowDemoMode?: boolean;
+  initialEmail?: string;
   initialMode?: AuthMode;
   resetToken?: string;
   returnTo?: string;
@@ -189,7 +191,10 @@ export function AuthFlowClient({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(resetToken ? "reset" : verifyToken ? "verify" : initialMode ?? "signIn");
-  const [form, setForm] = useState<AuthFormState>(defaultForm);
+  const [form, setForm] = useState<AuthFormState>(() => ({
+    ...defaultForm,
+    email: initialEmail.trim().toLowerCase()
+  }));
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);

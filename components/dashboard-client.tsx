@@ -33,6 +33,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 import type { getDashboardData } from "@/lib/data";
+import type { TeamAccessSummary } from "@/lib/team-access";
 import type {
   AccountLedgerSnapshot,
   AccountSubscriptionSnapshot,
@@ -98,11 +99,13 @@ function getBillTrackerStagePill(stage: BillTrackerStage) {
 export function DashboardClient({
   data,
   initialLedger = null,
-  initialSubscription = null
+  initialSubscription = null,
+  initialTeamAccess = null
 }: {
   data: DashboardData;
   initialLedger?: AccountLedgerSnapshot | null;
   initialSubscription?: AccountSubscriptionSnapshot | null;
+  initialTeamAccess?: TeamAccessSummary | null;
 }) {
   const [, setUnreadAlertCount] = useState(() => countAccountUnreadAlertIds(initialLedger));
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>(() => uniqueFavoriteRecords(initialLedger?.follows ?? []));
@@ -303,6 +306,8 @@ export function DashboardClient({
                 View All
               </Link>
             </div>
+
+            {initialTeamAccess ? <DashboardTeamWorkspaceCard access={initialTeamAccess} /> : null}
 
             <MobileCard variant="dashboard" className="relative mt-7 overflow-hidden px-5 py-5">
               <div className={dashboardCardAccentClass} />
@@ -765,6 +770,71 @@ export function DashboardClient({
             />
     </MobileShell>
   );
+}
+
+function DashboardTeamWorkspaceCard({ access }: { access: TeamAccessSummary }) {
+  const roleLabel = formatTeamAccessRole(access.role);
+  const statusLabel = access.isBillingOwner ? "Billing owner" : access.canManageTeam ? "Team admin" : `${roleLabel} seat`;
+  const description = access.isBillingOwner
+    ? "Your Team workspace is active. Billing ownership does not consume a participant seat."
+    : access.canManageTeam
+      ? "Your Admin seat is active. Workspace controls and shared watchlists are ready."
+      : `Your ${roleLabel} seat is active in this owner-paid workspace.`;
+
+  return (
+    <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
+      <div className={dashboardCardAccentClass} />
+      <div className="relative z-10">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">
+              <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#43ed74]/22 bg-[#43ed74]/10 text-[#74f49a]">
+                <UsersRound className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              Team Workspace
+            </div>
+            <h2 className="mt-2 text-[22px] font-semibold leading-tight">{access.workspace.name}</h2>
+            <p className="mt-2 text-[14px] leading-snug text-white/58">{description}</p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[#43ed74]/28 bg-[#43ed74]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#74f49a]">
+            Active
+          </span>
+        </div>
+
+        <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-3`}>
+          <div className="grid grid-cols-3 gap-2">
+            <TeamAccessMetric label="Role" value={statusLabel} />
+            <TeamAccessMetric label="Seats" value={`${access.workspace.occupiedSeats}/${access.workspace.seatCount}`} />
+            <TeamAccessMetric label="Open" value={String(access.workspace.openSeats)} />
+          </div>
+        </div>
+
+        <Link
+          href="/team"
+          className="mt-3 flex h-10 items-center justify-center gap-2 rounded-xl border border-[#43ed74]/24 bg-[#43ed74]/10 text-[13px] font-semibold text-[#74f49a] transition hover:brightness-110"
+        >
+          Open Team Workspace
+          <ChevronRight className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+        </Link>
+      </div>
+    </MobileCard>
+  );
+}
+
+function TeamAccessMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2 text-center">
+      <div className="truncate text-[14px] font-semibold leading-none text-[#ffb12b]">{value}</div>
+      <div className="mt-1.5 truncate text-[9px] font-medium uppercase tracking-[0.06em] text-white/46">{label}</div>
+    </div>
+  );
+}
+
+function formatTeamAccessRole(role: TeamAccessSummary["role"]) {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  if (role === "viewer") return "Viewer";
+  return "Analyst";
 }
 
 function BriefMetricPill({ label, value }: { label: string; value: number }) {

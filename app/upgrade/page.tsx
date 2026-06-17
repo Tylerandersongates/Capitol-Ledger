@@ -12,7 +12,8 @@ import {
   Map,
   ShieldCheck,
   Sparkles,
-  Settings
+  Settings,
+  UsersRound
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
@@ -24,8 +25,10 @@ import {
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
+import { getCurrentSession } from "@/lib/auth";
 import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
+import { readTeamAccessSummaryForUser, type TeamAccessSummary } from "@/lib/team-access";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +48,8 @@ const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
 export default async function UpgradePage() {
-  const initialSubscription = await getCurrentAccountSubscription();
+  const [initialSubscription, session] = await Promise.all([getCurrentAccountSubscription(), getCurrentSession()]);
+  const teamAccess = session?.user ? await readTeamAccessSummaryForUser(session.user, initialSubscription).catch(() => null) : null;
 
   return (
     <MobileShell
@@ -80,6 +84,8 @@ export default async function UpgradePage() {
             View Plans
           </Link>
         </MobileCard>
+
+        {teamAccess ? <TeamAccessStatusCard access={teamAccess} subscription={initialSubscription} /> : null}
 
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -182,6 +188,46 @@ export default async function UpgradePage() {
       />
     </MobileShell>
   );
+}
+
+function TeamAccessStatusCard({
+  access,
+  subscription
+}: {
+  access: TeamAccessSummary;
+  subscription: AccountSubscriptionSnapshot | null;
+}) {
+  const roleLabel = formatTeamRoleLabel(access.role);
+  const planName = subscription ? subscriptionPlans[subscription.plan].name : "Personal";
+  const description = access.isBillingOwner
+    ? `Your ${planName} billing owns this workspace and does not consume a participant seat.`
+    : `Your personal billing plan remains ${planName}. Your accepted Team seat gives you ${roleLabel} access to this workspace.`;
+
+  return (
+    <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+      <PremiumUpgradeHeader
+        aside={<span className={premiumHeaderGreenIconClass}><UsersRound /></span>}
+        description={description}
+        eyebrow="Team Access"
+        title={`${access.workspace.name} is active`}
+      />
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        <ValuePill label="Role" value={access.isBillingOwner ? "Owner" : roleLabel} />
+        <ValuePill label="Seats" value={`${access.workspace.occupiedSeats}/${access.workspace.seatCount}`} />
+        <ValuePill label="Open" value={String(access.workspace.openSeats)} />
+      </div>
+      <Link href="/team" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
+        Open Team Workspace
+      </Link>
+    </MobileCard>
+  );
+}
+
+function formatTeamRoleLabel(role: TeamAccessSummary["role"]) {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  if (role === "viewer") return "Viewer";
+  return "Analyst";
 }
 
 function PremiumUpgradeHeader({

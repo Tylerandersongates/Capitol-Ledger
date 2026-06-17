@@ -4,6 +4,7 @@ import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/accou
 import { getCurrentSession } from "@/lib/auth";
 import { getDashboardDataWithLiveData } from "@/lib/data";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
+import { readTeamAccessSummaryForUser } from "@/lib/team-access";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,8 @@ export default async function DashboardPage() {
         session?.user ? getSubscriptionForAccountUser(session.user).catch(() => null) : null
       ])
     : [null, null];
+  const initialTeamAccess = session?.user ? await readTeamAccessSummaryForUser(session.user, initialSubscription).catch(() => null) : null;
   const accountLedger = accountUserId ? (initialLedger ?? getAccountLedger(accountUserId)) : null;
 
-  return <DashboardClient data={data} initialLedger={accountLedger} initialSubscription={initialSubscription} />;
+  return <DashboardClient data={data} initialLedger={accountLedger} initialSubscription={initialSubscription} initialTeamAccess={initialTeamAccess} />;
 }

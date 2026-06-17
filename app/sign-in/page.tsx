@@ -10,7 +10,7 @@ const authAmbientClass =
   "bg-[radial-gradient(circle_at_16%_8%,rgba(48,129,214,0.14),transparent_32%),radial-gradient(circle_at_84%_8%,rgba(255,177,43,0.09),transparent_30%),linear-gradient(180deg,rgba(2,10,24,0.12)_0%,rgba(1,8,21,0.62)_56%,rgba(1,6,18,0.9)_100%)]";
 const authBackgroundClass = "bg-[linear-gradient(180deg,#071a34_0%,#041226_36%,#020b1c_72%,#010716_100%)]";
 
-export default async function SignInPage({ searchParams }: { searchParams?: { mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
+export default async function SignInPage({ searchParams }: { searchParams?: { email?: string; mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
   const successSession = searchParams?.mode === "success" ? await getCurrentSession() : null;
   const initialMode =
     searchParams?.mode === "create"
@@ -57,6 +57,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: { mo
             <AuthFlowClient
               allowDemoMode={allowDemoMode}
               initialMode={initialMode}
+              initialEmail={searchParams?.email}
               resetToken={searchParams?.resetToken}
               returnTo={returnTo}
               verifyToken={searchParams?.verifyToken}

@@ -35,14 +35,6 @@ function sender() {
   return process.env.TEAM_INVITE_EMAIL_FROM || process.env.AUTH_EMAIL_FROM;
 }
 
-function shouldExposeManualLinks() {
-  return deliveryMode() === "manual_demo" || process.env.NODE_ENV !== "production";
-}
-
-function shouldExposeQaInviteLink(email: string) {
-  return email.trim().toLowerCase().endsWith(".test");
-}
-
 export function buildTeamInviteUrl(token: string) {
   const url = new URL("/team/accept", appBaseUrl());
   url.searchParams.set("token", token);
@@ -118,7 +110,7 @@ export async function deliverTeamInviteEmail({
     });
 
     return {
-      actionUrl: shouldExposeQaInviteLink(payload.to) ? payload.actionUrl : undefined,
+      actionUrl: payload.actionUrl,
       delivered: true,
       mode: "resend"
     };
@@ -143,7 +135,7 @@ export async function deliverTeamInviteEmail({
     }
 
     return {
-      actionUrl: shouldExposeQaInviteLink(payload.to) ? payload.actionUrl : undefined,
+      actionUrl: payload.actionUrl,
       delivered: true,
       mode: "webhook"
     };
@@ -151,14 +143,14 @@ export async function deliverTeamInviteEmail({
 
   if (mode === "manual_demo") {
     return {
-      actionUrl: shouldExposeManualLinks() ? payload.actionUrl : undefined,
+      actionUrl: payload.actionUrl,
       delivered: false,
       mode: "manual_demo"
     };
   }
 
   return {
-    actionUrl: shouldExposeManualLinks() ? payload.actionUrl : undefined,
+    actionUrl: payload.actionUrl,
     delivered: false,
     mode: "disabled"
   };

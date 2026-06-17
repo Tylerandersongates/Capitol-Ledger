@@ -68,10 +68,12 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       setEmail("");
       setInviteLink(data.inviteDelivery?.inviteLink ?? "");
       setMessage(
-        data.inviteDelivery?.sent
-          ? "Invite sent."
+        data.inviteDelivery?.sent && data.inviteDelivery?.inviteLink
+          ? "Invite sent. Manual link available below."
+          : data.inviteDelivery?.sent
+            ? "Invite sent."
           : data.inviteDelivery?.inviteLink
-            ? "Invite link prepared."
+            ? "Invite link prepared. Share it with the invited email account."
             : data.inviteDelivery?.error
               ? "Seat reserved, but invite delivery needs attention."
               : "Seat reserved. Email delivery is not configured."

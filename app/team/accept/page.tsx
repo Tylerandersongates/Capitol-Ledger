@@ -75,8 +75,9 @@ function InviteCard({
   token: string;
 }) {
   const returnTo = `/team/accept?token=${encodeURIComponent(token)}`;
-  const signInHref = `/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
-  const createHref = `/sign-in?mode=create&returnTo=${encodeURIComponent(returnTo)}`;
+  const emailParam = encodeURIComponent(preview.invite.email);
+  const signInHref = `/sign-in?email=${emailParam}&returnTo=${encodeURIComponent(returnTo)}`;
+  const createHref = `/sign-in?mode=create&email=${emailParam}&returnTo=${encodeURIComponent(returnTo)}`;
   const emailMatches = Boolean(sessionEmail && sessionEmail.trim().toLowerCase() === preview.invite.email);
   const roleLabel = preview.invite.role === "admin" ? "Admin" : preview.invite.role === "viewer" ? "Viewer" : "Analyst";
 
@@ -115,17 +116,17 @@ function InviteCard({
           <div className="mt-5 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-4">
             <div className="flex items-center gap-2 text-[14px] font-semibold text-[#ffb12b]">
               <LockKeyhole className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-              Sign in to accept
+              Create or sign in to accept
             </div>
             <p className="mt-2 text-[13px] leading-snug text-white/58">
-              Use or create the account for {preview.invite.email} to claim this paid Team seat.
+              Create a new account or sign in with {preview.invite.email} to claim this paid Team seat.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <Link href={signInHref} className="flex h-11 items-center justify-center rounded-xl bg-[#ffb12b] text-[14px] font-semibold text-[#061126]">
-                Sign In
+              <Link href={createHref} className="flex h-11 items-center justify-center rounded-xl bg-[#ffb12b] text-[14px] font-semibold text-[#061126]">
+                Create Account
               </Link>
-              <Link href={createHref} className="flex h-11 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72">
-                Create
+              <Link href={signInHref} className="flex h-11 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72">
+                Sign In
               </Link>
             </div>
           </div>
