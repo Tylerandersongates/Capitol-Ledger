@@ -1,5 +1,5 @@
-import { searchRecordsWithLiveData } from "@/lib/data";
-import { memberResultMeta, stripMemberPrefix } from "@/lib/member-display";
+import { getAllMembersWithLiveData, searchRecordsWithLiveData } from "@/lib/data";
+import { memberOfficeLabel, memberResultMeta, memberSeatCode, stripMemberPrefix } from "@/lib/member-display";
 import type { Bill, Member, Vote } from "@/types/capitol";
 
 type SuggestionKind = "members" | "bills" | "votes";
@@ -34,6 +34,8 @@ const catalogCache = new Map<SuggestionScope, { entries: SuggestionEntry[]; expi
 
 function normalizeText(value: string) {
   return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
@@ -149,7 +151,10 @@ function buildMemberEntry(member: Member): SuggestionEntry {
       member.state,
       member.party,
       member.chamber,
-      member.district
+      member.district,
+      memberOfficeLabel(member),
+      memberSeatCode(member),
+      memberResultMeta(member)
     ].filter(Boolean) as string[],
     subtitle: memberResultMeta(member)
   };
@@ -181,9 +186,10 @@ async function getSuggestionCatalog(scope: SuggestionScope) {
   const cached = catalogCache.get(scope);
   if (cached && cached.expiresAt > Date.now()) return cached.entries;
 
-  const { results } = await searchRecordsWithLiveData({ type: scope });
+  const memberEntries = scope === "all" || scope === "members" ? (await getAllMembersWithLiveData()).map(buildMemberEntry) : [];
+  const { results } = scope === "members" ? { results: { bills: [], votes: [] } } : await searchRecordsWithLiveData({ type: scope });
   const entries: SuggestionEntry[] = [
-    ...results.members.map(buildMemberEntry),
+    ...memberEntries,
     ...results.bills.map(buildBillEntry),
     ...results.votes.map(buildVoteEntry)
   ];

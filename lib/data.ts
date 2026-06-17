@@ -824,6 +824,33 @@ export async function getMemberDetailWithLiveData(bioguideId: string): Promise<M
   return (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
 }
 
+async function getDatabaseActiveMembers(): Promise<Member[] | null> {
+  if (!hasDatabaseUrl()) return null;
+
+  try {
+    const prisma = getPrisma();
+    const memberRows = await prisma.member.findMany({
+      orderBy: [{ state: "asc" }, { lastName: "asc" }],
+      take: 600,
+      where: {
+        active: true
+      }
+    });
+
+    return memberRows.map(mapDatabaseMember);
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllMembersWithLiveData() {
+  const liveMembers = await withOptionalDatabaseReadTimeout(getDatabaseActiveMembers);
+
+  if (!liveMembers) return members;
+
+  return mergeBy(liveMembers, members, (member) => member.bioguideId);
+}
+
 export function getBillVotes(billId: string) {
   return votes.filter((vote) => vote.billId === billId);
 }
