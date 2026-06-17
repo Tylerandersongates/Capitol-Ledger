@@ -4,7 +4,7 @@ import { getAccountPersistenceUserId, writeSubscriptionToDatabase } from "@/lib/
 import { createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
-import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import { isTeamSeatCountOverMaximum, maximumTeamSeatCount, normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 function readPlan(value: unknown): SubscriptionPlanId | null {
@@ -37,6 +37,17 @@ export async function POST(request: NextRequest) {
 
   if (!plan) {
     return NextResponse.json({ error: "Invalid subscription plan." }, { status: 400 });
+  }
+
+  if (plan === "team" && isTeamSeatCountOverMaximum(body.seatCount)) {
+    return NextResponse.json(
+      {
+        customPlanRequired: true,
+        error: `Self-serve Civic Team checkout supports up to ${maximumTeamSeatCount} seats. Request a custom plan for larger teams.`,
+        maximumTeamSeatCount
+      },
+      { status: 400 }
+    );
   }
 
   if (plan === "free") {

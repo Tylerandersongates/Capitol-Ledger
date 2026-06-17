@@ -73,7 +73,7 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
       unit: "/ seat"
     },
     highlights: ["Seat-managed workspace", "Team alert coordination", "Exportable reports", "Shared watchlist setup"],
-    limits: ["Email delivery, invite acceptance, and shared record editing are in rollout"]
+    limits: ["Self-serve checkout supports 3-25 seats", "Email delivery, invite acceptance, and shared record editing are in rollout"]
   }
 };
 
