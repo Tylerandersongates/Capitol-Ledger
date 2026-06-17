@@ -58,7 +58,15 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
   - Verified after deploy: all three routes redirected to verify mode, and `/api/auth/session` returned `authenticated:false` with `requiresVerification:true`.
 - Open the verification link and confirm the account can continue to `/onboarding` or `/dashboard`.
   - Verified with `tylerandersongates@att.net`: the link verified the account and `/dashboard` opens after normal sign-in.
-  - Remaining post-deploy check: after the token-history cleanup deploys, choose Setup from the success screen, then go back and confirm the app does not show an expired-token error.
+  - Verified after deploy: `/sign-in?mode=success` shows Setup and Dashboard choices, Setup opens `/onboarding`, browser Back returns to the success screen, and Dashboard opens `/dashboard`.
 - Recheck Profile copy on a partial setup account: sync should mean account storage is connected, not that district setup is complete.
 - Decide whether accidental saved-item removal needs an undo toast before external testers.
 - Check whether cumulative Civic Momentum wording is clear when a user removes the only currently saved bill.
+
+## Round 3 Data Expansion
+- Expand the demo/seed data before external Round 3 testers see the app.
+- Add more districts and ZIP-code coverage inside the current beta states.
+- Add current bills that are actively moving through Congress, and refresh the existing seeded bill records where Congress.gov has newer action, summary, cosponsor, or status data.
+- Include sponsors and cosponsors from outside the current beta states when they are attached to selected current bills.
+- Verify the larger data set across onboarding district matching, search, bill detail pages, member profiles, source links, alerts, weekly brief inputs, and basic page performance.
+- Keep this as a Tyler/private planning item until the source-verified data is seeded and checked; do not present it to testers as done.

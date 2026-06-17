@@ -147,6 +147,7 @@ Generated at the break on June 16, 2026 for the next continuation.
     - Browser Back returned to the success screen with both choices still present.
     - `Dashboard` opened `/dashboard`.
     - Browser console errors: none.
+- Added a Round 3 data-expansion item to Tyler's private beta guide: broaden districts/ZIPs in current states, add current moving Congress bills, refresh existing bill records, and include outside-state sponsors/cosponsors when attached to selected bills.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -252,6 +253,11 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
 - Team database/memory split is intentional production/local fallback, not duplicate dead code.
 - API references checked in QA scripts point to existing app routes.
+- Round 3 data expansion should use the existing civic-data path rather than a second fixture system: `lib/demo-data.ts` feeds both in-memory fallback data and `prisma/seed.ts`, while `scripts/sync-congress.ts` can source Congress.gov members, bills, committees, cosponsors, House votes, member vote positions, official source links, and official summaries.
+- Final diagnostic continuation passed:
+  - `scripts/check-video-links.mjs` passed: 6 secure video links, 4 bills with video coverage, bill detail rendering, subscription gating, and gamification event wiring are intact.
+  - `scripts/check-congress-readiness.mjs` passed in demo-safe mode; expected warnings remain for live Congress.gov API key, live database persistence, public app URL, and skipped live request.
+  - Clean `/private/tmp/capitol-ledger-seat-check-1781660000` verification under Node `v22.22.3` passed: `pnpm lint`, `pnpm exec tsc --noEmit --pretty false`, and `pnpm run build`.
 
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
@@ -262,8 +268,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Bill detail initially felt slow during one naive-user navigation but recovered with no console errors.
 
 ## Next Best Steps
-1. Deploy the billing-owner participant-seat split plus email-verification safeguard patch, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
-2. Deploy the verification-token history cleanup patch, then repeat one email verification link flow and confirm back navigation no longer shows an expired token after choosing Setup.
+1. Start Round 3 data expansion: source current moving Congress bills, refresh existing seeded bills, add relevant outside-state sponsors/cosponsors, and expand district/ZIP coverage in current beta states.
+2. After data expansion, verify search, onboarding district matching, bill detail pages, member profiles, source links, alerts, weekly brief inputs, and basic page performance against the larger data set.
 3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
 4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
