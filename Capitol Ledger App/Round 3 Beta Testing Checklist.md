@@ -195,17 +195,43 @@ Notes:
 
 ## June 17, 2026 QA Update
 
-Status: production follow-up pass in progress against `https://project-qosv1.vercel.app`.
+Status: production follow-up pass completed against `https://project-qosv1.vercel.app`.
 
 - Team Admin delegation, Viewer read-only behavior, Viewer seat removal, and owner downgrade lockout have been added to the Round 3 checklist.
 - Annual Pro and Team subscription checkout paths have been added to the Round 3 checklist for one more clean production pass from fresh accounts before testers.
 - Service-history repair has been added to the Round 3 regression smoke.
+- Docs-only checklist commit `d63acf2` is present on `origin/main`.
+- Annual Pro checkout passed from a fresh QA account:
+  - `/upgrade` annual billing showed Pro at `$29.99 / year`.
+  - Stripe Checkout showed `$29.99 per year` and `$2.50 / month billed annually`.
+  - Test card checkout returned to `/account?checkout=success&plan=pro`.
+  - Database subscription became `pro / annual / stripe / active`.
+  - Stripe subscription is active, quantity `1`, annual price matched, and unit amount is `$29.99`.
+- Annual Team checkout passed from a fresh QA account:
+  - `/upgrade` annual billing showed Team at `$59.99 / seat / year`.
+  - Three-seat total showed `3 x $59.99` and `$179.97 / workspace / year`.
+  - Stripe Checkout showed `$179.97 per year` and `$15.00 / month billed annually`.
+  - Test card checkout returned to `/team?checkout=success&plan=team`.
+  - Team workspace opened with 3 participant seats, 0 reserved, and 3 open.
+  - Database subscription became `team / annual / stripe / active` with `seatCount=3`.
+  - Stripe subscription is active, quantity `3`, annual Team price matched, and unit amount is `$59.99`.
+- Owner downgrade/cancel with Admin and Analyst present passed:
+  - Owner invited fresh Admin and Analyst QA accounts.
+  - Admin and Analyst accepted seats; owner UI showed `2/3` occupied and `1` open.
+  - Admin management access worked before cancellation.
+  - Analyst management API returned `403` before cancellation.
+  - Stripe Billing Portal showed `(x3) $179.97 per year`, paid invoice, and next billing date June 17, 2027.
+  - Portal cancellation set the subscription to `Cancels Jun 17, 2027` with service ending June 17, 2027.
+  - App database mapped the pending-cancel Stripe subscription to `free / annual / stripe / canceled`.
+  - Owner, Admin, and Analyst `/team` pages showed the Team access gate after cancellation.
+  - Owner, Admin, and Analyst Team management APIs returned `403` after cancellation.
 - Production member profile spot check passed in the in-app browser:
   - Andy Biggs (`B001302`): 5 terms, First Elected Nov 8, 2016, Next Election Nov 3, 2026.
   - Alexandria Ocasio-Cortez (`O000172`): 4 terms, First Elected Nov 6, 2018, Next Election Nov 3, 2026.
   - Ted Cruz (`C001098`): 3 terms, First Elected Nov 6, 2012, Next Election Nov 5, 2030.
   - Adam B. Schiff (`S001150`): 1 term, First Elected Nov 5, 2024, Next Election Nov 5, 2030.
 - No service-history placeholder text appeared in the spot-checked production profiles.
+- Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
 
 ## Exit Criteria
 
