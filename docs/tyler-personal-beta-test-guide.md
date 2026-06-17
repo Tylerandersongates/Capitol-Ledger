@@ -48,3 +48,13 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 - Confirm deployed auth cookies are `Secure`, `HttpOnly`, and `SameSite=lax`.
   - Verified on production with an existing fake QA sign-in.
 - Review the beta checklist page and make sure unresolved private billing/API items are not marked resolved in tester-facing materials.
+
+## Naive User Regression
+- Create a fresh fake account and do not open the verification email.
+- Try direct navigation to `/dashboard`, `/settings`, and `/team`.
+  - Expected: pending-verification accounts land back on `/sign-in?mode=verify`.
+  - Expected: account-backed storage does not sync before `emailVerifiedAt` is set.
+- Open the verification link and confirm the account can continue to `/onboarding` or `/dashboard`.
+- Recheck Profile copy on a partial setup account: sync should mean account storage is connected, not that district setup is complete.
+- Decide whether accidental saved-item removal needs an undo toast before external testers.
+- Check whether cumulative Civic Momentum wording is clear when a user removes the only currently saved bill.

@@ -89,7 +89,7 @@ export default async function AccountPage() {
                   </div>
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 text-[12px] leading-snug text-white/50">
-                  The avatar is a placeholder for the citizen account. Photo upload can come later; the green check means the profile has enough setup data to personalize district, alerts, and saved records.
+                  The avatar is a placeholder for the citizen account. The sync check means account storage is connected; complete district setup to personalize officials, alerts, and saved records.
                 </div>
                 <div className={`mt-5 ${premiumPanelClass} p-3`}>
                   <AccountGamificationStats className="grid grid-cols-3 gap-3" />

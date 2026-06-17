@@ -4,6 +4,7 @@ import { deleteProductionSession, readProductionSession, type AuthUser } from "@
 
 export const authSessionCookie = "capitol-ledger-auth-session";
 export const demoSessionCookie = "capitol-ledger-demo-session";
+export const pendingEmailVerificationCookie = "capitol-ledger-email-verification-pending";
 
 export type DemoSession = {
   mode?: "demo" | "production";
@@ -30,12 +31,13 @@ export async function getDemoSession(): Promise<DemoSession | null> {
   };
 }
 
-export async function getProductionSession(): Promise<DemoSession | null> {
+export async function getProductionSession(options: { includeUnverified?: boolean } = {}): Promise<DemoSession | null> {
   const sessionToken = cookies().get(authSessionCookie)?.value;
   if (!sessionToken) return null;
 
   const session = await readProductionSession(sessionToken).catch(() => null);
   if (!session) return null;
+  if (!options.includeUnverified && !session.user.emailVerifiedAt) return null;
 
   return {
     mode: "production",
@@ -43,8 +45,8 @@ export async function getProductionSession(): Promise<DemoSession | null> {
   };
 }
 
-export async function getCurrentSession(): Promise<DemoSession | null> {
-  return (await getProductionSession()) ?? (await getDemoSession());
+export async function getCurrentSession(options: { includeUnverified?: boolean } = {}): Promise<DemoSession | null> {
+  return (await getProductionSession(options)) ?? (await getDemoSession());
 }
 
 export function setAuthSessionCookie(response: NextResponse, sessionToken: string) {
@@ -67,6 +69,26 @@ export function setDemoSessionCookie(response: NextResponse) {
   });
 }
 
+export function setPendingEmailVerificationCookie(response: NextResponse) {
+  response.cookies.set(pendingEmailVerificationCookie, "active", {
+    httpOnly: true,
+    maxAge: 60 * 60 * 24,
+    path: "/",
+    sameSite: "lax",
+    secure: shouldUseSecureCookies()
+  });
+}
+
+export function clearPendingEmailVerificationCookie(response: NextResponse) {
+  response.cookies.set(pendingEmailVerificationCookie, "", {
+    httpOnly: true,
+    maxAge: 0,
+    path: "/",
+    sameSite: "lax",
+    secure: shouldUseSecureCookies()
+  });
+}
+
 export function clearAuthCookies(response: NextResponse) {
   response.cookies.set(authSessionCookie, "", {
     httpOnly: true,
@@ -82,6 +104,7 @@ export function clearAuthCookies(response: NextResponse) {
     sameSite: "lax",
     secure: shouldUseSecureCookies()
   });
+  clearPendingEmailVerificationCookie(response);
 }
 
 export async function clearCurrentAuthSession(response: NextResponse) {

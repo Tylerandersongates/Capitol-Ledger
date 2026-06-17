@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { authSessionCookie, clearAuthCookies, setAuthSessionCookie } from "@/lib/auth";
+import { authSessionCookie, clearAuthCookies, clearPendingEmailVerificationCookie, setAuthSessionCookie } from "@/lib/auth";
 import { verifyEmailToken } from "@/lib/auth-database";
 import { guardMutationRequest } from "@/lib/request-security";
 
@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
   if (result.sessionToken) {
     clearAuthCookies(response);
     setAuthSessionCookie(response, result.sessionToken);
+  } else {
+    clearPendingEmailVerificationCookie(response);
   }
 
   return response;

@@ -55,11 +55,13 @@ type AuthApiResponse = {
   mode?: string;
   user?: {
     email: string;
+    emailVerifiedAt?: string;
     firstName?: string;
     id: string;
     lastName?: string;
     name?: string;
   };
+  requiresVerification?: boolean;
   verificationLink?: string;
   verificationPrepared?: boolean;
 };
@@ -439,6 +441,17 @@ export function AuthFlowClient({
         return;
       }
 
+      const authData = result.data as AuthApiResponse;
+      if (authData.requiresVerification || !authData.user?.emailVerifiedAt) {
+        markBrowserAccountCreated();
+        setBrowserSessionAuthenticated(false);
+        setAllowAccountCreation(false);
+        setAccountCreated(true);
+        setMode("verify");
+        setStatus("Verify your email before continuing. Open the secure link from your inbox, or paste the verification token here.");
+        return;
+      }
+
       markBrowserAccountCreated();
       setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
@@ -492,7 +505,7 @@ export function AuthFlowClient({
 
       resetLocalAccountSetupState();
       markBrowserAccountCreated();
-      setBrowserSessionAuthenticated(true);
+      setBrowserSessionAuthenticated(false);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       setMode("verify");

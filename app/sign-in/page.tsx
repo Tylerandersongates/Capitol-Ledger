@@ -10,7 +10,7 @@ const authAmbientClass =
 const authBackgroundClass = "bg-[linear-gradient(180deg,#071a34_0%,#041226_36%,#020b1c_72%,#010716_100%)]";
 
 export default function SignInPage({ searchParams }: { searchParams?: { mode?: string; resetToken?: string; returnTo?: string; verifyToken?: string } }) {
-  const initialMode = searchParams?.mode === "create" ? "create" : undefined;
+  const initialMode = searchParams?.mode === "create" ? "create" : searchParams?.mode === "verify" ? "verify" : undefined;
   const returnTo = safeReturnPath(searchParams?.returnTo, initialMode === "create" ? "/onboarding" : "/dashboard");
   const isVercelDeployment = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
   const allowDemoMode =

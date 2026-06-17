@@ -46,6 +46,9 @@ Generated at the break on June 16, 2026 for the next continuation.
   - New database Team workspaces no longer create an owner `TeamMember` seat.
   - Existing owner member rows are ignored for participant capacity, roster display, shared watchlist seeding, and member access.
   - Team capacity now means paid participant seats; the billing owner can delegate control to an Admin without using one.
+- Ran a naive-user beta pass with fake account `qa-dumb-user-1781660500@capitolledger.test`.
+- Fixed the main safeguard gap from that pass: newly created production accounts now stay in email-verification mode, set a pending-verification cookie, redirect manual app navigation back to `/sign-in?mode=verify`, and do not count as account-backed sessions until `emailVerifiedAt` is set.
+- Updated Profile copy so the sync check means account storage is connected, not that district setup is complete.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -113,6 +116,17 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Database subscription became `team / annual / stripe / active` with `seatCount=3` and a real `sub_` subscription ID.
   - Stripe subscription is active, metadata is `plan=team`, `cycle=annual`, `seatCount=3`, quantity `3`, unit amount `$59.99`, and the price matches `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
   - `/upgrade` showed Annual selected, Team `Manage Billing`, and `$179.97 / workspace / year`; browser console errors: none.
+- Naive-user beta pass production observations before the verification fix:
+  - Bad sign-in/create-account inputs were blocked with inline validation.
+  - After account creation, the app sent the user to verification mode, but direct navigation to `/dashboard` still opened the app before email verification. This is now fixed in code and locally smoke-tested.
+  - Gibberish search returned clear zero-result states.
+  - Random policy-interest choices saved and appeared as shortcuts.
+  - Team checkout quantity guarded the 3-seat minimum; plus/minus updated quantity and estimate correctly.
+  - Free account direct `/team` access showed the Team access gate.
+  - Locked `/brief`, `/map`, and `/alerts` surfaces showed upgrade/empty states without console errors.
+  - Onboarding kept `Finish setup` disabled at `3/5` when affiliation, interests, and alerts were selected but district/officials were missing.
+  - Feedback submission stayed disabled until required report fields were present, and `/feedback/review` showed only "My Feedback" for the fake account.
+  - Bill position controls were reversible, saving a bill updated Dashboard, and removing the saved bill immediately removed it from the watchlist.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -199,6 +213,12 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `pnpm exec tsc --noEmit --pretty false` passed.
   - `pnpm run build` passed.
   - Read-only database check on the Team Annual QA workspace confirmed the existing owner row now evaluates to `0` reserved participant seats and `3` open participant seats.
+- Email-verification safeguard verification passed in the same clean `/private/tmp/capitol-ledger-seat-check-1781660000` clone after copying the patch:
+  - `pnpm lint` passed.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
+  - Local production server smoke test: request with `capitol-ledger-email-verification-pending=active` to `/dashboard` returned `307` to `/sign-in?mode=verify&returnTo=%2Fdashboard`.
+  - Local production server smoke test: `/sign-in?mode=verify` rendered the `Verify your account.` screen.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -209,10 +229,14 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
 - Local config still warns `AUTH_COOKIE_SECURE` is not `true`, but deployed production sign-in sets `Secure` auth cookies because `VERCEL_ENV=production` also enables secure cookies.
+- Accidental saved-item removal has no undo/confirmation. It is low-risk because the item can be re-saved, but Tyler should decide whether a toast/undo is worth adding before external testers.
+- Engagement stats are cumulative: after removing the saved bill, watchlist/tracker returned to `0` while Civic Momentum still showed one tracked action. This may be intentional, but the wording should be checked for novice clarity.
+- Bill detail initially felt slow during one naive-user navigation but recovered with no console errors.
 
 ## Next Best Steps
-1. Deploy the billing-owner participant-seat split, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
-2. Run a naive-user beta pass with a fresh fake account: make wrong choices, submit bad forms, backtrack, and record confusing copy or missing safeguards.
-3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
-4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
+1. Deploy the billing-owner participant-seat split plus email-verification safeguard patch, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
+2. After deploy, create one more fresh fake account and verify that direct `/dashboard` navigation before email verification redirects to `/sign-in?mode=verify`.
+3. Verify the secure email link clears the pending-verification state and then allows `/onboarding` or `/dashboard`.
+4. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+5. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
+6. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCredentialAccount } from "@/lib/auth-database";
-import { clearAuthCookies, setAuthSessionCookie } from "@/lib/auth";
+import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { deliverAuthEmail } from "@/lib/auth-email";
 import { guardMutationRequest } from "@/lib/request-security";
 
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
   });
   clearAuthCookies(response);
   setAuthSessionCookie(response, result.sessionToken);
+  setPendingEmailVerificationCookie(response);
 
   return response;
 }

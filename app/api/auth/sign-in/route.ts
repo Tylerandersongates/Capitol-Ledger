@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signInWithPassword } from "@/lib/auth-database";
-import { clearAuthCookies, setAuthSessionCookie } from "@/lib/auth";
+import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -33,13 +33,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ configured: true, error: result.error }, { status: result.status });
   }
 
+  const requiresVerification = !result.user.emailVerifiedAt;
   const response = NextResponse.json({
     authenticated: true,
     mode: "production",
+    requiresVerification,
     user: result.user
   });
   clearAuthCookies(response);
   setAuthSessionCookie(response, result.sessionToken);
+  if (requiresVerification) setPendingEmailVerificationCookie(response);
 
   return response;
 }
