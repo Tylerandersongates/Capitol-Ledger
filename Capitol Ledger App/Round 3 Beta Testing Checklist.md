@@ -239,6 +239,7 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
 - Production auth/email readiness passed:
   - Auth email delivery passed production-provider mode with Resend delivery, sender identity, app URL, auth secret, and secure cookie configuration present.
+  - Real inbox verification passed: the Resend verification email landed, the secure link completed in production, the browser removed the token from the URL, and the database marked the token used.
   - Beta readiness passed with production database checks for the `BetaFeedback` table and `releaseDecision` column.
   - Production auth schema check passed for account, auth session, subscription, follow, alert, weekly brief, and gamification tables.
 
