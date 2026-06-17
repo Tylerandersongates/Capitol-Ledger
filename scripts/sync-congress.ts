@@ -1,4 +1,18 @@
-import { CongressApiError, fetchBill, fetchBillCosponsors, fetchBills, fetchBillSummaries, fetchCommittees, fetchHouseVoteMembers, fetchHouseVotes, fetchMember, fetchMembers, type CongressBillListItem } from "../lib/congress/client";
+import {
+  CongressApiError,
+  fetchBill,
+  fetchBillCosponsors,
+  fetchBills,
+  fetchBillSummaries,
+  fetchCommittees,
+  fetchHouseVoteMembers,
+  fetchHouseVotes,
+  fetchMember,
+  fetchMembers,
+  type CongressBillListItem,
+  type CongressMemberDetailItem,
+  type CongressMemberListItem
+} from "../lib/congress/client";
 import { getPrisma, hasDatabaseUrl } from "../lib/prisma";
 import {
   buildBillSourceLinks,
@@ -30,9 +44,16 @@ type ResolvedBillSummaryRecord = {
   summary: ReturnType<typeof resolveCongressBillSummary>;
 };
 
+type ResolvedSupplementalMemberRecord = {
+  member: Member;
+  raw: CongressMemberDetailItem;
+};
+
 type ResolvedBillCosponsorRecord = NonNullable<ReturnType<typeof normalizeCongressBillCosponsor>>;
 type ResolvedHouseVoteRecord = NonNullable<ReturnType<typeof normalizeCongressHouseVote>>;
 type ResolvedHouseMemberVoteRecord = NonNullable<ReturnType<typeof normalizeCongressHouseMemberVote>>;
+
+const territoryDelegateMemberIds = ["N000147", "H001103", "M001219", "P000610", "R000600", "K000404"];
 
 function readIntegerEnv(name: string, fallback: number, min: number, max: number) {
   const value = Number(process.env[name] ?? fallback);
@@ -44,6 +65,17 @@ function readBooleanEnv(name: string, fallback: boolean) {
   const value = process.env[name];
   if (!value) return fallback;
   return value === "true";
+}
+
+function readStringListEnv(name: string) {
+  return (process.env[name] ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values));
 }
 
 function billSyncKey(bill: Pick<Bill, "billNumber" | "billType" | "congress">) {
@@ -122,6 +154,27 @@ async function fetchResolvedBillSponsors(bills: Bill[]) {
   return records;
 }
 
+async function fetchResolvedSupplementalMembers(memberIds: string[]) {
+  const records: ResolvedSupplementalMemberRecord[] = [];
+
+  for (const memberId of memberIds) {
+    try {
+      const response = await fetchMember(memberId);
+      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      if (member && response.member) {
+        records.push({
+          member,
+          raw: response.member
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof CongressApiError)) throw error;
+    }
+  }
+
+  return records;
+}
+
 async function fetchResolvedHouseVotes(congress: number, session: number, limit: number) {
   try {
     const response = await fetchHouseVotes(congress, session, { limit });
@@ -170,6 +223,7 @@ async function main() {
   const houseVoteLimit = readIntegerEnv("CONGRESS_SYNC_HOUSE_VOTE_LIMIT", 5, 1, 100);
   const shouldSyncHouseMemberVotes = readBooleanEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTES", true);
   const houseMemberVoteLimit = readIntegerEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT", 500, 1, 500);
+  const supplementalMemberIds = uniqueStrings([...territoryDelegateMemberIds, ...readStringListEnv("CONGRESS_SYNC_MEMBER_IDS")]);
   const shouldWrite = process.env.CONGRESS_SYNC_WRITE === "true";
 
   console.log("Testing Congress.gov API access...");
@@ -179,6 +233,7 @@ async function main() {
   console.log(`Cosponsor sync: ${shouldSyncCosponsors ? `enabled, up to ${cosponsorLimit} per bill` : "skipped"}`);
   console.log(`House vote sync: ${shouldSyncHouseVotes ? `enabled, session ${houseVoteSession}, up to ${houseVoteLimit} votes` : "skipped"}`);
   console.log(`House member vote sync: ${shouldSyncHouseVotes && shouldSyncHouseMemberVotes ? `enabled, up to ${houseMemberVoteLimit} positions per vote` : "skipped"}`);
+  console.log(`Supplemental member sync: ${supplementalMemberIds.length ? `${supplementalMemberIds.length} targeted records` : "skipped"}`);
   console.log(`Write mode: ${shouldWrite ? "enabled" : "dry run"}`);
 
   const [membersResponse, billsResponse, committeesResponse] = await Promise.all([
@@ -192,7 +247,10 @@ async function main() {
   const detailedBills = billDetails.map(normalizeCongressBill).filter((bill) => bill !== null);
   const bills = Array.from(new Map([...listedBills, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
   const rawBills = [...(billsResponse.bills ?? []), ...billDetails];
-  const members = (membersResponse.members ?? []).map(normalizeCongressMember).filter((member) => member !== null);
+  const listedMembers = (membersResponse.members ?? []).map(normalizeCongressMember).filter((member) => member !== null);
+  const supplementalMembers = await fetchResolvedSupplementalMembers(supplementalMemberIds);
+  const members = uniqueMembers([...listedMembers, ...supplementalMembers.map((record) => record.member)]);
+  const rawMembers: Array<CongressMemberListItem | CongressMemberDetailItem> = [...(membersResponse.members ?? []), ...supplementalMembers.map((record) => record.raw)];
   const committees = (committeesResponse.committees ?? []).map(normalizeCongressCommittee).filter((committee) => committee !== null);
   const sponsorMembers = await fetchResolvedBillSponsors(bills);
   const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(bills, cosponsorLimit) : [];
@@ -210,6 +268,7 @@ async function main() {
   ]);
 
   console.log(`Normalized ${members.length} members.`);
+  console.log(`Resolved ${supplementalMembers.length} supplemental member detail records.`);
   console.log(`Normalized ${bills.length} bills from the ${congress}th Congress.`);
   console.log(`Resolved ${billDetails.length} bill detail records.`);
   console.log(`Normalized ${committees.length} committees.`);
@@ -238,7 +297,7 @@ async function main() {
   }
 
   const prisma = getPrisma();
-  const memberResult = await upsertCongressMembers(prisma, members, membersResponse.members ?? []);
+  const memberResult = await upsertCongressMembers(prisma, members, rawMembers);
   const sponsorMemberResult = await upsertCongressMembers(prisma, sponsorMembers);
   const billResult = await upsertCongressBills(prisma, bills, rawBills);
   const committeeResult = await upsertCongressCommittees(prisma, committees, committeesResponse.committees ?? []);

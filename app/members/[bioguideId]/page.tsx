@@ -432,14 +432,25 @@ function isAtLargeDistrict(district?: string) {
   return normalized === "0" || normalized === "00" || normalized === "al" || normalized === "at-large" || normalized === "at large" || normalized === "atlarge";
 }
 
-function memberDistrictLabel(state: string, district?: string) {
-  if (!district) return state;
-  return isAtLargeDistrict(district) ? `${state} At-Large` : `${state} District ${district}`;
+function isHouseTerritorySeat(member: Member) {
+  return member.chamber === "House" && ["AS", "DC", "GU", "MP", "PR", "VI"].includes(member.state);
+}
+
+function memberRoleLabel(member: Member) {
+  if (member.chamber === "Senate") return "Senator";
+  if (member.state === "PR") return "Resident Commissioner";
+  if (isHouseTerritorySeat(member)) return "Delegate";
+  return "Representative";
+}
+
+function memberDistrictLabel(member: Member, state: string) {
+  if (!member.district) return isHouseTerritorySeat(member) ? `${state} At-Large` : state;
+  return isAtLargeDistrict(member.district) ? `${state} At-Large` : `${state} District ${member.district}`;
 }
 
 function memberSeatTag(member: Member) {
   const partyCode = member.party.trim().charAt(0).toUpperCase() || "U";
-  const districtCode = member.district ? `-${isAtLargeDistrict(member.district) ? "AL" : member.district}` : "";
+  const districtCode = member.district ? `-${isAtLargeDistrict(member.district) ? "AL" : member.district}` : isHouseTerritorySeat(member) ? "-AL" : "";
   return `[${partyCode}-${member.state}${districtCode}]`;
 }
 
@@ -529,11 +540,11 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
     memberVotes,
     sponsoredBills
   });
-  const role = member.chamber === "Senate" ? "Senator" : "Representative";
+  const role = memberRoleLabel(member);
   const displayName = cleanMemberDisplayName(member);
   const displayNameClass = memberDisplayNameClass(displayName);
   const state = stateNames[member.state] ?? member.state;
-  const districtLabel = memberDistrictLabel(state, member.district);
+  const districtLabel = memberDistrictLabel(member, state);
   const seatTag = memberSeatTag(member);
   const nextElectionDate = member.nextElectionDate ?? fallbackNextElectionDate(member.chamber);
   const nextElection = formatDate(nextElectionDate);

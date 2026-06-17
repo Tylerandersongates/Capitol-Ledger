@@ -1,6 +1,6 @@
 import { Chamber, Party, Prisma, VotePosition as PrismaVotePosition, type PrismaClient } from "@prisma/client";
 import type { Bill, CapitolSourceLink, CommitteeRecord, Member } from "../../types/capitol";
-import type { CongressBillListItem, CongressCommitteeListItem, CongressMemberListItem } from "./client";
+import type { CongressBillListItem, CongressCommitteeListItem, CongressMemberDetailItem, CongressMemberListItem } from "./client";
 import type { NormalizedCongressBillSummary, NormalizedCongressCosponsor, NormalizedCongressMemberVote, NormalizedCongressVote } from "./normalizers";
 
 type UpsertResult = {
@@ -45,7 +45,9 @@ function dateOrNull(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function memberRawByBioguideId(rawMembers: CongressMemberListItem[]) {
+type CongressMemberRawItem = CongressMemberListItem | CongressMemberDetailItem;
+
+function memberRawByBioguideId(rawMembers: CongressMemberRawItem[]) {
   return new Map(rawMembers.filter((member) => member.bioguideId).map((member) => [member.bioguideId as string, member]));
 }
 
@@ -136,7 +138,7 @@ async function existingBillsByKey(prisma: PrismaClient, bills: Array<Pick<Bill, 
 export async function upsertCongressMembers(
   prisma: PrismaClient,
   members: Member[],
-  rawMembers: CongressMemberListItem[] = []
+  rawMembers: CongressMemberRawItem[] = []
 ): Promise<UpsertResult> {
   const rawById = memberRawByBioguideId(rawMembers);
   let createdOrUpdated = 0;

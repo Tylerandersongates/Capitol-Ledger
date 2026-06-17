@@ -24,6 +24,74 @@ const BILL_TYPE_SLUGS: Record<string, string> = {
   SCONRES: "senate-concurrent-resolution"
 };
 
+const STATE_CODE_BY_NAME: Record<string, string> = {
+  alabama: "AL",
+  alaska: "AK",
+  "american samoa": "AS",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  "district of columbia": "DC",
+  florida: "FL",
+  georgia: "GA",
+  guam: "GU",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  "northern mariana islands": "MP",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "puerto rico": "PR",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  "u.s. virgin islands": "VI",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  "virgin islands": "VI",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY"
+};
+
+function normalizeStateCode(value?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return "US";
+  const upper = trimmed.toUpperCase();
+  if (/^[A-Z]{2}$/.test(upper)) return upper;
+  return STATE_CODE_BY_NAME[trimmed.toLowerCase()] ?? trimmed;
+}
+
 function normalizeDate(value?: string) {
   if (!value) return undefined;
   const date = new Date(value);
@@ -218,7 +286,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
   const service = deriveMemberServiceFromTerms(terms, chamber);
   const { displayName, firstName, lastName } = splitMemberName(raw.name);
   const prefix = chamber === "Senate" ? "Sen." : "Rep.";
-  const state = raw.state ?? "US";
+  const state = normalizeStateCode(raw.state);
 
   return {
     bioguideId: raw.bioguideId,
@@ -263,7 +331,7 @@ export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Me
   const latestParty = [...(raw.partyHistory ?? [])]
     .filter((party) => party.partyName || party.partyAbbreviation)
     .sort((a, b) => (b.startYear ?? 0) - (a.startYear ?? 0))[0];
-  const state = activeTerm?.stateCode ?? raw.state ?? "US";
+  const state = normalizeStateCode(activeTerm?.stateCode ?? raw.state);
 
   return {
     active: raw.currentMember ?? Boolean(activeTerm && !activeTerm.endYear),
@@ -385,7 +453,7 @@ export function normalizeCongressBillCosponsor(raw: CongressBillCosponsorItem, b
   const rawName = [raw.firstName, raw.middleName, raw.lastName].filter(Boolean).join(" ") || raw.fullName;
   const { displayName, firstName, lastName } = splitMemberName(rawName);
   const prefix = chamber === "Senate" ? "Sen." : "Rep.";
-  const state = raw.state ?? "US";
+  const state = normalizeStateCode(raw.state);
 
   const member: Member = {
     active: true,
@@ -448,7 +516,7 @@ export function normalizeCongressHouseMemberVote(
 
   const rawName = raw.name ?? raw.memberName ?? [raw.firstName, raw.lastName].filter(Boolean).join(" ");
   const { displayName, firstName, lastName } = splitMemberName(rawName);
-  const state = raw.state ?? "US";
+  const state = normalizeStateCode(raw.state);
 
   const member: Member = {
     active: true,
