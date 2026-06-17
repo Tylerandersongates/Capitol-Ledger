@@ -1,4 +1,4 @@
-import { CongressApiError, fetchBillCosponsors, fetchBills, fetchBillSummaries, fetchCommittees, fetchHouseVoteMembers, fetchHouseVotes, fetchMembers } from "../lib/congress/client";
+import { CongressApiError, fetchBill, fetchBillCosponsors, fetchBills, fetchBillSummaries, fetchCommittees, fetchHouseVoteMembers, fetchHouseVotes, fetchMember, fetchMembers, type CongressBillListItem } from "../lib/congress/client";
 import { getPrisma, hasDatabaseUrl } from "../lib/prisma";
 import {
   buildBillSourceLinks,
@@ -10,6 +10,7 @@ import {
   normalizeCongressHouseMemberVote,
   normalizeCongressHouseVote,
   normalizeCongressMember,
+  normalizeCongressMemberDetail,
   resolveCongressBillSummary
 } from "../lib/congress/normalizers";
 import {
@@ -45,6 +46,10 @@ function readBooleanEnv(name: string, fallback: boolean) {
   return value === "true";
 }
 
+function billSyncKey(bill: Pick<Bill, "billNumber" | "billType" | "congress">) {
+  return `${bill.congress}:${bill.billType.toUpperCase()}:${bill.billNumber}`;
+}
+
 async function fetchResolvedBillSummaries(bills: Bill[]) {
   const records: ResolvedBillSummaryRecord[] = [];
 
@@ -77,6 +82,38 @@ async function fetchResolvedBillCosponsors(bills: Bill[], limit: number) {
         .map((cosponsor) => normalizeCongressBillCosponsor(cosponsor, bill))
         .filter((cosponsor) => cosponsor !== null);
       records.push(...normalized);
+    } catch (error) {
+      if (!(error instanceof CongressApiError)) throw error;
+    }
+  }
+
+  return records;
+}
+
+async function fetchResolvedBillDetails(bills: Bill[]) {
+  const records: CongressBillListItem[] = [];
+
+  for (const bill of bills) {
+    try {
+      const response = await fetchBill(bill.congress, bill.billType, bill.billNumber);
+      if (response.bill) records.push(response.bill);
+    } catch (error) {
+      if (!(error instanceof CongressApiError)) throw error;
+    }
+  }
+
+  return records;
+}
+
+async function fetchResolvedBillSponsors(bills: Bill[]) {
+  const sponsorIds = Array.from(new Set(bills.map((bill) => bill.sponsorBioguideId).filter((value): value is string => Boolean(value))));
+  const records: Member[] = [];
+
+  for (const sponsorId of sponsorIds) {
+    try {
+      const response = await fetchMember(sponsorId);
+      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      if (member) records.push(member);
     } catch (error) {
       if (!(error instanceof CongressApiError)) throw error;
     }
@@ -150,9 +187,14 @@ async function main() {
     fetchCommittees(undefined, { limit })
   ]);
 
+  const listedBills = (billsResponse.bills ?? []).map(normalizeCongressBill).filter((bill) => bill !== null);
+  const billDetails = await fetchResolvedBillDetails(listedBills);
+  const detailedBills = billDetails.map(normalizeCongressBill).filter((bill) => bill !== null);
+  const bills = Array.from(new Map([...listedBills, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
+  const rawBills = [...(billsResponse.bills ?? []), ...billDetails];
   const members = (membersResponse.members ?? []).map(normalizeCongressMember).filter((member) => member !== null);
-  const bills = (billsResponse.bills ?? []).map(normalizeCongressBill).filter((bill) => bill !== null);
   const committees = (committeesResponse.committees ?? []).map(normalizeCongressCommittee).filter((committee) => committee !== null);
+  const sponsorMembers = await fetchResolvedBillSponsors(bills);
   const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(bills, cosponsorLimit) : [];
   const cosponsorMembers = uniqueMembers(billCosponsors.map((cosponsor) => cosponsor.member));
   const houseVotes = shouldSyncHouseVotes ? await fetchResolvedHouseVotes(congress, houseVoteSession, houseVoteLimit) : [];
@@ -160,6 +202,7 @@ async function main() {
   const houseVoteMembers = uniqueMembers(houseMemberVotes.map((memberVote) => memberVote.member));
   const sourceLinks = uniqueSourceLinks([
     ...members.flatMap(buildMemberSourceLinks),
+    ...sponsorMembers.flatMap(buildMemberSourceLinks),
     ...cosponsorMembers.flatMap(buildMemberSourceLinks),
     ...houseVoteMembers.flatMap(buildMemberSourceLinks),
     ...bills.flatMap((bill) => buildBillSourceLinks(bill)),
@@ -168,7 +211,9 @@ async function main() {
 
   console.log(`Normalized ${members.length} members.`);
   console.log(`Normalized ${bills.length} bills from the ${congress}th Congress.`);
+  console.log(`Resolved ${billDetails.length} bill detail records.`);
   console.log(`Normalized ${committees.length} committees.`);
+  console.log(`Resolved ${sponsorMembers.length} sponsor member records.`);
   if (shouldSyncCosponsors) {
     console.log(`Resolved ${billCosponsors.length} bill cosponsor links and ${cosponsorMembers.length} cosponsor member records.`);
   }
@@ -194,7 +239,8 @@ async function main() {
 
   const prisma = getPrisma();
   const memberResult = await upsertCongressMembers(prisma, members, membersResponse.members ?? []);
-  const billResult = await upsertCongressBills(prisma, bills, billsResponse.bills ?? []);
+  const sponsorMemberResult = await upsertCongressMembers(prisma, sponsorMembers);
+  const billResult = await upsertCongressBills(prisma, bills, rawBills);
   const committeeResult = await upsertCongressCommittees(prisma, committees, committeesResponse.committees ?? []);
   const cosponsorMemberResult = shouldSyncCosponsors ? await upsertCongressMembers(prisma, cosponsorMembers) : { createdOrUpdated: 0, skipped: 0 };
   const cosponsorResult = shouldSyncCosponsors ? await upsertCongressCosponsors(prisma, billCosponsors) : { createdOrUpdated: 0, skipped: 0 };
@@ -205,6 +251,7 @@ async function main() {
   const summaryResult = shouldSyncSummaries ? await upsertCongressBillSummaries(prisma, billSummaries) : { createdOrUpdated: 0, skipped: 0 };
 
   console.log(`Upserted ${memberResult.createdOrUpdated} member records.`);
+  console.log(`Upserted ${sponsorMemberResult.createdOrUpdated} sponsor member records.`);
   console.log(`Upserted ${billResult.createdOrUpdated} bill records.`);
   console.log(`Upserted ${committeeResult.createdOrUpdated} committee records.`);
   if (shouldSyncCosponsors) {

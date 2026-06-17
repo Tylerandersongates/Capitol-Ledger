@@ -736,7 +736,7 @@ function KeyDetailsCard({
         <DetailRow
           image={sponsor?.photoUrl}
           label="Sponsor"
-          value={sponsor?.fullName ?? "Congress"}
+          value={sponsor?.fullName ?? (bill.sponsorBioguideId ? "Sponsor profile pending" : "No sponsor listed")}
           href={sponsor ? `/members/${sponsor.bioguideId}` : undefined}
         />
         <CosponsorsRow cosponsors={cosponsors} />

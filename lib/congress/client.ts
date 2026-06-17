@@ -85,6 +85,42 @@ export type CongressMemberListResponse = {
 
 export type CongressMemberListItem = NonNullable<CongressMemberListResponse["members"]>[number];
 
+export type CongressMemberDetailResponse = {
+  member?: {
+    bioguideId?: string;
+    currentMember?: boolean;
+    depiction?: {
+      imageUrl?: string;
+    };
+    directOrderName?: string;
+    district?: number;
+    firstName?: string;
+    honorificName?: string;
+    invertedOrderName?: string;
+    lastName?: string;
+    officialWebsiteUrl?: string;
+    partyHistory?: Array<{
+      partyAbbreviation?: string;
+      partyName?: string;
+      startYear?: number;
+    }>;
+    state?: string;
+    terms?: Array<{
+      chamber?: string;
+      district?: number;
+      endYear?: number;
+      memberType?: string;
+      startYear?: number;
+      stateCode?: string;
+      stateName?: string;
+    }>;
+    updateDate?: string;
+    url?: string;
+  };
+};
+
+export type CongressMemberDetailItem = NonNullable<CongressMemberDetailResponse["member"]>;
+
 export type CongressBillListResponse = {
   pagination?: CongressPagination;
   bills?: Array<{
@@ -97,6 +133,7 @@ export type CongressBillListResponse = {
       actionDate?: string;
       text?: string;
     };
+    introducedDate?: string;
     number?: string;
     originChamber?: string;
     policyArea?: {
@@ -104,7 +141,12 @@ export type CongressBillListResponse = {
     };
     sponsors?: Array<{
       bioguideId?: string;
+      district?: number;
+      firstName?: string;
       fullName?: string;
+      lastName?: string;
+      party?: string;
+      state?: string;
       url?: string;
     }>;
     title?: string;
@@ -115,6 +157,10 @@ export type CongressBillListResponse = {
 };
 
 export type CongressBillListItem = NonNullable<CongressBillListResponse["bills"]>[number];
+
+export type CongressBillDetailResponse = {
+  bill?: CongressBillListItem;
+};
 
 export type CongressBillSummariesResponse = {
   pagination?: CongressPagination;
@@ -223,7 +269,7 @@ export async function fetchCommittees(chamber?: "house" | "senate", options: Con
 }
 
 export async function fetchBill(congress: number, billType: string, billNumber: string) {
-  return congressFetch(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}`);
+  return congressFetch<CongressBillDetailResponse>(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}`);
 }
 
 export async function fetchBillSummaries(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {
@@ -247,5 +293,5 @@ export async function fetchHouseVoteMembers(congress: number, session: number, v
 }
 
 export async function fetchMember(bioguideId: string) {
-  return congressFetch(`/member/${bioguideId}`);
+  return congressFetch<CongressMemberDetailResponse>(`/member/${bioguideId}`);
 }

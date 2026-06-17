@@ -3,6 +3,7 @@ import type {
   CongressBillListItem,
   CongressBillSummaryItem,
   CongressCommitteeListItem,
+  CongressMemberDetailItem,
   CongressHouseVoteItem,
   CongressHouseVoteMemberItem,
   CongressMemberListItem
@@ -73,7 +74,13 @@ function slugify(value: string) {
 }
 
 function splitMemberName(name?: string) {
-  const cleanName = name?.replace(/\s+/g, " ").trim() ?? "";
+  const cleanName =
+    name
+      ?.replace(/\[[^\]]+\]/g, "")
+      .replace(/\([^)]*\)/g, "")
+      .replace(/^(rep\.|representative|sen\.|senator|mr\.|mrs\.|ms\.|miss|dr\.)\s+/i, "")
+      .replace(/\s+/g, " ")
+      .trim() ?? "";
   if (!cleanName) {
     return {
       firstName: "Unknown",
@@ -85,7 +92,7 @@ function splitMemberName(name?: string) {
 
   if (cleanName.includes(",")) {
     const [lastName, rest] = cleanName.split(",", 2).map((part) => part.trim());
-    const firstName = rest.replace(/\s+\(.+\)$/, "").trim() || "Unknown";
+    const firstName = rest.trim() || "Unknown";
     const displayName = `${firstName} ${lastName}`.trim();
     return {
       firstName,
@@ -234,6 +241,51 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
   };
 }
 
+export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Member | null {
+  if (!raw.bioguideId) return null;
+
+  const terms = raw.terms ?? [];
+  const activeTerm = terms.find((term) => !term.endYear) ?? terms.at(-1);
+  const chamber = normalizeChamber(activeTerm?.chamber) ?? (activeTerm?.memberType?.toLowerCase().includes("senator") ? "Senate" : "House");
+  const service = deriveMemberServiceFromTerms(
+    terms.map((term) => ({
+      chamber: term.chamber,
+      endYear: term.endYear,
+      startYear: term.startYear
+    })),
+    chamber
+  );
+  const nameParts = splitMemberName(raw.directOrderName ?? raw.invertedOrderName ?? [raw.firstName, raw.lastName].filter(Boolean).join(" "));
+  const firstName = raw.firstName ?? nameParts.firstName;
+  const lastName = raw.lastName ?? nameParts.lastName;
+  const displayName = nameParts.displayName;
+  const prefix = chamber === "Senate" ? "Sen." : "Rep.";
+  const latestParty = [...(raw.partyHistory ?? [])]
+    .filter((party) => party.partyName || party.partyAbbreviation)
+    .sort((a, b) => (b.startYear ?? 0) - (a.startYear ?? 0))[0];
+  const state = activeTerm?.stateCode ?? raw.state ?? "US";
+
+  return {
+    active: raw.currentMember ?? Boolean(activeTerm && !activeTerm.endYear),
+    bioguideId: raw.bioguideId,
+    chamber,
+    description: `${chamber} member from ${state} normalized from Congress.gov member detail for Capitol Ledger live data.`,
+    district: typeof activeTerm?.district === "number" ? String(activeTerm.district) : typeof raw.district === "number" ? String(raw.district) : undefined,
+    firstElectedDate: service.firstElectedDate,
+    firstName,
+    fullName: `${prefix} ${displayName}`,
+    lastName,
+    nextElectionDate: service.nextElectionDate,
+    officialUrl: raw.officialWebsiteUrl,
+    party: normalizeParty(latestParty?.partyName ?? latestParty?.partyAbbreviation),
+    photoUrl: raw.depiction?.imageUrl,
+    sourceUrl: memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
+    state,
+    term: currentCongressLabel(),
+    termsInOffice: service.termsInOffice
+  };
+}
+
 export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
   if (!raw.congress || !raw.type || !raw.number || !raw.title) return null;
 
@@ -252,7 +304,7 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
     shortTitle: raw.title,
     sponsorBioguideId,
     policyArea: raw.policyArea?.name ?? "Legislation",
-    introducedDate: undefined,
+    introducedDate: normalizeDate(raw.introducedDate),
     committeeName: raw.committees?.count ? `${raw.committees.count} committee record${raw.committees.count === 1 ? "" : "s"}` : undefined,
     latestActionText: raw.latestAction?.text ?? "Latest action pending from Congress.gov.",
     latestActionDate,
@@ -330,7 +382,7 @@ export function normalizeCongressBillCosponsor(raw: CongressBillCosponsorItem, b
   if (!raw.bioguideId) return null;
 
   const chamber = chamberFromBillType(bill.billType);
-  const rawName = raw.fullName ?? [raw.firstName, raw.middleName, raw.lastName].filter(Boolean).join(" ");
+  const rawName = [raw.firstName, raw.middleName, raw.lastName].filter(Boolean).join(" ") || raw.fullName;
   const { displayName, firstName, lastName } = splitMemberName(rawName);
   const prefix = chamber === "Senate" ? "Sen." : "Rep.";
   const state = raw.state ?? "US";
