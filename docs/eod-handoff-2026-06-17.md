@@ -16,6 +16,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Dashboard hydrated to `Day Streak 1d`, not the previous account's `8d`.
   - Tested bill page showed `Support`, which is expected for this account because it selected Support earlier.
   - Dashboard, Settings, and bill page checks had no browser console errors.
+- Civic Team self-serve checkout now caps at 25 participant seats:
+  - Team seat selector copy says self-serve supports `3-25` seats.
+  - Entering `26` clamps to `25`, shows the custom-plan CTA, and keeps Stripe quantity at `25`.
+  - Custom CTA routes to `/feedback?source=team-custom-plan`.
+  - Checkout API rejects direct over-25 Team attempts with a custom-plan response.
 
 ## Current Next Best Steps
 1. On June 18, 2026, recheck the current account's `8d` day streak:
