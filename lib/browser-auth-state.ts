@@ -3,6 +3,7 @@ const returningAccountSignals = [
   "capitol-ledger:district-profile",
   "capitol-ledger:follows",
   "capitol-ledger:gamification",
+  "capitol-ledger:gamification:anonymous",
   "capitol-ledger:notification-preferences",
   "capitol-ledger:party-affiliation",
   "capitol-ledger:subscription"

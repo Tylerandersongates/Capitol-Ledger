@@ -232,17 +232,16 @@ export function DashboardClient({
     let active = true;
 
     function refreshLocalGamification() {
-      recordCompletedDistrictSetupIfReady();
       if (active) setGamificationSnapshot(readLocalGamificationSnapshot());
     }
 
     async function refreshAccountGamification() {
-      const repairedBeforeHydration = recordCompletedDistrictSetupIfReady();
       if (active) setGamificationSnapshot(readLocalGamificationSnapshot());
 
       const next = await hydrateGamificationFromAccount();
+      await fetchAccountProfile();
       const repairedAfterHydration = recordCompletedDistrictSetupIfReady();
-      const repairedSnapshot = repairedBeforeHydration || repairedAfterHydration ? readLocalGamificationSnapshot() : next;
+      const repairedSnapshot = repairedAfterHydration ? readLocalGamificationSnapshot() : next;
       if (active) setGamificationSnapshot(repairedSnapshot);
     }
 

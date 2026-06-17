@@ -12,12 +12,20 @@ const localAccountStateKeys = [
   partyAffiliationKey,
   "capitol-ledger:follows",
   "capitol-ledger:gamification",
+  "capitol-ledger:gamification:anonymous",
   "capitol-ledger:gamification-dedupe",
+  "capitol-ledger:gamification-dedupe:anonymous",
   "capitol-ledger:gamification-streak-date",
+  "capitol-ledger:gamification-streak-date:anonymous",
   "capitol-ledger:issue-interests",
   "capitol-ledger:read-alerts",
   "capitol-ledger:saved-alerts",
   "capitol-ledger:subscription"
+];
+const localAccountStateKeyPrefixes = [
+  "capitol-ledger:gamification:",
+  "capitol-ledger:gamification-dedupe:",
+  "capitol-ledger:gamification-streak-date:"
 ];
 let accountProfileFetchPromise: Promise<AccountProfileSnapshot | null> | null = null;
 let accountProfileCache: AccountProfileSnapshot | null = null;
@@ -131,6 +139,11 @@ export function resetLocalAccountSetupState() {
   try {
     localAccountStateKeys.forEach((key) => {
       window.localStorage.removeItem(key);
+    });
+    Object.keys(window.localStorage).forEach((key) => {
+      if (localAccountStateKeyPrefixes.some((prefix) => key.startsWith(prefix))) {
+        window.localStorage.removeItem(key);
+      }
     });
     window.localStorage.setItem(notificationPreferencesKey, JSON.stringify(freshAccountNotificationPreferences));
   } catch {
