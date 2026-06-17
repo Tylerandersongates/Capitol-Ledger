@@ -140,6 +140,7 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Verified signed-in `/dashboard` returns `200`.
   - User found a UX issue: after successful verification, choosing Setup then using back could return to the already-used token URL and show the token as expired.
   - Fix prepared: the client removes `verifyToken` from browser history immediately after successful token verification, preventing back navigation from replaying a consumed token.
+  - Follow-up refinement prepared: after successful verification, the cleaned history URL now becomes `/sign-in?mode=success` and is server-guarded by a real verified session, so Back from Setup can reload the success screen with Setup/Dashboard choices instead of a blank verify form.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -233,6 +234,10 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Local production server smoke test: request with `capitol-ledger-email-verification-pending=active` to `/dashboard` returned `307` to `/sign-in?mode=verify&returnTo=%2Fdashboard`.
   - Local production server smoke test: `/sign-in?mode=verify` rendered the `Verify your account.` screen.
 - Verification-token history cleanup patch passed in `/private/tmp/capitol-ledger-seat-check-1781660000`:
+  - `pnpm lint` passed.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
+- Verification success-history refinement passed in `/private/tmp/capitol-ledger-seat-check-1781660000`:
   - `pnpm lint` passed.
   - `pnpm exec tsc --noEmit --pretty false` passed.
   - `pnpm run build` passed.

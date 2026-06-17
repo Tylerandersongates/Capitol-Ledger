@@ -154,7 +154,7 @@ function hasCompletedLocalSetup() {
 function removeVerificationTokenFromHistory() {
   const url = new URL(window.location.href);
   url.searchParams.delete("verifyToken");
-  url.searchParams.set("mode", "verify");
+  url.searchParams.set("mode", "success");
   window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
 }
 
