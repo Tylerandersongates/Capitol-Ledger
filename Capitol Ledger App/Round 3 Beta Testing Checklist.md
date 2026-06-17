@@ -244,6 +244,7 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Real account setup smoke passed: signed-in `/dashboard`, `/settings`, `/account`, and `/onboarding` loaded without console errors; profile persistence showed the verified account with default district, affiliation, notification, ledger, and Free account state ready for the user's real setup choices.
   - Real onboarding persistence passed after user setup: district, affiliation, vote reminder preference, follows, and issue interests persisted to the production database.
   - Bill stance account-isolation issue fixed and verified: a stale browser-local bill position from another account no longer appears for the signed-in account, and the bill page now shows `Choose your stance` until the current account sets its own position.
+  - Post-fix bill stance persistence passed: the signed-in account selected `Support`, and the selected stance remained after a production page reload once session-scoped hydration completed.
   - Beta readiness passed with production database checks for the `BetaFeedback` table and `releaseDecision` column.
   - Production auth schema check passed for account, auth session, subscription, follow, alert, weekly brief, and gamification tables.
 
