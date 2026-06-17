@@ -14,7 +14,7 @@ import {
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
-import { memberResultMeta } from "@/lib/member-display";
+import { memberResultMeta, memberStateCode } from "@/lib/member-display";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -999,7 +999,7 @@ function getFederalDelegationMembers(targets: DashboardData["favoriteTargets"], 
   if (!stateCode) return [];
 
   const districtNumber = districtNumberFromCode(profile?.districtCode);
-  const stateMembers = targets.members.filter((member) => member.state === stateCode);
+  const stateMembers = targets.members.filter((member) => memberStateCode(member.state) === stateCode);
   const exactRepresentative = districtNumber
     ? stateMembers.find((member) => member.chamber === "House" && member.district === districtNumber)
     : undefined;
@@ -1190,7 +1190,7 @@ function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"
 
   if (!stateCode) return suggestions;
 
-  const stateMembers = targets.members.filter((member) => member.state === stateCode);
+  const stateMembers = targets.members.filter((member) => memberStateCode(member.state) === stateCode);
   const exactRepresentative = districtNumber
     ? stateMembers.find((member) => member.chamber === "House" && member.district === districtNumber)
     : undefined;

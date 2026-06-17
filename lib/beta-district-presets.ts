@@ -1,3 +1,4 @@
+import { memberStateCode } from "@/lib/member-display";
 import type { Member } from "@/types/capitol";
 
 export type BetaDistrictPreset = {
@@ -125,7 +126,7 @@ export function districtNumberFromCode(code?: string) {
 export function getMatchedOfficials(members: Member[], districtCode?: string) {
   const stateCode = stateCodeFromDistrictCode(districtCode) ?? "TX";
   const districtNumber = districtNumberFromCode(districtCode);
-  const stateMembers = members.filter((member) => member.state === stateCode);
+  const stateMembers = members.filter((member) => memberStateCode(member.state) === stateCode);
   const exactRepresentative = districtNumber
     ? stateMembers.find((member) => member.chamber === "House" && member.district === districtNumber)
     : undefined;
