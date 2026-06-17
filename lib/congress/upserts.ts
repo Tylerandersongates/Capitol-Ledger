@@ -49,6 +49,19 @@ function memberRawByBioguideId(rawMembers: CongressMemberListItem[]) {
   return new Map(rawMembers.filter((member) => member.bioguideId).map((member) => [member.bioguideId as string, member]));
 }
 
+function hasMemberServiceHistory(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+  const record = raw as Record<string, unknown>;
+  const terms = record.terms;
+
+  if (Array.isArray(terms)) return terms.length > 0;
+  if (terms && typeof terms === "object" && Array.isArray((terms as Record<string, unknown>).item)) {
+    return ((terms as Record<string, unknown>).item as unknown[]).length > 0;
+  }
+
+  return Boolean(record.firstElectedDate || record.nextElectionDate || record.termsInOffice);
+}
+
 function billRawKey(raw: Pick<CongressBillListItem, "congress" | "number" | "type">) {
   if (!raw.congress || !raw.type || !raw.number) return "";
   return `${raw.congress}:${raw.type.toUpperCase()}:${raw.number}`;
@@ -131,25 +144,30 @@ export async function upsertCongressMembers(
 
   for (const member of members) {
     const raw = rawById.get(member.bioguideId) ?? member;
+    const rawJson = toJson(raw);
+    const update: Prisma.MemberUpdateInput = {
+      active: member.active,
+      chamber: chamberMap[member.chamber],
+      district: member.district,
+      firstName: member.firstName,
+      fullName: member.fullName,
+      lastName: member.lastName,
+      officialUrl: member.officialUrl,
+      party: partyMap[member.party] ?? Party.UNKNOWN,
+      photoUrl: member.photoUrl,
+      sourceUrl: member.sourceUrl,
+      state: member.state
+    };
+
+    if (hasMemberServiceHistory(raw)) {
+      update.rawJson = rawJson;
+    }
 
     await prisma.member.upsert({
       where: {
         bioguideId: member.bioguideId
       },
-      update: {
-        active: member.active,
-        chamber: chamberMap[member.chamber],
-        district: member.district,
-        firstName: member.firstName,
-        fullName: member.fullName,
-        lastName: member.lastName,
-        officialUrl: member.officialUrl,
-        party: partyMap[member.party] ?? Party.UNKNOWN,
-        photoUrl: member.photoUrl,
-        rawJson: toJson(raw),
-        sourceUrl: member.sourceUrl,
-        state: member.state
-      },
+      update,
       create: {
         active: member.active,
         bioguideId: member.bioguideId,
@@ -161,7 +179,7 @@ export async function upsertCongressMembers(
         officialUrl: member.officialUrl,
         party: partyMap[member.party] ?? Party.UNKNOWN,
         photoUrl: member.photoUrl,
-        rawJson: toJson(raw),
+        rawJson,
         sourceUrl: member.sourceUrl,
         state: member.state
       }
