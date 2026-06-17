@@ -182,17 +182,29 @@ function buildVoteEntry(vote: Vote): SuggestionEntry {
   };
 }
 
+function uniqueSuggestionEntries(entries: SuggestionEntry[]) {
+  const seen = new Set<string>();
+
+  return entries.filter((entry) => {
+    const key = `${entry.kind}:${normalizeText(entry.label)}:${normalizeText(entry.subtitle)}`;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 async function getSuggestionCatalog(scope: SuggestionScope) {
   const cached = catalogCache.get(scope);
   if (cached && cached.expiresAt > Date.now()) return cached.entries;
 
   const memberEntries = scope === "all" || scope === "members" ? (await getAllMembersWithLiveData()).map(buildMemberEntry) : [];
   const { results } = scope === "members" ? { results: { bills: [], votes: [] } } : await searchRecordsWithLiveData({ type: scope });
-  const entries: SuggestionEntry[] = [
+  const entries: SuggestionEntry[] = uniqueSuggestionEntries([
     ...memberEntries,
     ...results.bills.map(buildBillEntry),
     ...results.votes.map(buildVoteEntry)
-  ];
+  ]);
 
   catalogCache.set(scope, {
     entries,
