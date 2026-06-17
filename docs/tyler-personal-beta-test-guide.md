@@ -57,6 +57,8 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
   - Expected: account-backed storage does not sync before `emailVerifiedAt` is set.
   - Verified after deploy: all three routes redirected to verify mode, and `/api/auth/session` returned `authenticated:false` with `requiresVerification:true`.
 - Open the verification link and confirm the account can continue to `/onboarding` or `/dashboard`.
+  - Verified with `tylerandersongates@att.net`: the link verified the account and `/dashboard` opens after normal sign-in.
+  - Remaining post-deploy check: after the token-history cleanup deploys, choose Setup from the success screen, then go back and confirm the app does not show an expired-token error.
 - Recheck Profile copy on a partial setup account: sync should mean account storage is connected, not that district setup is complete.
 - Decide whether accidental saved-item removal needs an undo toast before external testers.
 - Check whether cumulative Civic Momentum wording is clear when a user removes the only currently saved bill.

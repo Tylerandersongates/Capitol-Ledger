@@ -151,6 +151,13 @@ function hasCompletedLocalSetup() {
   return hasCompletedSetupSignals(readLocalAccountProfile(), readLocalLedger());
 }
 
+function removeVerificationTokenFromHistory() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("verifyToken");
+  url.searchParams.set("mode", "verify");
+  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+}
+
 async function postJson<T>(url: string, body: unknown) {
   const response = await fetch(url, {
     body: JSON.stringify(body),
@@ -253,6 +260,7 @@ export function AuthFlowClient({
         setBrowserSessionAuthenticated(true);
         setAccountCreated(true);
         await prepareFreshAccountSetup();
+        removeVerificationTokenFromHistory();
         setMode("success");
         setStatus("Verified.");
       })
@@ -602,6 +610,7 @@ export function AuthFlowClient({
       setBrowserSessionAuthenticated(true);
       setAccountCreated(true);
       await prepareFreshAccountSetup();
+      removeVerificationTokenFromHistory();
       setMode("success");
       setStatus("Verified.");
     }

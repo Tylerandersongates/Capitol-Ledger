@@ -134,6 +134,12 @@ Generated at the break on June 16, 2026 for the next continuation.
   - With that unverified account cookie jar, `/settings` redirects to `/sign-in?mode=verify&returnTo=%2Fsettings`.
   - With that unverified account cookie jar, `/team` redirects to `/sign-in?mode=verify&returnTo=%2Fteam`.
   - `/api/auth/session` returns `authenticated:false`, `mode:"anonymous"`, `requiresVerification:true`, and `user:null`.
+- Real email verification follow-up for `tylerandersongates@att.net`:
+  - User received the verification email and clicked it successfully.
+  - Account `tylerandersongates@att.net` now signs in normally with `requiresVerification:false` and `emailVerifiedAt=2026-06-17T01:39:55.749Z`.
+  - Verified signed-in `/dashboard` returns `200`.
+  - User found a UX issue: after successful verification, choosing Setup then using back could return to the already-used token URL and show the token as expired.
+  - Fix prepared: the client removes `verifyToken` from browser history immediately after successful token verification, preventing back navigation from replaying a consumed token.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -226,6 +232,10 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `pnpm run build` passed.
   - Local production server smoke test: request with `capitol-ledger-email-verification-pending=active` to `/dashboard` returned `307` to `/sign-in?mode=verify&returnTo=%2Fdashboard`.
   - Local production server smoke test: `/sign-in?mode=verify` rendered the `Verify your account.` screen.
+- Verification-token history cleanup patch passed in `/private/tmp/capitol-ledger-seat-check-1781660000`:
+  - `pnpm lint` passed.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -242,7 +252,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Next Best Steps
 1. Deploy the billing-owner participant-seat split plus email-verification safeguard patch, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
-2. Verify the secure email link clears the pending-verification state and then allows `/onboarding` or `/dashboard`.
+2. Deploy the verification-token history cleanup patch, then repeat one email verification link flow and confirm back navigation no longer shows an expired token after choosing Setup.
 3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
 4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
