@@ -13,10 +13,11 @@ import {
   ShieldCheck,
   Sparkles,
   Settings,
+  UserRound,
   UsersRound
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass, mobileViewAllClass } from "@/components/mobile-ui";
 import {
   BillingCycleToggle,
   PlanActionButton,
@@ -63,8 +64,9 @@ export default async function UpgradePage() {
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
         <h1 className="text-[30px] font-medium leading-none text-white">Upgrade</h1>
-        <Link href="/profile" className={`absolute right-0 ${mobileIconButtonClass}`} aria-label="Open profile">
-          <Crown className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
+        <Link href="/profile" className={`absolute right-0 ${mobileProfileShortcutClass}`} aria-label="Open profile">
+          <UserRound strokeWidth={1.9} aria-hidden="true" />
+          <span className="text-[10px] font-semibold leading-none text-white/72">Profile</span>
         </Link>
       </header>
 

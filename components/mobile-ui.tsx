@@ -10,6 +10,9 @@ export const mobileViewAllClass =
 export const mobileIconButtonClass =
   "grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_24px_rgba(1,8,24,0.42)] backdrop-blur-xl transition hover:brightness-110";
 
+export const mobileProfileShortcutClass =
+  "inline-flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_24px_rgba(1,8,24,0.42)] backdrop-blur-xl transition hover:brightness-110 [&>svg]:h-5 [&>svg]:w-5";
+
 const cardVariants: Record<MobileCardVariant, string> = {
   default:
     "rounded-[1.35rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,48,90,0.5)_0%,rgba(3,17,40,0.8)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_0_30px_rgba(43,141,255,0.07),0_20px_44px_rgba(0,0,0,0.3)] backdrop-blur-xl",

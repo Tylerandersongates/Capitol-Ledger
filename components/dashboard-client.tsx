@@ -2,7 +2,7 @@
 
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import {
@@ -291,10 +291,11 @@ export function DashboardClient({
               </div>
               <Link
                 href="/profile"
-                className={`relative ${mobileIconButtonClass}`}
+                className={`relative ${mobileProfileShortcutClass}`}
                 aria-label="Open profile"
               >
-                <UserRound className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
+                <UserRound strokeWidth={1.9} aria-hidden="true" />
+                <span className="text-[10px] font-semibold leading-none text-white/72">Profile</span>
               </Link>
             </header>
 
@@ -862,7 +863,7 @@ function FavoriteRows({
         const saved = favoriteRecords.some((record) => record.type === item.type && record.id === item.id);
 
         return (
-          <div key={`${item.type}-${item.id}`} className="grid min-h-[58px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
+          <div key={`${item.type}-${item.id}`} className="grid min-h-[68px] grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">
             <button
               type="button"
               onClick={() => onToggleFavorite(item)}
@@ -873,7 +874,7 @@ function FavoriteRows({
               <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
             </button>
             <Link href={item.href} className="min-w-0 py-1">
-              <span className="block truncate text-[15px] font-medium leading-tight text-white">{item.label}</span>
+              <span className="line-clamp-2 block text-[14px] font-medium leading-snug text-white">{item.label}</span>
               <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
             </Link>
             <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />

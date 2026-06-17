@@ -5,7 +5,7 @@ import {
 import { DemoSignOutButton } from "@/components/demo-auth-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileShell } from "@/components/mobile-shell";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass } from "@/components/mobile-ui";
 import { PartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { SettingsAccountSyncStatus } from "@/components/settings-account-sync-status";
 import { getCurrentSession } from "@/lib/auth";
@@ -80,8 +80,9 @@ export default async function SettingsPage() {
             Manage account controls, preferences, billing links, privacy, and sync behavior.
           </p>
         </div>
-        <Link href="/profile" className={`${mobileIconButtonClass} shrink-0`} aria-label="Open profile">
-          <UserRound className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+        <Link href="/profile" className={mobileProfileShortcutClass} aria-label="Open profile">
+          <UserRound strokeWidth={1.8} aria-hidden="true" />
+          <span className="text-[10px] font-semibold leading-none text-white/72">Profile</span>
         </Link>
       </header>
 
