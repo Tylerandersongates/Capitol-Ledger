@@ -235,6 +235,15 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Alexandria Ocasio-Cortez (`O000172`): 4 terms, First Elected Nov 6, 2018, Next Election Nov 3, 2026.
   - Ted Cruz (`C001098`): 3 terms, First Elected Nov 6, 2012, Next Election Nov 5, 2030.
   - Adam B. Schiff (`S001150`): 1 term, First Elected Nov 5, 2024, Next Election Nov 5, 2030.
+- Production member/profile/search display pass completed:
+  - Fixed public lands/wildfire AI Policy Lens copy for H.R. 471 so it no longer shows stale family-care demo text.
+  - Member profile State cards now render full state/territory names.
+  - At-large House seats render as `At-Large` instead of `District 0`.
+  - Synced and verified current territory profiles for DC, PR, GU, VI, AS, and MP.
+  - Territory profile roles render as `U.S. Delegate`; Puerto Rico renders as `U.S. Resident Commissioner`.
+  - Search result section title is now `Officials`, and result labels render `Delegate`, `Resident Commissioner`, `Representative`, or `Senator` as appropriate.
+  - Visible State filters now include all states and territories, including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`.
+  - Production verification passed for DC, PR, GU, VI, AS, MP, KS, VT, and WY with no browser console errors.
 - No service-history placeholder text appeared in the spot-checked production profiles.
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
 - Production auth/email readiness passed:

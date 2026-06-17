@@ -31,19 +31,36 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Uses the local `.tools` Node 22 and pnpm 11 runtimes when available.
   - Installs the CLI into `/private/tmp/capitol-ledger-vercel-cli`.
   - Verified `--version`, `whoami`, and production deployment listing; latest production remains `project-qosv1-bubhol04h-capitol-ledger.vercel.app`, `READY`, aliased to `project-qosv1.vercel.app`.
+- Member/profile/search data-display topic completed:
+  - Fixed H.R. 471 AI Policy Lens routing so public lands/wildfire bills no longer show stale family-care demo copy. Production verified on `demo-hr-471`; commit `7c86ee0`.
+  - Expanded member profile state-name coverage to all states and territories. Production verified Derek Schmidt renders `Kansas District 2 [R-KS-2]` and State `Kansas`; commit `d7b5af6`.
+  - Fixed at-large House member labels. Production verified Harriet Hageman renders `Wyoming At-Large [R-WY-AL]`; commit `18135df`.
+  - Added targeted Congress.gov supplemental sync for current territory profiles: DC, PR, GU, VI, AS, and MP. Focused production write sync upserted 7 member records total, including 6 supplemental territory records; commit `6e45502`.
+  - Preserved official member display names from synced records. Production verified `Eleanor Holmes Norton` and `Pablo José Hernández`; commit `f380d33`.
+  - Updated member search result cards to use office roles instead of generic `House`: Delegate, Resident Commissioner, Representative, Senator. Production verified DC, PR, GU, KS, VT, and WY; commit `5611b9a`.
+  - Expanded visible member State filters to the full state/territory list including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`. Production verified `PR` returns Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `6e8f63a`.
+  - Browser console errors: none during the member/profile/search production checks.
+- Workflow preference update from Tyler:
+  - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
+  - Keep completed work documented in the handoff/checklist.
+  - Save next-step summaries for section/topic closeouts instead of every tiny sub-step.
 
 ## Current Next Best Steps
-1. On June 18, 2026, recheck the current account's `8d` day streak:
+1. Continue the member/profile display topic only if more surfaces are included:
+   - Dashboard saved-official cards.
+   - Search suggestions.
+   - Weekly brief official snippets.
+   - Email/contact labels.
+2. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
-2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-3. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
-4. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
-5. Continue owner downgrade/cancel behavior with Admin and Analyst seats present.
+3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+4. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
+5. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
-- Always include next best steps so work can keep moving.
+- Include next best steps at section/topic closeout so work can keep moving; do not over-announce every small logical follow-through fix.
 - Keep the in-app browser open and visible during app testing so the user can watch progress.
 - Routine fixes, commits, and pushes are pre-approved. Check with the user before major build, architecture, dependency, schema, destructive, or secret-related changes.
 - A diagnostic means checking the whole app for stale code, duplicate code, unreachable code, disconnected routes/APIs, and obvious performance drag. Tighten safe issues; do not leave useless code around.
