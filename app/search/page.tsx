@@ -39,6 +39,7 @@ type SearchPageProps = {
 
 type SmartFilterKey = "chamber" | "party" | "state";
 type SearchResultsData = Awaited<ReturnType<typeof searchRecordsWithLiveData>>["results"];
+type SearchMemberResult = SearchResultsData["members"][number];
 
 const searchTabs = [
   { label: "All", value: "all" },
@@ -54,6 +55,27 @@ const premiumPanelClass =
   "rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_24px_rgba(2,10,28,0.22)]";
 const premiumPillClass =
   "rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold leading-none text-white/56";
+
+function isTerritoryHouseSeat(member: SearchMemberResult) {
+  return member.chamber === "House" && ["AS", "DC", "GU", "MP", "PR", "VI"].includes(member.state);
+}
+
+function isAtLargeDistrict(district?: string) {
+  const normalized = district?.trim().toLowerCase();
+  return normalized === "0" || normalized === "00" || normalized === "al" || normalized === "at-large" || normalized === "at large" || normalized === "atlarge";
+}
+
+function memberOfficeLabel(member: SearchMemberResult) {
+  if (member.chamber === "Senate") return "Senator";
+  if (member.state === "PR") return "Resident Commissioner";
+  if (isTerritoryHouseSeat(member)) return "Delegate";
+  return "Representative";
+}
+
+function memberSeatLabel(member: SearchMemberResult) {
+  if (member.district) return `${member.state}-${isAtLargeDistrict(member.district) ? "AL" : member.district}`;
+  return isTerritoryHouseSeat(member) ? `${member.state}-AL` : member.state;
+}
 
 const smartFilterGroups: Array<{
   key: SmartFilterKey;
@@ -287,7 +309,7 @@ function SearchResultBlocks({
           return (
             <ResultSection
               key="members"
-              title="Representatives"
+              title="Officials"
               count={results.members.length}
             >
               {results.members.length ? (
@@ -299,8 +321,7 @@ function SearchResultBlocks({
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[16px] font-medium text-white">{member.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "")}</div>
                       <div className="mt-1 text-[13px] text-white/55">
-                        {member.chamber} · {member.state}
-                        {member.district ? `-${member.district}` : ""} · {member.party}
+                        {memberOfficeLabel(member)} · {memberSeatLabel(member)} · {member.party}
                       </div>
                     </div>
                     <ChevronRight className="h-5 w-5 text-white/45" strokeWidth={1.8} aria-hidden="true" />
