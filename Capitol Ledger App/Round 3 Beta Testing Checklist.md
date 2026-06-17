@@ -2,11 +2,11 @@
 
 Status: active planning checklist for the next tester pass.
 
-Last updated: June 15, 2026.
+Last updated: June 17, 2026.
 
 ## Goal
 
-Use Round 3 to verify the new paid subscription and Team workspace reality added since Round 2: Stripe subscription checkout, Team checkout return, paid seat capacity, invite creation, invite acceptance, member workspace access, and downgrade/cancel paths.
+Use Round 3 to verify the new paid subscription, Team workspace, and expanded Congress data reality added since Round 2: Stripe subscription checkout, Team checkout return, paid seat capacity, delegated Team roles, invite creation, invite acceptance, member workspace access, downgrade/cancel paths, annual subscription paths, and live member service-history data.
 
 ## New Since Round 2
 
@@ -18,8 +18,14 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 - Test-domain invite link exposure for QA.
 - Invite acceptance page at `/team/accept`.
 - Member access to `/team` through an accepted owner-paid seat.
+- Team Admin, Analyst, and Viewer role behavior.
+- Team owner/Admin seat removal controls.
+- Viewer read-only behavior for shared Team workspace data.
 - Stripe Billing Portal route for downgrade, cancellation, payment method, invoice, and Team seat quantity management.
 - Webhook subscription update handling that reads Stripe item price and quantity.
+- Annual Pro and Team subscription checkout paths.
+- Expanded Congress.gov-backed bill/member data for Round 3.
+- Congress.gov member service-history sync for terms, first-elected date, and next-election date.
 
 ## Round 3 Entry Gate
 
@@ -29,6 +35,10 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 - Team QA safe checks pass against production.
 - At least one full Team checkout has completed in Stripe test mode.
 - At least one invited account has accepted a Team seat and opened `/team` as a member.
+- At least one Admin, Analyst, and Viewer role pass has completed in production.
+- At least one owner downgrade/cancel pass confirms Team owner and member workspace lockout.
+- Annual Pro and Annual Team checkout have each had a clean end-to-end production QA pass from fresh accounts.
+- At least three synced member profiles show non-placeholder service history in production.
 - No active console errors on the Team owner or member workspace pages.
 - No secrets are committed.
 
@@ -45,6 +55,24 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 - Confirm starting Team checkout requests seat quantity.
 - Confirm Team checkout quantity is at least 3 seats.
 
+## Annual Subscription Checkout
+
+- Open `/upgrade`.
+- Switch to annual billing.
+- Confirm Pro Annual displays `$29.99 / year`.
+- Start Pro Annual checkout and verify Stripe Checkout shows the annual Pro price.
+- Complete Pro Annual checkout from a clean account.
+- Confirm return to `/account?checkout=success&plan=pro`.
+- Confirm account subscription shows `plan=pro`, `cycle=annual`, `provider=stripe`, and `status=active`.
+- Confirm Stripe subscription metadata and price match the configured Pro Annual price ID.
+- Start Team Annual checkout from a clean account.
+- Confirm Team Annual displays `$59.99 / seat / year` and `3 x $59.99 = $179.97 / workspace / year`.
+- Confirm Stripe Checkout shows `$179.97 per year` for 3 seats.
+- Complete Team Annual checkout.
+- Confirm return to `/team?checkout=success&plan=team`.
+- Confirm account subscription shows `plan=team`, `cycle=annual`, `provider=stripe`, `status=active`, and `seatCount=3`.
+- Confirm Stripe subscription metadata, quantity, and price match the configured Team Annual price ID.
+
 ## Team Checkout And Owner Workspace
 
 - Open `/upgrade`.
@@ -56,6 +84,23 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 - Confirm paid seats, assigned seats, and open seats are accurate.
 - Confirm owner controls are visible only to the owner.
 - Confirm the Team workspace copy clearly explains paid seat capacity.
+
+## Team Roles And Delegation
+
+- From the Team owner account, create an Admin invite.
+- Accept the Admin invite as the invited account.
+- Confirm Admin can open `/team` and access Team management controls.
+- Confirm Admin does not see owner-only billing controls.
+- From the Admin account, create Analyst and Viewer invites.
+- Confirm Analyst and Viewer can accept invites and open `/team`.
+- Confirm Analyst cannot access Team management APIs.
+- Confirm Viewer cannot access Team management APIs.
+- Confirm Owner and Admin saved records appear in shared Team workspace data.
+- Confirm Viewer saved records stay private and do not seed shared Team workspace data.
+- Remove a Viewer seat from Owner or Admin controls.
+- Confirm removed Viewer becomes Free and loses `/team` access.
+- Confirm the removed seat reopens one paid participant seat.
+- Confirm the billing owner record is not exposed as a removable participant seat.
 
 ## Invite Creation
 
@@ -91,6 +136,7 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 - Confirm canceled subscriptions remove paid access.
 - Confirm Team-to-Pro or Team-to-Free removes owner Team workspace access.
 - Confirm accepted Team members lose workspace access when owner Team billing is no longer active.
+- Confirm owner downgrade/cancel locks Owner, Admin, Analyst, and Viewer workspace access.
 
 ## Over-Capacity Checks
 
@@ -102,6 +148,8 @@ Use Round 3 to verify the new paid subscription and Team workspace reality added
 
 ## Regression Smoke
 
+- `/members/B001302` shows Andy Biggs service history: 5 terms, First Elected Nov 8, 2016, Next Election Nov 3, 2026.
+- At least two additional `/members/[bioguideId]` profiles show non-placeholder terms, first-elected date, and next-election date.
 - `/settings` first load shows account connected, setup ready, and synced.
 - `/alerts` loads without console errors.
 - `/upgrade` renders plan cycle and all plan actions.
@@ -145,10 +193,27 @@ Notes:
 - The destructive Stripe QA accounts used in this pass were intentionally downgraded or canceled after verification. Future full Team checkout QA should create a fresh Team owner and invitee account.
 - Local `check-beta-triage` needs network/database access; the escalated production run passed.
 
+## June 17, 2026 QA Update
+
+Status: production follow-up pass in progress against `https://project-qosv1.vercel.app`.
+
+- Team Admin delegation, Viewer read-only behavior, Viewer seat removal, and owner downgrade lockout have been added to the Round 3 checklist.
+- Annual Pro and Team subscription checkout paths have been added to the Round 3 checklist for one more clean production pass from fresh accounts before testers.
+- Service-history repair has been added to the Round 3 regression smoke.
+- Production member profile spot check passed in the in-app browser:
+  - Andy Biggs (`B001302`): 5 terms, First Elected Nov 8, 2016, Next Election Nov 3, 2026.
+  - Alexandria Ocasio-Cortez (`O000172`): 4 terms, First Elected Nov 6, 2018, Next Election Nov 3, 2026.
+  - Ted Cruz (`C001098`): 3 terms, First Elected Nov 6, 2012, Next Election Nov 5, 2030.
+  - Adam B. Schiff (`S001150`): 1 term, First Elected Nov 5, 2024, Next Election Nov 5, 2030.
+- No service-history placeholder text appeared in the spot-checked production profiles.
+
 ## Exit Criteria
 
 - One full Team checkout to accepted member flow passes in production.
 - One downgrade or cancellation path is verified through Stripe Billing Portal in test mode.
+- One annual Pro and one annual Team checkout pass from clean accounts in production.
+- Admin delegation, Viewer read-only behavior, seat removal, and owner downgrade lockout are verified.
+- At least three production member profiles show repaired service-history values.
 - Round 3 tester reports are triaged as launch blocker, beta acceptable, later, duplicate, or resolved.
 - No active launch blockers remain.
 - Known Team capacity limitations are documented.
