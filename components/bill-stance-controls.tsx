@@ -8,6 +8,7 @@ type BillStance = "support" | "oppose" | "watching";
 
 const billStanceKey = "capitol-ledger:bill-stances";
 const billStanceChangedEvent = "capitol-ledger:bill-stances-changed";
+const anonymousBillStanceKey = `${billStanceKey}:anonymous`;
 
 const stanceOptions: Array<{
   description: string;
@@ -32,39 +33,89 @@ const stanceTone: Record<BillStance, string> = {
   watching: "text-[#ffb12b]"
 };
 
-function readBillStances() {
+type AuthSessionResponse = {
+  authenticated?: boolean;
+  mode?: string;
+  user?: {
+    email?: string;
+    id?: string;
+  } | null;
+};
+
+function isBillStance(value: unknown): value is BillStance {
+  return value === "support" || value === "oppose" || value === "watching";
+}
+
+function storageScopeFromSession(data: AuthSessionResponse | null) {
+  if (!data?.authenticated || !data.user) return anonymousBillStanceKey;
+
+  const userKey = data.user.id || data.user.email;
+  if (!userKey) return anonymousBillStanceKey;
+
+  const mode = data.mode === "demo" ? "demo" : "account";
+  return `${billStanceKey}:${mode}:${encodeURIComponent(userKey.toLowerCase())}`;
+}
+
+async function resolveBillStanceStorageKey() {
+  const response = await fetch("/api/auth/session", { cache: "no-store" }).catch(() => null);
+  if (!response?.ok) return anonymousBillStanceKey;
+
+  const data = (await response.json().catch(() => null)) as AuthSessionResponse | null;
+  return storageScopeFromSession(data);
+}
+
+function readBillStances(storageKey: string) {
   if (typeof window === "undefined") return {};
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(billStanceKey) ?? "{}") as Record<string, BillStance>;
+    const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Record<string, BillStance>;
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
 }
 
-function readBillStance(billId: string) {
-  const stance = readBillStances()[billId];
-  return stance === "support" || stance === "oppose" || stance === "watching" ? stance : null;
+function readBillStance(billId: string, storageKey: string) {
+  const stance = readBillStances(storageKey)[billId];
+  return isBillStance(stance) ? stance : null;
 }
 
-function writeBillStance(billId: string, stance: BillStance) {
+function writeBillStance(billId: string, stance: BillStance, storageKey: string) {
   window.localStorage.setItem(
-    billStanceKey,
+    storageKey,
     JSON.stringify({
-      ...readBillStances(),
+      ...readBillStances(storageKey),
       [billId]: stance
     })
   );
   window.dispatchEvent(new Event(billStanceChangedEvent));
 }
 
-export function BillStanceControl({ billId }: { billId: string }) {
+function useBillStance(billId: string) {
   const [stance, setStance] = useState<BillStance | null>(null);
+  const [storageKey, setStorageKey] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
+    resolveBillStanceStorageKey().then((nextStorageKey) => {
+      if (!active) return;
+      setStorageKey(nextStorageKey);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!storageKey) {
+      setStance(null);
+      return;
+    }
+
     function refreshStance() {
-      setStance(readBillStance(billId));
+      setStance(readBillStance(billId, storageKey));
     }
 
     refreshStance();
@@ -75,10 +126,18 @@ export function BillStanceControl({ billId }: { billId: string }) {
       window.removeEventListener("storage", refreshStance);
       window.removeEventListener(billStanceChangedEvent, refreshStance);
     };
-  }, [billId]);
+  }, [billId, storageKey]);
+
+  return { setStance, stance, storageKey };
+}
+
+export function BillStanceControl({ billId }: { billId: string }) {
+  const { setStance, stance, storageKey } = useBillStance(billId);
 
   function chooseStance(nextStance: BillStance) {
-    writeBillStance(billId, nextStance);
+    if (!storageKey) return;
+
+    writeBillStance(billId, nextStance, storageKey);
     setStance(nextStance);
   }
 
@@ -101,12 +160,13 @@ export function BillStanceControl({ billId }: { billId: string }) {
             <button
               key={option.value}
               type="button"
+              disabled={!storageKey}
               onClick={() => chooseStance(option.value)}
               className={`grid min-h-16 place-items-center rounded-2xl border px-2 py-3 text-center transition ${
                 active
                   ? "border-[#ffb12b]/70 bg-[#ffb12b]/14 text-[#ffce68] shadow-[0_0_18px_rgba(255,177,43,0.16)]"
                   : "border-white/10 bg-white/[0.035] text-white/58"
-              }`}
+              } disabled:cursor-not-allowed disabled:opacity-60`}
               aria-label={option.description}
               aria-pressed={active}
             >
@@ -121,22 +181,7 @@ export function BillStanceControl({ billId }: { billId: string }) {
 }
 
 export function BillStanceDetailRow({ billId }: { billId: string }) {
-  const [stance, setStance] = useState<BillStance | null>(null);
-
-  useEffect(() => {
-    function refreshStance() {
-      setStance(readBillStance(billId));
-    }
-
-    refreshStance();
-    window.addEventListener("storage", refreshStance);
-    window.addEventListener(billStanceChangedEvent, refreshStance);
-
-    return () => {
-      window.removeEventListener("storage", refreshStance);
-      window.removeEventListener(billStanceChangedEvent, refreshStance);
-    };
-  }, [billId]);
+  const { stance } = useBillStance(billId);
 
   return (
     <div className="grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3">
