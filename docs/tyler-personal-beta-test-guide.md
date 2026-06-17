@@ -12,6 +12,17 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
   - Team checkout quantity resets to the 3-seat minimum.
 - Decide before external beta whether the product wording should say cancellation revokes access immediately or at period end.
 
+## Annual Billing
+- Pro Annual checkout is verified in production test mode:
+  - App displayed `$29.99 / year`.
+  - Stripe Checkout completed with the test card.
+  - Webhook/database sync produced `pro / annual / stripe / active`.
+  - Billing Portal showed the current Pro Annual subscription.
+- Team Annual checkout is blocked until pricing is reconciled:
+  - App displays `$59.99 / seat / year` and `$179.97 / workspace / year` for 3 seats.
+  - Stripe Checkout uses the configured Team Annual price ID at `$59.90 / seat / year`, totaling `$179.70` for 3 seats.
+  - Do not complete Team Annual checkout until either Stripe price or app pricing copy/math is updated.
+
 ## Team API Lockout Follow-Up
 - Confirm Team invites and Team seats APIs return `403` for a canceled owner.
 - Use Vercel logs or an external same-session API harness for this check.
