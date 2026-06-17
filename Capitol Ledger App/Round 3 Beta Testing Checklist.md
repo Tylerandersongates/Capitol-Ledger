@@ -241,6 +241,7 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Auth email delivery passed production-provider mode with Resend delivery, sender identity, app URL, auth secret, and secure cookie configuration present.
   - Real inbox verification passed: the Resend verification email landed, the secure link completed in production, the browser removed the token from the URL, and the database marked the token used.
   - Real password reset passed: the forgot-password email link reset the password, the token was marked used, the account signed back in with the new password, and `/dashboard` loaded without console errors.
+  - Real account setup smoke passed: signed-in `/dashboard`, `/settings`, `/account`, and `/onboarding` loaded without console errors; profile persistence showed the verified account with default district, affiliation, notification, ledger, and Free account state ready for the user's real setup choices.
   - Beta readiness passed with production database checks for the `BetaFeedback` table and `releaseDecision` column.
   - Production auth schema check passed for account, auth session, subscription, follow, alert, weekly brief, and gamification tables.
 
