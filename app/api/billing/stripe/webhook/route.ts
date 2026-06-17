@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setAccountSubscription } from "@/lib/account-subscription";
-import { findSubscriptionUserIdByProvider, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { findSubscriptionUserIdByProvider, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getStripeWebhookSecret, parseStripeWebhookEvent, readStripeSubscriptionDetails, verifyStripeWebhookSignature } from "@/lib/billing/stripe";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 function readPlan(value?: string): SubscriptionPlanId {
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const details = readStripeSubscriptionDetails({
+      cancel_at: object.cancel_at,
+      cancel_at_period_end: object.cancel_at_period_end,
       items: object.items,
       metadata,
       status: event.type === "customer.subscription.deleted" ? "canceled" : object.status
@@ -87,6 +90,10 @@ export async function POST(request: NextRequest) {
       seatCount: details.seatCount,
       status: details.status
     };
+    const currentSubscription = await readSubscriptionFromDatabase(userId).catch(() => null);
+    if (currentSubscription?.providerEntitlementId === teamPausedProEntitlementId && details.plan === "free") {
+      return NextResponse.json({ received: true, pausedForTeam: true });
+    }
 
     await writeSubscriptionToDatabase(userId, nextSubscription).catch(() => null);
     setAccountSubscription(userId, nextSubscription);

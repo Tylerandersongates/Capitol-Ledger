@@ -2,6 +2,7 @@ import { getAccountSubscription } from "@/lib/account-subscription";
 import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
 import { readStripeCustomerSubscription, readStripeSubscription, readStripeSubscriptionDetails } from "@/lib/billing/stripe";
+import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 type AccountSubscriptionUser = {
@@ -13,6 +14,7 @@ type AccountSubscriptionUser = {
 type PersistedSubscriptionState = Omit<AccountSubscriptionSnapshot, "updatedAt">;
 
 function canSyncStripeSubscription(subscription: AccountSubscriptionSnapshot) {
+  if (subscription.providerEntitlementId === teamPausedProEntitlementId) return false;
   return (
     subscription.provider === "stripe" &&
     (Boolean(subscription.providerSubscriptionId?.startsWith("sub_")) || Boolean(subscription.providerCustomerId?.startsWith("cus_")))

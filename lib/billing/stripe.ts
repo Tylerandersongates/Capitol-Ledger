@@ -65,6 +65,7 @@ type StripeSubscriptionObject = StripeCheckoutSession & {
   cancel_at_period_end?: boolean;
   client_reference_id?: string;
   created?: number;
+  current_period_end?: number;
   customer?: string;
   id?: string;
   items?: {
@@ -354,4 +355,39 @@ export async function readStripeCustomerSubscription(customerId: string): Promis
     subscriptions[0] ??
     null
   );
+}
+
+async function updateStripeSubscription(subscriptionId: string, params: URLSearchParams): Promise<StripeSubscriptionObject> {
+  const secretKey = getStripeSecretKey();
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured.");
+
+  const response = await fetch(`${STRIPE_API_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "Stripe subscription update failed.");
+    throw new Error(message);
+  }
+
+  return (await response.json()) as StripeSubscriptionObject;
+}
+
+export async function cancelStripeSubscriptionAtPeriodEnd(subscriptionId: string) {
+  const params = new URLSearchParams();
+  params.append("cancel_at_period_end", "true");
+
+  return updateStripeSubscription(subscriptionId, params);
+}
+
+export async function resumeStripeSubscriptionFromPeriodEnd(subscriptionId: string) {
+  const params = new URLSearchParams();
+  params.append("cancel_at_period_end", "false");
+
+  return updateStripeSubscription(subscriptionId, params);
 }

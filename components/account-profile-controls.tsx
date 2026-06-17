@@ -817,7 +817,7 @@ export function OnboardingSetupFlow() {
 }
 
 export function NotificationPreferencesEditor({ compact = false, dense = false }: { compact?: boolean; dense?: boolean }) {
-  const [subscription] = useSubscriptionState();
+  const [subscription] = useSubscriptionState(null, { scope: "effective" });
   const [preferences, setPreferences] = useState(defaultNotificationPreferences);
   const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "weeklyBrief");
 

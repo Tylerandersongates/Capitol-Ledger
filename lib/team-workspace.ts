@@ -1,9 +1,12 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
-import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
-import { writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getAccountSubscription } from "@/lib/account-subscription";
 import { syncStripeSubscriptionForAccount } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import {
+  pausePersonalProSubscriptionForTeamSeat,
+  restorePausedPersonalSubscriptionForReleasedTeamSeat
+} from "@/lib/team-subscription-transition";
 import type {
   AccountSubscriptionSnapshot,
   TeamInviteStatus,
@@ -59,6 +62,8 @@ export type TeamWorkspaceSeatReleaseResult = TeamWorkspaceResult & {
     accountConvertedToFree: boolean;
     email: string;
     id: string;
+    personalSubscriptionCheckoutRequired?: boolean;
+    personalSubscriptionRestored?: boolean;
     status: "removed" | "revoked";
     type: TeamWorkspaceSeatType;
   };
@@ -797,7 +802,7 @@ export async function createTeamWorkspaceInvite(input: TeamWorkspaceInviteInput)
   return createDatabaseTeamInvite(input);
 }
 
-function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorkspaceSeatReleaseResult {
+async function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): Promise<TeamWorkspaceSeatReleaseResult> {
   const workspace = readMemoryTeamWorkspaceForManagement(input);
 
   const seatType = normalizeSeatType(input.seatType);
@@ -815,7 +820,7 @@ function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorksp
     member.updatedAt = now;
     releasedUserId = member.userId;
     release = {
-      accountConvertedToFree: Boolean(releasedUserId && releasedUserId !== workspace.ownerUserId),
+      accountConvertedToFree: false,
       email: member.email,
       id: member.id,
       status: "removed",
@@ -840,7 +845,22 @@ function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorksp
   }
 
   if (!release) throw new TeamWorkspaceError("Unable to release this Team seat.", 500);
-  if (releasedUserId && releasedUserId !== workspace.ownerUserId) setAccountSubscription(releasedUserId, releasedSeatFreeSubscription);
+  const restoreResult =
+    releasedUserId && releasedUserId !== workspace.ownerUserId
+      ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch(() => ({
+          checkoutRequired: false,
+          restored: false
+        }))
+      : {
+          checkoutRequired: false,
+          restored: false
+        };
+  release = {
+    ...release,
+    accountConvertedToFree: false,
+    personalSubscriptionCheckoutRequired: restoreResult.checkoutRequired,
+    personalSubscriptionRestored: restoreResult.restored
+  };
   workspace.updatedAt = now;
 
   return {
@@ -909,7 +929,7 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
 
         return {
           release: {
-            accountConvertedToFree: Boolean(userId && userId !== workspaceResult.workspace.ownerUserId),
+            accountConvertedToFree: false,
             email: member.email,
             id: member.id,
             status: "removed",
@@ -953,7 +973,7 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
 
       return {
         release: {
-          accountConvertedToFree: Boolean(userId),
+          accountConvertedToFree: false,
           email: invite.email,
           id: invite.id,
           status: "revoked",
@@ -963,10 +983,22 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
       };
     });
 
-    const convertedUserId = releasedSeat.userId === workspaceResult.workspace.ownerUserId ? null : releasedSeat.userId;
+    const releasedUserId = releasedSeat.userId === workspaceResult.workspace.ownerUserId ? null : releasedSeat.userId;
+    const restoreResult =
+      releasedSeat.release.type === "member" && releasedUserId
+        ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch(() => ({
+            checkoutRequired: false,
+            restored: false
+          }))
+        : {
+            checkoutRequired: false,
+            restored: false
+          };
     const release = {
       ...releasedSeat.release,
-      accountConvertedToFree: await convertAccountToFree(convertedUserId)
+      accountConvertedToFree: false,
+      personalSubscriptionCheckoutRequired: restoreResult.checkoutRequired,
+      personalSubscriptionRestored: restoreResult.restored
     };
 
     const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
@@ -1032,25 +1064,6 @@ function assertPendingSeatInvite(record: Pick<DbTeamInvite, "expiresAt" | "id" |
     throw new TeamWorkspaceError("This Team invite has expired.", 410);
   }
   if (status !== "pending") throw new TeamWorkspaceError("This Team invite is not available.", 410);
-}
-
-const releasedSeatFreeSubscription = {
-  cycle: "monthly",
-  plan: "free",
-  provider: "demo",
-  providerCustomerId: "demo-customer",
-  providerEntitlementId: "capitol-ledger-free",
-  providerSubscriptionId: "demo-free",
-  seatCount: undefined,
-  status: "active"
-} satisfies Partial<AccountSubscriptionSnapshot>;
-
-async function convertAccountToFree(userId?: string | null) {
-  if (!userId) return false;
-
-  await writeSubscriptionToDatabase(userId, releasedSeatFreeSubscription).catch(() => null);
-  setAccountSubscription(userId, releasedSeatFreeSubscription);
-  return true;
 }
 
 async function readDatabaseInviteAcceptance(token: string): Promise<TeamWorkspaceAcceptancePreview> {
@@ -1149,7 +1162,7 @@ export async function readTeamWorkspaceInviteAcceptance({ token }: { token: stri
   return readDatabaseInviteAcceptance(token);
 }
 
-function acceptMemoryInvite({
+async function acceptMemoryInvite({
   email,
   name,
   token,
@@ -1159,7 +1172,7 @@ function acceptMemoryInvite({
   name?: string;
   token: string;
   userId: string;
-}): TeamWorkspaceAcceptanceResult {
+}): Promise<TeamWorkspaceAcceptanceResult> {
   const preview = readMemoryInviteAcceptance(token);
   const workspace = memoryWorkspaceStore.get(preview.workspace.ownerUserId);
   if (!workspace) throw new TeamWorkspaceError("This Team workspace is no longer available.", 404);
@@ -1208,6 +1221,12 @@ function acceptMemoryInvite({
   invite.status = "accepted";
   invite.updatedAt = now;
   workspace.updatedAt = now;
+  await pausePersonalProSubscriptionForTeamSeat({
+    email: memberEmail,
+    teamMemberId: membership.id,
+    userId,
+    workspaceId: workspace.id
+  }).catch(() => null);
 
   return {
     membership,
@@ -1341,6 +1360,12 @@ async function acceptDatabaseInvite({
     const workspace = await readWorkspaceSnapshotFromDatabase(acceptedWorkspace, acceptedSeatCount);
     const membership = workspace.members.find((member) => member.id === acceptedMembershipId || member.email === memberEmail);
     if (!membership) throw new TeamWorkspaceError("Unable to load the accepted Team seat.", 500);
+    await pausePersonalProSubscriptionForTeamSeat({
+      email: memberEmail,
+      teamMemberId: membership.id,
+      userId,
+      workspaceId: workspace.id
+    }).catch(() => null);
 
     return {
       membership,

@@ -18,7 +18,8 @@ const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
 const billingPortalEndpoint = "/api/account/subscription/portal";
-let accountHydrationPromise: Promise<AccountSubscriptionSnapshot | null> | null = null;
+type SubscriptionHydrationScope = "effective" | "personal";
+let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise<AccountSubscriptionSnapshot | null>>> = {};
 
 const teamWorkspaceSignals = [
   {
@@ -120,12 +121,13 @@ async function syncSubscriptionToAccount(subscription = readSubscription()) {
   if (data?.subscription) writeSubscription(normalizeSubscription(data.subscription), false);
 }
 
-async function hydrateSubscriptionFromAccount() {
+async function hydrateSubscriptionFromAccount(scope: SubscriptionHydrationScope) {
   if (typeof window === "undefined") return null;
   if (!(await hasActiveBrowserSession())) return null;
 
-  if (!accountHydrationPromise) {
-    accountHydrationPromise = fetch(accountSubscriptionEndpoint, {
+  if (!accountHydrationPromises[scope]) {
+    const endpoint = scope === "effective" ? `${accountSubscriptionEndpoint}?scope=effective` : accountSubscriptionEndpoint;
+    accountHydrationPromises[scope] = fetch(endpoint, {
       cache: "no-store"
     })
       .then(async (response) => {
@@ -135,19 +137,26 @@ async function hydrateSubscriptionFromAccount() {
       })
       .catch(() => null)
       .finally(() => {
-        accountHydrationPromise = null;
+        accountHydrationPromises = {
+          ...accountHydrationPromises,
+          [scope]: undefined
+        };
       });
   }
 
-  const subscription = await accountHydrationPromise;
+  const subscription = await accountHydrationPromises[scope];
   if (!subscription) return null;
 
   if (!subscriptionsMatch(readSubscription(), subscription)) writeSubscription(subscription, false);
   return subscription;
 }
 
-export function useSubscriptionState(initialSubscription?: AccountSubscriptionSnapshot | null) {
+export function useSubscriptionState(
+  initialSubscription?: AccountSubscriptionSnapshot | null,
+  options: { scope?: SubscriptionHydrationScope } = {}
+) {
   const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(() => normalizeSubscription(initialSubscription ?? defaultSubscription));
+  const scope = options.scope ?? "personal";
 
   useEffect(() => {
     let active = true;
@@ -159,7 +168,7 @@ export function useSubscriptionState(initialSubscription?: AccountSubscriptionSn
       }
 
       if (await hasActiveBrowserSession()) {
-        const accountSubscription = await hydrateSubscriptionFromAccount();
+        const accountSubscription = await hydrateSubscriptionFromAccount(scope);
         if (active) setSubscription(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
         return;
       }
@@ -186,7 +195,7 @@ export function useSubscriptionState(initialSubscription?: AccountSubscriptionSn
       window.removeEventListener("storage", refreshSubscription);
       window.removeEventListener(subscriptionEvent, refreshSubscription);
     };
-  }, [initialSubscription]);
+  }, [initialSubscription, scope]);
 
   function updateSubscription(next: Partial<AccountSubscriptionSnapshot>) {
     const updated = normalizeSubscription({
@@ -568,7 +577,7 @@ export function PlanFeatureGate({
   feature: SubscriptionFeatureId;
   initialSubscription?: AccountSubscriptionSnapshot | null;
 }) {
-  const [subscription] = useSubscriptionState(initialSubscription);
+  const [subscription] = useSubscriptionState(initialSubscription, { scope: "effective" });
 
   if (isPlanFeatureEnabled(subscription.plan, feature)) return <>{children}</>;
   return fallback ?? <LockedPlanPreview feature={feature} />;

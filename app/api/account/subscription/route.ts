@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
 import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { guardMutationRequest } from "@/lib/request-security";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
@@ -17,7 +18,7 @@ function isClientWritableSubscription(value: Partial<AccountSubscriptionSnapshot
   return plan === "free" && provider === "demo";
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await readSession();
 
   if (!user) {
@@ -27,10 +28,14 @@ export async function GET() {
   const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
   const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
 
+  const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const effective = request.nextUrl.searchParams.get("scope") === "effective";
+  const subscription = effective ? await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription) : personalSubscription;
+
   return NextResponse.json({
-    mode: databaseSubscription ? "database" : "account",
+    mode: effective ? "effective" : databaseSubscription ? "database" : "account",
     user,
-    subscription: databaseSubscription ?? getAccountSubscription(accountUserId)
+    subscription
   });
 }
 

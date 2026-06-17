@@ -29,6 +29,7 @@ import { getCurrentSession } from "@/lib/auth";
 import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
 import { readTeamAccessSummaryForUser, type TeamAccessSummary } from "@/lib/team-access";
+import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 export const dynamic = "force-dynamic";
@@ -198,10 +199,13 @@ function TeamAccessStatusCard({
   subscription: AccountSubscriptionSnapshot | null;
 }) {
   const roleLabel = formatTeamRoleLabel(access.role);
-  const planName = subscription ? subscriptionPlans[subscription.plan].name : "Personal";
+  const proPausedForTeam = subscription?.providerEntitlementId === teamPausedProEntitlementId;
+  const personalPlanLabel = proPausedForTeam ? "Pro Intelligence paused" : subscription ? subscriptionPlans[subscription.plan].name : "Personal";
   const description = access.isBillingOwner
-    ? `Your ${planName} billing owns this workspace and does not consume a participant seat.`
-    : `Your personal billing plan remains ${planName}. Your accepted Team seat gives you ${roleLabel} access to this workspace.`;
+    ? `Your ${personalPlanLabel} billing owns this workspace and does not consume a participant seat.`
+    : proPausedForTeam
+      ? `Your personal Pro billing is paused while this owner-paid Team seat gives you ${roleLabel} access.`
+      : `Your personal billing plan remains ${personalPlanLabel}. Your accepted Team seat gives you ${roleLabel} access to this workspace.`;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">

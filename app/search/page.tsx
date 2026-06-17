@@ -22,7 +22,7 @@ import {
   Vote
 } from "lucide-react";
 import { getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
-import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
+import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 
 type SearchPageProps = {
@@ -98,7 +98,7 @@ const smartFilterGroups: Array<{
 ];
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const [{ results }, initialSubscription] = await Promise.all([searchRecordsWithLiveData(searchParams), getCurrentAccountSubscription()]);
+  const [{ results }, initialSubscription] = await Promise.all([searchRecordsWithLiveData(searchParams), getCurrentEffectiveAccountSubscription()]);
   const resultCount = results.members.length + results.bills.length + results.votes.length;
   const activeType = searchParams.type ?? "all";
   const query = searchParams.q ?? "";

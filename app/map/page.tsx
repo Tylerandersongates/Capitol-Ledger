@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, Building2, CheckCircle2, ChevronRight, Home, Landmark, Map, Settings, UsersRound } from "lucide-react";
 import { getAllBills, getBillStatus, getDemoStats } from "@/lib/data";
-import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
+import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 
 const levelFilters = [
   {
@@ -53,7 +53,7 @@ const mapPoints = [
 
 export default async function MapPage({ searchParams }: { searchParams?: { level?: string } }) {
   const activeLevel = levelFilters.some((level) => level.value === searchParams?.level) ? searchParams?.level : "federal";
-  const initialSubscription = await getCurrentAccountSubscription();
+  const initialSubscription = await getCurrentEffectiveAccountSubscription();
   const stats = getDemoStats();
   const trackedBills = getAllBills()
     .slice(0, 3)

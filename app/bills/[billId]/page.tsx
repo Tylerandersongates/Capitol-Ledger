@@ -39,7 +39,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
-import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
+import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillSourceMatch, BillVideo, Member, Vote, VotePosition } from "@/types/capitol";
@@ -285,7 +285,7 @@ function getPersonalStatusLine(bill: Bill) {
 }
 
 export default async function BillPage({ params, searchParams }: BillPageProps) {
-  const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentAccountSubscription()]);
+  const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
   if (!detail) notFound();
 
   const { bill, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;

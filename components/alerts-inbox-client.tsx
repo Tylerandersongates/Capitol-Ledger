@@ -174,7 +174,7 @@ export function AlertsInboxClient({
   initialSubscription?: AccountSubscriptionSnapshot | null;
   notifications: AlertsInboxItem[];
 }) {
-  const [subscription] = useSubscriptionState(initialSubscription);
+  const [subscription] = useSubscriptionState(initialSubscription, { scope: "effective" });
   const [readIds, setReadIds] = useState<string[]>([]);
   const [readStateReady, setReadStateReady] = useState(false);
   const [notificationPreferences, setNotificationPreferences] = useState(defaultNotificationPreferences);

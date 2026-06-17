@@ -3,6 +3,7 @@ import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
 import { getDashboardDataWithLiveData } from "@/lib/data";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { readTeamAccessSummaryForUser } from "@/lib/team-access";
 
@@ -17,8 +18,13 @@ export default async function DashboardPage() {
         session?.user ? getSubscriptionForAccountUser(session.user).catch(() => null) : null
       ])
     : [null, null];
-  const initialTeamAccess = session?.user ? await readTeamAccessSummaryForUser(session.user, initialSubscription).catch(() => null) : null;
+  const [initialTeamAccess, effectiveSubscription] = session?.user
+    ? await Promise.all([
+        readTeamAccessSummaryForUser(session.user, initialSubscription).catch(() => null),
+        getEffectiveSubscriptionForAccountUser(session.user, initialSubscription).catch(() => initialSubscription)
+      ])
+    : [null, initialSubscription];
   const accountLedger = accountUserId ? (initialLedger ?? getAccountLedger(accountUserId)) : null;
 
-  return <DashboardClient data={data} initialLedger={accountLedger} initialSubscription={initialSubscription} initialTeamAccess={initialTeamAccess} />;
+  return <DashboardClient data={data} initialLedger={accountLedger} initialSubscription={effectiveSubscription} initialTeamAccess={initialTeamAccess} />;
 }

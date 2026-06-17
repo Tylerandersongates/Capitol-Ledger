@@ -10,7 +10,7 @@ import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { getAlertNotificationPreference, isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
-import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
+import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
@@ -33,7 +33,7 @@ function eventCategoryLabel(event: ReturnType<typeof getRecentUpdates>[number]) 
 
 export default async function AlertsPage({ searchParams }: { searchParams?: { filter?: string } }) {
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
-  const [dashboardData, initialSubscription] = await Promise.all([getDashboardDataWithLiveData(), getCurrentAccountSubscription()]);
+  const [dashboardData, initialSubscription] = await Promise.all([getDashboardDataWithLiveData(), getCurrentEffectiveAccountSubscription()]);
   const voteAlertBill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
   const notifications: AlertsInboxItem[] = getRecentUpdates().map((event) => {
     const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;

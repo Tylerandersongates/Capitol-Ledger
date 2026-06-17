@@ -3,6 +3,7 @@ import { getAccountProfile } from "@/lib/account-profile";
 import { getAccountSubscription } from "@/lib/account-subscription";
 import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
 import { getBill, getBillStatus, getDashboardData, getMember, getRecentUpdates } from "@/lib/data";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { formatDate } from "@/lib/utils";
 import type { AuthUser } from "@/lib/auth-database";
@@ -301,10 +302,13 @@ export async function getWeeklyBriefForUser(user: AuthUser) {
     readSubscriptionFromDatabase(accountUserId).catch(() => null)
   ]);
 
+  const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const subscription = await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription);
+
   return buildWeeklyBrief({
     ledger: databaseLedger ?? getAccountLedger(accountUserId),
     profile: databaseProfile ?? getAccountProfile(accountUserId),
-    subscription: databaseSubscription ?? getAccountSubscription(accountUserId)
+    subscription
   });
 }
 

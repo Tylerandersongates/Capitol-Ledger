@@ -110,6 +110,8 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
         error?: string;
         release?: {
           accountConvertedToFree?: boolean;
+          personalSubscriptionCheckoutRequired?: boolean;
+          personalSubscriptionRestored?: boolean;
           type?: string;
         };
         workspace?: TeamWorkspaceSnapshot;
@@ -121,13 +123,17 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       }
 
       setWorkspace(data.workspace);
-      setMessage(
-        data.release?.type === "invite"
-          ? "Invite revoked. Seat reopened."
-          : data.release?.accountConvertedToFree
-            ? "Seat removed. Account returned to Free."
-            : "Seat removed. Seat reopened."
-      );
+      if (data.release?.type === "invite") {
+        setMessage("Invite revoked. Seat reopened.");
+      } else if (data.release?.personalSubscriptionRestored) {
+        setMessage("Seat removed. Personal Pro billing resumed.");
+      } else if (data.release?.personalSubscriptionCheckoutRequired) {
+        setMessage("Seat removed. Personal Pro needs checkout to restart.");
+      } else if (data.release?.accountConvertedToFree) {
+        setMessage("Seat removed. Account returned to Free.");
+      } else {
+        setMessage("Seat removed. Seat reopened.");
+      }
     } catch {
       setError("Unable to reach the seat management service.");
     } finally {
