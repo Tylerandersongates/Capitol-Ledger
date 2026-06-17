@@ -394,6 +394,22 @@ function parseYear(value: unknown) {
   return undefined;
 }
 
+function parseServiceDate(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 10);
+}
+
+function parseTermsInOffice(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(1, Math.trunc(value));
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) return Math.max(1, parsed);
+  }
+  return undefined;
+}
+
 function normalizeRawChamber(value: unknown): Chamber | undefined {
   if (typeof value !== "string") return undefined;
   const normalized = value.toLowerCase();
@@ -402,25 +418,41 @@ function normalizeRawChamber(value: unknown): Chamber | undefined {
   return undefined;
 }
 
+function parseRawMemberTerm(item: Prisma.JsonValue): RawMemberTermRecord | undefined {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
+  const record = item as Record<string, unknown>;
+  return {
+    chamber: typeof record.chamber === "string" ? record.chamber : undefined,
+    endYear: parseYear(record.endYear),
+    startYear: parseYear(record.startYear)
+  };
+}
+
 function readRawMemberTerms(rawJson: Prisma.JsonValue | null): RawMemberTermRecord[] {
   if (!rawJson || typeof rawJson !== "object" || Array.isArray(rawJson)) return [];
   const termsBlock = (rawJson as Record<string, Prisma.JsonValue>).terms;
-  if (!termsBlock || typeof termsBlock !== "object" || Array.isArray(termsBlock)) return [];
-  const items = (termsBlock as Record<string, Prisma.JsonValue>).item;
+  if (!termsBlock) return [];
+  const items = Array.isArray(termsBlock) ? termsBlock : typeof termsBlock === "object" ? (termsBlock as Record<string, Prisma.JsonValue>).item : undefined;
   if (!Array.isArray(items)) return [];
 
   const parsed: RawMemberTermRecord[] = [];
   for (const item of items) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-    const record = item as Record<string, unknown>;
-    parsed.push({
-      chamber: typeof record.chamber === "string" ? record.chamber : undefined,
-      endYear: parseYear(record.endYear),
-      startYear: parseYear(record.startYear)
-    });
+    const term = parseRawMemberTerm(item);
+    if (term) parsed.push(term);
   }
 
   return parsed;
+}
+
+function readRawMemberService(rawJson: Prisma.JsonValue | null) {
+  if (!rawJson || typeof rawJson !== "object" || Array.isArray(rawJson)) return {};
+  const record = rawJson as Record<string, unknown>;
+
+  return {
+    firstElectedDate: parseServiceDate(record.firstElectedDate),
+    nextElectionDate: parseServiceDate(record.nextElectionDate),
+    termsInOffice: parseTermsInOffice(record.termsInOffice)
+  } as const;
 }
 
 function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber, fallbackTermLabel?: string) {
@@ -485,10 +517,11 @@ function mapDatabaseMember(member: PrismaMember): Member {
   const chamber = dbChamberMap[member.chamber];
   const termLabel = currentCongressLabel();
   const serviceFallback = memberServiceFallbacks[member.bioguideId];
-  const termsInOffice = serviceFallback?.termsInOffice ?? (rawTerms.length ? deriveTermsFromRaw(rawTerms, chamber, termLabel) : estimateTermsInOfficeFromCongressLabel(termLabel, chamber));
+  const rawService = readRawMemberService(member.rawJson ?? null);
+  const termsInOffice = serviceFallback?.termsInOffice ?? rawService.termsInOffice ?? (rawTerms.length ? deriveTermsFromRaw(rawTerms, chamber, termLabel) : estimateTermsInOfficeFromCongressLabel(termLabel, chamber));
   const derivedElectionDates = deriveElectionDatesFromRaw(rawTerms, chamber);
-  const firstElectedDate = serviceFallback?.firstElectedDate ?? derivedElectionDates.firstElectedDate;
-  const nextElectionDate = serviceFallback?.nextElectionDate ?? derivedElectionDates.nextElectionDate;
+  const firstElectedDate = serviceFallback?.firstElectedDate ?? rawService.firstElectedDate ?? derivedElectionDates.firstElectedDate;
+  const nextElectionDate = serviceFallback?.nextElectionDate ?? rawService.nextElectionDate ?? derivedElectionDates.nextElectionDate;
 
   return {
     active: member.active,
