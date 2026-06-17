@@ -25,7 +25,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Confirmed Admins can create Analyst and Viewer invites, manage seats, and seed shared Team watchlists/alert candidates.
 - Confirmed Analysts and Viewers cannot access Team management APIs.
 - Confirmed Viewers are read-only for shared Team workspace seed data.
-- Confirmed Admin cannot remove the owner seat.
+- Confirmed the billing owner record is not exposed as a removable participant seat.
 - Confirmed removing a Viewer seat converts that account back to Free and reopens one paid seat.
 - Added Admin delegation, Viewer read-only, seat removal, and owner downgrade rows to the live Round 3 Beta checklist.
 - Confirmed owner downgrade lock behavior with Admin and Analyst seats present.
@@ -42,6 +42,10 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Added a Stripe customer subscription lookup fallback for older records that have a `cus_` customer ID but no stored `sub_` subscription ID.
 - Tightened Stripe customer subscription selection to prefer pending-cancel subscriptions and treat `cancel_at` as a cancellation signal too.
 - Confirmed production now locks the real pending-cancel Team owner out of `/team` after deploy of commit `3de89ae`.
+- Split Team billing ownership from participant seats:
+  - New database Team workspaces no longer create an owner `TeamMember` seat.
+  - Existing owner member rows are ignored for participant capacity, roster display, shared watchlist seeding, and member access.
+  - Team capacity now means paid participant seats; the billing owner can delegate control to an Admin without using one.
 
 ## Production QA Passed
 - Fresh fake Team owner activated 4 paid seats through signed Stripe webhook.
@@ -104,7 +108,8 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Fresh Stripe Checkout showed `$179.97 per year` and `$15.00 / month billed annually`.
   - Read-only Stripe line-item check confirmed quantity `3`, unit amount `$59.99`, total `$179.97`, and price ID `price_1Tj7CUGWVYQi06kN9hfe8KKh`.
   - Test card checkout completed and returned to `/team?checkout=success&plan=team`.
-  - `/team` showed the paid Team workspace active with `3` paid seats, `1` assigned owner seat, and `2` open seats.
+  - Before the billing-owner split, `/team` showed the paid Team workspace active with `3` paid seats, `1` assigned owner seat, and `2` open seats.
+  - After the billing-owner split, the same database state evaluates to `0` reserved participant seats and `3` open participant seats because the old owner row is ignored.
   - Database subscription became `team / annual / stripe / active` with `seatCount=3` and a real `sub_` subscription ID.
   - Stripe subscription is active, metadata is `plan=team`, `cycle=annual`, `seatCount=3`, quantity `3`, unit amount `$59.99`, and the price matches `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
   - `/upgrade` showed Annual selected, Team `Manage Billing`, and `$179.97 / workspace / year`; browser console errors: none.
@@ -189,6 +194,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `price_1Tj7CUGWVYQi06kN9hfe8KKh` is `$59.99` per seat/year.
   - local billing readiness passed after updating `.env.local`.
   - production checkout, payment, webhook/database sync, Stripe subscription metadata/price, and post-checkout app UI all passed.
+- Billing-owner participant-seat split verification passed in a clean `/private/tmp/capitol-ledger-seat-check-1781660000` clone:
+  - `pnpm lint` passed.
+  - `pnpm exec tsc --noEmit --pretty false` passed.
+  - `pnpm run build` passed.
+  - Read-only database check on the Team Annual QA workspace confirmed the existing owner row now evaluates to `0` reserved participant seats and `3` open participant seats.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -201,7 +211,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Local config still warns `AUTH_COOKIE_SECURE` is not `true`, but deployed production sign-in sets `Secure` auth cookies because `VERCEL_ENV=production` also enables secure cookies.
 
 ## Next Best Steps
-1. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
-2. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-3. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
-4. Do Tyler's private pre-tester pass, then open external Round 3 Beta only after any private wording/API-runtime concerns are resolved or explicitly marked as internal follow-ups.
+1. Deploy the billing-owner participant-seat split, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
+2. Run a naive-user beta pass with a fresh fake account: make wrong choices, submit bad forms, backtrack, and record confusing copy or missing safeguards.
+3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
+5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

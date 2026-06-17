@@ -119,7 +119,13 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       }
 
       setWorkspace(data.workspace);
-      setMessage(data.release?.type === "invite" ? "Invite revoked. Seat reopened." : "Seat removed. Account returned to Free.");
+      setMessage(
+        data.release?.type === "invite"
+          ? "Invite revoked. Seat reopened."
+          : data.release?.accountConvertedToFree
+            ? "Seat removed. Account returned to Free."
+            : "Seat removed. Seat reopened."
+      );
     } catch {
       setError("Unable to reach the seat management service.");
     } finally {
@@ -130,8 +136,8 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
   return (
     <div className="mt-5 space-y-4">
       <div className="grid grid-cols-3 gap-2">
-        <SeatMetric label="Seats" value={String(workspace.seatCount)} />
-        <SeatMetric label="Filled" value={String(workspace.occupiedSeats)} />
+        <SeatMetric label="Participant seats" value={String(workspace.seatCount)} />
+        <SeatMetric label="Reserved" value={String(workspace.occupiedSeats)} />
         <SeatMetric label="Open" value={String(workspace.openSeats)} />
       </div>
 
@@ -147,9 +153,11 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
         </div>
 
         <div className="mt-3 divide-y divide-white/8">
-          {rosterRows.map((row) => (
-            <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />
-          ))}
+          {rosterRows.length ? (
+            rosterRows.map((row) => <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />)
+          ) : (
+            <div className="py-4 text-[12px] leading-snug text-white/46">No participant seats are assigned yet. Reserve seats for Admins, Analysts, or Viewers.</div>
+          )}
         </div>
       </div>
 
@@ -161,7 +169,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-white">Reserve a teammate seat</div>
             <div className="mt-1 text-[12px] leading-snug text-white/48">
-              {workspace.openSeats > 0 ? `${workspace.openSeats} open paid seat${workspace.openSeats === 1 ? "" : "s"}.` : "All paid seats are assigned or pending."}
+              {workspace.openSeats > 0 ? `${workspace.openSeats} open participant seat${workspace.openSeats === 1 ? "" : "s"}.` : "All participant seats are assigned or pending."}
             </div>
           </div>
         </div>

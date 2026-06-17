@@ -457,7 +457,7 @@ async function runSeatReplacementScenario(owner) {
   if (!initialWorkspace) return;
 
   if (initialWorkspace.seatCount !== 6) {
-    fail("6-seat scenario has exactly 6 paid seats", `${initialWorkspace.seatCount} seats found`);
+    fail("6-seat scenario has exactly 6 paid participant seats", `${initialWorkspace.seatCount} seats found`);
     return;
   }
 

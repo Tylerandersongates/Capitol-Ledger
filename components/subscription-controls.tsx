@@ -22,15 +22,15 @@ let accountHydrationPromise: Promise<AccountSubscriptionSnapshot | null> | null 
 
 const teamWorkspaceSignals = [
   {
-    detail: "Checkout quantity sets the paid workspace capacity.",
+    detail: "Checkout quantity sets paid participant capacity.",
     icon: <ListChecks />,
-    label: "Seat-managed setup",
+    label: "Participant seats",
     value: "3+"
   },
   {
-    detail: "The Team buyer owns setup, billing, and member access.",
+    detail: "The Team buyer owns billing without taking a seat.",
     icon: <Bell />,
-    label: "Owner controls",
+    label: "Billing owner",
     value: "Ready"
   },
   {
@@ -414,7 +414,7 @@ export function TeamSeatSelector({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Checkout quantity</div>
-          <div className="mt-1 text-[13px] leading-snug text-white/56">Billed per seat in Stripe. Minimum {minimumTeamSeatCount} seats.</div>
+          <div className="mt-1 text-[13px] leading-snug text-white/56">Billed per participant seat in Stripe. Minimum {minimumTeamSeatCount} seats.</div>
         </div>
         <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
           {seatCount} seats
@@ -503,7 +503,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          Team checkout opens workspace setup with owner access, paid seat capacity, and pending invite records.
+          Team checkout opens billing-owner setup, paid participant capacity, and pending invite records.
         </span>
       </div>
 

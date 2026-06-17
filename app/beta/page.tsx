@@ -89,7 +89,7 @@ const testerTasks = [
     title: "Test subscriptions"
   },
   {
-    body: "For a paid Team owner, confirm checkout return, active billing, paid seat count, open seats, invite controls, and seat removal make sense.",
+    body: "For a paid Team owner, confirm checkout return, active billing, paid participant seat count, open seats, invite controls, and seat removal make sense.",
     href: "/team",
     label: "Team",
     reportHref: "/feedback?source=team",

@@ -304,6 +304,10 @@ function sortMembers(members: TeamWorkspaceMember[]) {
   return [...members].sort((left, right) => roleRank[left.role] - roleRank[right.role] || left.email.localeCompare(right.email));
 }
 
+function isParticipantMember(member: TeamWorkspaceMember | DbTeamMember) {
+  return normalizeRole(member.role) !== "owner" && normalizeMemberStatus(member.status) === "active";
+}
+
 function snapshotFromParts({
   createdAt,
   id,
@@ -324,7 +328,7 @@ function snapshotFromParts({
   updatedAt: Date | string;
 }): TeamWorkspaceSnapshot {
   const normalizedSeatCount = normalizeTeamSeatCount(seatCount);
-  const activeMembers = sortMembers(members.filter((member) => member.status === "active"));
+  const activeMembers = sortMembers(members.filter(isParticipantMember));
   const pendingInvites = invites
     .filter((invite) => invite.status === "pending" && Date.parse(invite.expiresAt) > Date.now())
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
@@ -445,12 +449,12 @@ async function ensureTeamWorkspaceSchema() {
 }
 
 function readOrCreateMemoryTeamWorkspace(input: TeamWorkspaceOwnerInput): TeamWorkspaceResult {
-  const ownerEmail = normalizeTeamInviteEmail(input.email);
   const now = new Date().toISOString();
   const existing = memoryWorkspaceStore.get(input.userId);
+  const ownerEmail = normalizeTeamInviteEmail(input.email);
 
   if (existing) {
-    const ownerMember = existing.members.find((member) => member.role === "owner") ?? existing.members[0];
+    const ownerMember = existing.members.find((member) => member.role === "owner");
     if (ownerMember) {
       ownerMember.userId = input.userId;
       ownerMember.email = ownerEmail;
@@ -562,7 +566,6 @@ async function readOrCreateDatabaseTeamWorkspace(input: TeamWorkspaceOwnerInput)
   if (!(await ensureTeamWorkspaceSchema())) return readOrCreateMemoryTeamWorkspace(input);
 
   const prisma = getPrisma();
-  const ownerEmail = normalizeTeamInviteEmail(input.email);
   const workspaceName = teamWorkspaceName(input);
 
   try {
@@ -581,27 +584,9 @@ async function readOrCreateDatabaseTeamWorkspace(input: TeamWorkspaceOwnerInput)
     const workspace = workspaces[0];
     if (!workspace) throw new TeamWorkspaceError("Unable to prepare the Team workspace.", 500);
 
-    await prisma.$executeRaw`
-      INSERT INTO "TeamMember" ("id", "workspaceId", "userId", "email", "displayName", "role", "status", "joinedAt", "createdAt", "updatedAt")
-      VALUES (${randomUUID()}, ${workspace.id}, ${input.userId}, ${ownerEmail}, ${input.name?.trim() || null}, 'owner', 'active', NOW(), NOW(), NOW())
-      ON CONFLICT ("workspaceId", "email") DO UPDATE
-      SET
-        "userId" = EXCLUDED."userId",
-        "displayName" = COALESCE(EXCLUDED."displayName", "TeamMember"."displayName"),
-        "role" = 'owner',
-        "status" = 'active',
-        "joinedAt" = COALESCE("TeamMember"."joinedAt", NOW()),
-        "updatedAt" = NOW()
-    `;
-
-    const refreshedWorkspace = {
-      ...workspace,
-      updatedAt: new Date()
-    };
-
     return {
       mode: "database",
-      workspace: await readWorkspaceSnapshotFromDatabase(refreshedWorkspace, input.seatCount)
+      workspace: await readWorkspaceSnapshotFromDatabase(workspace, input.seatCount)
     };
   } catch (error) {
     if (!isDatabaseConnectionError(error)) throw error;
@@ -663,7 +648,7 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceI
 
   const email = normalizeTeamInviteEmail(input.inviteEmail);
   if (!isValidTeamInviteEmail(email)) throw new TeamWorkspaceError("Enter a valid teammate email.", 400);
-  if (workspace.members.some((member) => member.status === "active" && member.email === email)) {
+  if (workspace.members.some((member) => member.email === email && isParticipantMember(member))) {
     throw new TeamWorkspaceError("That email already has an active workspace seat.", 409);
   }
 
@@ -740,7 +725,7 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
     const activeMembers = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "TeamMember"
-      WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "email" = ${email} AND "status" = 'active'
+      WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "email" = ${email} AND "status" = 'active' AND "role" <> 'owner'
       LIMIT 1
     `;
 
@@ -766,7 +751,7 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
       const occupiedRecords = await prisma.$queryRaw<CountRecord[]>`
         SELECT
           (
-            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "status" = 'active') +
+            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "status" = 'active' AND "role" <> 'owner') +
             (SELECT COUNT(*) FROM "TeamInvite" WHERE "workspaceId" = ${workspaceResult.workspace.id} AND "status" = 'pending' AND "expiresAt" > NOW())
           ) AS "count"
       `;
@@ -824,13 +809,13 @@ function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorksp
   if (seatType === "member") {
     const member = workspace.members.find((row) => row.id === seatId);
     if (!member || member.status !== "active") throw new TeamWorkspaceError("That Team member seat is not active.", 404);
-    if (member.role === "owner") throw new TeamWorkspaceError("The workspace owner seat cannot be removed.", 403);
+    if (member.role === "owner") throw new TeamWorkspaceError("The billing owner record is not a participant seat.", 403);
 
     member.status = "removed";
     member.updatedAt = now;
     releasedUserId = member.userId;
     release = {
-      accountConvertedToFree: Boolean(releasedUserId),
+      accountConvertedToFree: Boolean(releasedUserId && releasedUserId !== workspace.ownerUserId),
       email: member.email,
       id: member.id,
       status: "removed",
@@ -855,7 +840,7 @@ function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): TeamWorksp
   }
 
   if (!release) throw new TeamWorkspaceError("Unable to release this Team seat.", 500);
-  if (releasedUserId) setAccountSubscription(releasedUserId, releasedSeatFreeSubscription);
+  if (releasedUserId && releasedUserId !== workspace.ownerUserId) setAccountSubscription(releasedUserId, releasedSeatFreeSubscription);
   workspace.updatedAt = now;
 
   return {
@@ -900,7 +885,7 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
         `;
         const member = members[0];
         if (!member || normalizeMemberStatus(member.status) !== "active") throw new TeamWorkspaceError("That Team member seat is not active.", 404);
-        if (normalizeRole(member.role) === "owner") throw new TeamWorkspaceError("The workspace owner seat cannot be removed.", 403);
+        if (normalizeRole(member.role) === "owner") throw new TeamWorkspaceError("The billing owner record is not a participant seat.", 403);
 
         await transaction.$executeRaw`
           UPDATE "TeamMember"
@@ -924,7 +909,7 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
 
         return {
           release: {
-            accountConvertedToFree: Boolean(userId),
+            accountConvertedToFree: Boolean(userId && userId !== workspaceResult.workspace.ownerUserId),
             email: member.email,
             id: member.id,
             status: "removed",
@@ -978,9 +963,10 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
       };
     });
 
+    const convertedUserId = releasedSeat.userId === workspaceResult.workspace.ownerUserId ? null : releasedSeat.userId;
     const release = {
       ...releasedSeat.release,
-      accountConvertedToFree: await convertAccountToFree(releasedSeat.userId)
+      accountConvertedToFree: await convertAccountToFree(convertedUserId)
     };
 
     const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
@@ -1191,7 +1177,7 @@ function acceptMemoryInvite({
     seatCount: normalizeTeamSeatCount(undefined)
   });
   const existingMember = workspace.members.find((member) => member.email === memberEmail && member.status === "active");
-  const occupiedAfterAcceptance = existingMember ? current.occupiedSeats - 1 : current.occupiedSeats;
+  const occupiedAfterAcceptance = existingMember && isParticipantMember(existingMember) ? current.occupiedSeats - 1 : current.occupiedSeats;
   if (occupiedAfterAcceptance > current.seatCount) {
     throw new TeamWorkspaceError("This workspace has no open paid Team seats. Ask the owner to add seats, then retry the invite.", 409);
   }
@@ -1300,14 +1286,14 @@ async function acceptDatabaseInvite({
       const occupiedRecords = await transaction.$queryRaw<CountRecord[]>`
         SELECT
           (
-            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'active') +
+            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'active' AND "role" <> 'owner') +
             (SELECT COUNT(*) FROM "TeamInvite" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'pending' AND "expiresAt" > NOW())
           ) AS "count"
       `;
       const activeRecords = await transaction.$queryRaw<CountRecord[]>`
         SELECT COUNT(*) AS "count"
         FROM "TeamMember"
-        WHERE "workspaceId" = ${invite.workspaceId} AND "email" = ${memberEmail} AND "status" = 'active'
+        WHERE "workspaceId" = ${invite.workspaceId} AND "email" = ${memberEmail} AND "status" = 'active' AND "role" <> 'owner'
       `;
       const occupiedSeats = toCount(occupiedRecords[0]?.count ?? 0);
       const existingActiveSeats = toCount(activeRecords[0]?.count ?? 0);
@@ -1389,7 +1375,7 @@ function readMemoryTeamWorkspaceForMember({
   const memberEmail = normalizeTeamInviteEmail(email);
 
   for (const workspace of memoryWorkspaceStore.values()) {
-    const membership = workspace.members.find((member) => member.status === "active" && member.email === memberEmail);
+    const membership = workspace.members.find((member) => member.email === memberEmail && isParticipantMember(member));
     if (!membership) continue;
 
     return {
@@ -1437,6 +1423,7 @@ async function readDatabaseTeamWorkspaceForMember({
       FROM "TeamMember"
       JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamMember"."workspaceId"
       WHERE "TeamMember"."status" = 'active'
+        AND "TeamMember"."role" <> 'owner'
         AND ("TeamMember"."userId" = ${userId} OR "TeamMember"."email" = ${memberEmail})
       ORDER BY "TeamMember"."updatedAt" DESC
       LIMIT 5
