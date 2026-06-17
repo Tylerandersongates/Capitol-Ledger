@@ -55,7 +55,7 @@ const testerTasks = [
   },
   {
     body: "Open a bill and review summary, pros/cons, key details, sources, votes, and video links.",
-    href: "/bills/demo-hr-4021?tab=details",
+    href: "/bills/demo-hr-22?tab=details",
     label: "Bill",
     reportHref: "/feedback?source=bills",
     title: "Review a bill"

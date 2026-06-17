@@ -72,7 +72,7 @@ AUTH_QA_BASE_URL="https://your-vercel-beta-url" node .tools/pnpm.cjs run product
 
 1. Open the deployed Vercel URL.
 2. Create a reviewer account or sign in with the reviewer email listed in `BETA_REVIEWER_EMAILS`.
-3. Visit `/beta`, `/dashboard`, `/search`, `/bills/demo-hr-4021`, `/alerts`, `/badges`, `/impact`, `/account`, and `/upgrade`.
+3. Visit `/beta`, `/dashboard`, `/search`, `/bills/demo-hr-22`, `/alerts`, `/badges`, `/impact`, `/account`, and `/upgrade`.
 4. Submit one test report at `/feedback`.
 5. Open `/feedback/review`.
 6. Confirm the report appears.

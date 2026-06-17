@@ -84,12 +84,15 @@ const smartFilterGroups: Array<{
     label: "State",
     options: [
       { label: "All" },
+      { label: "AK", value: "AK" },
+      { label: "AR", value: "AR" },
       { label: "CA", value: "CA" },
+      { label: "GA", value: "GA" },
       { label: "MA", value: "MA" },
       { label: "NY", value: "NY" },
+      { label: "SC", value: "SC" },
       { label: "TX", value: "TX" },
-      { label: "VT", value: "VT" },
-      { label: "AK", value: "AK" }
+      { label: "VT", value: "VT" }
     ]
   }
 ];

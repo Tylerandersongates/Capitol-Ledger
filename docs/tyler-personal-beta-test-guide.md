@@ -64,9 +64,8 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 - Check whether cumulative Civic Momentum wording is clear when a user removes the only currently saved bill.
 
 ## Round 3 Data Expansion
-- Expand the demo/seed data before external Round 3 testers see the app.
-- Add more districts and ZIP-code coverage inside the current beta states.
-- Add current bills that are actively moving through Congress, and refresh the existing seeded bill records where Congress.gov has newer action, summary, cosponsor, or status data.
-- Include sponsors and cosponsors from outside the current beta states when they are attached to selected current bills.
-- Verify the larger data set across onboarding district matching, search, bill detail pages, member profiles, source links, alerts, weekly brief inputs, and basic page performance.
-- Keep this as a Tyler/private planning item until the source-verified data is seeded and checked; do not present it to testers as done.
+- Implemented locally for Round 3: beta district presets now cover 12 district/ZIP groups across California, Massachusetts, New York, and Texas.
+- The old fictional demo bills were replaced with source-backed 119th Congress records: H.R. 22, H.R. 471, S. 2237, and S. 3688.
+- Outside-state sponsors/cosponsors were added where the selected bills require them, including Arkansas, South Carolina, Alaska, and Georgia records.
+- Local verification passed: stale old demo-bill scan, video/source link check, Congress readiness demo-safe check, clean-clone lint, clean-clone typecheck, and clean-clone production build.
+- After Vercel deploy, production-smoke onboarding district matching, `/search`, `/bills/demo-hr-22?tab=details`, new sponsor/cosponsor member profiles, source links, alerts, weekly brief inputs, and basic page performance.

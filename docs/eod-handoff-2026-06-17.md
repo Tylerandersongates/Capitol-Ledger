@@ -148,6 +148,11 @@ Generated at the break on June 16, 2026 for the next continuation.
     - `Dashboard` opened `/dashboard`.
     - Browser console errors: none.
 - Added a Round 3 data-expansion item to Tyler's private beta guide: broaden districts/ZIPs in current states, add current moving Congress bills, refresh existing bill records, and include outside-state sponsors/cosponsors when attached to selected bills.
+- Implemented the Round 3 data expansion locally:
+  - Expanded beta district presets from 8 to 12, with broader ZIP coverage across California, Massachusetts, New York, and Texas.
+  - Replaced the old fictional demo bills with source-backed 119th Congress records: H.R. 22, H.R. 471, S. 2237, and S. 3688.
+  - Added outside-state sponsors/cosponsors needed by those bills, including Arkansas, South Carolina, Alaska, and Georgia records.
+  - Updated beta and demo-guide bill routes from the old fictional bill detail path to `/bills/demo-hr-22`.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -258,6 +263,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `scripts/check-video-links.mjs` passed: 6 secure video links, 4 bills with video coverage, bill detail rendering, subscription gating, and gamification event wiring are intact.
   - `scripts/check-congress-readiness.mjs` passed in demo-safe mode; expected warnings remain for live Congress.gov API key, live database persistence, public app URL, and skipped live request.
   - Clean `/private/tmp/capitol-ledger-seat-check-1781660000` verification under Node `v22.22.3` passed: `pnpm lint`, `pnpm exec tsc --noEmit --pretty false`, and `pnpm run build`.
+- Round 3 data expansion verification passed:
+  - Targeted stale old demo bill ID scan over the refreshed data file, beta route, handoff, private guide, and demo/checklist docs found no remaining old fictional bill routes or data references.
+  - `scripts/check-video-links.mjs` passed after the data refresh: 6 secure source/video links across 4 bills.
+  - `scripts/check-congress-readiness.mjs` passed in demo-safe mode with expected live-sync warnings only.
+  - Clean `/private/tmp/capitol-ledger-seat-check-1781660000` verification under Node `v22.22.3` passed again: `pnpm lint`, `pnpm exec tsc --noEmit --pretty false`, and `pnpm run build`.
 
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
@@ -268,8 +278,8 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Bill detail initially felt slow during one naive-user navigation but recovered with no console errors.
 
 ## Next Best Steps
-1. Start Round 3 data expansion: source current moving Congress bills, refresh existing seeded bills, add relevant outside-state sponsors/cosponsors, and expand district/ZIP coverage in current beta states.
-2. After data expansion, verify search, onboarding district matching, bill detail pages, member profiles, source links, alerts, weekly brief inputs, and basic page performance against the larger data set.
+1. Commit and push the Round 3 data expansion, then let Vercel deploy.
+2. After deploy, production-smoke `/beta`, `/search`, `/bills/demo-hr-22?tab=details`, member profiles for the new sponsors/cosponsors, onboarding district matching, and source links.
 3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
 4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

@@ -37,6 +37,30 @@ const committeeSources = [
     label: "House Oversight committee records",
     source: "U.S. House Oversight Committee",
     url: "https://oversight.house.gov/"
+  },
+  {
+    keywords: ["house administration", "government operations", "voter", "election", "eligibility"],
+    label: "House Administration committee records",
+    source: "Committee on House Administration",
+    url: "https://cha.house.gov/"
+  },
+  {
+    keywords: ["natural resources", "public lands", "forest", "forests", "wildfire"],
+    label: "House Natural Resources committee records",
+    source: "House Natural Resources Committee",
+    url: "https://naturalresources.house.gov/"
+  },
+  {
+    keywords: ["agriculture", "forestry", "fireshed"],
+    label: "Senate Agriculture committee hearings",
+    source: "U.S. Senate Agriculture Committee",
+    url: "https://www.agriculture.senate.gov/hearings"
+  },
+  {
+    keywords: ["finance", "health", "hospital", "social welfare", "rural"],
+    label: "Senate Finance committee hearings",
+    source: "U.S. Senate Finance Committee",
+    url: "https://www.finance.senate.gov/hearings"
   }
 ];
 

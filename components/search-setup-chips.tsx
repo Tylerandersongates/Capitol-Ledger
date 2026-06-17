@@ -25,9 +25,12 @@ let issueInterestSyncVersion = 0;
 
 const stateCodeByName: Record<string, string> = {
   Alaska: "AK",
+  Arkansas: "AR",
   California: "CA",
+  Georgia: "GA",
   Massachusetts: "MA",
   "New York": "NY",
+  "South Carolina": "SC",
   Texas: "TX",
   Vermont: "VT"
 };

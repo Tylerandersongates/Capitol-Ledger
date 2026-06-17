@@ -74,22 +74,31 @@ type DistrictMatchResult =
     };
 
 const stateNameByCode: Record<string, string> = {
+  AK: "Alaska",
+  AR: "Arkansas",
   CA: "California",
+  GA: "Georgia",
   MA: "Massachusetts",
   NY: "New York",
-  TX: "Texas"
+  SC: "South Carolina",
+  TX: "Texas",
+  VT: "Vermont"
 };
 
 const demoZipExamples = betaDistrictZipExamples.slice(0, 4).join(", ");
 const demoDistrictLocations: Array<{ latitude: number; longitude: number; preset: BetaDistrictPreset }> = [
   { latitude: 34.0522, longitude: -118.2437, preset: betaDistrictPresets[0] },
   { latitude: 34.2068, longitude: -118.2245, preset: betaDistrictPresets[1] },
-  { latitude: 42.4184, longitude: -71.1062, preset: betaDistrictPresets[2] },
-  { latitude: 42.3601, longitude: -71.0589, preset: betaDistrictPresets[3] },
-  { latitude: 40.8467, longitude: -73.8648, preset: betaDistrictPresets[4] },
-  { latitude: 30.2672, longitude: -97.7431, preset: betaDistrictPresets[5] },
-  { latitude: 29.7604, longitude: -95.3698, preset: betaDistrictPresets[6] },
-  { latitude: 32.7767, longitude: -96.797, preset: betaDistrictPresets[7] }
+  { latitude: 37.7749, longitude: -122.4194, preset: betaDistrictPresets[2] },
+  { latitude: 42.4184, longitude: -71.1062, preset: betaDistrictPresets[3] },
+  { latitude: 42.3601, longitude: -71.0589, preset: betaDistrictPresets[4] },
+  { latitude: 42.2626, longitude: -71.8023, preset: betaDistrictPresets[5] },
+  { latitude: 40.8467, longitude: -73.8648, preset: betaDistrictPresets[6] },
+  { latitude: 40.6782, longitude: -73.9442, preset: betaDistrictPresets[7] },
+  { latitude: 30.2672, longitude: -97.7431, preset: betaDistrictPresets[8] },
+  { latitude: 29.7604, longitude: -95.3698, preset: betaDistrictPresets[9] },
+  { latitude: 32.7767, longitude: -96.797, preset: betaDistrictPresets[10] },
+  { latitude: 29.4241, longitude: -98.4936, preset: betaDistrictPresets[11] }
 ];
 const demoLocationMatchRadiusMiles = 55;
 

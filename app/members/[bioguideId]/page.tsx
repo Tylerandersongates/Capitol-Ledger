@@ -71,10 +71,13 @@ const alignmentTopicMetricWeights = [
 
 const stateNames: Record<string, string> = {
   AK: "Alaska",
+  AR: "Arkansas",
   AZ: "Arizona",
   CA: "California",
+  GA: "Georgia",
   MA: "Massachusetts",
   NY: "New York",
+  SC: "South Carolina",
   TX: "Texas",
   VT: "Vermont"
 };

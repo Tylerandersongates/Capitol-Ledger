@@ -64,7 +64,7 @@ Demo path:
 
 1. Switch to Pro Intelligence from `/account` or `/upgrade`.
 2. Open `/dashboard` and show the Pro policy lens.
-3. Open `/bills/demo-hr-4021?tab=details`.
+3. Open `/bills/demo-hr-22?tab=details`.
 4. Show AI Policy Lens below Bill Summary.
 5. Show Official Source Map and Speeches & Video as evidence-backed intelligence.
 6. Open `/search` and show Smart Filters plus export report preview.
@@ -141,7 +141,7 @@ Refresh persistence:
 
 - Use `/account` as the fastest place to switch subscription mode.
 - Use `/upgrade` when explaining pricing and plan comparison.
-- Use `/bills/demo-hr-4021?tab=details` for premium intelligence.
+- Use `/bills/demo-hr-22?tab=details` for premium intelligence.
 - Use `/map` for Civic Team.
 - Use `/search` for Pro export/report value.
 - Use `/alerts` for priority reminders.
