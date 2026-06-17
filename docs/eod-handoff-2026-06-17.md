@@ -2,6 +2,22 @@
 
 Generated at the break on June 16, 2026 for the next continuation.
 
+## Continuation Update - June 17, 2026
+- Verified the bill stance isolation fix on the currently signed-in alternate account after deploy: the tested bill rendered `Choose your stance`, not the prior account's selected `Support`.
+- Fixed gamification browser carryover by scoping local gamification, dedupe, and streak-date storage by `account`, `demo`, or `anonymous` session.
+- Changed authenticated gamification hydration so the account snapshot is authoritative instead of merging stale browser-local `dayStreak` values back into the account.
+- Delayed dashboard completed-onboarding gamification repair until after account gamification and account profile hydration.
+- Fresh-account reset now removes the new scoped gamification keys as well as the legacy keys.
+- Production deploy for `f8872ea` completed successfully in Vercel.
+- Production smoke after deploy passed on `/dashboard` and the tested bill detail page with no browser console errors.
+- Current signed-in account already has `dayStreak=8` persisted in production gamification data; the code fix prevents future cross-account browser carryover but does not silently reset existing account history.
+- Local verification: targeted TypeScript transpile checks passed for the touched files. Full `tsc --noEmit` and targeted ESLint still hang silently in the Documents workspace and were stopped.
+
+## Current Next Best Steps
+1. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+2. Run one clean fresh-account gamification smoke after the next login/account switch: dashboard should hydrate from that account's server state rather than a previous browser account's streak.
+3. Continue annual Pro and annual Team purchase QA from fresh accounts, then owner downgrade/cancel with Admin and Analyst seats present.
+
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
 - Always include next best steps so work can keep moving.
