@@ -47,6 +47,16 @@ npm run db:seed          # Seed demo data into Postgres
 npm run sync:congress    # Test server-side Congress.gov access
 ```
 
+For Vercel deployment inspection, use the repo helper instead of relying on a global CLI install:
+
+```bash
+scripts/vercel-cli.sh whoami
+scripts/vercel-cli.sh list project-qosv1 --environment production --status READY --format json --yes
+scripts/vercel-cli.sh inspect project-qosv1.vercel.app --format json
+```
+
+The helper pins `vercel@54.14.1`, uses the local `.tools` Node/pnpm runtime when available, and installs the CLI into `/private/tmp/capitol-ledger-vercel-cli` so app dependencies stay untouched.
+
 ## Environment
 
 `CONGRESS_API_KEY` is used only in server-side routes and scripts. Do not expose it through `NEXT_PUBLIC_` variables.

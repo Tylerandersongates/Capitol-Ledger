@@ -26,6 +26,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Annual Pro sandbox Checkout session opened at `$29.99 per year` for Pro Intelligence; payment was not submitted in this smoke.
   - Annual Team sandbox Checkout session opened at `$179.97 per year`; Stripe details showed quantity `3`, billed annually, at `$59.99 each`; payment was not submitted in this smoke.
   - Returned `/upgrade?annualQa=checkout-smoke` to the app with Annual selected, the 25-seat cap UI visible, and no browser console errors.
+- Added a durable Vercel CLI helper at `scripts/vercel-cli.sh`:
+  - Pins `vercel@54.14.1` without adding it to app dependencies.
+  - Uses the local `.tools` Node 22 and pnpm 11 runtimes when available.
+  - Installs the CLI into `/private/tmp/capitol-ledger-vercel-cli`.
+  - Verified `--version`, `whoami`, and production deployment listing; latest production remains `project-qosv1-bubhol04h-capitol-ledger.vercel.app`, `READY`, aliased to `project-qosv1.vercel.app`.
 
 ## Current Next Best Steps
 1. On June 18, 2026, recheck the current account's `8d` day streak:
