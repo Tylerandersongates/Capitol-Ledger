@@ -91,6 +91,22 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
   const statusLine = getPersonalStatusLine(bill);
   const billName = bill.shortTitle || bill.title;
 
+  if (matchesAny(text, ["forest", "forests", "wildfire", "wildfires", "fireshed", "firesheds", "public lands", "natural resources", "forest management", "land management"])) {
+    return {
+      context: `${billName} could show up through wildfire risk, public lands management, local air quality, emergency planning, forest jobs, and how quickly agencies approve forest projects. ${statusLine}`,
+      pros: [
+        "Communities near high-risk firesheds could benefit if planning and fuel-reduction projects move faster and target the places most exposed to wildfire.",
+        "Better wildfire intelligence and coordination can help local officials, firefighters, and residents see risk earlier instead of waiting for a crisis.",
+        "Expedited review for certain forest projects could help remove hazardous fuel, restore habitat, or protect roads, water systems, and homes sooner."
+      ],
+      cons: [
+        "Faster environmental review can reduce public input or miss local habitat, water, or tribal concerns if safeguards are too thin.",
+        "Benefits may concentrate near selected firesheds, leaving other wildfire-prone communities waiting.",
+        "If funding and agency staffing do not match the new deadlines, communities may see faster paperwork without safer forests."
+      ]
+    };
+  }
+
   if (matchesAny(text, ["child", "childcare", "family", "families", "care", "health", "provider"])) {
     return {
       context: `${billName} could reach people through household budgets, family care decisions, and the local providers families rely on. ${statusLine}`,
@@ -267,7 +283,10 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
 }
 
 function matchesAny(text: string, terms: string[]) {
-  return terms.some((term) => text.includes(term));
+  return terms.some((term) => {
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+    return new RegExp(`(^|[^a-z0-9])${escapedTerm}($|[^a-z0-9])`, "i").test(text);
+  });
 }
 
 function getPersonalStatusLine(bill: Bill) {
