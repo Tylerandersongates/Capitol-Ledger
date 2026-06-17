@@ -427,9 +427,19 @@ function memberDisplayNameClass(displayName: string) {
   return "text-[30px] leading-tight";
 }
 
+function isAtLargeDistrict(district?: string) {
+  const normalized = district?.trim().toLowerCase();
+  return normalized === "0" || normalized === "00" || normalized === "al" || normalized === "at-large" || normalized === "at large" || normalized === "atlarge";
+}
+
+function memberDistrictLabel(state: string, district?: string) {
+  if (!district) return state;
+  return isAtLargeDistrict(district) ? `${state} At-Large` : `${state} District ${district}`;
+}
+
 function memberSeatTag(member: Member) {
   const partyCode = member.party.trim().charAt(0).toUpperCase() || "U";
-  const districtCode = member.district ? `-${member.district}` : "";
+  const districtCode = member.district ? `-${isAtLargeDistrict(member.district) ? "AL" : member.district}` : "";
   return `[${partyCode}-${member.state}${districtCode}]`;
 }
 
@@ -523,7 +533,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
   const displayName = cleanMemberDisplayName(member);
   const displayNameClass = memberDisplayNameClass(displayName);
   const state = stateNames[member.state] ?? member.state;
-  const districtLabel = member.district ? `${state} District ${member.district}` : state;
+  const districtLabel = memberDistrictLabel(state, member.district);
   const seatTag = memberSeatTag(member);
   const nextElectionDate = member.nextElectionDate ?? fallbackNextElectionDate(member.chamber);
   const nextElection = formatDate(nextElectionDate);
