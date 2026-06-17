@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CheckCircle2, Clock3, Mail, UserMinus, UserPlus, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { TeamWorkspaceInvite, TeamWorkspaceMember, TeamWorkspaceRole, TeamWorkspaceSnapshot } from "@/types/capitol";
 
 type InviteRole = Exclude<TeamWorkspaceRole, "owner">;
@@ -14,6 +15,7 @@ const roleOptions: Array<{ label: string; value: InviteRole }> = [
 ];
 
 export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: TeamWorkspaceSnapshot }) {
+  const router = useRouter();
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InviteRole>("analyst");
@@ -65,6 +67,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       }
 
       setWorkspace(data.workspace);
+      router.refresh();
       setEmail("");
       setInviteLink(data.inviteDelivery?.inviteLink ?? "");
       setMessage(
@@ -123,6 +126,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       }
 
       setWorkspace(data.workspace);
+      router.refresh();
       if (data.release?.type === "invite") {
         setMessage("Invite revoked. Seat reopened.");
       } else if (data.release?.personalSubscriptionRestored) {
