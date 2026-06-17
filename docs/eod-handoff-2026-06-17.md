@@ -18,7 +18,9 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Dashboard, Settings, and bill page checks had no browser console errors.
 
 ## Current Next Best Steps
-1. On June 18, 2026, recheck the current account's `8d` day streak to see whether it increments naturally after another day or stays stuck.
+1. On June 18, 2026, recheck the current account's `8d` day streak:
+   - Dashboard load alone is expected to keep the stored streak unchanged.
+   - The first qualifying streak-credit action on the new day should increment it.
 2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
 3. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
 4. Continue annual Pro and annual Team purchase QA from fresh accounts, then owner downgrade/cancel with Admin and Analyst seats present.
