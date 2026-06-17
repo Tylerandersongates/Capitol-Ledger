@@ -243,6 +243,12 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Territory profile roles render as `U.S. Delegate`; Puerto Rico renders as `U.S. Resident Commissioner`.
   - Search result section title is now `Officials`, and result labels render `Delegate`, `Resident Commissioner`, `Representative`, or `Senator` as appropriate.
   - Visible State filters now include all states and territories, including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`.
+  - Dashboard saved/delegation/suggested official cards now use the shared office/seat labels instead of raw `House` wording.
+  - Search suggestion cards now use the same office labels, including `Delegate` and `Resident Commissioner`, and search against the full live member catalog.
+  - Search suggestions now match accented names such as `Pablo José Hernández`, include office/seat labels such as `resident commissioner` and `PR-AL`, and de-dupe live/demo duplicates.
+  - Shared seat-label display now normalizes full state names to postal codes before showing labels like `CA-30`.
+  - Production UI/API verification passed for search suggestions: Pablo José Hernández rendered `Resident Commissioner · PR-AL · Democrat`, Eleanor Holmes Norton rendered `Delegate · DC-AL · Democrat`, and Laura Friedman rendered once as `Representative · CA-30 · Democrat`.
+  - Production dashboard smoke passed with no browser console errors and no stale `House /` member-card text.
   - Production verification passed for DC, PR, GU, VI, AS, MP, KS, VT, and WY with no browser console errors.
 - No service-history placeholder text appeared in the spot-checked production profiles.
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.

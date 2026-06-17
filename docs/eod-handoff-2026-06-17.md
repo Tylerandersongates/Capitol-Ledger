@@ -39,6 +39,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Preserved official member display names from synced records. Production verified `Eleanor Holmes Norton` and `Pablo José Hernández`; commit `f380d33`.
   - Updated member search result cards to use office roles instead of generic `House`: Delegate, Resident Commissioner, Representative, Senator. Production verified DC, PR, GU, KS, VT, and WY; commit `5611b9a`.
   - Expanded visible member State filters to the full state/territory list including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`. Production verified `PR` returns Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `6e8f63a`.
+  - Shared member office/seat display labels across profile, search results, dashboard official cards, and search suggestions; commit `9d73700`.
+  - Fixed member search suggestions so they use the full live member catalog instead of the first 30 live rows, match accented names, and include office/seat labels as search terms. Production verified `Pablo`, `Hernández`, and `resident commissioner` return Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `8efea4f`.
+  - Normalized full state names to postal codes before shared seat-label display and dashboard/onboarding district matching. Production verified Laura Friedman suggestions show `Representative · CA-30 · Democrat`; commit `77d7590`.
+  - Deduplicated live/demo member search suggestions. Production verified Laura Friedman appears once in suggestions; commit `feb0ef9`.
+  - Visible UI smoke passed: search dropdown shows Pablo José Hernández as `Resident Commissioner · PR-AL · Democrat`, Laura Friedman as a single `Representative · CA-30 · Democrat` card, PR search results show `Resident Commissioner · PR-AL · Democrat`, and `/dashboard?memberCardSmoke=feb0ef9` loads with no browser console errors or stale `House /` card text.
   - Browser console errors: none during the member/profile/search production checks.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
@@ -46,11 +51,7 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Save next-step summaries for section/topic closeouts instead of every tiny sub-step.
 
 ## Current Next Best Steps
-1. Continue the member/profile display topic only if more surfaces are included:
-   - Dashboard saved-official cards.
-   - Search suggestions.
-   - Weekly brief official snippets.
-   - Email/contact labels.
+1. Member/profile/search/dashboard display pass is complete for the surfaces tested today. Optional adjacent follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
 2. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
