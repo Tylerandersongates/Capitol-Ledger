@@ -12,11 +12,15 @@ Generated at the break on June 16, 2026 for the next continuation.
 - Production smoke after deploy passed on `/dashboard` and the tested bill detail page with no browser console errors.
 - Current signed-in account already has `dayStreak=8` persisted in production gamification data; the code fix prevents future cross-account browser carryover but does not silently reset existing account history.
 - Local verification: targeted TypeScript transpile checks passed for the touched files. Full `tsc --noEmit` and targeted ESLint still hang silently in the Documents workspace and were stopped.
+- New-account/account-switch smoke passed on the `currently.com` test account:
+  - Dashboard hydrated to `Day Streak 1d`, not the previous account's `8d`.
+  - Tested bill page showed `Support`, which is expected for this account because it selected Support earlier.
+  - Dashboard, Settings, and bill page checks had no browser console errors.
 
 ## Current Next Best Steps
 1. On June 18, 2026, recheck the current account's `8d` day streak to see whether it increments naturally after another day or stays stuck.
 2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-3. Run one clean fresh-account gamification smoke after the next login/account switch: dashboard should hydrate from that account's server state rather than a previous browser account's streak.
+3. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
 4. Continue annual Pro and annual Team purchase QA from fresh accounts, then owner downgrade/cancel with Admin and Analyst seats present.
 
 ## Standing Rules
