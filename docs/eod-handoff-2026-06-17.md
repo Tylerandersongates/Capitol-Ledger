@@ -96,6 +96,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Stripe Checkout showed `$179.70 per year`.
   - Read-only Stripe line-item check confirmed quantity `3`, unit amount `$59.90`, total `$179.70`, and the price ID matches `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
   - No Team Annual payment was submitted and no Team Annual subscription was created in this pass.
+- New Team Annual Stripe price ID was provided and verified:
+  - `price_1Tj7CUGWVYQi06kN9hfe8KKh` is active test-mode USD, recurring yearly, unit amount `$59.99`, product `Capitol Ledger CE Civic Team Subscription`.
+  - Local `.env.local` was updated to use the new `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
+  - `BILLING_REQUIRE_STRIPE=true pnpm billing:check` passed locally with the new price ID.
+  - Production Vercel env still needs the same price ID plus redeploy before rerunning Team Annual checkout.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -173,6 +178,9 @@ Generated at the break on June 16, 2026 for the next continuation.
   - app copy/math: `$59.99` per seat yearly, `$179.97` for 3 seats.
   - Stripe configured price: `$59.90` per seat yearly, `$179.70` for 3 seats.
   - checkout line item uses the configured Team Annual Stripe price ID.
+- New Team Annual price verification passed:
+  - `price_1Tj7CUGWVYQi06kN9hfe8KKh` is `$59.99` per seat/year.
+  - local billing readiness passed after updating `.env.local`.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -181,12 +189,12 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
-- Team Annual checkout is blocked pending pricing-source decision: update Stripe Team Annual price to `$59.99` per seat/year or update the app display/math to `$59.90` per seat/year.
+- Team Annual checkout is blocked pending production env/deploy: local env now points to the verified `$59.99` Stripe price, but Vercel production must be updated and redeployed before the checkout can be completed.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
 - Local config still warns `AUTH_COOKIE_SECURE` is not `true`, but deployed production sign-in sets `Secure` auth cookies because `VERCEL_ENV=production` also enables secure cookies.
 
 ## Next Best Steps
-1. Decide Team Annual pricing source of truth: Stripe currently charges `$59.90` per seat/year while the app advertises `$59.99`; after fixing one side, rerun and complete Team Annual checkout.
+1. Update Vercel production env `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID=price_1Tj7CUGWVYQi06kN9hfe8KKh`, redeploy, then rerun and complete Team Annual checkout.
 2. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
 3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
 4. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

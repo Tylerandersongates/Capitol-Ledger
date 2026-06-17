@@ -21,7 +21,8 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 - Team Annual checkout is blocked until pricing is reconciled:
   - App displays `$59.99 / seat / year` and `$179.97 / workspace / year` for 3 seats.
   - Stripe Checkout uses the configured Team Annual price ID at `$59.90 / seat / year`, totaling `$179.70` for 3 seats.
-  - Do not complete Team Annual checkout until either Stripe price or app pricing copy/math is updated.
+  - New Team Annual Stripe price `price_1Tj7CUGWVYQi06kN9hfe8KKh` is verified at `$59.99 / seat / year`.
+  - Local env is updated; do not complete Team Annual checkout until Vercel production env is updated/redeployed with the new price ID.
 
 ## Team API Lockout Follow-Up
 - Confirm Team invites and Team seats APIs return `403` for a canceled owner.
