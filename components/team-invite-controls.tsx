@@ -160,12 +160,18 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           </span>
         </div>
 
-        <div className="mt-3 divide-y divide-white/8">
-          {rosterRows.length ? (
-            rosterRows.map((row) => <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />)
-          ) : (
-            <div className="py-4 text-[12px] leading-snug text-white/46">No participant seats are assigned yet. Reserve seats for Admins, Analysts, or Viewers.</div>
-          )}
+        <div
+          data-testid="team-seat-roster-scroll"
+          className="mt-3 max-h-[15.5rem] overflow-y-auto overscroll-contain pr-1 [scrollbar-color:rgba(255,177,43,0.55)_rgba(255,255,255,0.08)] [scrollbar-width:thin]"
+          aria-label="Seat roster"
+        >
+          <div className="divide-y divide-white/8">
+            {rosterRows.length ? (
+              rosterRows.map((row) => <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />)
+            ) : (
+              <div className="py-4 text-[12px] leading-snug text-white/46">No participant seats are assigned yet. Reserve seats for Admins, Analysts, or Viewers.</div>
+            )}
+          </div>
         </div>
       </div>
 
