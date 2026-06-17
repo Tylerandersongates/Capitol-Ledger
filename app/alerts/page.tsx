@@ -7,10 +7,13 @@ import {
 import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileShell } from "@/components/mobile-shell";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
+import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { getAlertNotificationPreference, isActionNeededAlertEvent } from "@/lib/alert-summary";
+import { getCurrentSession } from "@/lib/auth";
 import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
+import { readPendingTeamWorkspaceInvitesForEmail, type TeamWorkspacePendingInvite } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
@@ -31,9 +34,44 @@ function eventCategoryLabel(event: ReturnType<typeof getRecentUpdates>[number]) 
   return "Civic Update";
 }
 
+function teamRoleLabel(role: TeamWorkspacePendingInvite["invite"]["role"]) {
+  if (role === "admin") return "Admin";
+  if (role === "viewer") return "Viewer";
+  return "Analyst";
+}
+
+function teamInviteAlert(invite: TeamWorkspacePendingInvite): AlertsInboxItem {
+  const group = getAlertGroupFromDate(invite.invite.createdAt);
+  const ownerName = invite.owner.name || invite.owner.email || "A workspace admin";
+  const roleLabel = teamRoleLabel(invite.invite.role);
+
+  return {
+    id: `team-invite:${invite.invite.id}`,
+    title: "Team invite",
+    body: `${ownerName} invited you to join ${invite.workspace.name} as ${roleLabel}.`,
+    categoryLabel: "Team Invite",
+    preference: "account",
+    actionNeeded: true,
+    action: "Accept Invite",
+    actionKind: "teamInviteAccept",
+    teamInviteId: invite.invite.id,
+    href: "/team",
+    group,
+    time: group === "today" ? "Today" : group === "yesterday" ? "Yesterday" : formatDate(invite.invite.createdAt),
+    defaultUnread: true,
+    icon: "user"
+  };
+}
+
 export default async function AlertsPage({ searchParams }: { searchParams?: { filter?: string } }) {
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
-  const [dashboardData, initialSubscription] = await Promise.all([getDashboardDataWithLiveData(), getCurrentEffectiveAccountSubscription()]);
+  const [dashboardData, initialSubscription, session] = await Promise.all([getDashboardDataWithLiveData(), getCurrentEffectiveAccountSubscription(), getCurrentSession()]);
+  const pendingTeamInvites = session?.user
+    ? await readPendingTeamWorkspaceInvitesForEmail({
+        email: session.user.email,
+        userId: await getAccountPersistenceUserId(session.user).catch(() => session.user.id)
+      }).catch(() => [])
+    : [];
   const voteAlertBill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
   const notifications: AlertsInboxItem[] = getRecentUpdates().map((event) => {
     const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
@@ -58,6 +96,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
       icon
     };
   });
+  const teamInviteAlerts = pendingTeamInvites.map(teamInviteAlert);
   const systemAlerts: AlertsInboxItem[] = voteAlertBill
     ? [
         {
@@ -90,7 +129,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
         <h1 className="text-[28px] font-medium leading-none text-white">Alerts</h1>
       </header>
 
-      <AlertsInboxClient activeFilter={activeFilter} initialSubscription={initialSubscription} notifications={[...systemAlerts, ...notifications]} />
+      <AlertsInboxClient activeFilter={activeFilter} initialSubscription={initialSubscription} notifications={[...teamInviteAlerts, ...systemAlerts, ...notifications]} />
     </MobileShell>
   );
 }

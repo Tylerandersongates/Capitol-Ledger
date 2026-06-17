@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Bell, FileText, Home, Scale, Search, Sparkles, Settings, UserRound } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle2, FileText, Home, Loader2, Scale, Search, Sparkles, Settings, UserRound } from "lucide-react";
 import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PlanFeatureGate, useSubscriptionState } from "@/components/subscription-controls";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
@@ -30,9 +30,10 @@ import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot } from "@/types
 export type AlertsInboxFilter = "all" | "action" | "unread";
 export type AlertsInboxGroup = "today" | "yesterday" | "earlier";
 export type AlertsInboxIcon = "bell" | "file" | "scale" | "user";
-export type AlertsInboxPreference = "districtAlerts" | "voteReminders";
+export type AlertsInboxPreference = "account" | "districtAlerts" | "voteReminders";
 export type AlertsInboxItem = {
   action: string;
+  actionKind?: "link" | "teamInviteAccept";
   actionNeeded: boolean;
   body: string;
   categoryLabel: string;
@@ -42,6 +43,7 @@ export type AlertsInboxItem = {
   icon: AlertsInboxIcon;
   id: string;
   preference: AlertsInboxPreference;
+  teamInviteId?: string;
   time: string;
   title: string;
 };
@@ -178,6 +180,9 @@ export function AlertsInboxClient({
   const [readIds, setReadIds] = useState<string[]>([]);
   const [readStateReady, setReadStateReady] = useState(false);
   const [notificationPreferences, setNotificationPreferences] = useState(defaultNotificationPreferences);
+  const [acceptedTeamInviteIds, setAcceptedTeamInviteIds] = useState<string[]>([]);
+  const [pendingTeamInviteId, setPendingTeamInviteId] = useState("");
+  const [teamInviteErrors, setTeamInviteErrors] = useState<Record<string, string>>({});
   const priorityAlertsEnabled = isPlanFeatureEnabled(subscription.plan, "priorityAlerts");
 
   useEffect(() => {
@@ -259,10 +264,50 @@ export function AlertsInboxClient({
     });
   }
 
+  async function acceptTeamInvite(notification: AlertsInboxItem) {
+    if (!notification.teamInviteId || pendingTeamInviteId) return;
+
+    setPendingTeamInviteId(notification.teamInviteId);
+    setTeamInviteErrors((current) => {
+      const next = { ...current };
+      delete next[notification.id];
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/team/invites/accept", {
+        body: JSON.stringify({ inviteId: notification.teamInviteId }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "POST"
+      });
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setTeamInviteErrors((current) => ({
+          ...current,
+          [notification.id]: data?.error ?? "Unable to accept this Team invite."
+        }));
+        return;
+      }
+
+      setAcceptedTeamInviteIds((current) => (current.includes(notification.teamInviteId!) ? current : [...current, notification.teamInviteId!]));
+      markRead(notification.id);
+    } catch {
+      setTeamInviteErrors((current) => ({
+        ...current,
+        [notification.id]: "Unable to reach the Team invite service."
+      }));
+    } finally {
+      setPendingTeamInviteId("");
+    }
+  }
+
   const filteredNotifications = useMemo(
     () =>
       notifications.filter((notification) => {
-        if (!notificationPreferences[notification.preference]) return false;
+        if (notification.preference !== "account" && !notificationPreferences[notification.preference]) return false;
         if (activeFilter === "action") return notification.actionNeeded;
         if (activeFilter === "unread") return notification.defaultUnread && !readIds.includes(notification.id);
         return true;
@@ -347,9 +392,13 @@ export function AlertsInboxClient({
                     key={notification.id}
                     {...notification}
                     iconElement={notificationIcon(notification.icon)}
+                    acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
+                    actionError={teamInviteErrors[notification.id]}
+                    actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
                     opened={readIds.includes(notification.id)}
                     priorityRank={index + 1}
                     unread={isUnread(notification)}
+                    onAcceptTeamInvite={() => acceptTeamInvite(notification)}
                     onRead={() => markRead(notification.id)}
                   />
                 ))}
@@ -364,8 +413,12 @@ export function AlertsInboxClient({
                       key={notification.id}
                       {...notification}
                       iconElement={notificationIcon(notification.icon)}
+                      acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
+                      actionError={teamInviteErrors[notification.id]}
+                      actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
                       opened={readIds.includes(notification.id)}
                       unread={isUnread(notification)}
+                      onAcceptTeamInvite={() => acceptTeamInvite(notification)}
                       onRead={() => markRead(notification.id)}
                     />
                   ))}
@@ -435,11 +488,16 @@ function LoadingNotifications() {
 
 function NotificationCard({
   action,
+  actionError,
+  actionKind = "link",
+  actionPending = false,
   actionNeeded,
+  acceptedTeamInvite = false,
   body,
   categoryLabel,
   href,
   iconElement,
+  onAcceptTeamInvite,
   onRead,
   opened,
   priorityRank,
@@ -447,17 +505,22 @@ function NotificationCard({
   title,
   unread
 }: AlertsInboxItem & {
+  acceptedTeamInvite?: boolean;
+  actionError?: string;
+  actionPending?: boolean;
   iconElement: ReactNode;
+  onAcceptTeamInvite?: () => void;
   onRead: () => void;
   opened: boolean;
   priorityRank?: number;
   unread: boolean;
 }) {
-  const showStatusIndicator = unread || (actionNeeded && !opened);
+  const showStatusIndicator = !acceptedTeamInvite && (unread || (actionNeeded && !opened));
+  const isTeamInviteAction = actionKind === "teamInviteAccept";
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
-      <Link href={href} onClick={onRead} className="flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <div className="pt-1 text-[#ffb12b] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.9]">{iconElement}</div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -478,12 +541,26 @@ function NotificationCard({
           </div>
           <h3 className="mt-3 text-[21px] font-medium leading-tight text-white">{title}</h3>
           <p className="mt-3 text-[17px] leading-snug text-white/58">{body}</p>
-          <span className="mt-4 inline-flex items-center gap-2 text-[17px] font-medium text-[#ffb12b]">
-            {action}
-            <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
-          </span>
+          {isTeamInviteAction && !acceptedTeamInvite ? (
+            <button
+              type="button"
+              onClick={onAcceptTeamInvite}
+              disabled={actionPending}
+              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#43ed74]/24 bg-[#43ed74]/10 px-4 py-2 text-[15px] font-semibold text-[#74f49a] transition hover:brightness-110 disabled:opacity-45"
+            >
+              {actionPending ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.9} aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />}
+              {actionPending ? "Accepting..." : action}
+            </button>
+          ) : (
+            <Link href={href} onClick={onRead} className="mt-4 inline-flex items-center gap-2 text-[17px] font-medium text-[#ffb12b]">
+              {acceptedTeamInvite ? "Open Workspace" : action}
+              <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+            </Link>
+          )}
+          {acceptedTeamInvite ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">Seat accepted.</div> : null}
+          {actionError ? <div className="mt-3 rounded-xl border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 px-3 py-2 text-[12px] font-semibold text-[#ffb1b1]">{actionError}</div> : null}
         </div>
-      </Link>
+      </div>
     </MobileCard>
   );
 }

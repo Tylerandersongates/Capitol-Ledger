@@ -47,6 +47,8 @@ export type TeamWorkspaceAcceptancePreview = {
   };
 };
 
+export type TeamWorkspacePendingInvite = TeamWorkspaceAcceptancePreview;
+
 export type TeamWorkspaceAcceptanceResult = TeamWorkspaceResult & {
   membership: TeamWorkspaceMember;
 };
@@ -246,6 +248,12 @@ function normalizeSeatId(value: unknown) {
   const seatId = typeof value === "string" ? value.trim() : "";
   if (!seatId) throw new TeamWorkspaceError("Choose a Team seat to release.", 400);
   return seatId;
+}
+
+function normalizeInviteId(value: unknown) {
+  const inviteId = typeof value === "string" ? value.trim() : "";
+  if (!inviteId) throw new TeamWorkspaceError("Choose a Team invite to accept.", 400);
+  return inviteId;
 }
 
 function toIsoString(value: Date | string | undefined | null) {
@@ -1162,6 +1170,110 @@ export async function readTeamWorkspaceInviteAcceptance({ token }: { token: stri
   return readDatabaseInviteAcceptance(token);
 }
 
+function readMemoryPendingTeamWorkspaceInvitesForEmail({
+  email
+}: {
+  email: string;
+  userId?: string;
+}): TeamWorkspacePendingInvite[] {
+  const memberEmail = normalizeTeamInviteEmail(email);
+  if (!isValidTeamInviteEmail(memberEmail)) return [];
+
+  const previews: TeamWorkspacePendingInvite[] = [];
+
+  for (const workspace of memoryWorkspaceStore.values()) {
+    const owner = workspace.members.find((member) => member.role === "owner");
+    const pendingInvites = workspace.invites.filter((invite) => invite.email === memberEmail && invite.status === "pending" && Date.parse(invite.expiresAt) > Date.now());
+
+    pendingInvites.forEach((invite) => {
+      previews.push({
+        invite,
+        mode: "memory",
+        owner: {
+          email: owner?.email,
+          name: owner?.displayName
+        },
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          ownerUserId: workspace.ownerUserId
+        }
+      });
+    });
+  }
+
+  return previews.sort((left, right) => Date.parse(right.invite.createdAt) - Date.parse(left.invite.createdAt)).slice(0, 5);
+}
+
+async function readDatabasePendingTeamWorkspaceInvitesForEmail({
+  email,
+  userId
+}: {
+  email: string;
+  userId?: string;
+}): Promise<TeamWorkspacePendingInvite[]> {
+  if (!(await ensureTeamWorkspaceSchema())) return readMemoryPendingTeamWorkspaceInvitesForEmail({ email, userId });
+
+  const prisma = getPrisma();
+  const memberEmail = normalizeTeamInviteEmail(email);
+  if (!isValidTeamInviteEmail(memberEmail)) return [];
+
+  try {
+    await prisma.$executeRaw`
+      UPDATE "TeamInvite"
+      SET "status" = 'expired', "updatedAt" = NOW()
+      WHERE lower("email") = lower(${memberEmail}) AND "status" = 'pending' AND "expiresAt" <= NOW()
+    `;
+
+    const records = await prisma.$queryRaw<DbTeamInviteAcceptance[]>`
+      SELECT
+        "TeamInvite"."id",
+        "TeamInvite"."workspaceId",
+        "TeamInvite"."email",
+        "TeamInvite"."role",
+        "TeamInvite"."status",
+        "TeamInvite"."expiresAt",
+        "TeamInvite"."createdAt",
+        "TeamInvite"."updatedAt",
+        "TeamWorkspace"."name" AS "workspaceName",
+        "TeamWorkspace"."ownerUserId",
+        "TeamWorkspace"."createdAt" AS "workspaceCreatedAt",
+        "TeamWorkspace"."updatedAt" AS "workspaceUpdatedAt",
+        "User"."email" AS "ownerEmail",
+        "User"."name" AS "ownerName"
+      FROM "TeamInvite"
+      JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamInvite"."workspaceId"
+      LEFT JOIN "User" ON "User"."id" = "TeamWorkspace"."ownerUserId"
+      WHERE lower("TeamInvite"."email") = lower(${memberEmail})
+        AND "TeamInvite"."status" = 'pending'
+        AND "TeamInvite"."expiresAt" > NOW()
+      ORDER BY "TeamInvite"."createdAt" DESC
+      LIMIT 5
+    `;
+
+    const previews: TeamWorkspacePendingInvite[] = [];
+    for (const record of records) {
+      const seatCount = await readOwnerTeamSeatCount(record.ownerUserId).catch(() => null);
+      if (!seatCount) continue;
+      previews.push(invitePreviewFromRecord(record));
+    }
+
+    return previews;
+  } catch (error) {
+    if (!isDatabaseConnectionError(error)) throw error;
+    logTeamWorkspaceFallback("readDatabasePendingTeamWorkspaceInvitesForEmail", error);
+    return readMemoryPendingTeamWorkspaceInvitesForEmail({ email, userId });
+  }
+}
+
+export async function readPendingTeamWorkspaceInvitesForEmail(input: {
+  email: string;
+  userId?: string;
+}): Promise<TeamWorkspacePendingInvite[]> {
+  if (!hasDatabaseUrl()) return readMemoryPendingTeamWorkspaceInvitesForEmail(input);
+  return readDatabasePendingTeamWorkspaceInvitesForEmail(input);
+}
+
 async function acceptMemoryInvite({
   email,
   name,
@@ -1389,6 +1501,245 @@ export async function acceptTeamWorkspaceInvite(input: {
   if (!input.token?.trim()) throw new TeamWorkspaceError("Team invite token is missing.", 400);
   if (!hasDatabaseUrl()) return acceptMemoryInvite(input);
   return acceptDatabaseInvite(input);
+}
+
+async function acceptMemoryInviteById({
+  email,
+  inviteId,
+  name,
+  userId
+}: {
+  email: string;
+  inviteId: string;
+  name?: string;
+  userId: string;
+}): Promise<TeamWorkspaceAcceptanceResult> {
+  const normalizedInviteId = normalizeInviteId(inviteId);
+  const memberEmail = normalizeTeamInviteEmail(email);
+
+  for (const workspace of memoryWorkspaceStore.values()) {
+    const invite = workspace.invites.find((candidate) => candidate.id === normalizedInviteId);
+    if (!invite) continue;
+
+    const expiresAt = new Date(invite.expiresAt);
+    assertPendingInvite({
+      expiresAt,
+      id: invite.id,
+      status: invite.status
+    });
+
+    if (memberEmail !== invite.email) {
+      throw new TeamWorkspaceError(`Sign in with ${invite.email} to accept this Team invite.`, 403);
+    }
+
+    const current = snapshotFromParts({
+      ...workspace,
+      seatCount: normalizeTeamSeatCount(undefined)
+    });
+    const existingMember = workspace.members.find((member) => member.email === memberEmail && member.status === "active");
+    const occupiedAfterAcceptance = existingMember && isParticipantMember(existingMember) ? current.occupiedSeats - 1 : current.occupiedSeats;
+    if (occupiedAfterAcceptance > current.seatCount) {
+      throw new TeamWorkspaceError("This workspace has no open paid Team seats. Ask the owner to add seats, then retry the invite.", 409);
+    }
+
+    const now = new Date().toISOString();
+    let membership = existingMember;
+    if (membership) {
+      membership.displayName = name?.trim() || membership.displayName;
+      membership.role = invite.role;
+      membership.status = "active";
+      membership.joinedAt = membership.joinedAt ?? now;
+      membership.updatedAt = now;
+    } else {
+      membership = {
+        id: randomUUID(),
+        userId,
+        email: memberEmail,
+        displayName: name?.trim() || undefined,
+        role: invite.role,
+        status: "active",
+        joinedAt: now,
+        createdAt: now,
+        updatedAt: now
+      };
+      workspace.members.push(membership);
+    }
+
+    invite.status = "accepted";
+    invite.updatedAt = now;
+    workspace.updatedAt = now;
+    await pausePersonalProSubscriptionForTeamSeat({
+      email: memberEmail,
+      teamMemberId: membership.id,
+      userId,
+      workspaceId: workspace.id
+    }).catch(() => null);
+
+    return {
+      membership,
+      mode: "memory",
+      workspace: snapshotFromParts({
+        ...workspace,
+        seatCount: current.seatCount
+      })
+    };
+  }
+
+  throw new TeamWorkspaceError("This Team invite is no longer available.", 404);
+}
+
+async function acceptDatabaseInviteById({
+  email,
+  inviteId,
+  name,
+  userId
+}: {
+  email: string;
+  inviteId: string;
+  name?: string;
+  userId: string;
+}): Promise<TeamWorkspaceAcceptanceResult> {
+  if (!(await ensureTeamWorkspaceSchema())) return acceptMemoryInviteById({ email, inviteId, name, userId });
+
+  const prisma = getPrisma();
+  const memberEmail = normalizeTeamInviteEmail(email);
+  const normalizedInviteId = normalizeInviteId(inviteId);
+
+  if (!isValidTeamInviteEmail(memberEmail)) throw new TeamWorkspaceError("Sign in with the invited email address.", 403);
+
+  try {
+    let acceptedWorkspace: DbTeamWorkspace | null = null;
+    let acceptedSeatCount = normalizeTeamSeatCount(undefined);
+    let acceptedMembershipId = "";
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'expired', "updatedAt" = NOW()
+        WHERE "status" = 'pending' AND "expiresAt" <= NOW()
+      `;
+
+      const records = await transaction.$queryRaw<DbTeamInviteAcceptance[]>`
+        SELECT
+          "TeamInvite"."id",
+          "TeamInvite"."workspaceId",
+          "TeamInvite"."email",
+          "TeamInvite"."role",
+          "TeamInvite"."status",
+          "TeamInvite"."expiresAt",
+          "TeamInvite"."createdAt",
+          "TeamInvite"."updatedAt",
+          "TeamWorkspace"."name" AS "workspaceName",
+          "TeamWorkspace"."ownerUserId",
+          "TeamWorkspace"."createdAt" AS "workspaceCreatedAt",
+          "TeamWorkspace"."updatedAt" AS "workspaceUpdatedAt",
+          "User"."email" AS "ownerEmail",
+          "User"."name" AS "ownerName"
+        FROM "TeamInvite"
+        JOIN "TeamWorkspace" ON "TeamWorkspace"."id" = "TeamInvite"."workspaceId"
+        LEFT JOIN "User" ON "User"."id" = "TeamWorkspace"."ownerUserId"
+        WHERE "TeamInvite"."id" = ${normalizedInviteId}
+        LIMIT 1
+        FOR UPDATE OF "TeamInvite"
+      `;
+      const invite = records[0];
+      if (!invite) throw new TeamWorkspaceError("This Team invite is no longer available.", 404);
+
+      assertPendingInvite(invite);
+
+      if (normalizeTeamInviteEmail(invite.email) !== memberEmail) {
+        throw new TeamWorkspaceError(`Sign in with ${invite.email} to accept this Team invite.`, 403);
+      }
+
+      acceptedSeatCount = await readOwnerTeamSeatCount(invite.ownerUserId, transaction);
+
+      const occupiedRecords = await transaction.$queryRaw<CountRecord[]>`
+        SELECT
+          (
+            (SELECT COUNT(*) FROM "TeamMember" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'active' AND "role" <> 'owner') +
+            (SELECT COUNT(*) FROM "TeamInvite" WHERE "workspaceId" = ${invite.workspaceId} AND "status" = 'pending' AND "expiresAt" > NOW())
+          ) AS "count"
+      `;
+      const activeRecords = await transaction.$queryRaw<CountRecord[]>`
+        SELECT COUNT(*) AS "count"
+        FROM "TeamMember"
+        WHERE "workspaceId" = ${invite.workspaceId} AND "email" = ${memberEmail} AND "status" = 'active' AND "role" <> 'owner'
+      `;
+      const occupiedSeats = toCount(occupiedRecords[0]?.count ?? 0);
+      const existingActiveSeats = toCount(activeRecords[0]?.count ?? 0);
+      const occupiedAfterAcceptance = existingActiveSeats > 0 ? occupiedSeats - 1 : occupiedSeats;
+
+      if (occupiedAfterAcceptance > acceptedSeatCount) {
+        throw new TeamWorkspaceError("This workspace has no open paid Team seats. Ask the owner to add seats, then retry the invite.", 409);
+      }
+
+      const memberships = await transaction.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO "TeamMember" ("id", "workspaceId", "userId", "email", "displayName", "role", "status", "joinedAt", "createdAt", "updatedAt")
+        VALUES (${randomUUID()}, ${invite.workspaceId}, ${userId}, ${memberEmail}, ${name?.trim() || null}, ${normalizeTeamInviteRole(invite.role)}, 'active', NOW(), NOW(), NOW())
+        ON CONFLICT ("workspaceId", "email") DO UPDATE
+        SET
+          "userId" = EXCLUDED."userId",
+          "displayName" = COALESCE(EXCLUDED."displayName", "TeamMember"."displayName"),
+          "role" = EXCLUDED."role",
+          "status" = 'active',
+          "joinedAt" = COALESCE("TeamMember"."joinedAt", NOW()),
+          "updatedAt" = NOW()
+        RETURNING "id"
+      `;
+
+      acceptedMembershipId = memberships[0]?.id ?? "";
+
+      await transaction.$executeRaw`
+        UPDATE "TeamInvite"
+        SET "status" = 'accepted', "updatedAt" = NOW()
+        WHERE "id" = ${invite.id}
+      `;
+
+      acceptedWorkspace = {
+        createdAt: invite.workspaceCreatedAt,
+        id: invite.workspaceId,
+        name: invite.workspaceName,
+        ownerUserId: invite.ownerUserId,
+        updatedAt: new Date()
+      };
+    });
+
+    if (!acceptedWorkspace || !acceptedMembershipId) {
+      throw new TeamWorkspaceError("Unable to accept this Team invite.", 500);
+    }
+
+    const workspace = await readWorkspaceSnapshotFromDatabase(acceptedWorkspace, acceptedSeatCount);
+    const membership = workspace.members.find((member) => member.id === acceptedMembershipId || member.email === memberEmail);
+    if (!membership) throw new TeamWorkspaceError("Unable to load the accepted Team seat.", 500);
+    await pausePersonalProSubscriptionForTeamSeat({
+      email: memberEmail,
+      teamMemberId: membership.id,
+      userId,
+      workspaceId: workspace.id
+    }).catch(() => null);
+
+    return {
+      membership,
+      mode: "database",
+      workspace
+    };
+  } catch (error) {
+    if (error instanceof TeamWorkspaceError) throw error;
+    if (!isDatabaseConnectionError(error)) throw error;
+    logTeamWorkspaceFallback("acceptDatabaseInviteById", error);
+    return acceptMemoryInviteById({ email, inviteId, name, userId });
+  }
+}
+
+export async function acceptTeamWorkspaceInviteById(input: {
+  email: string;
+  inviteId: string;
+  name?: string;
+  userId: string;
+}): Promise<TeamWorkspaceAcceptanceResult> {
+  normalizeInviteId(input.inviteId);
+  if (!hasDatabaseUrl()) return acceptMemoryInviteById(input);
+  return acceptDatabaseInviteById(input);
 }
 
 function readMemoryTeamWorkspaceForMember({
