@@ -874,7 +874,7 @@ function FavoriteRows({
               <Star className={`h-[18px] w-[18px] ${saved ? "fill-[#ffb12b]" : ""}`} strokeWidth={1.8} aria-hidden="true" />
             </button>
             <Link href={item.href} className="min-w-0 py-1">
-              <span className="line-clamp-2 block text-[14px] font-medium leading-snug text-white">{item.label}</span>
+              <span className="line-clamp-2 text-[14px] font-medium leading-snug text-white">{item.label}</span>
               <span className="mt-1 block truncate text-[12px] leading-none text-white/50">{item.meta}</span>
             </Link>
             <ChevronRight className="h-5 w-5 text-white/36" strokeWidth={1.8} aria-hidden="true" />
