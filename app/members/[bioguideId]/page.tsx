@@ -524,7 +524,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
                 <div className="text-[17px] font-medium text-[#ffb12b]">{role}</div>
                 <h1 className={`mt-2 max-w-full break-normal font-medium text-white ${displayNameClass}`}>{displayName}</h1>
                 <p className="mt-2 text-white/68">
-                  <span className="block whitespace-nowrap text-[17px] leading-snug">U.S. {role} {districtLabel}</span>
+                  <span className="block max-w-full text-[16px] leading-snug">U.S. {role} · {districtLabel}</span>
                   <span className="mt-1 block text-[15px] leading-none text-white/48">{seatTag}</span>
                 </p>
                 <div id="contact" className="mt-3 flex flex-wrap items-center gap-2 scroll-mt-8">
