@@ -127,6 +127,13 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Onboarding kept `Finish setup` disabled at `3/5` when affiliation, interests, and alerts were selected but district/officials were missing.
   - Feedback submission stayed disabled until required report fields were present, and `/feedback/review` showed only "My Feedback" for the fake account.
   - Bill position controls were reversible, saving a bill updated Dashboard, and removing the saved bill immediately removed it from the watchlist.
+- Post-deploy verification for commit `85cae4f` passed in production:
+  - `/sign-in?mode=verify` renders the `Verify your account.` screen.
+  - Fresh fake unverified account `qa-unverified-1781659874086@capitolledger.test` registered successfully and set `capitol-ledger-email-verification-pending=active`.
+  - With that unverified account cookie jar, `/dashboard` redirects to `/sign-in?mode=verify&returnTo=%2Fdashboard`.
+  - With that unverified account cookie jar, `/settings` redirects to `/sign-in?mode=verify&returnTo=%2Fsettings`.
+  - With that unverified account cookie jar, `/team` redirects to `/sign-in?mode=verify&returnTo=%2Fteam`.
+  - `/api/auth/session` returns `authenticated:false`, `mode:"anonymous"`, `requiresVerification:true`, and `user:null`.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -235,8 +242,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Next Best Steps
 1. Deploy the billing-owner participant-seat split plus email-verification safeguard patch, then runtime-check `/team` on the Team Annual QA account for `3` participant seats, `0` reserved, and `3` open.
-2. After deploy, create one more fresh fake account and verify that direct `/dashboard` navigation before email verification redirects to `/sign-in?mode=verify`.
-3. Verify the secure email link clears the pending-verification state and then allows `/onboarding` or `/dashboard`.
-4. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
-5. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-6. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
+2. Verify the secure email link clears the pending-verification state and then allows `/onboarding` or `/dashboard`.
+3. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+4. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
+5. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.

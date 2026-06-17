@@ -51,9 +51,11 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 
 ## Naive User Regression
 - Create a fresh fake account and do not open the verification email.
+  - Verified after deploy with `qa-unverified-1781659874086@capitolledger.test`.
 - Try direct navigation to `/dashboard`, `/settings`, and `/team`.
   - Expected: pending-verification accounts land back on `/sign-in?mode=verify`.
   - Expected: account-backed storage does not sync before `emailVerifiedAt` is set.
+  - Verified after deploy: all three routes redirected to verify mode, and `/api/auth/session` returned `authenticated:false` with `requiresVerification:true`.
 - Open the verification link and confirm the account can continue to `/onboarding` or `/dashboard`.
 - Recheck Profile copy on a partial setup account: sync should mean account storage is connected, not that district setup is complete.
 - Decide whether accidental saved-item removal needs an undo toast before external testers.
