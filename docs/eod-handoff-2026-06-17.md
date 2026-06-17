@@ -141,6 +141,12 @@ Generated at the break on June 16, 2026 for the next continuation.
   - User found a UX issue: after successful verification, choosing Setup then using back could return to the already-used token URL and show the token as expired.
   - Fix prepared: the client removes `verifyToken` from browser history immediately after successful token verification, preventing back navigation from replaying a consumed token.
   - Follow-up refinement prepared: after successful verification, the cleaned history URL now becomes `/sign-in?mode=success` and is server-guarded by a real verified session, so Back from Setup can reload the success screen with Setup/Dashboard choices instead of a blank verify form.
+  - Post-deploy verification for commit `6c00a47` passed with the current verified browser session:
+    - `/sign-in?mode=success` rendered the `Account ready` success screen with `Setup` and `Dashboard`.
+    - `Setup` opened `/onboarding`.
+    - Browser Back returned to the success screen with both choices still present.
+    - `Dashboard` opened `/dashboard`.
+    - Browser console errors: none.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
