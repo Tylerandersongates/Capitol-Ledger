@@ -307,6 +307,7 @@ export function AlertsInboxClient({
   const filteredNotifications = useMemo(
     () =>
       notifications.filter((notification) => {
+        if (notification.actionKind === "teamInviteAccept") return false;
         if (notification.preference !== "account" && !notificationPreferences[notification.preference]) return false;
         if (activeFilter === "action") return notification.actionNeeded;
         if (activeFilter === "unread") return notification.defaultUnread && !readIds.includes(notification.id);
@@ -314,6 +315,8 @@ export function AlertsInboxClient({
       }),
     [activeFilter, notificationPreferences, notifications, readIds]
   );
+
+  const teamInviteNotifications = useMemo(() => notifications.filter((notification) => notification.actionKind === "teamInviteAccept"), [notifications]);
 
   const priorityNotifications = useMemo(() => {
     if (!priorityAlertsEnabled || activeFilter !== "all") return [];
@@ -337,7 +340,27 @@ export function AlertsInboxClient({
 
   return (
     <>
-      <nav className="mt-7 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+      {teamInviteNotifications.length ? (
+        <section className="mt-7 space-y-4">
+          <SectionLabel>Team Invite</SectionLabel>
+          {teamInviteNotifications.map((notification) => (
+            <NotificationCard
+              key={notification.id}
+              {...notification}
+              iconElement={notificationIcon(notification.icon)}
+              acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
+              actionError={teamInviteErrors[notification.id]}
+              actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
+              opened={readIds.includes(notification.id)}
+              unread={isUnread(notification)}
+              onAcceptTeamInvite={() => acceptTeamInvite(notification)}
+              onRead={() => markRead(notification.id)}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      <nav className={`${teamInviteNotifications.length ? "mt-5" : "mt-7"} rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-xl`}>
         <div className="grid grid-cols-3 gap-1 text-center text-[14px] font-medium">
           {notificationFilters.map((filter) => (
             <Link
