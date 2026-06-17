@@ -250,6 +250,12 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Production UI/API verification passed for search suggestions: Pablo José Hernández rendered `Resident Commissioner · PR-AL · Democrat`, Eleanor Holmes Norton rendered `Delegate · DC-AL · Democrat`, and Laura Friedman rendered once as `Representative · CA-30 · Democrat`.
   - Production dashboard smoke passed with no browser console errors and no stale `House /` member-card text.
   - Production verification passed for DC, PR, GU, VI, AS, MP, KS, VT, and WY with no browser console errors.
+- Reviewer feedback follow-up:
+  - Viewed the two newest reports: `Bill Tracking` and `Profil icon`.
+  - Dashboard watchlist rows now use stable spacing and two-line title clamping for long saved bill/member labels.
+  - Dashboard, Settings, and Upgrade profile shortcuts now show a visible `Profile` label; the Upgrade shortcut uses a user/profile icon instead of a crown.
+  - Production smoke passed on Dashboard, Settings, and Upgrade with no browser console errors.
+  - The two report statuses remain unchanged until Tyler reviews the production UI.
 - No service-history placeholder text appeared in the spot-checked production profiles.
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
 - Production auth/email readiness passed:

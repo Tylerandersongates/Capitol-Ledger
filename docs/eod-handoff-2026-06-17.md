@@ -45,6 +45,12 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Deduplicated live/demo member search suggestions. Production verified Laura Friedman appears once in suggestions; commit `feb0ef9`.
   - Visible UI smoke passed: search dropdown shows Pablo José Hernández as `Resident Commissioner · PR-AL · Democrat`, Laura Friedman as a single `Representative · CA-30 · Democrat` card, PR search results show `Resident Commissioner · PR-AL · Democrat`, and `/dashboard?memberCardSmoke=feb0ef9` loads with no browser console errors or stale `House /` card text.
   - Browser console errors: none during the member/profile/search production checks.
+- Reviewer feedback follow-up:
+  - Viewed the two newest reports in the reviewer account: `Bill Tracking` and `Profil icon`.
+  - Fixed dashboard watchlist long-title presentation by giving favorite rows stable spacing and clamping item labels to two lines; commits `ce76892` and `175b753`.
+  - Added visible `Profile` labels to the profile shortcut on Dashboard, Settings, and Upgrade; switched the Upgrade shortcut from a crown icon to a user/profile icon; commit `ce76892`.
+  - Production smoke passed on `/dashboard?reviewFixSmoke=175b753`, `/settings?reviewFixSmoke=175b753`, and `/upgrade?reviewFixSmoke=175b753`: profile labels are visible, dashboard favorite label has `-webkit-line-clamp: 2`, and no browser console errors were captured.
+  - Feedback report statuses were not changed in the queue.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
@@ -52,12 +58,13 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Current Next Best Steps
 1. Member/profile/search/dashboard display pass is complete for the surfaces tested today. Optional adjacent follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
-2. On June 18, 2026, recheck the current account's `8d` day streak:
+2. After Tyler reviews the production UI, update the two reviewer reports' queue status as appropriate.
+3. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
-3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-4. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
-5. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
+4. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+5. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
+6. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
