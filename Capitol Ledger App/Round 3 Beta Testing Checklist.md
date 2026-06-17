@@ -170,6 +170,9 @@ env TEAM_QA_BASE_URL=https://project-qosv1.vercel.app TEAM_QA_CREATE_ACCOUNTS=tr
 env TEAM_QA_BASE_URL=https://project-qosv1.vercel.app TEAM_QA_ACCEPT_INVITE=true TEAM_QA_PRINT_LINKS=true node scripts/qa-team-flow.mjs
 node scripts/check-beta-readiness.mjs
 node scripts/check-beta-triage.mjs
+env NODE_ENV=production AUTH_COOKIE_SECURE=true NEXT_PUBLIC_APP_URL=https://project-qosv1.vercel.app AUTH_EMAIL_REQUIRE_PROVIDER=true node scripts/check-auth-email-delivery.mjs
+env BETA_REQUIRE_PRODUCTION=true BETA_CHECK_DATABASE=true NEXT_PUBLIC_APP_URL=https://project-qosv1.vercel.app node scripts/check-beta-readiness.mjs
+env AUTH_COOKIE_SECURE=true node scripts/check-production-auth.mjs
 ```
 
 ## June 15, 2026 QA Run
@@ -201,12 +204,14 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
 - Annual Pro and Team subscription checkout paths have been added to the Round 3 checklist for one more clean production pass from fresh accounts before testers.
 - Service-history repair has been added to the Round 3 regression smoke.
 - Docs-only checklist commit `d63acf2` is present on `origin/main`.
+- Docs-only checklist commit `0a1ecd5` is present on `origin/main`; production `/team?deploySmoke=0a1ecd5` returned the expected Team access gate with no captured browser console errors.
 - Annual Pro checkout passed from a fresh QA account:
   - `/upgrade` annual billing showed Pro at `$29.99 / year`.
   - Stripe Checkout showed `$29.99 per year` and `$2.50 / month billed annually`.
   - Test card checkout returned to `/account?checkout=success&plan=pro`.
   - Database subscription became `pro / annual / stripe / active`.
   - Stripe subscription is active, quantity `1`, annual price matched, and unit amount is `$29.99`.
+  - Cleanup passed after QA: the Stripe test subscription is pending cancellation, and the app database reconciled the account to `free / annual / stripe / canceled`.
 - Annual Team checkout passed from a fresh QA account:
   - `/upgrade` annual billing showed Team at `$59.99 / seat / year`.
   - Three-seat total showed `3 x $59.99` and `$179.97 / workspace / year`.
@@ -232,6 +237,10 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Adam B. Schiff (`S001150`): 1 term, First Elected Nov 5, 2024, Next Election Nov 5, 2030.
 - No service-history placeholder text appeared in the spot-checked production profiles.
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
+- Production auth/email readiness passed:
+  - Auth email delivery passed production-provider mode with Resend delivery, sender identity, app URL, auth secret, and secure cookie configuration present.
+  - Beta readiness passed with production database checks for the `BetaFeedback` table and `releaseDecision` column.
+  - Production auth schema check passed for account, auth session, subscription, follow, alert, weekly brief, and gamification tables.
 
 ## Exit Criteria
 
