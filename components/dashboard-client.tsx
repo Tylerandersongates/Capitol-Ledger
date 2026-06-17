@@ -14,6 +14,7 @@ import {
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
+import { memberResultMeta } from "@/lib/member-display";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -1134,7 +1135,7 @@ function resolveDashboardFavorites(records: SavedFollowRecord[], targets: Dashbo
     href: `/members/${member.bioguideId}`,
     id: member.bioguideId,
     label: member.fullName,
-    meta: `${member.chamber} / ${member.state} / ${member.party}`,
+    meta: memberResultMeta(member, " / "),
     type: "member"
   }));
   const delegationKeys = new Set(delegationItems.map((item) => favoriteRecordKey({ id: item.id, type: item.type })));
@@ -1148,7 +1149,7 @@ function resolveDashboardFavorites(records: SavedFollowRecord[], targets: Dashbo
         href: `/members/${record.id}`,
         id: record.id,
         label: member.fullName,
-        meta: `${member.chamber} / ${member.state} / ${member.party}`,
+        meta: memberResultMeta(member, " / "),
         type: "member"
       };
     }
@@ -1213,7 +1214,7 @@ function getSuggestedDashboardFavorites(targets: DashboardData["favoriteTargets"
       href: `/members/${member.bioguideId}`,
       id: member.bioguideId,
       label: member.fullName,
-      meta: `${member.chamber} / ${member.state} / ${member.party}`,
+      meta: memberResultMeta(member, " / "),
       type: "member"
     });
   });

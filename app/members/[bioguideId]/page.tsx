@@ -25,6 +25,7 @@ import { calculateMemberScore, type MemberScoreModel } from "@/lib/member-scorin
 import { getCurrentSession } from "@/lib/auth";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
+import { memberDisplayLocation, memberOfficeLabel, memberSeatTag } from "@/lib/member-display";
 import { estimateTermsInOfficeFromCongressLabel, federalElectionDateIso, formatDate, positionTone } from "@/lib/utils";
 import type { Bill, Member } from "@/types/capitol";
 import type { ReactNode } from "react";
@@ -430,33 +431,6 @@ function memberDisplayNameClass(displayName: string) {
   return "text-[30px] leading-tight";
 }
 
-function isAtLargeDistrict(district?: string) {
-  const normalized = district?.trim().toLowerCase();
-  return normalized === "0" || normalized === "00" || normalized === "al" || normalized === "at-large" || normalized === "at large" || normalized === "atlarge";
-}
-
-function isHouseTerritorySeat(member: Member) {
-  return member.chamber === "House" && ["AS", "DC", "GU", "MP", "PR", "VI"].includes(member.state);
-}
-
-function memberRoleLabel(member: Member) {
-  if (member.chamber === "Senate") return "Senator";
-  if (member.state === "PR") return "Resident Commissioner";
-  if (isHouseTerritorySeat(member)) return "Delegate";
-  return "Representative";
-}
-
-function memberDistrictLabel(member: Member, state: string) {
-  if (!member.district) return isHouseTerritorySeat(member) ? `${state} At-Large` : state;
-  return isAtLargeDistrict(member.district) ? `${state} At-Large` : `${state} District ${member.district}`;
-}
-
-function memberSeatTag(member: Member) {
-  const partyCode = member.party.trim().charAt(0).toUpperCase() || "U";
-  const districtCode = member.district ? `-${isAtLargeDistrict(member.district) ? "AL" : member.district}` : isHouseTerritorySeat(member) ? "-AL" : "";
-  return `[${partyCode}-${member.state}${districtCode}]`;
-}
-
 function tabHref(bioguideId: string, tab: MemberTab) {
   return tab === "overview" ? `/members/${bioguideId}` : `/members/${bioguideId}?tab=${tab}`;
 }
@@ -543,11 +517,11 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
     memberVotes,
     sponsoredBills
   });
-  const role = memberRoleLabel(member);
+  const role = memberOfficeLabel(member);
   const displayName = cleanMemberDisplayName(member);
   const displayNameClass = memberDisplayNameClass(displayName);
   const state = stateNames[member.state] ?? member.state;
-  const districtLabel = memberDistrictLabel(member, state);
+  const districtLabel = memberDisplayLocation(member, state);
   const seatTag = memberSeatTag(member);
   const nextElectionDate = member.nextElectionDate ?? fallbackNextElectionDate(member.chamber);
   const nextElection = formatDate(nextElectionDate);

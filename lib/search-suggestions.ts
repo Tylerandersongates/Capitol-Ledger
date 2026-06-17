@@ -1,4 +1,5 @@
 import { searchRecordsWithLiveData } from "@/lib/data";
+import { memberResultMeta, stripMemberPrefix } from "@/lib/member-display";
 import type { Bill, Member, Vote } from "@/types/capitol";
 
 type SuggestionKind = "members" | "bills" | "votes";
@@ -37,10 +38,6 @@ function normalizeText(value: string) {
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function stripMemberPrefix(fullName: string) {
-  return fullName.replace(/^Sen\.\s+|^Rep\.\s+/i, "").trim();
 }
 
 function parseSuggestionScope(value?: string): SuggestionScope {
@@ -138,7 +135,6 @@ function scoreSuggestion(entry: SuggestionEntry, query: string) {
 
 function buildMemberEntry(member: Member): SuggestionEntry {
   const displayName = stripMemberPrefix(member.fullName);
-  const districtLabel = member.district ? `-${member.district}` : "";
 
   return {
     href: `/members/${member.bioguideId}`,
@@ -155,7 +151,7 @@ function buildMemberEntry(member: Member): SuggestionEntry {
       member.chamber,
       member.district
     ].filter(Boolean) as string[],
-    subtitle: `${member.chamber} · ${member.state}${districtLabel} · ${member.party}`
+    subtitle: memberResultMeta(member)
   };
 }
 
