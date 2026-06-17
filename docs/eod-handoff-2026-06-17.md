@@ -100,7 +100,14 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `price_1Tj7CUGWVYQi06kN9hfe8KKh` is active test-mode USD, recurring yearly, unit amount `$59.99`, product `Capitol Ledger CE Civic Team Subscription`.
   - Local `.env.local` was updated to use the new `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
   - `BILLING_REQUIRE_STRIPE=true pnpm billing:check` passed locally with the new price ID.
-  - Production Vercel env still needs the same price ID plus redeploy before rerunning Team Annual checkout.
+- After Vercel production env update and redeploy, Team Annual checkout passed end to end with the same disposable QA account:
+  - Fresh Stripe Checkout showed `$179.97 per year` and `$15.00 / month billed annually`.
+  - Read-only Stripe line-item check confirmed quantity `3`, unit amount `$59.99`, total `$179.97`, and price ID `price_1Tj7CUGWVYQi06kN9hfe8KKh`.
+  - Test card checkout completed and returned to `/team?checkout=success&plan=team`.
+  - `/team` showed the paid Team workspace active with `3` paid seats, `1` assigned owner seat, and `2` open seats.
+  - Database subscription became `team / annual / stripe / active` with `seatCount=3` and a real `sub_` subscription ID.
+  - Stripe subscription is active, metadata is `plan=team`, `cycle=annual`, `seatCount=3`, quantity `3`, unit amount `$59.99`, and the price matches `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`.
+  - `/upgrade` showed Annual selected, Team `Manage Billing`, and `$179.97 / workspace / year`; browser console errors: none.
 
 ## Diagnostic Results
 - Billing readiness passed with `BILLING_REQUIRE_STRIPE=true`.
@@ -174,13 +181,14 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Stripe subscription metadata/price.
   - post-checkout app UI.
   - Billing Portal subscription state.
-- Team Annual billing QA found an app-vs-Stripe price mismatch before payment:
+- Team Annual billing QA initially found an app-vs-Stripe price mismatch before payment:
   - app copy/math: `$59.99` per seat yearly, `$179.97` for 3 seats.
   - Stripe configured price: `$59.90` per seat yearly, `$179.70` for 3 seats.
   - checkout line item uses the configured Team Annual Stripe price ID.
-- New Team Annual price verification passed:
+- New Team Annual price verification and checkout passed after Vercel env update/redeploy:
   - `price_1Tj7CUGWVYQi06kN9hfe8KKh` is `$59.99` per seat/year.
   - local billing readiness passed after updating `.env.local`.
+  - production checkout, payment, webhook/database sync, Stripe subscription metadata/price, and post-checkout app UI all passed.
 - Focused code inspection found no safe app-code cleanup to apply before break.
 - `TeamWorkspacePreview` is still used on `/upgrade`; not dead code.
 - Locked plan preview remains active as the fallback for `PlanFeatureGate`; not stale Plan Preview dead code.
@@ -189,12 +197,11 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Known Issues
 - Real pending-cancel Team owner now returns to the `/team` access gate in production after Stripe sync.
-- Team Annual checkout is blocked pending production env/deploy: local env now points to the verified `$59.99` Stripe price, but Vercel production must be updated and redeployed before the checkout can be completed.
 - Local diagnostic/build tooling still has workspace-specific dependency/resolver drag in the Documents path; the same lint/typecheck/build commands pass quickly in `/private/tmp` with the same code and config.
 - Local config still warns `AUTH_COOKIE_SECURE` is not `true`, but deployed production sign-in sets `Secure` auth cookies because `VERCEL_ENV=production` also enables secure cookies.
 
 ## Next Best Steps
-1. Update Vercel production env `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID=price_1Tj7CUGWVYQi06kN9hfe8KKh`, redeploy, then rerun and complete Team Annual checkout.
-2. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
-3. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
-4. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
+1. Keep the API `403` and real Admin/Analyst cancellation lockout checks in Tyler's personal beta guide until they can be runtime-observed with Vercel logs or a same-session harness outside the in-app browser.
+2. Keep using Node `v22.22.3` plus Corepack/pnpm `9.15.9`; for fastest local verification, run the heavy lint/typecheck/build loop from `/private/tmp` until the Documents workspace drag is isolated.
+3. Revisit whether Portal cancellation should revoke access immediately or only at period end before beta wording is finalized; current app behavior intentionally revokes immediately when Stripe marks the subscription pending cancellation.
+4. Do Tyler's private pre-tester pass, then open external Round 3 Beta only after any private wording/API-runtime concerns are resolved or explicitly marked as internal follow-ups.

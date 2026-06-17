@@ -18,11 +18,13 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
   - Stripe Checkout completed with the test card.
   - Webhook/database sync produced `pro / annual / stripe / active`.
   - Billing Portal showed the current Pro Annual subscription.
-- Team Annual checkout is blocked until pricing is reconciled:
-  - App displays `$59.99 / seat / year` and `$179.97 / workspace / year` for 3 seats.
-  - Stripe Checkout uses the configured Team Annual price ID at `$59.90 / seat / year`, totaling `$179.70` for 3 seats.
-  - New Team Annual Stripe price `price_1Tj7CUGWVYQi06kN9hfe8KKh` is verified at `$59.99 / seat / year`.
-  - Local env is updated; do not complete Team Annual checkout until Vercel production env is updated/redeployed with the new price ID.
+- Team Annual checkout is verified in production test mode after the Vercel price env update:
+  - App displayed `$59.99 / seat / year` and `$179.97 / workspace / year` for 3 seats.
+  - Stripe Checkout completed with the test card at `$179.97 per year`.
+  - Webhook/database sync produced `team / annual / stripe / active` with `seatCount=3`.
+  - Stripe subscription metadata/quantity/price matched `plan=team`, `cycle=annual`, `seatCount=3`, quantity `3`, and price `price_1Tj7CUGWVYQi06kN9hfe8KKh`.
+  - Post-checkout `/team` showed 3 paid seats, 1 assigned owner seat, and 2 open seats.
+  - Post-checkout `/upgrade` showed Annual selected, Team `Manage Billing`, and `$179.97 / workspace / year`.
 
 ## Team API Lockout Follow-Up
 - Confirm Team invites and Team seats APIs return `403` for a canceled owner.
