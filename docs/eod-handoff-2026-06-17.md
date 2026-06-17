@@ -21,6 +21,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Entering `26` clamps to `25`, shows the custom-plan CTA, and keeps Stripe quantity at `25`.
   - Custom CTA routes to `/feedback?source=team-custom-plan`.
   - Checkout API rejects direct over-25 Team attempts with a custom-plan response.
+- Annual seat-cap and checkout smoke passed after the cap deploy:
+  - Direct production checkout API smoke with `plan=team`, `cycle=annual`, and `seatCount=26` returned `400`, `customPlanRequired=true`, and `maximumTeamSeatCount=25`.
+  - Annual Pro sandbox Checkout session opened at `$29.99 per year` for Pro Intelligence; payment was not submitted in this smoke.
+  - Annual Team sandbox Checkout session opened at `$179.97 per year`; Stripe details showed quantity `3`, billed annually, at `$59.99 each`; payment was not submitted in this smoke.
+  - Returned `/upgrade?annualQa=checkout-smoke` to the app with Annual selected, the 25-seat cap UI visible, and no browser console errors.
 
 ## Current Next Best Steps
 1. On June 18, 2026, recheck the current account's `8d` day streak:
@@ -28,7 +33,8 @@ Generated at the break on June 16, 2026 for the next continuation.
    - The first qualifying streak-credit action on the new day should increment it.
 2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
 3. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
-4. Continue annual Pro and annual Team purchase QA from fresh accounts, then owner downgrade/cancel with Admin and Analyst seats present.
+4. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
+5. Continue owner downgrade/cancel behavior with Admin and Analyst seats present.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
