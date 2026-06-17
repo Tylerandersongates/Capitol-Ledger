@@ -411,12 +411,15 @@ function sanitizeNameSegment(value: string) {
 }
 
 function cleanMemberDisplayName(member: Member) {
+  const full = sanitizeNameSegment(member.fullName);
+  if (full) return full;
+
   const first = sanitizeNameSegment(member.firstName?.trim() ?? "");
   const last = sanitizeNameSegment(member.lastName?.trim() ?? "");
   const canonical = `${first} ${last}`.replace(/\s+/g, " ").trim();
   if (canonical) return canonical;
 
-  return sanitizeNameSegment(member.fullName);
+  return "Unknown Member";
 }
 
 function memberDisplayNameClass(displayName: string) {
