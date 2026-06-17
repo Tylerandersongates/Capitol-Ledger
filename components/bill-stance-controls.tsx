@@ -113,9 +113,10 @@ function useBillStance(billId: string) {
       setStance(null);
       return;
     }
+    const activeStorageKey = storageKey;
 
     function refreshStance() {
-      setStance(readBillStance(billId, storageKey));
+      setStance(readBillStance(billId, activeStorageKey));
     }
 
     refreshStance();
