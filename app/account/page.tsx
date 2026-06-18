@@ -8,6 +8,7 @@ import { PolicyInterestsEditor, SavedLedgerSummary } from "@/components/saved-le
 import { SubscriptionBadge } from "@/components/subscription-controls";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase } from "@/lib/account-database";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { issueSignals } from "@/lib/issue-signals";
 import { requireAccountSession } from "@/lib/route-guards";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
@@ -36,11 +37,12 @@ export default async function AccountPage() {
   const session = await requireAccountSession("/account");
   const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const [initialLedger, initialProfile, initialSubscription] = await Promise.all([
+  const [initialLedger, initialProfile, personalSubscription] = await Promise.all([
     readLedgerFromDatabase(accountUserId).catch(() => null),
     readProfileFromDatabase(accountUserId).catch(() => null),
     getSubscriptionForAccountUser(session.user).catch(() => null)
   ]);
+  const initialSubscription = await getEffectiveSubscriptionForAccountUser(session.user, personalSubscription).catch(() => personalSubscription);
   const accountLedger = initialLedger ?? getAccountLedger(accountUserId);
   const initialAlertCount = initialProfile
     ? [

@@ -1,6 +1,7 @@
 import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
+import { pausePersonalProSubscriptionForTeamSeat } from "@/lib/team-subscription-transition";
 import { readTeamWorkspaceForMember } from "@/lib/team-workspace";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
@@ -12,6 +13,10 @@ type AccountSubscriptionUser = {
 
 function hasActiveTeamBilling(subscription: AccountSubscriptionSnapshot) {
   return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+}
+
+function hasActivePersonalProBilling(subscription: AccountSubscriptionSnapshot) {
+  return subscription.plan === "pro" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 export async function getEffectiveSubscriptionForAccountUser(
@@ -29,11 +34,20 @@ export async function getEffectiveSubscriptionForAccountUser(
 
   if (!memberWorkspace) return subscription;
 
+  const reconciledSubscription = hasActivePersonalProBilling(subscription)
+    ? ((await pausePersonalProSubscriptionForTeamSeat({
+        email: user.email,
+        teamMemberId: memberWorkspace.membership.id,
+        userId: accountUserId,
+        workspaceId: memberWorkspace.workspace.id
+      }).catch(() => null))?.subscription ?? subscription)
+    : subscription;
+
   return {
-    cycle: subscription.cycle,
+    cycle: reconciledSubscription.cycle,
     plan: "team",
     provider: "demo",
-    providerCustomerId: subscription.providerCustomerId,
+    providerCustomerId: reconciledSubscription.providerCustomerId,
     providerEntitlementId: "capitol-ledger-team-member",
     providerSubscriptionId: `team-member-${memberWorkspace.workspace.id}`,
     seatCount: memberWorkspace.workspace.seatCount,

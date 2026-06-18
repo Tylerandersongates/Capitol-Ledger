@@ -412,7 +412,7 @@ export function PlanActionButton({
 }
 
 export function SubscriptionBadge({ initialSubscription = null }: { initialSubscription?: AccountSubscriptionSnapshot | null }) {
-  const [subscription] = useSubscriptionState(initialSubscription);
+  const [subscription] = useSubscriptionState(initialSubscription, { scope: "effective" });
   const planName = subscriptionPlans[subscription.plan].name;
 
   return (

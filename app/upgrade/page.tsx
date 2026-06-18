@@ -27,6 +27,7 @@ import {
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { getCurrentSession } from "@/lib/auth";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { getCurrentAccountSubscription } from "@/lib/server-account-subscription";
 import { isPlanFeatureEnabled, planComparisonRows, subscriptionPlans } from "@/lib/subscription-plans";
 import { readTeamAccessSummaryForUser, type TeamAccessSummary } from "@/lib/team-access";
@@ -52,8 +53,13 @@ const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
 export default async function UpgradePage() {
-  const [initialSubscription, session] = await Promise.all([getCurrentAccountSubscription(), getCurrentSession()]);
-  const teamAccess = session?.user ? await readTeamAccessSummaryForUser(session.user, initialSubscription).catch(() => null) : null;
+  const [initialPersonalSubscription, session] = await Promise.all([getCurrentAccountSubscription(), getCurrentSession()]);
+  const teamAccess = session?.user ? await readTeamAccessSummaryForUser(session.user, initialPersonalSubscription).catch(() => null) : null;
+  if (session?.user && teamAccess) {
+    await getEffectiveSubscriptionForAccountUser(session.user, initialPersonalSubscription).catch(() => initialPersonalSubscription);
+  }
+  const initialSubscription =
+    session?.user && teamAccess ? await getCurrentAccountSubscription().catch(() => initialPersonalSubscription) : initialPersonalSubscription;
 
   return (
     <MobileShell
