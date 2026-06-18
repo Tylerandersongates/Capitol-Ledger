@@ -242,7 +242,7 @@ export function BetaFeedbackForm() {
           disabled={state === "submitting"}
           className="mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffb12b] transition hover:brightness-110 disabled:opacity-45"
         >
-          Can't type? Send input issue
+          Cannot type? Send input issue
         </button>
       </section>
 
