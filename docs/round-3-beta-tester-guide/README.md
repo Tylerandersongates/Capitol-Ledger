@@ -100,6 +100,8 @@ If you are removed from a Team, your dashboard should stop showing Team access a
 
 Do not complete payment unless you were specifically assigned to a billing test.
 
+If you are assigned to billing checkout, use Stripe's fake test card number only: `4242 4242 4242 4242`. Use any future expiration date, any three-digit CVC, and any ZIP code. Never enter your real credit or debit card. If Stripe asks for a real card, stop and report it as High impact feedback.
+
 1. Open Upgrade.
 2. Confirm Annual is selected by default.
 3. Compare Free, Pro Intelligence, and Civic Team.
@@ -214,7 +216,7 @@ If you are reporting an invite, verification, or sign-in issue, include:
 These do not need to be reported unless they are confusing or look broken:
 
 - Profile avatar upload is not wired yet. Static initials or the current avatar state are expected.
-- Only assigned billing testers should complete Stripe checkout.
+- Only assigned billing testers should complete Stripe checkout, and they should use the fake Stripe test card `4242 4242 4242 4242`, not a personal card.
 - Some email, weekly brief, and notification delivery flows are still being hardened for production beta.
 - App Store and TestFlight packaging are not part of this web beta round.
 - Some advanced export, custom enterprise, and privacy controls are planned rather than fully live.
