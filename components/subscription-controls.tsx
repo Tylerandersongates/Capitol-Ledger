@@ -103,12 +103,8 @@ function subscriptionsMatch(left: AccountSubscriptionSnapshot, right: AccountSub
   );
 }
 
-function shouldPreserveSubscriptionCycle(subscription: AccountSubscriptionSnapshot) {
-  return subscription.plan !== "free" && (subscription.status === "active" || subscription.status === "trialing");
-}
-
 function applyDefaultCycle(subscription: AccountSubscriptionSnapshot, defaultCycle?: SubscriptionDefaultCycle) {
-  if (!defaultCycle || subscription.cycle === defaultCycle || shouldPreserveSubscriptionCycle(subscription)) return subscription;
+  if (!defaultCycle || subscription.cycle === defaultCycle) return subscription;
 
   return normalizeSubscription({
     ...subscription,
