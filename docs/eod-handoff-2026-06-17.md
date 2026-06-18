@@ -111,22 +111,22 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Fixed the local Vercel helper version check so cached `vercel@54.14.1` is recognized instead of trying to reinstall during each deployment monitor. Verified `./scripts/vercel-cli.sh --version` returns from the cached CLI.
 - Email verification follow-up:
   - Tyler confirmed email verification is working with the tester, and the tester received the new invite.
-  - The remaining `Email Verification` reviewer report is now eligible to resolve after opening the reviewer queue and confirming it maps to this verified tester flow.
+  - Marked the remaining `Email Verification` reviewer report resolved after Tyler confirmed the tester received the invite and verification worked.
+  - Production reviewer smoke passed on `/feedback/review?resolveEmailVerification=confirmed`: open report count is `0`, the page says `No active blockers or untriaged reports.`, `Email Verification` appears under the Resolved filter, and no browser console errors were captured.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
   - Save next-step summaries for section/topic closeouts instead of every tiny sub-step.
 
 ## Current Next Best Steps
-1. Resolve the remaining `Email Verification` reviewer report if it maps to the tester flow Tyler just confirmed.
-2. On June 18, 2026, recheck the current account's `8d` day streak:
+1. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
-3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
-5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
-6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
-7. Future AI Policy Lens hardening: if more categories are added, extend `scripts/check-ai-policy-lens-fixtures.ts` before changing the routing order.
+2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+3. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
+4. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
+5. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
+6. Future AI Policy Lens hardening: if more categories are added, extend `scripts/check-ai-policy-lens-fixtures.ts` before changing the routing order.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
