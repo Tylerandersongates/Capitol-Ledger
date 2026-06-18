@@ -83,6 +83,15 @@ type DatabaseSourceLinkRow = {
 const pendingOfficialSummaryText =
   "Official CRS summary not yet published by Congress.gov. Capitol Ledger will display the official summary first when it becomes available.";
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
+const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
+const dashboardLiveRecordsCacheMaxAgeMs = 10 * 60 * 1000;
+
+type DashboardRecords = {
+  bills: Bill[];
+  votes: Vote[];
+};
+
+let dashboardLiveRecordsCache: { cachedAt: number; records: DashboardRecords } | null = null;
 
 const memberCaucusMemberships: Record<string, MemberCaucusMembership[]> = {
   B001302: [
@@ -614,7 +623,17 @@ function resolveOptionalDatabaseReadTimeoutMs() {
   return process.env.NODE_ENV === "production" ? 5_000 : 1_500;
 }
 
-async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>) {
+function resolveDashboardDatabaseReadTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_DASHBOARD_DATABASE_READ_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(1_000, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? Math.max(optionalDatabaseReadTimeoutMs, 12_000) : optionalDatabaseReadTimeoutMs;
+}
+
+async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>, timeoutMs = optionalDatabaseReadTimeoutMs) {
   if (!shouldUseOptionalDatabaseReads()) return null;
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -623,7 +642,7 @@ async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>)
     return await Promise.race([
       read(),
       new Promise<null>((resolve) => {
-        timeoutId = setTimeout(() => resolve(null), optionalDatabaseReadTimeoutMs);
+        timeoutId = setTimeout(() => resolve(null), timeoutMs);
       })
     ]);
   } catch {
@@ -1192,8 +1211,7 @@ async function getDatabaseDashboardRecords() {
     const prisma = getPrisma();
     const [billRows, voteRows] = await Promise.all([
       prisma.bill.findMany({
-        orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
-        take: 24
+        orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }]
       }),
       prisma.vote.findMany({
         include: {
@@ -1226,13 +1244,21 @@ async function getDatabaseDashboardRecords() {
 }
 
 export async function getDashboardDataWithLiveData() {
-  const liveRecords = await withOptionalDatabaseReadTimeout(getDatabaseDashboardRecords);
+  const liveRecords = await withOptionalDatabaseReadTimeout(getDatabaseDashboardRecords, dashboardDatabaseReadTimeoutMs);
 
-  if (!liveRecords) {
-    return getDashboardData();
+  if (liveRecords) {
+    dashboardLiveRecordsCache = {
+      cachedAt: Date.now(),
+      records: liveRecords
+    };
+    return buildDashboardData(liveRecords.bills, liveRecords.votes);
   }
 
-  return buildDashboardData(liveRecords.bills, liveRecords.votes);
+  if (dashboardLiveRecordsCache && Date.now() - dashboardLiveRecordsCache.cachedAt <= dashboardLiveRecordsCacheMaxAgeMs) {
+    return buildDashboardData(dashboardLiveRecordsCache.records.bills, dashboardLiveRecordsCache.records.votes);
+  }
+
+  return getDashboardData();
 }
 
 export function getRecentUpdates() {
