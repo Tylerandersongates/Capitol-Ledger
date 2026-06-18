@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     lastName?: string;
     name?: string;
     password?: string;
+    returnTo?: string;
   };
 
   const firstName = body.firstName?.trim() ?? "";
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
 
   const emailDelivery = await deliverAuthEmail({
     kind: "verify_email",
+    returnTo: safeAuthReturnPath(body.returnTo),
     token: result.verificationToken,
     user: result.user
   }).catch((error: unknown) => ({
@@ -66,4 +68,9 @@ export async function POST(request: NextRequest) {
   setPendingEmailVerificationCookie(response);
 
   return response;
+}
+
+function safeAuthReturnPath(value?: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value;
 }

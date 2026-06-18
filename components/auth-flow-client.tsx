@@ -158,6 +158,32 @@ function removeVerificationTokenFromHistory() {
   window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
 }
 
+function teamInvitePathFromInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed, window.location.origin);
+    if (url.origin !== window.location.origin || url.pathname !== "/team/accept") return "";
+    const token = url.searchParams.get("token");
+    return token ? `/team/accept?token=${encodeURIComponent(token)}` : "";
+  } catch {
+    return "";
+  }
+}
+
+function verificationTokenFromInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed, window.location.origin);
+    return url.searchParams.get("verifyToken")?.trim() || trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
 async function postJson<T>(url: string, body: unknown) {
   const response = await fetch(url, {
     body: JSON.stringify(body),
@@ -294,6 +320,33 @@ export function AuthFlowClient({
   }
 
   const postAuthReturnTo = setupComplete && returnTo === "/onboarding" && !userRequestedAccountCreation ? "/dashboard" : returnTo;
+
+  useEffect(() => {
+    if (mode !== "verify" || verifyToken) return;
+
+    let cancelled = false;
+
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json().catch(() => null)) as AuthApiResponse | null;
+      })
+      .then((session) => {
+        if (cancelled || !session?.authenticated || session.requiresVerification) return;
+
+        markBrowserAccountCreated();
+        setBrowserSessionAuthenticated(true);
+        setAllowAccountCreation(false);
+        setAccountCreated(true);
+        setStatus("Session verified. Continuing...");
+        void finishProductionAuth(postAuthReturnTo, false);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, postAuthReturnTo, verifyToken]);
 
   async function syncLocalAccountData() {
     await fetch("/api/account/ledger", {
@@ -504,7 +557,8 @@ export function AuthFlowClient({
         firstName: form.firstName,
         lastName: form.lastName,
         name: `${form.firstName} ${form.lastName}`.trim(),
-        password: form.password
+        password: form.password,
+        returnTo: postAuthReturnTo
       }).catch((error: unknown) => ({
         data: { error: error instanceof Error ? error.message : "Account creation failed." },
         ok: false
@@ -592,7 +646,15 @@ export function AuthFlowClient({
     }
 
     if (mode === "verify") {
-      const token = form.code.trim();
+      const invitePath = teamInvitePathFromInput(form.code);
+      if (invitePath) {
+        setStatus("That is a Team invite link. Open it after verifying this email address.");
+        router.push(invitePath);
+        router.refresh();
+        return;
+      }
+
+      const token = verificationTokenFromInput(form.code);
       if (!token) {
         setStatus("Open the verification link from your email, or paste its token.");
         return;
@@ -624,6 +686,7 @@ export function AuthFlowClient({
   const showSecondaryCreateCta = mode !== "create" && (!accountCreated || allowAccountCreation);
   const showDifferentAccountCta = accountCreated && mode === "signIn";
   const showSecureAccessSection = showDifferentAccountCta || allowDemoMode || showSecondaryCreateCta;
+  const successReturnLabel = postAuthReturnTo.startsWith("/team/accept") ? "Accept Invite" : "Dashboard";
 
   return (
     <main className="mt-7 flex flex-1 flex-col pb-8">
@@ -793,7 +856,7 @@ export function AuthFlowClient({
                 disabled={pending}
                 className="flex h-12 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[16px] font-semibold text-white/72"
               >
-                Dashboard
+                {successReturnLabel}
               </button>
             </div>
           ) : (

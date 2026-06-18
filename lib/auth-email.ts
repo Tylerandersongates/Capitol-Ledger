@@ -39,15 +39,26 @@ function shouldExposeManualLinks() {
   return process.env.AUTH_EMAIL_DELIVERY === "manual_demo" || process.env.NODE_ENV !== "production";
 }
 
-export function buildAuthActionUrl(kind: AuthEmailKind, token: string) {
+export function buildAuthActionUrl(kind: AuthEmailKind, token: string, returnTo?: string) {
   const parameter = kind === "password_reset" ? "resetToken" : "verifyToken";
   const url = new URL("/sign-in", appBaseUrl());
   url.searchParams.set(parameter, token);
+  if (returnTo) url.searchParams.set("returnTo", returnTo);
   return url.toString();
 }
 
-function buildEmailPayload({ kind, token, user }: { kind: AuthEmailKind; token: string; user: AuthEmailUser }): AuthEmailPayload {
-  const actionUrl = buildAuthActionUrl(kind, token);
+function buildEmailPayload({
+  kind,
+  returnTo,
+  token,
+  user
+}: {
+  kind: AuthEmailKind;
+  returnTo?: string;
+  token: string;
+  user: AuthEmailUser;
+}): AuthEmailPayload {
+  const actionUrl = buildAuthActionUrl(kind, token, returnTo);
   const name = user.name || user.email;
   const product = appName();
 
@@ -84,16 +95,18 @@ function buildEmailPayload({ kind, token, user }: { kind: AuthEmailKind; token: 
 
 export async function deliverAuthEmail({
   kind,
+  returnTo,
   token,
   user
 }: {
   kind: AuthEmailKind;
+  returnTo?: string;
   token?: string | null;
   user: AuthEmailUser;
 }): Promise<AuthEmailDelivery> {
   if (!token) return { delivered: false, mode: "silent" };
 
-  const payload = buildEmailPayload({ kind, token, user });
+  const payload = buildEmailPayload({ kind, returnTo, token, user });
   const deliveryMode = process.env.AUTH_EMAIL_DELIVERY;
 
   if (deliveryMode === "resend") {
