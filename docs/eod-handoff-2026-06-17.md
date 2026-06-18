@@ -103,13 +103,22 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Polished AI Lens bill-title sentence generation so titles ending in punctuation do not render copy like `United States. matters`; commit `5656f9d`.
   - Production deployment `project-qosv1-lc7tasx6s-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
   - Final budget-page smoke passed on `/bills/cmpnmafn2001e39k44w0z5lzl?tab=details&lensAudit=5656f9d-budget-copy`: budget copy remained active, the bad double-sentence text was absent, and no browser console errors were captured.
+  - Added lightweight AI Policy Lens fixture coverage so the repaired routing cases are regression-checked outside the page component; commit `f9951fc`.
+  - Extracted the pure lens helper to `lib/ai-policy-lens.ts` and added `pnpm ai-policy-lens:check`, covering 9 representative cases: public waters, forest/wildfire, veterans service benefits, health, education, budget, housing, immigration, and taxation.
+  - Local fixture verification passed: `AI Policy Lens fixture check passed (9 fixtures)`. Focused TypeScript transpile checks passed for the touched page/helper/script files; full `tsc --noEmit` still hung silently in this local shell and was stopped.
+  - Production deployment `project-qosv1-ejr5uvpe0-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
+  - Production smoke passed on `/bills/cmpnmafn2001e39k44w0z5lzl?tab=details&fixtureSmoke=f9951fc`: AI Policy Lens rendered, budget copy remained active, bad `United States. matters` copy was absent, and no browser console errors were captured.
+  - Fixed the local Vercel helper version check so cached `vercel@54.14.1` is recognized instead of trying to reinstall during each deployment monitor. Verified `./scripts/vercel-cli.sh --version` returns from the cached CLI.
+- Email verification follow-up:
+  - Tyler confirmed email verification is working with the tester, and the tester received the new invite.
+  - The remaining `Email Verification` reviewer report is now eligible to resolve after opening the reviewer queue and confirming it maps to this verified tester flow.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
   - Save next-step summaries for section/topic closeouts instead of every tiny sub-step.
 
 ## Current Next Best Steps
-1. Keep the remaining `Email Verification` reviewer report open until the tester confirms inbox delivery and verification completion.
+1. Resolve the remaining `Email Verification` reviewer report if it maps to the tester flow Tyler just confirmed.
 2. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
@@ -117,7 +126,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
 5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
 6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
-7. Optional AI Policy Lens hardening: add lightweight fixture tests around representative bill summaries if this classifier keeps expanding.
+7. Future AI Policy Lens hardening: if more categories are added, extend `scripts/check-ai-policy-lens-fixtures.ts` before changing the routing order.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.

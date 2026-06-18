@@ -31,7 +31,7 @@ VERCEL_BIN="$VERCEL_CLI_DIR/node_modules/.bin/vercel"
 
 installed_version=""
 if [ -x "$VERCEL_BIN" ]; then
-  installed_version="$(PATH="$NODE_DIR:$PATH" "$VERCEL_BIN" --version 2>/dev/null | tail -n 1 || true)"
+  installed_version="$(PATH="$NODE_DIR:$PATH" "$VERCEL_BIN" --version 2>/dev/null | tail -n 1 | sed 's/^Vercel CLI //' || true)"
 fi
 
 if [ "$installed_version" != "$VERCEL_VERSION" ]; then
