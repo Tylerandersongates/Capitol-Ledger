@@ -91,6 +91,10 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Production smoke passed on `/account?diagnosticSavedLedger=506d201`: Saved Ledger showed `Civic Team`, Team workspace tracking copy, no stale `Free saved watchlist` copy, and no browser console errors.
   - Removed the duplicate green checkmark badge from the account avatar because the `Synced` pill already communicates storage sync; commit `9355dcf`.
   - Production smoke passed on `/account?avatarBadgeSmoke=9355dcf`: avatar sync badge was absent, `Synced` remained visible, and no browser console errors were captured.
+  - Fixed another AI Policy Lens routing issue: H.R. 39, `Original Honoring Our WWII Merchant Mariners Act of 2025`, was incorrectly using border/security construction language because the generic `security` keyword matched `Armed Forces and National Security`; commit `4cef9f2`.
+  - Tightened lens routing by moving veterans/military/service-benefit bills ahead of broad buckets, narrowing border/security triggers, and splitting generic health terms out of the child-care/family bucket.
+  - Production smoke passed on `/bills/cmpnmagch002039k4llvwctjr?tab=details&lensSmoke=4cef9f2`: H.R. 39 now shows targeted service-benefit/merchant-mariner copy and no old border/construction copy; no browser console errors.
+  - Regression smoke passed on `/bills/demo-hr-471?tab=details&lensRegression=4cef9f2`: Fix Our Forests still shows wildfire/forest project language and no child-care copy; no browser console errors.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
@@ -105,6 +109,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
 5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
 6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
+7. AI Policy Lens follow-up: sample 5-8 more live bills across veterans, health, border/security, transportation, education, tax/budget, and housing/labor to catch remaining keyword-bucket mismatches.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
