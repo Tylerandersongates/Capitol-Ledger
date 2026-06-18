@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, BookmarkCheck, Check, Star } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
+import { useSubscriptionState } from "@/components/subscription-controls";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { readLocalNotificationPreferences } from "@/lib/browser-account-profile";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
-import type { AccountLedgerSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
+import { subscriptionPlans } from "@/lib/subscription-plans";
+import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
 
 const followsKey = "capitol-ledger:follows";
 const alertsKey = "capitol-ledger:saved-alerts";
@@ -484,9 +486,25 @@ export function PolicyInterestsEditor({
   );
 }
 
-export function SavedLedgerSummary({ initialAlertCount, initialLedger }: { initialAlertCount?: number; initialLedger?: AccountLedgerSnapshot | null }) {
+function savedLedgerPlanDescription(plan: AccountSubscriptionSnapshot["plan"]) {
+  if (plan === "team") return "Connects saved records to Team workspace tracking, shared watchlists, and alert coordination.";
+  if (plan === "pro") return "Turns saved records into briefs, policy intelligence, and exportable reports.";
+  return "Saves your watchlist. Pro converts it into briefs and exportable reports.";
+}
+
+export function SavedLedgerSummary({
+  initialAlertCount,
+  initialLedger,
+  initialSubscription
+}: {
+  initialAlertCount?: number;
+  initialLedger?: AccountLedgerSnapshot | null;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+}) {
   const [counts, setCounts] = useState<SavedCounts>(() => getSavedCounts(initialLedger, initialAlertCount));
   const [accountSynced, setAccountSynced] = useState(false);
+  const [subscription] = useSubscriptionState(initialSubscription, { scope: "effective" });
+  const planName = subscriptionPlans[subscription.plan].name;
 
   useEffect(() => {
     function refreshCounts() {
@@ -512,10 +530,10 @@ export function SavedLedgerSummary({ initialAlertCount, initialLedger }: { initi
     <div className="space-y-3">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
         <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#74f49a]">
-          Free
+          {planName}
         </span>
         <span className="min-w-0 text-[12px] leading-snug text-white/50">
-          Saves your watchlist. Pro converts it into briefs and exportable reports.
+          {savedLedgerPlanDescription(subscription.plan)}
         </span>
       </div>
       <div className={`rounded-full border px-3 py-2 text-center text-[12px] font-semibold ${accountSynced ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/5 text-white/46"}`}>

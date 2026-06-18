@@ -100,14 +100,14 @@ export default async function AccountPage() {
 
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
                 <PremiumAccountHeader
-                  description="Free saved watchlist for officials, bills, alerts, and issue interests. Pro uses it for briefs and exportable reports; Team will add shared watchlists."
+                  description="Save officials, bills, alerts, and issue interests here. Pro turns them into briefs and reports; Team connects them to shared workspace tracking."
                   eyebrow="Saved Ledger"
                   icon={<ShieldCheck />}
                   iconTone="green"
                   title="Tracked civic watchlist"
                 />
                 <div className="mt-5">
-                  <SavedLedgerSummary initialAlertCount={initialAlertCount} initialLedger={accountLedger} />
+                  <SavedLedgerSummary initialAlertCount={initialAlertCount} initialLedger={accountLedger} initialSubscription={initialSubscription} />
                 </div>
               </MobileCard>
 
