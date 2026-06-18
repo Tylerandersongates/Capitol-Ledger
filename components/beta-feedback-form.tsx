@@ -37,22 +37,58 @@ const reproducibilityChoices: Array<{ label: string; value: ReproducibilityChoic
 
 const feedbackAreas: FeedbackArea[] = [
   { label: "Dashboard", value: "/dashboard" },
-  { label: "Search / discovery", value: "/search" },
-  { label: "Bill detail", value: "/bills" },
-  { label: "Official profile", value: "/members" },
-  { label: "Notifications", value: "/alerts" },
-  { label: "Badges / impact", value: "/badges" },
-  { label: "Subscription", value: "/upgrade" },
-  { label: "Team workspace", value: "/team" },
   {
     helper: "Mention whether this happened during account creation, sign out, sign back in, verification, or saved setup sync.",
     label: "Account / sign-in",
     value: "/account"
   },
+  { label: "Search / discovery", value: "/search" },
+  { label: "Bill detail / sources", value: "/bills" },
+  { label: "AI Policy Lens", value: "/bills/ai-policy-lens" },
+  { label: "Official statements / video", value: "/bills/official-statements" },
+  { label: "Official profile / service history", value: "/members" },
+  { label: "Live civic data", value: "/data" },
+  { label: "Notifications", value: "/alerts" },
+  { label: "Badges / impact", value: "/badges" },
+  { label: "Saved state / day streak", value: "/saved-state" },
+  { label: "Annual upgrade / subscriptions", value: "/upgrade" },
+  { label: "Team workspace", value: "/team" },
+  { label: "Team invite acceptance", value: "/team/accept" },
+  { label: "Team roles / permissions", value: "/team/roles" },
+  { label: "Team seats / removal", value: "/team/seats" },
+  { label: "Team billing / downgrade", value: "/team/billing" },
   { label: "Beta checklist", value: "/beta" },
   { label: "Beta feedback", value: "/feedback" },
+  { label: "Round 3 guide", value: "/round-3" },
   { label: "Other", value: "/other" }
 ];
+
+const sourceAreaMap: Record<string, string> = {
+  account: "/account",
+  alerts: "/alerts",
+  "ai-policy-lens": "/bills/ai-policy-lens",
+  badges: "/badges",
+  beta: "/beta",
+  bills: "/bills",
+  data: "/data",
+  dashboard: "/dashboard",
+  "day-streak": "/saved-state",
+  "live-data": "/data",
+  members: "/members",
+  "official-statements": "/bills/official-statements",
+  search: "/search",
+  "service-history": "/members",
+  team: "/team",
+  "team-admin": "/team/roles",
+  "team-invite": "/team/accept",
+  "team-owner-downgrade": "/team/billing",
+  "team-seat-removal": "/team/seats",
+  "team-seats": "/team/seats",
+  "team-viewer": "/team/roles",
+  upgrade: "/upgrade",
+  video: "/bills/official-statements",
+  "round-3": "/round-3"
+};
 
 type SubmissionState = "idle" | "submitting" | "sent" | "error";
 
@@ -71,8 +107,8 @@ export function BetaFeedbackForm() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get("source") ?? "";
-    const nextPage = source ? `/${source}` : "";
-    const matchedArea = feedbackAreas.find((area) => nextPage.startsWith(area.value));
+    const nextPage = sourceAreaMap[source] ?? (source ? `/${source}` : "");
+    const matchedArea = findFeedbackArea(nextPage);
     setSourceParam(source);
     setPageUrl(matchedArea?.value ?? "");
   }, []);
@@ -302,6 +338,15 @@ export function BetaFeedbackForm() {
 
 function FieldLabel({ label }: { label: string }) {
   return <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">{label}</div>;
+}
+
+function findFeedbackArea(value: string) {
+  const exactArea = feedbackAreas.find((area) => area.value === value);
+  if (exactArea) return exactArea;
+
+  return feedbackAreas
+    .filter((area) => value.startsWith(area.value))
+    .sort((first, second) => second.value.length - first.value.length)[0];
 }
 
 function formatReproducibility(value: ReproducibilityChoice) {

@@ -49,6 +49,12 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
   - Verified on production with an existing fake QA sign-in.
 - Review the beta checklist page and make sure unresolved private billing/API items are not marked resolved in tester-facing materials.
 
+## Official Statement Video Follow-Up
+- Create a YouTube Data API key when we are ready to run automated official-statement discovery.
+- Add the key only as `YOUTUBE_API_KEY` in local/Vercel environment variables; do not commit it.
+- Run `youtube-statements:sync` to generate the review artifact for official-channel bill video candidates.
+- Keep this out of Round 3 tester instructions until candidate videos have been reviewed and approved.
+
 ## Naive User Regression
 - Create a fresh fake account and do not open the verification email.
   - Verified after deploy with `qa-unverified-1781659874086@capitolledger.test`.

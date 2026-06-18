@@ -190,6 +190,8 @@ Use the in-app feedback form whenever possible:
 
 https://project-qosv1.vercel.app/feedback?source=round-3
 
+The feedback form includes Round 3-specific areas for annual upgrade, Team invite acceptance, Team roles, Team seats, Team billing/downgrade, live civic data, AI Policy Lens, official statements/video, saved state/day streak, and service history. Choose the closest area so reports land in the right review bucket.
+
 When reporting, include:
 
 1. What you tried to do.
