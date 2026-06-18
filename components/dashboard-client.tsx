@@ -627,13 +627,10 @@ export function DashboardClient({
             <MobileCard variant="dashboard" className="relative mt-3 overflow-hidden px-3 py-3">
               <div className={dashboardCardAccentClass} />
               <div className="relative z-10">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
-                  <div className="min-w-0">
-                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{trackedBill?.shortTitle ?? "No tracked bill yet"}</h3>
-                    <p className="mt-1 text-[15px] text-white/58">{trackedBill?.displayNumber ?? "Save a bill to start your tracker."}</p>
-                  </div>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 truncate text-[15px] font-medium text-white/58">{trackedBill?.displayNumber ?? "Save a bill to start your tracker."}</p>
                   {hasTrackedBill ? (
-                    <div className={`shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none ${trackerStagePill.bgClass} ${trackerStagePill.textClass}`}>
+                    <div className={`shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-right text-[13px] font-medium leading-none ${trackerStagePill.bgClass} ${trackerStagePill.textClass}`}>
                       {trackerStage}
                     </div>
                   ) : (
@@ -642,8 +639,14 @@ export function DashboardClient({
                     </div>
                   )}
                 </div>
+                <h3
+                  className="mt-2 line-clamp-4 max-w-full break-words text-[21px] font-semibold leading-[1.12] text-white"
+                  title={trackedBill?.shortTitle ?? undefined}
+                >
+                  {trackedBill?.shortTitle ?? "No tracked bill yet"}
+                </h3>
                 {hasTrackedBill ? (
-                  <div className={`${dashboardInnerPanelClass} mt-2 px-3 py-2.5`}>
+                  <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                   <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
                     <span>Stage Progress</span>
                     <span>{trackerProgressStep}</span>
