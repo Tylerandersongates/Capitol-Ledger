@@ -128,6 +128,11 @@ Generated at the break on June 16, 2026 for the next continuation.
     - Tyler confirmed the tester verified her email, created/signed into her account, accessed Dashboard, accepted the Team seat, and sees Team access on her dashboard.
     - Admin Team page confirmed `Debbie Robles / deborah.robles1963@gmail.com` is `Analyst` and `Active`; roster shows `2/3` seats reserved and `1` open.
   - Tightened `scripts/vercel-cli.sh` version parsing so cached `vercel@54.14.1` is recognized from both CLI output formats before attempting any reinstall. Verified `./scripts/vercel-cli.sh --version` returns from the cached CLI.
+- Dashboard Bill Tracker UI follow-up:
+  - Fixed long tracked-bill titles overwhelming the dashboard Bill Tracker card; commit `5e96b8d`.
+  - The card now uses a stable top metadata/status row, clamps long titles to a compact preview, and keeps Stage Progress below the title instead of letting the status pill collide with title text.
+  - Production deployment `project-qosv1-p6ryncpvw-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
+  - Production smoke passed on `/dashboard?billTrackerTitleSmoke=5e96b8d`: long Supreme Court amendment title renders above Stage Progress at compact height, `In Committee` status does not overlap the title, and no browser console errors were captured.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
