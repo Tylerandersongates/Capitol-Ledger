@@ -59,7 +59,16 @@ const accountLedgerEndpoint = "/api/account/ledger";
 const readAlertsChangedEvent = "capitol-ledger:read-alerts-changed";
 const persistenceEvent = "capitol-ledger:persistence-changed";
 const followsChangedEvent = "capitol-ledger:follows-changed";
-const billTrackerStages = ["Introduced", "In Committee", "On Floor", "Passed"] as const;
+const billTrackerStages = [
+  { label: "Introduced", shortLabel: "Intro" },
+  { label: "Referred", shortLabel: "Refer" },
+  { label: "Committee", shortLabel: "Cmte" },
+  { label: "Reported", shortLabel: "Report" },
+  { label: "Calendar", shortLabel: "Cal" },
+  { label: "Floor", shortLabel: "Floor" },
+  { label: "Passed", shortLabel: "Pass" },
+  { label: "Enacted", shortLabel: "Law" }
+] as const;
 const gamificationCategories = [
   { href: "/impact", label: "Civic Score" },
   { href: "/impact", label: "Day Streak" },
@@ -79,21 +88,26 @@ const dashboardInnerPanelClass =
 const dashboardMetricPanelClass =
   "rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.3)]";
 
-type BillTrackerStage = (typeof billTrackerStages)[number];
+type BillTrackerStage = (typeof billTrackerStages)[number]["label"];
 
 function resolveBillTrackerStage(actionText?: string): BillTrackerStage {
   const action = actionText?.toLowerCase() ?? "";
 
-  if (action.includes("enacted") || action.includes("passed")) return "Passed";
-  if (action.includes("committee") || action.includes("hearing") || action.includes("reported")) return "In Committee";
-  if (action.includes("calendar") || action.includes("floor")) return "On Floor";
+  if (action.includes("public law") || action.includes("signed by president") || action.includes("enacted") || action.includes("became law")) return "Enacted";
+  if (action.includes("passed") || action.includes("agreed to")) return "Passed";
+  if (action.includes("floor") || action.includes("consideration") || action.includes("roll call") || action.includes("vote")) return "Floor";
+  if (action.includes("calendar") || action.includes("placed on")) return "Calendar";
+  if (action.includes("reported") || action.includes("ordered to be reported") || action.includes("committee report")) return "Reported";
+  if (action.includes("hearing") || action.includes("markup") || action.includes("committee") || action.includes("subcommittee")) return "Committee";
+  if (action.includes("referred") || action.includes("received in")) return "Referred";
   return "Introduced";
 }
 
 function getBillTrackerStagePill(stage: BillTrackerStage) {
-  if (stage === "Passed") return { bgClass: "bg-[#2be68d]/12", textClass: "text-[#2be68d]" };
-  if (stage === "On Floor") return { bgClass: "bg-[#ba8dff]/12", textClass: "text-[#ba8dff]" };
-  if (stage === "In Committee") return { bgClass: "bg-[#ffb62e]/10", textClass: "text-[#ffb62e]" };
+  if (stage === "Enacted" || stage === "Passed") return { bgClass: "bg-[#2be68d]/12", textClass: "text-[#2be68d]" };
+  if (stage === "Floor" || stage === "Calendar") return { bgClass: "bg-[#ba8dff]/12", textClass: "text-[#ba8dff]" };
+  if (stage === "Committee" || stage === "Reported") return { bgClass: "bg-[#ffb62e]/10", textClass: "text-[#ffb62e]" };
+  if (stage === "Referred") return { bgClass: "bg-[#74dbff]/10", textClass: "text-[#74dbff]" };
   return { bgClass: "bg-[#56a8ff]/12", textClass: "text-[#56a8ff]" };
 }
 
@@ -128,7 +142,7 @@ export function DashboardClient({
   }, [data.favoriteTargets.bills, favoriteRecords]);
   const hasTrackedBill = Boolean(trackedBill);
   const trackerStage = resolveBillTrackerStage(trackedBill?.latestActionText);
-  const trackerStageIndex = Math.max(0, billTrackerStages.indexOf(trackerStage));
+  const trackerStageIndex = Math.max(0, billTrackerStages.findIndex((stage) => stage.label === trackerStage));
   const trackerFillPercent = (trackerStageIndex / (billTrackerStages.length - 1)) * 100;
   const trackerCompletion = Math.round(trackerFillPercent);
   const trackerProgressStep = `${trackerStageIndex + 1}/${billTrackerStages.length}`;
@@ -659,7 +673,7 @@ export function DashboardClient({
                         const left = (index / (billTrackerStages.length - 1)) * 100;
                         return (
                           <span
-                            key={stage}
+                            key={stage.label}
                             className={`absolute top-1/2 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${index <= trackerStageIndex ? "bg-[#ffbd39]" : "border-[1.5px] border-white/22 bg-[#07172d]"}`}
                             style={{ left: `${left}%` }}
                           >
@@ -668,13 +682,20 @@ export function DashboardClient({
                         );
                       })}
                     </div>
-                    <div className="mt-0.5 grid grid-cols-4 text-center text-[9px] leading-snug">
+                    <div className="mt-0.5 grid text-center text-[8px] leading-snug" style={{ gridTemplateColumns: `repeat(${billTrackerStages.length}, minmax(0, 1fr))` }}>
                       {billTrackerStages.map((stage, index) => (
-                        <span key={stage} className={index <= trackerStageIndex ? "text-white/82" : "text-white/42"}>
-                          {stage}
+                        <span key={stage.label} className={index <= trackerStageIndex ? "text-white/82" : "text-white/42"}>
+                          {stage.shortLabel}
                         </span>
                       ))}
                     </div>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-white/8 bg-white/[0.035] px-2.5 py-2">
+                    <div className="flex items-center justify-between gap-2 text-[9px] font-semibold uppercase tracking-[0.07em] text-white/42">
+                      <span>Latest action</span>
+                      <span>{trackedBill?.latestActionDate ? formatDate(trackedBill.latestActionDate) : "Pending"}</span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-white/64">{trackedBill?.latestActionText}</p>
                   </div>
                   <div className="mt-2 text-right text-[10px] font-medium uppercase tracking-[0.07em] text-white/46">
                     {trackerCompletion}% to final stage

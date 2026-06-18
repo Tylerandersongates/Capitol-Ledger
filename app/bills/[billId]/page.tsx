@@ -60,6 +60,7 @@ type ProgressStep = {
   detail?: string;
   icon: LucideIcon;
   label: string;
+  state?: "complete" | "current" | "pending";
 };
 
 const billTabs: Array<{ label: string; value: BillTab }> = [
@@ -130,6 +131,27 @@ function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "
   return `${receivingChamber} action`;
 }
 
+function resolveProgressStepIndex(actionText: string, status: string, stepCount: number) {
+  const action = actionText.toLowerCase();
+  const normalizedStatus = status.toLowerCase();
+
+  if (action.includes("public law") || action.includes("signed by president") || action.includes("enacted") || normalizedStatus === "enacted") return stepCount - 1;
+  if (action.includes("passed") || action.includes("agreed to") || normalizedStatus === "passed") return Math.max(0, stepCount - 2);
+  if (action.includes("floor") || action.includes("consideration") || action.includes("roll call") || action.includes("vote")) return Math.min(stepCount - 1, 5);
+  if (action.includes("calendar") || action.includes("placed on")) return Math.min(stepCount - 1, 4);
+  if (action.includes("reported") || action.includes("ordered to be reported") || action.includes("committee report")) return Math.min(stepCount - 1, 3);
+  if (action.includes("hearing") || action.includes("markup") || action.includes("committee") || action.includes("subcommittee")) return Math.min(stepCount - 1, 2);
+  if (action.includes("referred") || action.includes("received in")) return Math.min(stepCount - 1, 1);
+
+  return 0;
+}
+
+function progressStepState(index: number, currentIndex: number): ProgressStep["state"] {
+  if (index < currentIndex) return "complete";
+  if (index === currentIndex) return "current";
+  return "pending";
+}
+
 function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): ProgressStep[] {
   const introducedDate = bill.introducedDate ?? bill.latestActionDate;
   const originChamber = billOriginChamber(bill.billType);
@@ -147,39 +169,56 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
     if (crossChamberAction) {
       const receivingLabel = crossChamberStepLabel(bill.latestActionText, receivingChamber);
       const originPassageDate = originPassageVote?.voteDate ?? bill.latestActionDate;
+      const currentIndex = 4;
 
       return [
-        { label: `Introduced in ${originChamber}`, date: formatDate(introducedDate), icon: FileCheck2 },
+        { label: `Introduced in ${originChamber}`, date: formatDate(introducedDate), icon: FileCheck2, state: progressStepState(0, currentIndex) },
         {
           label: `${originChamber} committee`,
           date: formatDate(introducedDate),
           icon: FileText,
-          detail: `Initial review started in the ${originChamber}, where this ${bill.displayNumber} originated.`
+          detail: `Initial review started in the ${originChamber}, where this ${bill.displayNumber} originated.`,
+          state: progressStepState(1, currentIndex)
         },
         {
           label: `Passed ${originChamber}`,
           date: formatDate(originPassageDate),
           icon: FileCheck2,
-          detail: `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`
+          detail: `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`,
+          state: progressStepState(2, currentIndex)
         },
+        { label: `Sent to ${receivingChamber}`, date: formatDate(bill.latestActionDate), icon: FileClock, state: progressStepState(3, currentIndex) },
         {
           label: receivingLabel,
           date: formatDate(bill.latestActionDate),
           icon: FileClock,
-          detail: `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`
+          detail: `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`,
+          state: progressStepState(4, currentIndex)
         },
-        { label: "Final passage", date: status === "Enacted" ? formatDate(bill.latestActionDate) : "", icon: FilePenLine }
+        { label: "Final passage", date: "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
+        { label: "Enacted", date: status === "Enacted" ? formatDate(bill.latestActionDate) : "", icon: FileCheck2, state: progressStepState(6, currentIndex) }
       ];
     }
   }
 
-  return [
-    { label: originChamber ? `Introduced in ${originChamber}` : "Introduced", date: formatDate(introducedDate), icon: FileCheck2 },
-    { label: "Referred to Committee", date: formatDate(bill.latestActionDate), icon: FileText },
-    { label: status === "In Committee" ? "Committee Hearing" : bill.latestActionText, date: formatDate(bill.latestActionDate), icon: FileClock },
-    { label: "Marked Up", date: "", icon: FilePenLine },
-    { label: "Passed", date: "", icon: FileCheck2 }
+  const labels: Array<Omit<ProgressStep, "date" | "state">> = [
+    { label: originChamber ? `Introduced in ${originChamber}` : "Introduced", icon: FileCheck2 },
+    { label: "Referred to Committee", icon: FileText },
+    { label: "Committee Review", icon: FileClock, detail: bill.committeeName ? `Currently tied to ${bill.committeeName}.` : "Committee assignment or hearing activity appears here when available." },
+    { label: "Reported", icon: FilePenLine },
+    { label: "Calendar", icon: CalendarDays },
+    { label: "Floor Action", icon: VoteIcon },
+    { label: "Passed Chamber", icon: FileCheck2 },
+    { label: "Enacted", icon: FileCheck2 }
   ];
+  const currentIndex = resolveProgressStepIndex(bill.latestActionText, status, labels.length);
+
+  return labels.map((step, index) => ({
+    ...step,
+    date: index === 0 ? formatDate(introducedDate) : index === currentIndex ? formatDate(bill.latestActionDate) : "",
+    detail: index === currentIndex ? bill.latestActionText : step.detail,
+    state: progressStepState(index, currentIndex)
+  }));
 }
 
 export default async function BillPage({ params, searchParams }: BillPageProps) {
@@ -294,7 +333,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 }
 
 function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progressSteps: ProgressStep[] }) {
-  const activeStepIndex = progressSteps.reduce((latestIndex, step, index) => (step.date ? index : latestIndex), 0);
+  const activeStepIndex = getCurrentProgressStepIndex(progressSteps);
   const currentStep = progressSteps[activeStepIndex];
   const progressFillPercent = (activeStepIndex / Math.max(1, progressSteps.length - 1)) * 100;
 
@@ -313,7 +352,7 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
           {progressSteps.map((step, index) => {
             const active = index <= activeStepIndex;
             const Icon = step.icon;
-            const left = `${index * 25}%`;
+            const left = `${(index / Math.max(1, progressSteps.length - 1)) * 100}%`;
             return (
               <div key={step.label} className="absolute top-0 -translate-x-1/2" style={{ left }}>
                 <span className={`grid h-10 w-10 place-items-center rounded-full ${active ? "border-2 border-[#ffb12b] bg-[#07172d] text-[#ffb12b] shadow-[0_0_18px_rgba(255,177,43,0.32)]" : "border-2 border-white/13 bg-[#07172d] text-white/25"}`}>
@@ -323,11 +362,11 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
             );
           })}
         </div>
-        <div className="mt-3 grid grid-cols-5 gap-1 text-center">
+        <div className="mt-3 grid gap-1 text-center" style={{ gridTemplateColumns: `repeat(${progressSteps.length}, minmax(0, 1fr))` }}>
           {progressSteps.map((step, index) => (
             <div key={`${step.label}-label`} className={index === activeStepIndex ? "text-[#ffb12b]" : index < activeStepIndex ? "text-white/72" : "text-white/34"}>
               <div className="truncate text-[10px] font-semibold uppercase tracking-[0.04em]">{compactProgressLabel(step.label)}</div>
-              <div className="mt-1 truncate text-[10px] leading-none">{step.date ? compactProgressDate(step.date) : "Pending"}</div>
+              <div className="mt-1 truncate text-[10px] leading-none">{step.date ? compactProgressDate(step.date) : index < activeStepIndex ? "Done" : "Pending"}</div>
             </div>
           ))}
         </div>
@@ -345,11 +384,26 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
   );
 }
 
+function isProgressStepActive(step: ProgressStep) {
+  return step.state === "complete" || step.state === "current" || Boolean(step.date);
+}
+
+function getCurrentProgressStepIndex(progressSteps: ProgressStep[]) {
+  const currentIndex = progressSteps.findIndex((step) => step.state === "current");
+  if (currentIndex >= 0) return currentIndex;
+
+  return progressSteps.reduce((latestIndex, step, index) => (isProgressStepActive(step) ? index : latestIndex), 0);
+}
+
 function compactProgressLabel(label: string) {
   if (label === "Introduced in House" || label === "Introduced in Senate") return "Introduced";
   if (label === "House committee" || label === "Senate committee") return "Committee";
+  if (label === "Committee Review") return "Review";
   if (label === "Referred to Committee") return "Referred";
   if (label === "Committee Hearing") return "Hearing";
+  if (label === "Floor Action") return "Floor";
+  if (label === "Passed Chamber") return "Passed";
+  if (label.startsWith("Sent to ")) return "Sent";
   if (label === "Received in House") return "House";
   if (label === "Received in Senate") return "Senate";
   if (label === "House action" || label === "Senate action") return "Action";
@@ -542,9 +596,9 @@ function TimelineTab({
   progressSteps: ProgressStep[];
   status: string;
 }) {
-  const activeStepCount = progressSteps.filter((step) => Boolean(step.date)).length;
+  const currentStepIndex = getCurrentProgressStepIndex(progressSteps);
+  const activeStepCount = Math.max(1, currentStepIndex + 1);
   const completionPercent = Math.round((activeStepCount / Math.max(1, progressSteps.length)) * 100);
-  const currentStepIndex = Math.max(0, activeStepCount - 1);
   const timelineStatus = progressSteps[currentStepIndex]?.label ?? status;
 
   return (
@@ -572,7 +626,7 @@ function TimelineTab({
           {progressSteps.map((step, index) => (
             <TimelineRow
               key={step.label}
-              active={Boolean(step.date)}
+              active={isProgressStepActive(step)}
               current={index === currentStepIndex}
               isLast={index === progressSteps.length - 1}
               step={step}
@@ -780,7 +834,13 @@ function TimelineRow({
             {statusLabel}
           </span>
         </div>
-        {step.date ? <div className="mt-1 text-[14px] text-white/50">{step.date}</div> : <div className="mt-1 text-[14px] text-white/34">Pending</div>}
+        {step.date ? (
+          <div className="mt-1 text-[14px] text-white/50">{step.date}</div>
+        ) : active ? (
+          <div className="mt-1 text-[14px] text-white/42">Date pending</div>
+        ) : (
+          <div className="mt-1 text-[14px] text-white/34">Pending</div>
+        )}
         {step.detail ? <p className="mt-2 text-[13px] leading-5 text-white/48">{step.detail}</p> : null}
       </div>
     </div>
