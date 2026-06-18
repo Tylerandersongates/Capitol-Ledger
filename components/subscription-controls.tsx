@@ -19,6 +19,7 @@ const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
 const billingPortalEndpoint = "/api/account/subscription/portal";
 type SubscriptionHydrationScope = "effective" | "personal";
+type SubscriptionDefaultCycle = AccountSubscriptionSnapshot["cycle"];
 let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise<AccountSubscriptionSnapshot | null>>> = {};
 
 const teamWorkspaceSignals = [
@@ -102,6 +103,19 @@ function subscriptionsMatch(left: AccountSubscriptionSnapshot, right: AccountSub
   );
 }
 
+function shouldPreserveSubscriptionCycle(subscription: AccountSubscriptionSnapshot) {
+  return subscription.plan !== "free" && (subscription.status === "active" || subscription.status === "trialing");
+}
+
+function applyDefaultCycle(subscription: AccountSubscriptionSnapshot, defaultCycle?: SubscriptionDefaultCycle) {
+  if (!defaultCycle || subscription.cycle === defaultCycle || shouldPreserveSubscriptionCycle(subscription)) return subscription;
+
+  return normalizeSubscription({
+    ...subscription,
+    cycle: defaultCycle
+  });
+}
+
 async function syncSubscriptionToAccount(subscription = readSubscription()) {
   if (typeof window === "undefined") return;
   if (!(await hasActiveBrowserSession())) return;
@@ -153,14 +167,21 @@ async function hydrateSubscriptionFromAccount(scope: SubscriptionHydrationScope)
 
 export function useSubscriptionState(
   initialSubscription?: AccountSubscriptionSnapshot | null,
-  options: { scope?: SubscriptionHydrationScope } = {}
+  options: { defaultCycle?: SubscriptionDefaultCycle; scope?: SubscriptionHydrationScope } = {}
 ) {
-  const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(() => normalizeSubscription(initialSubscription ?? defaultSubscription));
+  const [subscription, setSubscription] = useState<AccountSubscriptionSnapshot>(() => applyDefaultCycle(normalizeSubscription(initialSubscription ?? defaultSubscription), options.defaultCycle));
+  const defaultCycle = options.defaultCycle;
   const scope = options.scope ?? "personal";
 
   useEffect(() => {
     let active = true;
-    const normalizedInitialSubscription = initialSubscription ? normalizeSubscription(initialSubscription) : null;
+    const normalizedInitialSubscription = initialSubscription ? applyDefaultCycle(normalizeSubscription(initialSubscription), defaultCycle) : null;
+
+    function publishDefaultCycle(nextSubscription: AccountSubscriptionSnapshot) {
+      const next = applyDefaultCycle(nextSubscription, defaultCycle);
+      if (!subscriptionsMatch(readSubscription(), next)) writeSubscription(next, false);
+      return next;
+    }
 
     async function refresh() {
       if (normalizedInitialSubscription && !subscriptionsMatch(readSubscription(), normalizedInitialSubscription)) {
@@ -169,11 +190,13 @@ export function useSubscriptionState(
 
       if (await hasActiveBrowserSession()) {
         const accountSubscription = await hydrateSubscriptionFromAccount(scope);
-        if (active) setSubscription(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
+        const nextSubscription = publishDefaultCycle(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
+        if (active) setSubscription(nextSubscription);
         return;
       }
 
-      if (active) setSubscription(normalizedInitialSubscription ?? readSubscription());
+      const nextSubscription = publishDefaultCycle(normalizedInitialSubscription ?? readSubscription());
+      if (active) setSubscription(nextSubscription);
     }
 
     void refresh();
@@ -195,7 +218,7 @@ export function useSubscriptionState(
       window.removeEventListener("storage", refreshSubscription);
       window.removeEventListener(subscriptionEvent, refreshSubscription);
     };
-  }, [initialSubscription, scope]);
+  }, [defaultCycle, initialSubscription, scope]);
 
   function updateSubscription(next: Partial<AccountSubscriptionSnapshot>) {
     const updated = normalizeSubscription({
@@ -240,8 +263,14 @@ async function openBillingPortal() {
   return true;
 }
 
-export function BillingCycleToggle({ initialSubscription = null }: { initialSubscription?: AccountSubscriptionSnapshot | null }) {
-  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
+export function BillingCycleToggle({
+  defaultCycle,
+  initialSubscription = null
+}: {
+  defaultCycle?: SubscriptionDefaultCycle;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+}) {
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
 
   return (
     <div className="grid grid-cols-2 rounded-full border border-white/12 bg-white/[0.07] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl">
@@ -265,18 +294,20 @@ export function BillingCycleToggle({ initialSubscription = null }: { initialSubs
 
 export function PlanPrice({
   className = "mt-5 flex items-end gap-2",
+  defaultCycle,
   plan,
   priceClassName,
   unitClassName = "pb-2 text-[17px] text-white/56",
   initialSubscription = null
 }: {
   className?: string;
+  defaultCycle?: SubscriptionDefaultCycle;
   initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
   priceClassName?: string;
   unitClassName?: string;
 }) {
-  const [subscription] = useSubscriptionState(initialSubscription);
+  const [subscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const planDetails = subscriptionPlans[plan];
   const price = subscription.cycle === "annual" ? planDetails.pricing.annual : planDetails.pricing.monthly;
   const unit = plan === "free" ? "" : subscription.cycle === "annual" ? (plan === "team" ? "/ seat / year" : "/ year") : planDetails.pricing.unit;
@@ -293,16 +324,18 @@ export function PlanPrice({
 
 export function PlanActionButton({
   className,
+  defaultCycle,
   inactiveLabel,
   initialSubscription = null,
   plan
 }: {
   className: string;
+  defaultCycle?: SubscriptionDefaultCycle;
   inactiveLabel: string;
   initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
 }) {
-  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
   const active = subscription.plan === plan;
   const billingPortalManaged = shouldUseBillingPortal(subscription);
@@ -401,13 +434,15 @@ export function SubscriptionBadge({ initialSubscription = null }: { initialSubsc
 export function TeamSeatSelector({
   className = "",
   compact = false,
+  defaultCycle,
   initialSubscription = null
 }: {
   className?: string;
   compact?: boolean;
+  defaultCycle?: SubscriptionDefaultCycle;
   initialSubscription?: AccountSubscriptionSnapshot | null;
 }) {
-  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription);
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [customPlanRequested, setCustomPlanRequested] = useState(false);
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
   const pricePerSeat = subscription.cycle === "annual" ? 59.99 : 5.99;

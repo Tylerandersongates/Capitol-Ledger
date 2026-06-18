@@ -36,6 +36,8 @@ import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/ca
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const upgradeDefaultCycle: AccountSubscriptionSnapshot["cycle"] = "annual";
+
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 const stripeLiveMode = process.env.STRIPE_LIVE_MODE === "true";
 const showStripeSandboxNotice = stripePublishableKey.startsWith("pk_test_") && !stripeLiveMode;
@@ -99,7 +101,7 @@ export default async function UpgradePage() {
               title="Plan cycle"
             />
             <div className="mt-5">
-              <BillingCycleToggle initialSubscription={initialSubscription} />
+              <BillingCycleToggle initialSubscription={initialSubscription} defaultCycle={upgradeDefaultCycle} />
             </div>
           </MobileCard>
         </div>
@@ -122,12 +124,14 @@ export default async function UpgradePage() {
             icon={<Crown />}
             inactiveLabel="Upgrade to Pro"
             initialSubscription={initialSubscription}
+            defaultCycle={upgradeDefaultCycle}
             plan="pro"
           />
           <PlanTierCard
             icon={<ShieldCheck />}
             inactiveLabel="Switch to Free"
             initialSubscription={initialSubscription}
+            defaultCycle={upgradeDefaultCycle}
             plan="free"
           />
           <PlanTierCard
@@ -135,6 +139,7 @@ export default async function UpgradePage() {
             icon={<Sparkles />}
             inactiveLabel="Start Team Plan"
             initialSubscription={initialSubscription}
+            defaultCycle={upgradeDefaultCycle}
             plan="team"
           />
         </section>
@@ -274,6 +279,7 @@ function ValuePill({ label, value }: { label: string; value: string }) {
 
 function PlanTierCard({
   badge,
+  defaultCycle,
   featured = false,
   icon,
   inactiveLabel,
@@ -281,6 +287,7 @@ function PlanTierCard({
   plan
 }: {
   badge?: string;
+  defaultCycle?: AccountSubscriptionSnapshot["cycle"];
   featured?: boolean;
   icon: ReactNode;
   inactiveLabel: string;
@@ -309,13 +316,14 @@ function PlanTierCard({
       <PlanPrice
         plan={plan}
         initialSubscription={initialSubscription}
+        defaultCycle={defaultCycle}
         className="mt-4 flex items-end gap-2"
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
-      {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} /> : null}
+      {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
       <FeatureList items={planDetails.highlights} />
-      <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} className={actionClassName} />
+      <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} defaultCycle={defaultCycle} className={actionClassName} />
     </MobileCard>
   );
 }
