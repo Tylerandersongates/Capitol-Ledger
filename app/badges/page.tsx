@@ -227,8 +227,8 @@ function BadgesContent() {
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { href: "/search", icon: <CheckCircle2 />, label: "Track" },
-          { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
+          { active: true, href: "/impact", icon: <CheckCircle2 />, label: "Track" },
+          { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}
       />
