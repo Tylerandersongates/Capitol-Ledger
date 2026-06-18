@@ -57,6 +57,11 @@ Generated at the break on June 16, 2026 for the next continuation.
     - `/upgrade?teamSubscriptionReconcile=c0b6a12` showed `Your personal Pro billing is paused while this owner-paid Team seat gives you Admin access`, with no browser console errors.
     - `/profile?teamSubscriptionReconcile=c0b6a12` showed `Manage Capitol Ledger Civic Team` and no `Pro Intelligence` badge, with no browser console errors.
   - Marked `Subscription Update` and `Civic Team is not added to account` resolved after verification; reviewer queue dropped from 4 open reports to 2 open reports.
+- Dashboard bill-count feedback completed:
+  - Stabilized `getDashboardDataWithLiveData` so the dashboard uses the full synced bill set instead of a 24-row subset, gets a dashboard-specific production database timeout, and reuses a short-lived warm-instance live-record cache before falling back to the bundled 4-bill demo data; commit `f639730`.
+  - Production deployment `project-qosv1-n2l66ibi1-capitol-ledger.vercel.app` reached `Ready`.
+  - Production smoke loaded `/dashboard?billCountSmoke=f639730-*` four times and each render showed `29 bills moving through the ledger` plus `Open 29 live docket bill results`; the 4-bill fallback did not appear and no browser console errors were captured.
+  - Marked `Bills total number changes` resolved after verification; reviewer queue dropped from 2 open reports to 1 open report.
   - Expanded visible member State filters to the full state/territory list including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`. Production verified `PR` returns Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `6e8f63a`.
   - Shared member office/seat display labels across profile, search results, dashboard official cards, and search suggestions; commit `9d73700`.
   - Fixed member search suggestions so they use the full live member catalog instead of the first 30 live rows, match accented names, and include office/seat labels as search terms. Production verified `Pablo`, `Hernández`, and `resident commissioner` return Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `8efea4f`.
