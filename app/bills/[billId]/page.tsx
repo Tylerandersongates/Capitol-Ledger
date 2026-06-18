@@ -90,6 +90,23 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     .toLowerCase();
   const statusLine = getPersonalStatusLine(bill);
   const billName = bill.shortTitle || bill.title;
+  const isVeteransOrMilitaryBill = matchesAny(text, [
+    "veteran",
+    "veterans",
+    "military",
+    "armed forces",
+    "servicemember",
+    "service member",
+    "servicemen",
+    "merchant marine",
+    "merchant marines",
+    "mariner",
+    "mariners",
+    "world war",
+    "department of veterans affairs",
+    "va benefits",
+    "health care for veterans"
+  ]);
 
   if (matchesAny(text, ["forest", "forests", "wildfire", "wildfires", "fireshed", "firesheds", "public lands", "natural resources", "forest management", "land management"])) {
     return {
@@ -107,7 +124,39 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     };
   }
 
-  if (matchesAny(text, ["child", "childcare", "family", "families", "care", "health", "provider"])) {
+  if (isVeteransOrMilitaryBill && matchesAny(text, ["payment", "benefit", "benefits", "compensation", "pension", "readjustment act", "servicemen's readjustment act"])) {
+    return {
+      context: `${billName} could show up as a targeted service benefit: eligible veterans or merchant mariners may need to prove qualifying service, apply through the Department of Veterans Affairs, and track whether a one-time payment or benefit reaches them. ${statusLine}`,
+      pros: [
+        "Eligible WWII merchant mariners or other covered service members could receive recognition through a direct federal benefit instead of only symbolic honors.",
+        "Clearer eligibility rules can help families understand what service records, licensing history, or prior-benefit history they need before applying.",
+        "Putting the process through VA can give applicants a familiar federal channel for questions, records, and payment status."
+      ],
+      cons: [
+        "People with missing records, unclear service history, or prior benefits may be excluded even if they feel the service was comparable.",
+        "Older applicants, or families helping them with records, may miss the benefit if outreach, paperwork, or documentation requirements are hard to navigate.",
+        "A one-time payment can recognize past service but may not solve ongoing health, caregiving, or financial needs."
+      ]
+    };
+  }
+
+  if (isVeteransOrMilitaryBill) {
+    return {
+      context: `${billName} matters for veterans, military families, caregivers, and communities that depend on timely benefits and services. ${statusLine}`,
+      pros: [
+        "Veterans and caregivers could see faster access, clearer eligibility, or better tracking of benefits that already affect daily life.",
+        "If the bill improves reporting, families may have an easier time proving where delays or service gaps are happening.",
+        "Community providers could coordinate better with federal programs if the bill creates clearer responsibilities."
+      ],
+      cons: [
+        "If eligibility is narrow, some veterans may hear about a new benefit but still be left out.",
+        "More oversight does not automatically mean faster appointments, claims, or payments unless agencies are staffed to act.",
+        "Families may still face confusing handoffs between federal, state, and local systems."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["child", "children", "childcare", "child care", "family care", "families with children", "parents", "caregiver"])) {
     return {
       context: `${billName} could reach people through household budgets, family care decisions, and the local providers families rely on. ${statusLine}`,
       pros: [
@@ -119,6 +168,22 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
         "You may see little benefit if eligibility rules, income limits, state rollout, or waitlists leave your household outside the program.",
         "If funding is too small or temporary, families could get paperwork and promises while prices keep rising.",
         "Providers may face more reporting work, and that can pull staff time away from care unless the program is simple to use."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["health", "health care", "healthcare", "medical", "medicare", "medicaid", "hospital", "clinic", "patient", "patients", "public health", "provider", "providers"])) {
+    return {
+      context: `${billName} could affect people through health coverage, care access, provider capacity, medical costs, or public-health programs. ${statusLine}`,
+      pros: [
+        "Patients could benefit if the bill makes coverage, eligibility, or services clearer and easier to use.",
+        "Local providers may get better guidance, funding, or coordination if the bill targets gaps in care delivery.",
+        "More reporting can help families see whether promised health resources are actually reaching their community."
+      ],
+      cons: [
+        "Benefits may depend on eligibility, state rollout, provider availability, or whether local systems have enough staff to act.",
+        "New health rules can create paperwork for patients and providers if implementation is not simple.",
+        "Costs can still show up through premiums, taxes, reduced services, or delayed care if funding is too narrow."
       ]
     };
   }
@@ -139,7 +204,7 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     };
   }
 
-  if (matchesAny(text, ["border", "homeland", "security", "infrastructure review", "review act"])) {
+  if (matchesAny(text, ["border", "border security", "homeland security", "customs", "border patrol", "port of entry", "ports of entry", "immigration enforcement", "infrastructure review"])) {
     return {
       context: `${billName} could affect people through public safety, travel, local construction, property impacts, trade, and taxpayer spending. ${statusLine}`,
       pros: [
@@ -183,22 +248,6 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
         "Benefits can depend heavily on state and district decisions, so families in different ZIP codes may feel very different results.",
         "New rules can create paperwork for schools and teachers if the bill does not keep implementation simple.",
         "If funding is limited or temporary, schools may start programs that families come to rely on and then lose later."
-      ]
-    };
-  }
-
-  if (matchesAny(text, ["veteran", "veterans", "military", "servicemember", "va benefits", "health care for veterans"])) {
-    return {
-      context: `${billName} matters for veterans, military families, caregivers, and communities that depend on timely benefits and services. ${statusLine}`,
-      pros: [
-        "Veterans and caregivers could see faster access, clearer eligibility, or better tracking of benefits that already affect daily life.",
-        "If the bill improves reporting, families may have an easier time proving where delays or service gaps are happening.",
-        "Community providers could coordinate better with federal programs if the bill creates clearer responsibilities."
-      ],
-      cons: [
-        "If eligibility is narrow, some veterans may hear about a new benefit but still be left out.",
-        "More oversight does not automatically mean faster appointments, claims, or payments unless agencies are staffed to act.",
-        "Families may still face confusing handoffs between federal, state, and local systems."
       ]
     };
   }
