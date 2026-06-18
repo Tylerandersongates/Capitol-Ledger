@@ -50,7 +50,7 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Fixed dashboard watchlist long-title presentation by giving favorite rows stable spacing and clamping item labels to two lines; commits `ce76892` and `175b753`.
   - Added visible `Profile` labels to the profile shortcut on Dashboard, Settings, and Upgrade; switched the Upgrade shortcut from a crown icon to a user/profile icon; commit `ce76892`.
   - Production smoke passed on `/dashboard?reviewFixSmoke=175b753`, `/settings?reviewFixSmoke=175b753`, and `/upgrade?reviewFixSmoke=175b753`: profile labels are visible, dashboard favorite label has `-webkit-line-clamp: 2`, and no browser console errors were captured.
-  - Feedback report statuses were not changed in the queue.
+  - After Tyler reviewed and approved the production UI, marked both reports `resolved` in the reviewer queue and verified them under the Resolved filter.
 - Upgrade business-rule change:
   - `/upgrade` now defaults the billing cycle selector to Annual for the page, including signed-in accounts that already have paid billing; commits `bdc5b09` and `be41b26`.
   - Production smoke passed on `/upgrade?annualDefaultSmoke=be41b26`: Annual is selected by default, Pro shows `$29.99 / year`, Team shows `$59.99 / seat / year`, Team 3-seat estimate shows `$179.97 / workspace / year`, and no browser console errors were captured.
@@ -62,13 +62,12 @@ Generated at the break on June 16, 2026 for the next continuation.
 
 ## Current Next Best Steps
 1. Member/profile/search/dashboard display pass is complete for the surfaces tested today. Optional adjacent follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
-2. After Tyler reviews the production UI, update the two reviewer reports' queue status as appropriate.
-3. On June 18, 2026, recheck the current account's `8d` day streak:
+2. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
-4. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-5. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
-6. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
+3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+4. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
+5. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
