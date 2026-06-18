@@ -71,9 +71,6 @@ export default async function AccountPage() {
                   <div className="grid justify-items-center gap-2">
                     <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-2 border-[#ffb12b]/70 bg-[#ffb12b]/10 shadow-[0_0_24px_rgba(255,177,43,0.16)]">
                       <UserRound className="h-9 w-9 text-[#ffcf54]" strokeWidth={1.7} aria-hidden="true" />
-                      <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-[#061126] bg-[#43ed74]" aria-label="Account profile synced">
-                        <CheckCircle2 className="h-4 w-4 text-[#061126]" strokeWidth={2.2} aria-hidden="true" />
-                      </span>
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#43ed74]/18 bg-[#43ed74]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74f49a]">
                       <CheckCircle2 className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
