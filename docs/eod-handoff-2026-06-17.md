@@ -95,6 +95,14 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Tightened lens routing by moving veterans/military/service-benefit bills ahead of broad buckets, narrowing border/security triggers, and splitting generic health terms out of the child-care/family bucket.
   - Production smoke passed on `/bills/cmpnmagch002039k4llvwctjr?tab=details&lensSmoke=4cef9f2`: H.R. 39 now shows targeted service-benefit/merchant-mariner copy and no old border/construction copy; no browser console errors.
   - Regression smoke passed on `/bills/demo-hr-471?tab=details&lensRegression=4cef9f2`: Fix Our Forests still shows wildfire/forest project language and no child-care copy; no browser console errors.
+  - Completed the AI Policy Lens follow-up audit across 8 production bill categories: public waters/recreation, veterans/service benefits, health, education, budget, housing, immigration, and taxation.
+  - First audit found broader category-order mismatches: MAPWaters was getting wildfire copy, education was getting child-care copy, budget and housing were getting veteran copy, immigration was getting housing/labor copy, and taxation was falling to generic.
+  - Tightened category routing with public-access/recreation, tax/budget, immigration, housing/labor, and education priority branches; commit `b43cf4a`.
+  - Production deployment `project-qosv1-5xb1czbhb-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
+  - Production eight-page audit passed after `b43cf4a` with no stale category copy and no browser console errors.
+  - Polished AI Lens bill-title sentence generation so titles ending in punctuation do not render copy like `United States. matters`; commit `5656f9d`.
+  - Production deployment `project-qosv1-lc7tasx6s-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
+  - Final budget-page smoke passed on `/bills/cmpnmafn2001e39k44w0z5lzl?tab=details&lensAudit=5656f9d-budget-copy`: budget copy remained active, the bad double-sentence text was absent, and no browser console errors were captured.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
@@ -109,7 +117,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
 5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
 6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
-7. AI Policy Lens follow-up: sample 5-8 more live bills across veterans, health, border/security, transportation, education, tax/budget, and housing/labor to catch remaining keyword-bucket mismatches.
+7. Optional AI Policy Lens hardening: add lightweight fixture tests around representative bill summaries if this classifier keeps expanding.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
