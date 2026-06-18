@@ -133,6 +133,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - The card now uses a stable top metadata/status row, clamps long titles to a compact preview, and keeps Stage Progress below the title instead of letting the status pill collide with title text.
   - Production deployment `project-qosv1-p6ryncpvw-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
   - Production smoke passed on `/dashboard?billTrackerTitleSmoke=5e96b8d`: long Supreme Court amendment title renders above Stage Progress at compact height, `In Committee` status does not overlap the title, and no browser console errors were captured.
+- Round 3 Beta Tester Guide:
+  - Created `docs/round-3-beta-tester-guide/README.md` from the Round 2 guide structure, focused on new Round 3 testing areas: verification/sign-in loops, Team invites and roles, Team/Pro subscription state, Annual default upgrade flow, 3-25 self-serve Team seats, expanded live civic data, AI Policy Lens matching, long bill titles, saved state, and day streak follow-up.
+  - Added a repeatable DOCX builder at `docs/round-3-beta-tester-guide/build-docx.py`.
+  - Generated the sendable DOCX at `public/downloads/capitol-ledger-round-3-beta-tester-guide.docx`.
+  - QA passed for DOCX archive integrity, extracted content checks, macOS text conversion, and Quick Look cover-thumbnail rendering. Full LibreOffice page rasterization is blocked locally by the bundled renderer referencing missing `/opt/homebrew/opt/little-cms2/lib/liblcms2.2.dylib`; no app-code issue found.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
@@ -142,11 +147,12 @@ Generated at the break on June 16, 2026 for the next continuation.
 1. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
-2. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-3. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
-4. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
-5. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
-6. Future AI Policy Lens hardening: if more categories are added, extend `scripts/check-ai-policy-lens-fixtures.ts` before changing the routing order.
+2. After the day-streak check, send the Round 3 Beta Tester Guide to the wider tester group and use the Round 3 feedback link for intake.
+3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
+4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
+5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
+6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
+7. Future AI Policy Lens hardening: if more categories are added, extend `scripts/check-ai-policy-lens-fixtures.ts` before changing the routing order.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
