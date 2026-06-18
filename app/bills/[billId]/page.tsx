@@ -108,7 +108,23 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     "health care for veterans"
   ]);
 
-  if (matchesAny(text, ["forest", "forests", "wildfire", "wildfires", "fireshed", "firesheds", "public lands", "natural resources", "forest management", "land management"])) {
+  if (matchesAny(text, ["public waters", "waterway", "waterways", "fishing restriction", "fishing restrictions", "public access", "outdoor recreation", "recreation", "outdoor recreational access", "recreational access", "recreation access", "geospatial data"])) {
+    return {
+      context: `${billName} could affect people through access to public waters, recreation areas, maps, permits, fishing rules, and how clearly agencies publish outdoor access information. ${statusLine}`,
+      pros: [
+        "People who fish, boat, hike, or guide trips could get clearer public maps and fewer surprises about where access is open or restricted.",
+        "Local recreation businesses may benefit if visitors can plan trips with more reliable federal waterway and access data.",
+        "Standardized data can help agencies, states, and civic tools point residents to the same public information instead of conflicting maps."
+      ],
+      cons: [
+        "Better data does not automatically create new access if local closures, safety limits, private-property boundaries, or environmental rules still apply.",
+        "Communities may see little change if agencies publish information slowly or do not keep maps current.",
+        "More visitors can strain fragile waterways or local services if access information improves without matching stewardship."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["forest", "forests", "wildfire", "wildfires", "fireshed", "firesheds", "forest management", "land management"])) {
     return {
       context: `${billName} could show up through wildfire risk, public lands management, local air quality, emergency planning, forest jobs, and how quickly agencies approve forest projects. ${statusLine}`,
       pros: [
@@ -120,6 +136,54 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
         "Faster environmental review can reduce public input or miss local habitat, water, or tribal concerns if safeguards are too thin.",
         "Benefits may concentrate near selected firesheds, leaving other wildfire-prone communities waiting.",
         "If funding and agency staffing do not match the new deadlines, communities may see faster paperwork without safer forests."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["tax", "taxes", "taxation", "tax credit", "deduction", "budget", "balanced budget", "appropriation", "spending", "deficit", "debt limit", "public debt", "revenue", "fiscal", "ways and means"])) {
+    return {
+      context: `${billName} matters because tax and budget choices eventually decide who pays, which services are funded, and what gets delayed. ${statusLine}`,
+      pros: [
+        "If money is targeted well, your community could see better services or safer investments without having to fight for attention every year.",
+        "Clear tax or spending rules can make it easier for taxpayers to see whether funds reach the promised people or places.",
+        "A well-designed fiscal plan can reduce uncertainty for families, small businesses, property owners, and local governments."
+      ],
+      cons: [
+        "The cost may come back to households through taxes, fees, reduced services, compliance costs, or future budget pressure.",
+        "Tax incentives can miss people who do not have the cash, property, or paperwork needed to use them.",
+        "If oversight is weak, money can be spent or forgone without proving that people actually benefited."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["immigration", "immigrant", "immigrants", "alien", "aliens", "non-u.s. national", "non-u.s. nationals", "lawfully admitted", "permanent resident", "permanent residents", "asylum", "refugee", "deportation"])) {
+    return {
+      context: `${billName} could affect people through immigration status rules, eligibility for public programs, local government funding, housing or work stability, and how agencies verify who qualifies. ${statusLine}`,
+      pros: [
+        "Supporters may see clearer eligibility rules for public funds, local programs, or services that depend on immigration status.",
+        "Local agencies could get firmer guidance on who qualifies, which may reduce confusion when administering benefits or grants.",
+        "Taxpayers may get more visibility into whether federal dollars are being used for the population Congress intended."
+      ],
+      cons: [
+        "Mixed-status families and local service providers may face more paperwork, uncertainty, or fear of using programs they rely on.",
+        "Restricting grants can affect broader community services if housing, economic development, or local aid programs lose funding.",
+        "Eligibility checks can create mistakes or delays for people who are lawfully present but have complex documentation."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["housing", "rent", "renter", "renters", "homebuyer", "homebuyers", "mortgage", "borrower", "borrowers", "homeless", "zoning", "community development", "fair lending", "labor", "worker", "workers", "wage", "employment"])) {
+    return {
+      context: `${billName} could affect everyday stability through housing access, rent, mortgages, jobs, wages, workplace rules, or the cost of staying in your community. ${statusLine}`,
+      pros: [
+        "If the bill reaches people directly, it could ease pressure on housing, paychecks, benefits, or the ability to keep steady work.",
+        "Better standards can help renters, borrowers, workers, or local agencies understand what rules apply and where to go when they are ignored.",
+        "Local programs may become easier to compare if the bill requires clearer reporting on outcomes."
+      ],
+      cons: [
+        "Costs may be passed along through prices, rents, hiring decisions, mortgage terms, or reduced local services if the bill is not funded carefully.",
+        "People most affected may still miss out if eligibility rules are complicated or enforcement is weak.",
+        "A bill can sound protective but still leave gaps for part-time workers, contractors, renters, borrowers, or people between systems."
       ]
     };
   }
@@ -156,7 +220,23 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     };
   }
 
-  if (matchesAny(text, ["child", "children", "childcare", "child care", "family care", "families with children", "parents", "caregiver"])) {
+  if (matchesAny(text, ["education", "school", "student", "teacher", "college", "learning", "classroom", "academic", "per-pupil"])) {
+    return {
+      context: `${billName} could affect families through schools, student costs, classroom resources, and local education choices. ${statusLine}`,
+      pros: [
+        "If you have children in school or are paying for training or college, the upside could be more support, clearer rules, or lower pressure on family budgets.",
+        "More reporting can help parents and students see whether money is reaching classrooms instead of disappearing into layers of administration.",
+        "Local districts may get better guidance or funding if the bill targets gaps that already affect your community."
+      ],
+      cons: [
+        "Benefits can depend heavily on state and district decisions, so families in different ZIP codes may feel very different results.",
+        "New rules can create paperwork for schools and teachers if the bill does not keep implementation simple.",
+        "If funding is limited or temporary, schools may start programs that families come to rely on and then lose later."
+      ]
+    };
+  }
+
+  if (matchesAny(text, ["childcare", "child care", "family care", "families with children", "caregiver", "caregivers"])) {
     return {
       context: `${billName} could reach people through household budgets, family care decisions, and the local providers families rely on. ${statusLine}`,
       pros: [
@@ -236,22 +316,6 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     };
   }
 
-  if (matchesAny(text, ["education", "school", "student", "teacher", "college", "learning"])) {
-    return {
-      context: `${billName} could affect families through schools, student costs, classroom resources, and local education choices. ${statusLine}`,
-      pros: [
-        "If you have children in school or are paying for training or college, the upside could be more support, clearer rules, or lower pressure on family budgets.",
-        "More reporting can help parents and students see whether money is reaching classrooms instead of disappearing into layers of administration.",
-        "Local districts may get better guidance or funding if the bill targets gaps that already affect your community."
-      ],
-      cons: [
-        "Benefits can depend heavily on state and district decisions, so families in different ZIP codes may feel very different results.",
-        "New rules can create paperwork for schools and teachers if the bill does not keep implementation simple.",
-        "If funding is limited or temporary, schools may start programs that families come to rely on and then lose later."
-      ]
-    };
-  }
-
   if (matchesAny(text, ["energy", "climate", "environment", "water", "emissions", "utility", "conservation"])) {
     return {
       context: `${billName} could show up through utility bills, local jobs, land use, air or water quality, and how fast communities adapt to risk. ${statusLine}`,
@@ -264,38 +328,6 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
         "Costs can show up before benefits through rates, taxes, compliance expenses, or higher prices passed to consumers.",
         "Projects can create local conflict if communities feel decisions are being made over them instead of with them.",
         "If timelines are vague, households may hear big promises while daily problems like bills or pollution stay the same."
-      ]
-    };
-  }
-
-  if (matchesAny(text, ["tax", "taxes", "budget", "appropriation", "spending", "deficit", "revenue", "fiscal"])) {
-    return {
-      context: `${billName} matters because budget choices eventually decide who pays, which services are funded, and what gets delayed. ${statusLine}`,
-      pros: [
-        "If money is targeted well, your community could see better services without having to fight for attention every year.",
-        "Clear spending rules can make it easier for taxpayers to see whether funds are reaching the promised people or places.",
-        "A well-designed fiscal plan can reduce uncertainty for families, small businesses, and local governments."
-      ],
-      cons: [
-        "The cost may come back to households through taxes, fees, reduced services, or future budget pressure.",
-        "If oversight is weak, money can be spent without proving that people actually benefited.",
-        "Short-term funding can create programs that disappear just as families or local agencies begin depending on them."
-      ]
-    };
-  }
-
-  if (matchesAny(text, ["housing", "rent", "mortgage", "homeless", "zoning", "labor", "worker", "wage", "employment"])) {
-    return {
-      context: `${billName} could affect everyday stability through rent, jobs, wages, workplace rules, or the cost of staying in your community. ${statusLine}`,
-      pros: [
-        "If the bill reaches people directly, it could ease pressure on rent, paychecks, benefits, or the ability to keep steady work.",
-        "Better standards can help workers or tenants understand what they are owed and where to go when rules are ignored.",
-        "Local programs may become easier to compare if the bill requires clearer reporting on outcomes."
-      ],
-      cons: [
-        "Costs may be passed along through prices, rents, hiring decisions, or reduced local services if the bill is not funded carefully.",
-        "People most affected may still miss out if eligibility rules are complicated or enforcement is weak.",
-        "A bill can sound protective but still leave gaps for part-time workers, contractors, renters, or people between systems."
       ]
     };
   }
