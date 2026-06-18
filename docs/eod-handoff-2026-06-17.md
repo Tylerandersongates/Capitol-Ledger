@@ -113,6 +113,18 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Tyler confirmed email verification is working with the tester, and the tester received the new invite.
   - Marked the remaining `Email Verification` reviewer report resolved after Tyler confirmed the tester received the invite and verification worked.
   - Production reviewer smoke passed on `/feedback/review?resolveEmailVerification=confirmed`: open report count is `0`, the page says `No active blockers or untriaged reports.`, `Email Verification` appears under the Resolved filter, and no browser console errors were captured.
+- Team invite verification-loop follow-up:
+  - Fixed the production invite/sign-in loop where a pending-verification cookie redirected `/team/accept?token=...` into `/sign-in?mode=verify`, causing a Team invite link to be pasted into the email verification token field and shown as invalid; commit `08068b7`.
+  - Middleware now allows `/team/accept` to render while still redirecting protected app routes such as `/dashboard` when only pending verification is present.
+  - Account creation from an invite now carries the safe `returnTo=/team/accept?token=...` path into the verification email, and the verification success action labels the return button `Accept Invite`.
+  - The verification form now recognizes a pasted Team invite link and routes back to the invite page instead of submitting it as an email verification token.
+  - `/api/auth/session` now clears a stale pending-verification cookie when the production session is already verified, giving the sign-in screen a self-heal path out of stranded verification state.
+  - Production deployment `project-qosv1-oiymtvkdx-capitol-ledger.vercel.app` reached `Ready` and is aliased to production.
+  - Production smokes passed:
+    - Browser fake-token smoke on `/team/accept?token=fake-invite-token&inviteLoopSmoke=08068b7` rendered `Team Invite` / `Invite Unavailable`, not `Verify your account`, and no browser console errors were captured.
+    - Header smoke with `capitol-ledger-email-verification-pending=active` returned `200` for `/team/accept?...` and still returned `307` to `/sign-in?mode=verify...` for `/dashboard?...`.
+    - Current in-app browser loaded `/dashboard?lockoutSmoke=08068b7` successfully with `Civic Dashboard`, no verify/sign-in loop, and no console errors.
+  - Tightened `scripts/vercel-cli.sh` version parsing so cached `vercel@54.14.1` is recognized from both CLI output formats before attempting any reinstall. Verified `./scripts/vercel-cli.sh --version` returns from the cached CLI.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
