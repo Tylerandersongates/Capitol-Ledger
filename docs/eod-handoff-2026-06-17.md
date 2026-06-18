@@ -51,6 +51,10 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Added visible `Profile` labels to the profile shortcut on Dashboard, Settings, and Upgrade; switched the Upgrade shortcut from a crown icon to a user/profile icon; commit `ce76892`.
   - Production smoke passed on `/dashboard?reviewFixSmoke=175b753`, `/settings?reviewFixSmoke=175b753`, and `/upgrade?reviewFixSmoke=175b753`: profile labels are visible, dashboard favorite label has `-webkit-line-clamp: 2`, and no browser console errors were captured.
   - Feedback report statuses were not changed in the queue.
+- Upgrade business-rule change:
+  - `/upgrade` now defaults the billing cycle selector to Annual for the page, including signed-in accounts that already have paid billing; commits `bdc5b09` and `be41b26`.
+  - Production smoke passed on `/upgrade?annualDefaultSmoke=be41b26`: Annual is selected by default, Pro shows `$29.99 / year`, Team shows `$59.99 / seat / year`, Team 3-seat estimate shows `$179.97 / workspace / year`, and no browser console errors were captured.
+  - Manual Monthly toggle still works and updates Pro to `$2.99 / month` and Team to `$17.97 / workspace / month`.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.

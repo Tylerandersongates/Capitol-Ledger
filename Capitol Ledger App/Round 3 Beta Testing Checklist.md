@@ -256,6 +256,10 @@ Status: production follow-up pass completed against `https://project-qosv1.verce
   - Dashboard, Settings, and Upgrade profile shortcuts now show a visible `Profile` label; the Upgrade shortcut uses a user/profile icon instead of a crown.
   - Production smoke passed on Dashboard, Settings, and Upgrade with no browser console errors.
   - The two report statuses remain unchanged until Tyler reviews the production UI.
+- Upgrade billing-cycle business rule:
+  - `/upgrade` now opens with Annual selected by default.
+  - Production smoke verified Pro Annual at `$29.99 / year`, Team Annual at `$59.99 / seat / year`, and the 3-seat Team estimate at `$179.97 / workspace / year`.
+  - Manual Monthly selection still works and updates visible prices.
 - No service-history placeholder text appeared in the spot-checked production profiles.
 - Browser console errors: none on Annual Pro return, Annual Team return, Team owner roles page, and owner post-cancel access gate.
 - Production auth/email readiness passed:
