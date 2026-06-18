@@ -103,36 +103,37 @@ function InviteCard({
         </div>
 
         {sessionEmail ? (
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-white">
-              <ShieldCheck className="h-4 w-4 text-[#43ed74]" strokeWidth={2} aria-hidden="true" />
-              Signed in as {sessionEmail}
+          <>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-white">
+                <ShieldCheck className="h-4 w-4 text-[#43ed74]" strokeWidth={2} aria-hidden="true" />
+                Signed in as {sessionEmail}
+              </div>
+              <div className="mt-1 text-[12px] leading-snug text-white/48">
+                This seat is reserved for {preview.invite.email}.
+              </div>
             </div>
-            <div className="mt-1 text-[12px] leading-snug text-white/48">
-              This seat is reserved for {preview.invite.email}.
-            </div>
-          </div>
+            {!emailMatches ? (
+              <InviteAuthActions
+                createHref={createHref}
+                email={preview.invite.email}
+                signInHref={signInHref}
+                title="Switch to the invited account"
+                description={`Create or sign in with ${preview.invite.email} to claim this paid Team seat.`}
+              />
+            ) : null}
+          </>
         ) : (
-          <div className="mt-5 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-4">
-            <div className="flex items-center gap-2 text-[14px] font-semibold text-[#ffb12b]">
-              <LockKeyhole className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-              Create or sign in to accept
-            </div>
-            <p className="mt-2 text-[13px] leading-snug text-white/58">
-              Create a new account or sign in with {preview.invite.email} to claim this paid Team seat.
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <Link href={createHref} className="flex h-11 items-center justify-center rounded-xl bg-[#ffb12b] text-[14px] font-semibold text-[#061126]">
-                Create Account
-              </Link>
-              <Link href={signInHref} className="flex h-11 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72">
-                Sign In
-              </Link>
-            </div>
-          </div>
+          <InviteAuthActions
+            createHref={createHref}
+            email={preview.invite.email}
+            signInHref={signInHref}
+            title="Create or sign in to accept"
+            description={`Create a new account or sign in with ${preview.invite.email} to claim this paid Team seat.`}
+          />
         )}
 
-        {sessionEmail ? <TeamInviteAcceptanceControls emailMatches={emailMatches} token={token} /> : null}
+        {sessionEmail && emailMatches ? <TeamInviteAcceptanceControls emailMatches={emailMatches} token={token} /> : null}
       </MobileCard>
 
       <MobileCard variant="rust" className="px-5 py-5">
@@ -150,6 +151,43 @@ function InviteCard({
         </div>
       </MobileCard>
     </>
+  );
+}
+
+function InviteAuthActions({
+  createHref,
+  description,
+  email,
+  signInHref,
+  title
+}: {
+  createHref: string;
+  description: string;
+  email: string;
+  signInHref: string;
+  title: string;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-4">
+      <div className="flex items-center gap-2 text-[14px] font-semibold text-[#ffb12b]">
+        <LockKeyhole className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+        {title}
+      </div>
+      <p className="mt-2 text-[13px] leading-snug text-white/58">
+        {description}
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Link href={createHref} className="flex h-11 items-center justify-center rounded-xl bg-[#ffb12b] text-[14px] font-semibold text-[#061126]">
+          Create Account
+        </Link>
+        <Link href={signInHref} className="flex h-11 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72">
+          Sign In
+        </Link>
+      </div>
+      <div className="mt-3 text-[12px] leading-snug text-white/48">
+        Invite reserved for {email}.
+      </div>
+    </div>
   );
 }
 
