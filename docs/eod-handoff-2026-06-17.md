@@ -124,6 +124,9 @@ Generated at the break on June 16, 2026 for the next continuation.
     - Browser fake-token smoke on `/team/accept?token=fake-invite-token&inviteLoopSmoke=08068b7` rendered `Team Invite` / `Invite Unavailable`, not `Verify your account`, and no browser console errors were captured.
     - Header smoke with `capitol-ledger-email-verification-pending=active` returned `200` for `/team/accept?...` and still returned `307` to `/sign-in?mode=verify...` for `/dashboard?...`.
     - Current in-app browser loaded `/dashboard?lockoutSmoke=08068b7` successfully with `Civic Dashboard`, no verify/sign-in loop, and no console errors.
+  - Real tester path is resolved:
+    - Tyler confirmed the tester verified her email, created/signed into her account, accessed Dashboard, accepted the Team seat, and sees Team access on her dashboard.
+    - Admin Team page confirmed `Debbie Robles / deborah.robles1963@gmail.com` is `Analyst` and `Active`; roster shows `2/3` seats reserved and `1` open.
   - Tightened `scripts/vercel-cli.sh` version parsing so cached `vercel@54.14.1` is recognized from both CLI output formats before attempting any reinstall. Verified `./scripts/vercel-cli.sh --version` returns from the cached CLI.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
