@@ -104,6 +104,7 @@ Generated at the break on June 16, 2026 for the next continuation.
 3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
 4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
 5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
+6. Later profile feature: account avatar/photo upload is not wired today. Treat it as deliberate storage/schema/API work or consider an initials-only avatar before adding real uploads.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
