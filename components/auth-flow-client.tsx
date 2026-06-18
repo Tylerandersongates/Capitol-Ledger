@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -482,6 +482,44 @@ export function AuthFlowClient({
     router.refresh();
   }
 
+  async function submitInputFallbackReport() {
+    setPending(true);
+    setStatus("Sending input issue...");
+
+    const response = await fetch("/api/feedback", {
+      body: JSON.stringify({
+        category: "bug",
+        context: {
+          browserPath: window.location.pathname,
+          reportSource: "sign-in-input-fallback",
+          reportSourceLabel: "Cannot type in sign-in fields",
+          reportedArea: "/sign-in",
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          userAgent: window.navigator.userAgent
+        },
+        message:
+          "Tester used the tap-only sign-in fallback because text fields would not accept typing after sign-out. Buttons could still be tapped.",
+        pageUrl: `${window.location.pathname}${window.location.search}`,
+        severity: "high",
+        title: "Cannot type in sign-in text fields"
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    }).catch(() => null);
+    const data = response ? ((await response.json().catch(() => null)) as { error?: string; mode?: string } | null) : null;
+
+    setPending(false);
+
+    if (!response?.ok) {
+      setStatus(data?.error ?? "Input issue could not be sent. Please message Tyler directly.");
+      return;
+    }
+
+    setStatus(data?.mode === "database" ? "Input issue sent to the beta review queue." : "Input issue captured in demo mode.");
+  }
+
   async function submit() {
     if (mode === "signIn") {
       if (!isEmail(form.email)) {
@@ -860,15 +898,25 @@ export function AuthFlowClient({
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => void submit()}
-              disabled={pending}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition hover:brightness-105 disabled:opacity-60"
-            >
-              {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
-              <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
-            </button>
+            <div className="grid gap-3">
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={pending}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition hover:brightness-105 disabled:opacity-60"
+              >
+                {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
+                <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitInputFallbackReport()}
+                disabled={pending}
+                className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffb12b] transition hover:brightness-110 disabled:opacity-45"
+              >
+                Can't type? Send input issue
+              </button>
+            </div>
           )}
 
           {mode === "forgot" || mode === "reset" || mode === "verify" ? (
@@ -968,13 +1016,23 @@ function Field({
   type: string;
   value: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <label className="block">
       <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">{label}</span>
-      <span className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
+      <span
+        className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+        onPointerDown={() => inputRef.current?.focus()}
+      >
         <span className="text-[#ffb12b] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{icon}</span>
         <input
+          ref={inputRef}
           autoComplete={autoComplete}
+          autoCapitalize={type === "email" ? "none" : undefined}
+          autoCorrect="off"
+          inputMode={type === "email" ? "email" : undefined}
+          spellCheck={false}
           type={type}
           placeholder={placeholder}
           value={value}

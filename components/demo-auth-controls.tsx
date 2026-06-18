@@ -124,7 +124,6 @@ export function DemoSignOutButton({
   className: string;
   href?: string;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function signOut() {
@@ -136,8 +135,10 @@ export function DemoSignOutButton({
     }).catch(() => null);
 
     setBrowserSessionAuthenticated(false);
-    router.push(href);
-    router.refresh();
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    window.location.assign(href);
   }
 
   return (

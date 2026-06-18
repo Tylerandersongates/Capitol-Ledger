@@ -173,6 +173,45 @@ export function BetaFeedbackForm() {
     setContactEmail("");
   }
 
+  async function submitInputFallbackReport() {
+    setState("submitting");
+    setStatusText("");
+
+    const response = await fetch("/api/feedback", {
+      body: JSON.stringify({
+        category: "bug",
+        context: {
+          browserPath: window.location.pathname,
+          reportSource: "tap-only-input-fallback",
+          reportSourceLabel: "Cannot type in text fields",
+          reportedArea: selectedArea?.value ?? sourceParam ?? "feedback",
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          sourceParam: sourceParam || undefined,
+          userAgent: window.navigator.userAgent
+        },
+        message:
+          "Tester used the tap-only fallback because text fields would not accept typing. Buttons could still be tapped. Please follow up on sign-out/sign-in text field focus.",
+        pageUrl: `${window.location.pathname}${window.location.search}`,
+        severity: "high",
+        title: "Cannot type in text fields"
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    }).catch(() => null);
+    const data = response ? ((await response.json().catch(() => null)) as { error?: string; mode?: string } | null) : null;
+
+    if (!response?.ok) {
+      setState("error");
+      setStatusText(data?.error ?? "The tap-only report could not be sent. Please message Tyler directly.");
+      return;
+    }
+
+    setState("sent");
+    setStatusText(data?.mode === "database" ? "Tap-only input issue sent to the beta review queue." : "Tap-only input issue captured in demo mode.");
+  }
+
   return (
     <form onSubmit={submitFeedback} className="space-y-5">
       <section className="rounded-[1.35rem] border border-white/10 bg-[#061a33]/76 px-5 py-5 shadow-[inset_0_0_24px_rgba(43,141,255,0.06),0_18px_42px_rgba(0,0,0,0.18)] backdrop-blur-xl">
@@ -197,6 +236,14 @@ export function BetaFeedbackForm() {
             {selectedArea?.helper ?? "The selected area is attached to the report so it lands in the right review bucket."}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => void submitInputFallbackReport()}
+          disabled={state === "submitting"}
+          className="mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffb12b] transition hover:brightness-110 disabled:opacity-45"
+        >
+          Can't type? Send input issue
+        </button>
       </section>
 
       <section className="rounded-[1.35rem] border border-white/10 bg-[#061a33]/76 px-5 py-5 shadow-[inset_0_0_24px_rgba(43,141,255,0.06),0_18px_42px_rgba(0,0,0,0.18)] backdrop-blur-xl">
@@ -265,6 +312,9 @@ export function BetaFeedbackForm() {
         <div className="mt-5">
           <FieldLabel label="Short title" />
           <input
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            spellCheck={true}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Example: dashboard card feels confusing"
@@ -275,6 +325,9 @@ export function BetaFeedbackForm() {
         <div className="mt-5">
           <FieldLabel label="What happened?" />
           <textarea
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            spellCheck={true}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder="Tell us what you expected, what happened, and what would make the flow better."
@@ -309,6 +362,11 @@ export function BetaFeedbackForm() {
         <div className="mt-5">
           <FieldLabel label="Contact email optional" />
           <input
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect="off"
+            inputMode="email"
+            spellCheck={false}
             value={contactEmail}
             onChange={(event) => setContactEmail(event.target.value)}
             placeholder="Only if you want follow-up"
