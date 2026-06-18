@@ -89,7 +89,7 @@ function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
     .join(" ")
     .toLowerCase();
   const statusLine = getPersonalStatusLine(bill);
-  const billName = bill.shortTitle || bill.title;
+  const billName = (bill.shortTitle || bill.title).replace(/[.!?]+$/, "");
   const isVeteransOrMilitaryBill = matchesAny(text, [
     "veteran",
     "veterans",
