@@ -57,6 +57,7 @@ type BillPageProps = {
 type BillTab = "overview" | "votes" | "timeline" | "details";
 type ProgressStep = {
   date: string;
+  detail?: string;
   icon: LucideIcon;
   label: string;
 };
@@ -78,6 +79,109 @@ function tabHref(billId: string, tab: BillTab) {
   return tab === "overview" ? `/bills/${billId}` : `/bills/${billId}?tab=${tab}`;
 }
 
+function billOriginChamber(billType: string) {
+  const normalizedType = billType.toUpperCase();
+  if (normalizedType.startsWith("H")) return "House" as const;
+  if (normalizedType.startsWith("S")) return "Senate" as const;
+  return undefined;
+}
+
+function receivingChamberFor(originChamber: "House" | "Senate") {
+  return originChamber === "House" ? "Senate" : "House";
+}
+
+function lowerIncludes(value: string, phrase: string) {
+  return value.toLowerCase().includes(phrase.toLowerCase());
+}
+
+function isOriginPassageVote(vote: Vote, originChamber: "House" | "Senate") {
+  const result = vote.result.toLowerCase();
+  const question = vote.question.toLowerCase();
+  return vote.chamber === originChamber && (result.includes("passed") || question.includes("passage"));
+}
+
+function hasCrossChamberAction({
+  actionText,
+  originChamber,
+  originPassageVote,
+  receivingChamber
+}: {
+  actionText: string;
+  originChamber: "House" | "Senate";
+  originPassageVote?: Vote;
+  receivingChamber: "House" | "Senate";
+}) {
+  const action = actionText.toLowerCase();
+  const receivingName = receivingChamber.toLowerCase();
+  const receivingSignal =
+    action.includes(receivingName) ||
+    action.includes(`received in the ${receivingName}`) ||
+    action.includes(`referred to the ${receivingName}`);
+  const originPassageSignal =
+    Boolean(originPassageVote) ||
+    action.includes(`passed the ${originChamber.toLowerCase()}`) ||
+    action.includes(`${originChamber.toLowerCase()} passage`);
+
+  return receivingSignal && originPassageSignal;
+}
+
+function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "Senate") {
+  if (lowerIncludes(actionText, `received in the ${receivingChamber}`)) return `Received in ${receivingChamber}`;
+  return `${receivingChamber} action`;
+}
+
+function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): ProgressStep[] {
+  const introducedDate = bill.introducedDate ?? bill.latestActionDate;
+  const originChamber = billOriginChamber(bill.billType);
+
+  if (originChamber) {
+    const receivingChamber = receivingChamberFor(originChamber);
+    const originPassageVote = billVotes.find((vote) => isOriginPassageVote(vote, originChamber));
+    const crossChamberAction = hasCrossChamberAction({
+      actionText: bill.latestActionText,
+      originChamber,
+      originPassageVote,
+      receivingChamber
+    });
+
+    if (crossChamberAction) {
+      const receivingLabel = crossChamberStepLabel(bill.latestActionText, receivingChamber);
+      const originPassageDate = originPassageVote?.voteDate ?? bill.latestActionDate;
+
+      return [
+        { label: `Introduced in ${originChamber}`, date: formatDate(introducedDate), icon: FileCheck2 },
+        {
+          label: `${originChamber} committee`,
+          date: formatDate(introducedDate),
+          icon: FileText,
+          detail: `Initial review started in the ${originChamber}, where this ${bill.displayNumber} originated.`
+        },
+        {
+          label: `Passed ${originChamber}`,
+          date: formatDate(originPassageDate),
+          icon: FileCheck2,
+          detail: `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`
+        },
+        {
+          label: receivingLabel,
+          date: formatDate(bill.latestActionDate),
+          icon: FileClock,
+          detail: `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`
+        },
+        { label: "Final passage", date: status === "Enacted" ? formatDate(bill.latestActionDate) : "", icon: FilePenLine }
+      ];
+    }
+  }
+
+  return [
+    { label: originChamber ? `Introduced in ${originChamber}` : "Introduced", date: formatDate(introducedDate), icon: FileCheck2 },
+    { label: "Referred to Committee", date: formatDate(bill.latestActionDate), icon: FileText },
+    { label: status === "In Committee" ? "Committee Hearing" : bill.latestActionText, date: formatDate(bill.latestActionDate), icon: FileClock },
+    { label: "Marked Up", date: "", icon: FilePenLine },
+    { label: "Passed", date: "", icon: FileCheck2 }
+  ];
+}
+
 export default async function BillPage({ params, searchParams }: BillPageProps) {
   const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
   if (!detail) notFound();
@@ -94,14 +198,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   if (headerTitle.length > 90) headerTitleSizeClass = "text-[24px] leading-[1.12]";
   else if (headerTitle.length > 54) headerTitleSizeClass = "text-[27px] leading-[1.1]";
   const introducedDate = bill.introducedDate ?? bill.latestActionDate;
-  const committeeDate = bill.latestActionDate;
-  const progressSteps: ProgressStep[] = [
-    { label: "Introduced", date: formatDate(introducedDate), icon: FileCheck2 },
-    { label: "Referred to Committee", date: formatDate(committeeDate), icon: FileText },
-    { label: status === "In Committee" ? "Committee Hearing" : bill.latestActionText, date: formatDate(bill.latestActionDate), icon: FileClock },
-    { label: "Marked Up", date: "", icon: FilePenLine },
-    { label: "Passed", date: "", icon: FileCheck2 }
-  ];
+  const progressSteps = buildBillProgressSteps(bill, billVotes, status);
 
   return (
     <MobileShell
@@ -249,8 +346,13 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
 }
 
 function compactProgressLabel(label: string) {
+  if (label === "Introduced in House" || label === "Introduced in Senate") return "Introduced";
+  if (label === "House committee" || label === "Senate committee") return "Committee";
   if (label === "Referred to Committee") return "Referred";
   if (label === "Committee Hearing") return "Hearing";
+  if (label === "Received in House") return "House";
+  if (label === "Received in Senate") return "Senate";
+  if (label === "House action" || label === "Senate action") return "Action";
   if (label === "Marked Up") return "Markup";
   return label;
 }
@@ -443,6 +545,7 @@ function TimelineTab({
   const activeStepCount = progressSteps.filter((step) => Boolean(step.date)).length;
   const completionPercent = Math.round((activeStepCount / Math.max(1, progressSteps.length)) * 100);
   const currentStepIndex = Math.max(0, activeStepCount - 1);
+  const timelineStatus = progressSteps[currentStepIndex]?.label ?? status;
 
   return (
     <>
@@ -450,7 +553,7 @@ function TimelineTab({
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
           <div>
             <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Legislative Timeline</div>
-            <h2 className="mt-2 text-[24px] font-medium leading-tight">{status}</h2>
+            <h2 className="mt-2 text-[24px] font-medium leading-tight">{timelineStatus}</h2>
           </div>
           <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
             <FileClock className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -493,7 +596,7 @@ function TimelineTab({
           <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-white/50">
             <span>{formatDate(bill.latestActionDate)}</span>
             <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-[#ffb12b]">
-              {status}
+              {timelineStatus}
             </span>
           </div>
         </div>
@@ -678,6 +781,7 @@ function TimelineRow({
           </span>
         </div>
         {step.date ? <div className="mt-1 text-[14px] text-white/50">{step.date}</div> : <div className="mt-1 text-[14px] text-white/34">Pending</div>}
+        {step.detail ? <p className="mt-2 text-[13px] leading-5 text-white/48">{step.detail}</p> : null}
       </div>
     </div>
   );
