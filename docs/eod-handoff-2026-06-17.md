@@ -89,6 +89,8 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Tightened stale Saved Ledger account copy: `/account` no longer says Team watchlists are future-only, and `SavedLedgerSummary` now uses the effective subscription plan for its badge/copy; commit `506d201`.
   - Production deployment `project-qosv1-4rlo1ydol-capitol-ledger.vercel.app` reached `Ready` and is aliased to `project-qosv1.vercel.app`.
   - Production smoke passed on `/account?diagnosticSavedLedger=506d201`: Saved Ledger showed `Civic Team`, Team workspace tracking copy, no stale `Free saved watchlist` copy, and no browser console errors.
+  - Removed the duplicate green checkmark badge from the account avatar because the `Synced` pill already communicates storage sync; commit `9355dcf`.
+  - Production smoke passed on `/account?avatarBadgeSmoke=9355dcf`: avatar sync badge was absent, `Synced` remained visible, and no browser console errors were captured.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
