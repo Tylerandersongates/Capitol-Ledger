@@ -119,6 +119,7 @@ Use Round 3 to verify the new paid subscription, Team workspace, and expanded Co
 - Open the invite link.
 - Confirm invite page shows the workspace owner, invited email, role, and expiration.
 - Confirm wrong signed-in email is blocked.
+- Confirm a wrong signed-in account sees Create Account and Sign In options for the invited email, not an active Accept Seat action.
 - Accept the invite as the invited account.
 - Confirm accepted state appears on `/team/accept`.
 - Open `/team`.

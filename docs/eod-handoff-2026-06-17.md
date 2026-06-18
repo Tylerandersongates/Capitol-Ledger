@@ -38,6 +38,11 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Added targeted Congress.gov supplemental sync for current territory profiles: DC, PR, GU, VI, AS, and MP. Focused production write sync upserted 7 member records total, including 6 supplemental territory records; commit `6e45502`.
   - Preserved official member display names from synced records. Production verified `Eleanor Holmes Norton` and `Pablo José Hernández`; commit `f380d33`.
   - Updated member search result cards to use office roles instead of generic `House`: Delegate, Resident Commissioner, Representative, Senator. Production verified DC, PR, GU, KS, VT, and WY; commit `5611b9a`.
+- Reviewer feedback fix completed for `Civis Team Invite`:
+  - Fixed wrong-account Team invite acceptance so a signed-in account that does not match the invited email sees `Create Account` and `Sign In` actions prefilled for the invited email instead of a dead-end blocked accept state; commit `c343de6`.
+  - Production smoke created a `.test` Team invite from the Admin account, opened `/team/accept` while still signed in as `tylergates@mac.com`, verified `Switch to the invited account`, `Create Account`, `Sign In`, and `Invite reserved for ...` copy, and confirmed no wrong-account `Accept Seat` action rendered.
+  - Production cleanup revoked the temporary `.test` invite and confirmed the roster returned to `1/3` seats with `2 open participant seats`.
+  - Marked the `Civis Team Invite` reviewer report resolved after verification; reviewer queue dropped from 6 open reports to 5 open reports.
   - Expanded visible member State filters to the full state/territory list including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`. Production verified `PR` returns Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `6e8f63a`.
   - Shared member office/seat display labels across profile, search results, dashboard official cards, and search suggestions; commit `9d73700`.
   - Fixed member search suggestions so they use the full live member catalog instead of the first 30 live rows, match accented names, and include office/seat labels as search terms. Production verified `Pablo`, `Hernández`, and `resident commissioner` return Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `8efea4f`.
