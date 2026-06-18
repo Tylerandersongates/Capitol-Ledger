@@ -23,6 +23,8 @@
     "backend:check": "node scripts/check-backend-readiness.mjs",
     "ai-policy-lens:check": "tsx scripts/check-ai-policy-lens-fixtures.ts",
     "video-links:check": "node scripts/check-video-links.mjs",
+    "youtube-statements:sync": "tsx scripts/sync-youtube-bill-statements.ts",
+    "youtube-statements:check": "node scripts/check-youtube-bill-statements.mjs",
     "beta:check": "node scripts/check-beta-readiness.mjs",
     "beta:triage": "node scripts/check-beta-triage.mjs",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",

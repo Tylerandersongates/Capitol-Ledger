@@ -608,16 +608,16 @@ function VideoCard({ billVideos, compact = false }: { billVideos: BillVideo[]; c
         <div>
           <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">
             <PlayCircle className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.9} aria-hidden="true" />
-            Source media
+            Official media
           </div>
-          <h2 className="mt-2 text-[23px] font-medium leading-tight">Speeches & Video</h2>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Official Statements</h2>
         </div>
         <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
           {billVideos.length} {billVideos.length === 1 ? "link" : "links"}
         </span>
       </div>
       <div className="mt-5 space-y-3">
-        {visibleVideos.length ? visibleVideos.map((video) => <VideoRow key={video.id} video={video} />) : <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">No linked speeches or video yet.</div>}
+        {visibleVideos.length ? visibleVideos.map((video) => <VideoRow key={video.id} video={video} />) : <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">No linked official statements or video yet.</div>}
       </div>
     </MobileCard>
   );
@@ -783,6 +783,9 @@ function SourceMatchRow({ match }: { match: BillSourceMatch }) {
 }
 
 function VideoRow({ video }: { video: BillVideo }) {
+  const destinationLabel = video.platform === "youtube" ? "Watch on YouTube" : `Open ${video.source}`;
+  const statusLabel = video.reviewStatus ? video.reviewStatus.replace("-", " ") : "Official source";
+
   return (
     <GamificationEventAnchor
       href={video.videoUrl}
@@ -811,7 +814,7 @@ function VideoRow({ video }: { video: BillVideo }) {
             </div>
             <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-white/72">
               <ExternalLink className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-              <span>Open {video.source}</span>
+              <span>{destinationLabel}</span>
               {video.sourceKind ? (
                 <span className="rounded-full border border-[#ffb12b]/26 bg-[#ffb12b]/10 px-2 py-0.5 text-[11px] text-[#ffbf45]">
                   {video.sourceKind}
@@ -825,8 +828,13 @@ function VideoRow({ video }: { video: BillVideo }) {
                 Verified {formatDate(video.verifiedAt)}
               </span>
             ) : null}
+            {video.matchConfidence ? (
+              <span className="rounded-full border border-[#ffb12b]/22 bg-[#ffb12b]/10 px-2 py-0.5 text-[11px] text-[#ffbf45]">
+                {video.matchConfidence} match
+              </span>
+            ) : null}
             <span className="rounded-full border border-white/10 bg-white/[0.035] px-2 py-0.5 text-[11px] text-white/46">
-              Official source
+              {statusLabel}
             </span>
           </div>
         </div>

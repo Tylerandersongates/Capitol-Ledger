@@ -161,6 +161,10 @@ export type BillSourceMatch = CapitolSourceLink & {
   reason: string;
 };
 
+export type BillVideoPlatform = "congress" | "house-clerk" | "youtube" | "official-site";
+export type BillVideoMatchConfidence = "high" | "medium" | "low";
+export type BillVideoReviewStatus = "auto-matched" | "verified" | "needs-review" | "rejected";
+
 export type BillVideo = {
   id: string;
   billId: string;
@@ -175,6 +179,15 @@ export type BillVideo = {
   videoUrl: string;
   type: "Floor Speech" | "Committee Hearing" | "Public Statement";
   summary: string;
+  platform?: BillVideoPlatform;
+  memberBioguideId?: string;
+  youtubeVideoId?: string;
+  youtubeChannelId?: string;
+  thumbnailUrl?: string;
+  matchConfidence?: BillVideoMatchConfidence;
+  matchReason?: string;
+  matchedTerms?: string[];
+  reviewStatus?: BillVideoReviewStatus;
 };
 
 export type Cosponsor = {
