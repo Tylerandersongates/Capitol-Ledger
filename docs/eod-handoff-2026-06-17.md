@@ -79,19 +79,29 @@ Generated at the break on June 16, 2026 for the next continuation.
   - `/upgrade` now defaults the billing cycle selector to Annual for the page, including signed-in accounts that already have paid billing; commits `bdc5b09` and `be41b26`.
   - Production smoke passed on `/upgrade?annualDefaultSmoke=be41b26`: Annual is selected by default, Pro shows `$29.99 / year`, Team shows `$59.99 / seat / year`, Team 3-seat estimate shows `$179.97 / workspace / year`, and no browser console errors were captured.
   - Manual Monthly toggle still works and updates Pro to `$2.99 / month` and Team to `$17.97 / workspace / month`.
+- Diagnostic pass after the reviewer/member/bill-count work:
+  - Static app route/API scan found `31` route files, `24` app/script/doc API references, `0` missing referenced routes, and `0` unreferenced public route references.
+  - Retained `/api/follows` as a legacy/public account-ledger wrapper and retained `/api/congress/*` as documented live-preview endpoints.
+  - Video-link readiness passed: all configured speech/video links are wired.
+  - Congress readiness passed in demo-safe local mode with expected warnings for unsourced `CONGRESS_API_KEY`, `DATABASE_URL`, and `NEXT_PUBLIC_APP_URL`.
+  - Backend readiness completed with expected local-env warnings for database, app URL, auth secret, email, billing, and production-only settings not sourced in this shell.
+  - Beta triage script exited cleanly but warned that the local shell could not reach the Neon database host, so reviewer DB verification was not repeated from this shell.
+  - Tightened stale Saved Ledger account copy: `/account` no longer says Team watchlists are future-only, and `SavedLedgerSummary` now uses the effective subscription plan for its badge/copy; commit `506d201`.
+  - Production deployment `project-qosv1-4rlo1ydol-capitol-ledger.vercel.app` reached `Ready` and is aliased to `project-qosv1.vercel.app`.
+  - Production smoke passed on `/account?diagnosticSavedLedger=506d201`: Saved Ledger showed `Civic Team`, Team workspace tracking copy, no stale `Free saved watchlist` copy, and no browser console errors.
 - Workflow preference update from Tyler:
   - Small, logical follow-through fixes inside an active topic can be decided and completed without pausing for separate confirmation.
   - Keep completed work documented in the handoff/checklist.
   - Save next-step summaries for section/topic closeouts instead of every tiny sub-step.
 
 ## Current Next Best Steps
-1. Member/profile/search/dashboard display pass is complete for the surfaces tested today. Optional adjacent follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
+1. Keep the remaining `Email Verification` reviewer report open until the tester confirms inbox delivery and verification completion.
 2. On June 18, 2026, recheck the current account's `8d` day streak:
    - Dashboard load alone is expected to keep the stored streak unchanged.
    - The first qualifying streak-credit action on the new day should increment it.
 3. Decide whether the currently signed-in account's persisted `8d` streak should be kept as real history or repaired/reset as contaminated beta data.
-4. Optionally run one never-touched account smoke if a completely blank stance default is still desired; the `currently.com` account already passed gamification isolation and retained its own saved Support stance.
-5. If a truly blank disposable account is needed, rerun a paid-submission annual checkout pass; today's smoke verified annual session creation/pricing without submitting payment.
+4. Run a complete beta table/database verification once local Neon connectivity is stable or a production-safe environment is sourced.
+5. Optional adjacent member/display follow-up surfaces if included in the same topic: weekly brief official snippets and email/contact labels.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
