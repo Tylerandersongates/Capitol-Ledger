@@ -13,6 +13,7 @@ export type AccountGamificationSnapshot = {
   dayStreak: number;
   earnedBadgeIds: string[];
   eventCounts: GamificationEventCount[];
+  lastStreakCreditDate: string | null;
   level: number;
   levelTitle: string;
   monthlyGain: number;
@@ -43,6 +44,10 @@ function isGamificationEvent(event: unknown): event is GamificationEventType {
 function toPositiveInteger(value: unknown) {
   const count = Number(value);
   return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
+function normalizeDateKey(value: unknown) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
 function normalizeEventCounts(value: unknown): GamificationEventCount[] {
@@ -120,6 +125,7 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
     dayStreak: Math.max(accountCreationDayStreak, toPositiveInteger(value.dayStreak)),
     earnedBadgeIds,
     eventCounts,
+    lastStreakCreditDate: normalizeDateKey(value.lastStreakCreditDate),
     level: summary.level,
     levelTitle: summary.levelTitle,
     monthlyGain: hasCivicActions ? toPositiveInteger(value.monthlyGain) : 0,
@@ -133,6 +139,41 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
 
 export function getDefaultAccountGamification() {
   return normalizeAccountGamification();
+}
+
+export function mergeAccountGamificationForWrite(
+  existing: Partial<AccountGamificationSnapshot> | null,
+  value: Partial<AccountGamificationSnapshot>,
+  fallbackCreditDate = new Date().toISOString().slice(0, 10)
+) {
+  const incoming = normalizeAccountGamification(value);
+  if (!existing) return incoming;
+
+  const current = normalizeAccountGamification(existing);
+  const incomingDate = incoming.lastStreakCreditDate;
+  const currentDate = current.lastStreakCreditDate;
+  let dayStreak = incoming.dayStreak;
+  let lastStreakCreditDate = incomingDate ?? currentDate;
+
+  if (incomingDate && incomingDate === currentDate) {
+    dayStreak = current.dayStreak;
+  } else if (incomingDate && incoming.dayStreak > current.dayStreak + 1) {
+    dayStreak = current.dayStreak + 1;
+  } else if (!incomingDate && incoming.dayStreak > current.dayStreak) {
+    if (currentDate === fallbackCreditDate) {
+      dayStreak = current.dayStreak;
+      lastStreakCreditDate = currentDate;
+    } else {
+      dayStreak = Math.min(incoming.dayStreak, current.dayStreak + 1);
+      lastStreakCreditDate = fallbackCreditDate;
+    }
+  }
+
+  return normalizeAccountGamification({
+    ...incoming,
+    dayStreak,
+    lastStreakCreditDate
+  });
 }
 
 export function getAccountGamification(userId: string) {

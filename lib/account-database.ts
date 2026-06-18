@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, FollowTargetType } from "../types/capitol";
-import { normalizeAccountGamification, type AccountGamificationSnapshot } from "./account-gamification";
+import { mergeAccountGamificationForWrite, normalizeAccountGamification, type AccountGamificationSnapshot } from "./account-gamification";
 import { normalizeAccountLedger } from "./account-ledger";
 import { normalizeAccountProfile } from "./account-profile";
 import { normalizeAccountSubscription } from "./account-subscription";
@@ -34,6 +34,7 @@ type DbGamification = {
   dayStreak: number;
   earnedBadgeIds: unknown;
   eventCounts: unknown;
+  lastStreakCreditDate: string | null;
   level: number;
   levelTitle: string;
   monthlyGain: number;
@@ -83,6 +84,7 @@ export function canUseDatabasePersistence() {
 
 let profileSchemaReady: Promise<boolean> | null = null;
 let subscriptionSchemaReady: Promise<boolean> | null = null;
+let gamificationSchemaReady: Promise<boolean> | null = null;
 let weeklyBriefDeliverySchemaReady: Promise<boolean> | null = null;
 
 function isDatabaseConnectionError(error: unknown) {
@@ -201,6 +203,26 @@ async function ensureAccountSubscriptionSchema() {
   })();
 
   return subscriptionSchemaReady;
+}
+
+async function ensureAccountGamificationSchema() {
+  if (!canUseDatabasePersistence()) return false;
+  if (gamificationSchemaReady) return gamificationSchemaReady;
+
+  gamificationSchemaReady = (async () => {
+    try {
+      const prisma = getPrisma();
+      await prisma.$executeRawUnsafe(`ALTER TABLE "AccountGamification" ADD COLUMN IF NOT EXISTS "lastStreakCreditDate" TEXT`);
+      return true;
+    } catch (error) {
+      logDatabaseFallback("ensureAccountGamificationSchema", error);
+      gamificationSchemaReady = null;
+      if (isDatabaseConnectionError(error)) return false;
+      throw error;
+    }
+  })();
+
+  return gamificationSchemaReady;
 }
 
 export async function ensureAccountUser(user: { email: string; id: string; name?: string }) {
@@ -567,7 +589,7 @@ export async function writeSubscriptionToDatabase(userId: string, value: Partial
 }
 
 export async function readGamificationFromDatabase(userId: string): Promise<AccountGamificationSnapshot | null> {
-  if (!canUseDatabasePersistence()) return null;
+  if (!(await ensureAccountGamificationSchema())) return null;
 
   return withDatabaseFallback("readGamificationFromDatabase", null, async () => {
     const prisma = getPrisma();
@@ -579,6 +601,7 @@ export async function readGamificationFromDatabase(userId: string): Promise<Acco
         "level",
         "levelTitle",
         "nextLevelScore",
+        "lastStreakCreditDate",
         "eventCounts",
         "earnedBadgeIds",
         "updatedAt"
@@ -595,6 +618,7 @@ export async function readGamificationFromDatabase(userId: string): Promise<Acco
       dayStreak: record.dayStreak,
       earnedBadgeIds: record.earnedBadgeIds as AccountGamificationSnapshot["earnedBadgeIds"],
       eventCounts: record.eventCounts as AccountGamificationSnapshot["eventCounts"],
+      lastStreakCreditDate: record.lastStreakCreditDate,
       level: record.level,
       levelTitle: record.levelTitle,
       monthlyGain: record.monthlyGain,
@@ -605,11 +629,12 @@ export async function readGamificationFromDatabase(userId: string): Promise<Acco
 }
 
 export async function writeGamificationToDatabase(userId: string, value: Partial<AccountGamificationSnapshot>): Promise<AccountGamificationSnapshot | null> {
-  if (!canUseDatabasePersistence()) return null;
+  if (!(await ensureAccountGamificationSchema())) return null;
 
   return withDatabaseFallback("writeGamificationToDatabase", null, async () => {
     const prisma = getPrisma();
-    const gamification = normalizeAccountGamification(value);
+    const currentGamification = await readGamificationFromDatabase(userId).catch(() => null);
+    const gamification = mergeAccountGamificationForWrite(currentGamification, value);
     const eventCountsJson = JSON.stringify(gamification.eventCounts);
     const earnedBadgeIdsJson = JSON.stringify(gamification.earnedBadgeIds);
 
@@ -619,6 +644,7 @@ export async function writeGamificationToDatabase(userId: string, value: Partial
         "userId",
         "civicScore",
         "dayStreak",
+        "lastStreakCreditDate",
         "monthlyGain",
         "level",
         "levelTitle",
@@ -633,6 +659,7 @@ export async function writeGamificationToDatabase(userId: string, value: Partial
         ${userId},
         ${gamification.civicScore},
         ${gamification.dayStreak},
+        ${gamification.lastStreakCreditDate},
         ${gamification.monthlyGain},
         ${gamification.level},
         ${gamification.levelTitle},
@@ -646,6 +673,7 @@ export async function writeGamificationToDatabase(userId: string, value: Partial
       SET
         "civicScore" = EXCLUDED."civicScore",
         "dayStreak" = EXCLUDED."dayStreak",
+        "lastStreakCreditDate" = EXCLUDED."lastStreakCreditDate",
         "monthlyGain" = EXCLUDED."monthlyGain",
         "level" = EXCLUDED."level",
         "levelTitle" = EXCLUDED."levelTitle",

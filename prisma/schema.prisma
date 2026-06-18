@@ -345,6 +345,7 @@ model AccountGamification {
   userId          String   @unique
   civicScore      Int
   dayStreak       Int
+  lastStreakCreditDate String?
   monthlyGain     Int
   level           Int
   levelTitle      String
