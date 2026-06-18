@@ -49,6 +49,14 @@ Generated at the break on June 16, 2026 for the next continuation.
   - Kept `Civic Team is not added to account` open. Dashboard and `/upgrade` now show Team access, but `/profile` still advertises `Pro Intelligence` for the tested Team member account, so the account-level plan display is not fully aligned.
   - Kept `Email Verification` open. Auth verification and password reset have Resend coverage, and Team invites fall back to the auth email delivery provider, but the reported Team invite delivery failure was not inbox-verified in this pass.
   - Kept `Bills total number changes` open. Current production dashboard showed `28 bills moving through the ledger`, not the 4-bill fallback, but the dashboard still uses an optional database-read timeout that can fall back to bundled demo data if the live read misses.
+- Team subscription/account-label feedback cluster completed:
+  - Added accepted-Team-member subscription reconciliation so existing Team members with active personal Pro billing are paused through the same Pro pause path used by fresh invite acceptance; commit `c0b6a12`.
+  - Updated the account/profile plan badge to use effective subscription scope so accepted Team members render `Civic Team` instead of stale personal Pro.
+  - Production deployment `project-qosv1-gs5m5lsa6-capitol-ledger.vercel.app` reached `Ready`.
+  - Production smoke passed on the current accepted Admin account:
+    - `/upgrade?teamSubscriptionReconcile=c0b6a12` showed `Your personal Pro billing is paused while this owner-paid Team seat gives you Admin access`, with no browser console errors.
+    - `/profile?teamSubscriptionReconcile=c0b6a12` showed `Manage Capitol Ledger Civic Team` and no `Pro Intelligence` badge, with no browser console errors.
+  - Marked `Subscription Update` and `Civic Team is not added to account` resolved after verification; reviewer queue dropped from 4 open reports to 2 open reports.
   - Expanded visible member State filters to the full state/territory list including `DC`, `PR`, `GU`, `VI`, `AS`, and `MP`. Production verified `PR` returns Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `6e8f63a`.
   - Shared member office/seat display labels across profile, search results, dashboard official cards, and search suggestions; commit `9d73700`.
   - Fixed member search suggestions so they use the full live member catalog instead of the first 30 live rows, match accented names, and include office/seat labels as search terms. Production verified `Pablo`, `Hernández`, and `resident commissioner` return Pablo José Hernández with `Resident Commissioner · PR-AL · Democrat`; commit `8efea4f`.
