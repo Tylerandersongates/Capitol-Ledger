@@ -786,8 +786,8 @@ function TimelineTab({
             <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Legislative Timeline</div>
             <h2 className="mt-2 text-[24px] font-medium leading-tight">{timelineStatus}</h2>
           </div>
-          <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
-            <FileClock className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+          <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
+            {billActions.length} {billActions.length === 1 ? "row" : "rows"}
           </span>
         </div>
         <div className="mt-5 rounded-xl border border-white/10 bg-[#071a38]/65 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -799,17 +799,17 @@ function TimelineTab({
             <div className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_16px_rgba(255,177,43,0.24)]" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
-        <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="snap-y snap-mandatory" ariaLabel="Legislative timeline stages">
-          {progressSteps.map((step, index) => (
-            <TimelineRow
-              key={step.label}
-              active={isProgressStepActive(step)}
-              current={index === currentStepIndex}
-              isLast={index === progressSteps.length - 1}
-              step={step}
-            />
-          ))}
-        </MobileGlassScrollFrame>
+        {billActions.length ? (
+          <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Legislative timeline official actions">
+            {billActions.map((action) => (
+              <BillActionRow key={action.id} action={action} />
+            ))}
+          </MobileGlassScrollFrame>
+        ) : (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">
+            No official action rows linked yet.
+          </div>
+        )}
       </MobileCard>
 
       <MobileCard variant="rust" className="px-5 py-5">
@@ -833,38 +833,8 @@ function TimelineTab({
         </div>
       </MobileCard>
 
-      <OfficialActionLogCard actions={billActions} />
-
       <VideoCard billVideos={billVideos} compact />
     </>
-  );
-}
-
-function OfficialActionLogCard({ actions }: { actions: BillAction[] }) {
-  return (
-    <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-        <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Official Actions</div>
-          <h2 className="mt-2 text-[23px] font-medium leading-tight">Action Log</h2>
-        </div>
-        <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
-          {actions.length} {actions.length === 1 ? "row" : "rows"}
-        </span>
-      </div>
-
-      {actions.length ? (
-        <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Official bill action log">
-          {actions.map((action) => (
-            <BillActionRow key={action.id} action={action} />
-          ))}
-        </MobileGlassScrollFrame>
-      ) : (
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">
-          No official action rows linked yet.
-        </div>
-      )}
-    </MobileCard>
   );
 }
 
@@ -1059,64 +1029,6 @@ function VoteStat({ value, label, tone }: { value: string; label: string; tone: 
     <div className="border-r border-white/8 last:border-r-0">
       <div className={`text-[34px] font-medium leading-none ${tone}`}>{value}</div>
       <div className="mt-2 text-[18px] text-white/67">{label}</div>
-    </div>
-  );
-}
-
-function TimelineRow({
-  active,
-  current,
-  isLast,
-  step
-}: {
-  active: boolean;
-  current: boolean;
-  isLast: boolean;
-  step: ProgressStep;
-}) {
-  const Icon = step.icon;
-  const statusLabel = current ? "Current" : active ? "Complete" : "Pending";
-
-  return (
-    <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-4">
-      <div className="relative flex justify-center">
-        {!isLast ? <span className={`absolute top-12 h-[calc(100%-20px)] w-px ${active ? "bg-[#ffb12b]/36" : "bg-white/10"}`} /> : null}
-        <span
-          className={`relative z-10 grid h-12 w-12 place-items-center rounded-2xl border ${
-            current
-              ? "border-[#ffb12b]/70 bg-[#ffb12b]/14 text-[#ffb12b] shadow-[0_0_22px_rgba(255,177,43,0.2)]"
-              : active
-                ? "border-[#ffb12b]/42 bg-[#ffb12b]/8 text-[#ffb12b]"
-                : "border-white/14 bg-white/[0.035] text-white/32"
-          }`}
-        >
-          <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-        </span>
-      </div>
-      <div className="pb-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className={`text-[18px] font-semibold leading-tight ${active ? "text-white" : "text-white/46"}`}>{step.label}</div>
-          <span
-            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.07em] ${
-              current
-                ? "border-[#ffb12b]/28 bg-[#ffb12b]/10 text-[#ffb12b]"
-                : active
-                  ? "border-[#43ed74]/22 bg-[#43ed74]/10 text-[#43ed74]"
-                  : "border-white/10 bg-white/[0.035] text-white/38"
-            }`}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        {step.date ? (
-          <div className="mt-1 text-[14px] text-white/50">{step.date}</div>
-        ) : active ? (
-          <div className="mt-1 text-[14px] text-white/42">Date pending</div>
-        ) : (
-          <div className="mt-1 text-[14px] text-white/34">Pending</div>
-        )}
-        {step.detail ? <p className="mt-2 text-[13px] leading-5 text-white/48">{step.detail}</p> : null}
-      </div>
     </div>
   );
 }

@@ -27,8 +27,9 @@ assert.ok(!data.includes("await fetchBillActions"), "Bill detail render should n
 assert.ok(data.includes("hydrateBillActionVoteLinks"), "Bill actions should link to vote detail records when possible");
 assert.ok(data.includes("getDemoBillActionsForBill"), "Live beta records should be able to reuse matching demo action rows");
 
-assert.ok(billPage.includes("OfficialActionLogCard"), "Timeline tab should render the official action log");
-assert.ok(billPage.includes('ariaLabel="Official bill action log"'), "Official action log should be a labeled scroll box");
+assert.ok(!billPage.includes("OfficialActionLogCard"), "Timeline tab should not render a duplicate action log card");
+assert.ok(billPage.includes('ariaLabel="Legislative timeline official actions"'), "Legislative Timeline should render official action rows in its scroll box");
+assert.ok(billPage.includes("<BillActionRow key={action.id} action={action} />"), "Legislative Timeline should use official action rows");
 assert.ok(billPage.includes("Vote Detail"), "Action rows should link roll-call actions to vote detail");
 assert.ok(billPage.includes("Date only"), "Action rows should disclose date-only source precision");
 assert.ok(billPage.includes('const billSummary = activeTab === "details" ? await getBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");

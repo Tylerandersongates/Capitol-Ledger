@@ -11,7 +11,8 @@ assert.ok(billPage.includes("Referred to ${receivingChamber} committee"), "Cross
 assert.ok(billPage.includes("a linked roll-call for that step is not available yet"), "Timeline should explain inferred passage when no roll call is linked");
 assert.ok(!billPage.includes("originPassageVote?.voteDate ?? bill.latestActionDate"), "Timeline should not reuse the Senate action date as a fake House passage date");
 assert.ok(!billPage.includes("bill.introducedDate ?? bill.latestActionDate"), "Timeline should not reuse the latest action date as a fake introduced date");
-assert.ok(billPage.includes('ariaLabel="Legislative timeline stages"'), "Timeline rows should be wrapped in a labeled scroll frame");
-assert.ok(billPage.includes('heightClassName="max-h-[430px]"'), "Timeline scroll frame should keep the row list bounded");
+assert.ok(billPage.includes('ariaLabel="Legislative timeline official actions"'), "Legislative Timeline should use official action rows as the primary timeline");
+assert.ok(!billPage.includes('ariaLabel="Legislative timeline stages"'), "Timeline should not render the old duplicated stage list");
+assert.ok(billPage.includes('heightClassName="max-h-[520px]"'), "Timeline official action list should keep the row list bounded");
 
 console.log("Bill timeline check passed.");
