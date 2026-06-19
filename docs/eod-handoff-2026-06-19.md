@@ -1,6 +1,6 @@
 # Capitol Ledger EOD Handoff - June 19, 2026
 
-Generated at EOD on June 19, 2026 for the June 20 continuation.
+Generated at EOD on June 19, 2026 at 4:54 PM PDT for the next continuation.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
@@ -12,131 +12,133 @@ Generated at EOD on June 19, 2026 for the June 20 continuation.
 - Use narrow sandbox escalations only when needed. Do not commit secrets.
 
 ## Baseline
-- Repo: `/Users/tylergates/Documents/Capitol Ledger`
-- Branch: `main`
-- HEAD before this handoff doc commit: `d2f9104 Add policy edge feed scroll box`
-- Origin sync before this handoff doc commit: `0 0`
-- Worktree before this handoff doc commit: no tracked modifications found; staged area was empty.
-- Production target: `https://project-qosv1.vercel.app`
-- Latest deployment: production URL was verified serving `d2f9104` behavior on `/priority-feed`; exact Vercel deployment alias was not re-read because Vercel CLI status checks have been intermittently killed in this local shell.
-- Browser state: in-app browser open on `https://project-qosv1.vercel.app/priority-feed?scrollBoxVerified=codex-1781841922703`.
+- Repo: `/private/tmp/capitol-ledger-law-status` temp working clone for the Capitol Ledger repo.
+- Branch: `main`.
+- HEAD before this handoff doc commit: `a386fc3 Add weekly brief written summary`.
+- Origin sync before this handoff doc commit: `origin/main` matched `a386fc37c25d3daaf228416ca536d7602e897870`.
+- Worktree before this handoff doc edit: clean.
+- Production target: `https://project-qosv1.vercel.app`.
+- Latest deployment: `dpl_FQrnD7wRytmKbSRCgFLNHuS7WRYm`, production URL `https://project-qosv1-rg5mexkz5-capitol-ledger.vercel.app`, aliased to `https://project-qosv1.vercel.app`.
+- Browser state: in-app browser was used visibly for production smoke. Final handoff should leave the browser on `/brief`.
 
 ## Completed Today
-- Repaired Civic Team cancellation billing fallback:
-  - Fixed accounts that were Pro before joining/owning Civic Team so cancellation restores the appropriate personal Pro access instead of falling to Free.
-  - Added a legacy-Team cancellation restore path.
-  - Relevant commits: `540c81f Restore Pro after Team cancellation`, `911fea8 Handle legacy Team cancellation Pro restore`.
-- Fixed the Supreme Court bill AI Policy Lens/court-lens mismatch:
-  - Repaired the stale/routing category that caused the impact content to reference the wrong bill context.
-  - Added latest-action date metadata to dashboard targets so downstream bill tracker/policy context has the data it needs.
-  - Relevant commits: `1edd666 Include latest action date in dashboard targets`, `ee4d8fa Fix Supreme Court policy lens routing`.
-- Created dedicated Policy Edge surfaces:
-  - `Open Priority Feed` now opens `/priority-feed`.
-  - `Open Risk Watch` now opens `/risk-watch`.
-  - The buttons no longer route to generic Search Discovery sorted pages.
-  - Relevant commit: `d9a5fcd Add dedicated policy edge feeds`.
-- Fixed duplicate SAVE Act in Risk Watch:
-  - Dedupe now keys bills by public bill identity: congress, bill type, and bill number.
-  - Live Congress records are preferred over demo duplicates.
-  - Production verified that `H.R. 22 SAVE Act` appears once and `H.R. 28` moved up to the next row.
-  - Relevant commit: `cfaba4f Dedupe policy edge bills`.
-- Changed Risk Watch trigger to personal bill stance:
-  - Included: bills marked `Oppose` or `Watching`.
-  - Excluded: bills marked `Support` or no stance.
-  - Dashboard Risk Watch count now uses the same personal opposed/watching count.
-  - Relevant commit: `8af2da2 Trigger risk watch from bill stances`.
-- Added Policy Edge feed scroll box:
-  - Priority Feed and Risk Watch bill rows now render inside a dedicated scroll region.
-  - Production Priority Feed verified with `overflow-y: auto`, `338px` region height, `2680px` content height, and gesture scrolling moving the row list `scrollTop` to `500`.
-  - Relevant commit: `d2f9104 Add policy edge feed scroll box`.
-- Added/updated guard checks:
-  - Policy Edge route check now protects dedicated routes, personal Risk Watch trigger, and scroll-region behavior.
-  - Policy Edge feed guard still protects dedupe-before-sort and live-over-demo duplicate behavior.
+- Priority Feed rules:
+  - Added the personal priority-feed rules and kept Priority Feed distinct from other surfaces.
+  - Included supported/aligned/saved-official bill movement without turning it into another generic discovery feed.
+  - Relevant commits: `6d18a5e Add personal priority feed rules`, `bef836a Sync dashboard priority queue count`, `595fe12 Fix daily streak credit`.
+- Dashboard and streak fixes:
+  - Fixed the dashboard `Priority Queue` count so it follows the shared priority-feed counter.
+  - Fixed daily streak credit so a new day with account actions can increment instead of staying stuck.
+- Live Docket:
+  - Fixed the `Today in Congress Live Docket` destination so it opens the promised Live Docket page instead of Discovery Search.
+  - Relevant commit: `8c034f1 Add live docket destination`.
+- Bill law/status, votes, and timeline:
+  - Added law-status detection so enacted bills can display as law instead of staying `In Progress` / `Committee Pending`.
+  - Built the bill vote-history view and member vote breakdown path.
+  - Replaced the old timeline/progress strip with the broader Legislative Timeline action-log view.
+  - Extracted vote counts from action-log text and surfaced them in the Votes section.
+  - Relevant commits: `110f380`, `d66236a`, `347c2d1`, `1901dc9`, `2d60a86`, `8b623a7`, `2661209`, `e0bd392`, `30ea8b1`, `4be9b30`, `55eaa44`, `6cb0d30`.
+- Bill summary:
+  - Removed repeated bill-title copy from the Bill Summary block when the user is already inside that bill page.
+  - Bound summary fetching to the details tab so unrelated bill tabs avoid unnecessary summary work.
+  - Relevant commits: `ef7884a Bound bill summary fetch for details`, `dd416bf Remove repeated title from bill summary`.
+- Search filters:
+  - Collapsed each Refine Search category under `/search?type=members`.
+  - Chamber, Party, and State now show compact selected-value badges, usually `All`, and expand individually.
+  - Relevant commit: `692acae Collapse search filter categories`.
+- Weekly Brief:
+  - Decided to keep Weekly Brief in app for beta/App Store v1.
+  - Added `Post-Launch Next Build` tracking for future outbound email/push digest delivery.
+  - Reworked `/brief` as an in-app brief: `In-App Brief`, `Live in app`, `In-app beta`, `Built From`, `Recent Briefs`, and followed officials in Watchlist Focus.
+  - Added an account-aware `Written Summary` section with a `Suggested first read`, generated from district, tracked bills, priority updates, issue interests, saved ledger, and plan level.
+  - Relevant commits: `7b54ffb Keep weekly brief in app`, `ad0713a Tighten weekly brief beta copy`, `a386fc3 Add weekly brief written summary`.
+- Production deploys:
+  - Deployed each app-facing fix to Vercel production and verified the relevant surfaces in the in-app browser.
 
 ## Diagnostics
 - Code scan:
-  - Focused source checks passed for Policy Edge routes, Risk Watch stance trigger, dedupe keying, and scroll-region markup.
-  - Recent commit sequence after the previous Round 3 guide handoff:
-    - `d2f9104 Add policy edge feed scroll box`
-    - `8af2da2 Trigger risk watch from bill stances`
-    - `cfaba4f Dedupe policy edge bills`
-    - `d9a5fcd Add dedicated policy edge feeds`
-    - `911fea8 Handle legacy Team cancellation Pro restore`
-    - `540c81f Restore Pro after Team cancellation`
-    - `ee4d8fa Fix Supreme Court policy lens routing`
-    - `1edd666 Include latest action date in dashboard targets`
+  - Counted 156 TypeScript/TSX files across `app`, `components`, and `lib`.
+  - Static route/link diagnostic found 60 app routes and 83 static internal links; no missing static route targets were found.
+  - Stale-copy scan found no active stale Weekly Brief delivery promises in app code. Remaining hits were expected docs, real form placeholders, the known account-avatar placeholder, and one intentional Face ID/WebAuthn TODO comment.
+  - Performance-drag scan found no polling loops. Existing `setTimeout` usage is limited to UI feedback, debounce/blur behavior, request timeouts, or one checkout-return refresh delay.
 - Checks run:
+  - `node scripts/check-weekly-brief-in-app.mjs` passed.
+  - `node scripts/check-search-filter-collapse.mjs` passed.
   - `node scripts/check-policy-edge-routes.mjs` passed.
   - `node scripts/check-policy-edge-feed.mjs` passed.
-  - `git diff --check` passed for touched Policy Edge files before the final scroll-box commit.
-  - Lightweight TypeScript transpile checks passed for touched route/helper/component/data files during the Risk Watch stance work.
-  - Browser production verification passed for:
-    - `/priority-feed`
-    - `/risk-watch`
-    - `/dashboard`
-    - `/bills/cmpnlw9x0000cti83v6vsemb6?tab=details`
-    - `/profile?billingAudit=codex2`
+  - `node scripts/check-live-docket-route.mjs` passed.
+  - `node scripts/check-gamification-streak.mjs` passed.
+  - `node scripts/check-bill-details-summary.mjs` passed.
+  - `node scripts/check-bill-action-log.mjs` passed.
+  - `node scripts/check-bill-law-status.mjs` passed.
+  - `node scripts/check-bill-timeline.mjs` passed.
+  - `node scripts/check-bill-vote-history.mjs` passed.
+  - `node scripts/check-video-links.mjs` passed.
+  - `node scripts/check-backend-readiness.mjs` completed in demo-safe mode with warnings only.
+  - `node scripts/check-billing-readiness.mjs` passed for demo-safe mode.
+  - `node scripts/check-congress-readiness.mjs` passed for demo-safe mode.
+  - `node scripts/check-youtube-bill-statements.mjs` passed.
+  - `git diff --check` passed.
 - Blocked checks:
-  - Full `tsc --noEmit` was killed by the local process supervisor with no diagnostics.
-  - Targeted semantic TypeScript API checks were also killed by the local process supervisor.
-  - `npm run policy-edge:check` hung through the npm wrapper; the underlying Node checks were run directly and passed.
-  - Vercel CLI filtered/list/inspect status checks were intermittently killed with code `137`; production behavior was verified in-browser instead.
-  - Browser read-only evaluate could measure the scroll region but could not mutate `scrollTop`; final scroll verification used an actual gesture scroll.
+  - `node scripts/check-weekly-brief-delivery.mjs` failed by design for current local/beta config: `DATABASE_URL` and `WEEKLY_BRIEF_CRON_SECRET` are absent in this dependency-light clone, and outbound Weekly Brief delivery is deferred to post-launch.
+  - `node scripts/check-production-auth.mjs` could not run locally because `@prisma/client` is not installed in this clone.
+  - Full local build/typecheck was not rerun because this clone has no `node_modules`; Vercel production deploys provided the build/typecheck confirmation.
 - Cleanup applied:
-  - Removed the TypeScript-heavy Policy Edge fixture runner and replaced it with a lightweight source guard because the TS boot path was unreliable in this shell.
-  - Kept Policy Edge ranking logic in a pure helper at `lib/policy-edge-ranking.ts`.
-  - Shared bill-stance browser storage logic in `lib/browser-bill-stances.ts` so bill detail controls, Risk Watch, and dashboard count use the same stance source.
+  - No extra source cleanup was applied during the diagnostic because the scans did not find safe, obvious app-code dead weight to remove.
+  - The EOD handoff itself was rewritten from `docs/eod-handoff-template.md` as requested.
 
 ## QA
 - Production smoke:
-  - Billing/Profile:
-    - Verified Pro restoration behavior around Civic Team cancellation logic before committing the restore fixes.
-  - AI Policy Lens:
-    - Verified the Supreme Court/court-lens bill content after repair at `/bills/cmpnlw9x0000cti83v6vsemb6?tab=details&courtLensVerified=codex`.
-  - Policy Edge:
-    - Dashboard CTAs verified:
-      - `Open Priority Feed` -> `/priority-feed`
-      - `Open Risk Watch` -> `/risk-watch`
-    - `/priority-feed` verified as its own feed, not Search Discovery.
-    - `/risk-watch` verified as its own feed, not Search Discovery.
-    - Risk Watch duplicate fix verified on production after deployment.
-    - Risk Watch personal stance trigger verified on production; current account showed `Risk Watch 1` on dashboard and only the personal risk row on `/risk-watch`.
-    - Priority Feed scroll box verified on production after deployment.
+  - `/dashboard` rendered the command center and live docket card. Browser navigation reported a timeout, but the DOM rendered successfully.
+  - `/brief` rendered `IN-APP BRIEF`, `WRITTEN SUMMARY`, `Suggested first read`, `Built From`, `Recent Briefs`, and no email/scheduled-delivery promise copy.
+  - `/search?type=members` rendered Officials search and `Refine results`; browser navigation reported a timeout, but the DOM rendered successfully.
+  - `/priority-feed` rendered the Priority Feed surface.
+  - `/risk-watch` rendered the Risk Watch surface.
+  - `/live-docket?status=in-progress` rendered the Live Docket in-progress bill list.
+  - `/feedback` rendered the beta feedback form.
 - Browser QA:
-  - In-app browser stayed open during production checks.
-  - Current browser tab remains on the verified Priority Feed scroll-box URL.
-  - Existing production React hydration/minified errors were seen earlier in console logs during Policy Edge page navigation; the visible user-facing routes still rendered and navigated successfully.
+  - In-app browser stayed visible during the production smoke.
+  - Exact-case text checks were normalized after the first pass because several headers render uppercase.
+  - Final browser state should be left on `https://project-qosv1.vercel.app/brief`.
 - Known issues:
-  - YouTube bill-statement integration is still queued; a YouTube API key is still needed before live official-statement discovery can be automated.
-  - Full local type/build tooling remains unreliable in the Documents workspace because Node/TypeScript processes are sometimes killed or hang.
-  - Vercel CLI deployment status reads remain unreliable from this shell; production browser verification is currently the most dependable confirmation.
-  - `Risk Watch` currently depends on client-side local/account-scoped bill stance storage. If stance needs to sync across devices, add database-backed stance persistence later.
-  - Profile avatar/photo upload is still not wired.
-  - Continue monitoring `/feedback/review`; do not mark any new tester feedback resolved until it is fixed and verified.
+  - Weekly digest strategy is intentionally not finalized. The user wants to think about whether Weekly Brief should become a broader weekly digest.
+  - Outbound Weekly Brief email/push delivery is deferred to Post-Launch Next Build.
+  - Local production-auth diagnostics need installed dependencies or a dependency-complete workspace.
+  - The pre-existing Vercel lint warning remains: `components/auth-flow-client.tsx` has a missing `finishProductionAuth` hook dependency warning.
+  - Account avatar/photo upload remains unwired and is still expected as a later profile feature.
+  - Profile/search/dashboard account signals can differ between browser sessions depending on saved local/account state.
+  - Continue monitoring `/feedback/review`; do not resolve tester feedback until fixed and production-verified.
 
 ## Current State
-- Production is serving the latest app behavior from `main` before this handoff doc commit.
-- Policy Edge now has three separate behaviors:
-  - Priority Feed: committee-priority bills, deduped and ranked.
-  - Risk Watch: personal opposed/watching bills, deduped and ranked.
-  - Bill list region: bounded internal scroll box.
-- Dashboard Policy Edge card uses the personal Risk Watch count, not generic in-progress bill count.
-- The high-priority feedback items addressed today were fixed and production-verified at least once from the in-app browser.
-- No new environment variables or secrets were added today.
+- Production is serving `a386fc3 Add weekly brief written summary`.
+- `main` and `origin/main` matched before the EOD doc edit.
+- Weekly Brief is now an in-app Pro/Team beta feature with:
+  - in-app-only positioning,
+  - account-aware written summary,
+  - civic lens,
+  - source signal explanation,
+  - recent brief/history surface,
+  - priority updates,
+  - watchlist focus,
+  - action queue.
+- Post-launch outbound delivery is tracked in `Capitol Ledger App/Next Steps.md`; do not pull that back into beta unless the user explicitly reverses the decision.
+- No new secrets or environment variables were added.
 
 ## Next Best Steps
-1. Check `/feedback/review` first on June 20, 2026:
-   - Triage any new High or Launch Blocker reports before adding new features.
-   - Do not mark feedback resolved without production verification.
-2. Run a short Round 3 regression smoke:
-   - `/dashboard`
-   - `/priority-feed`
-   - `/risk-watch`
-   - `/bills/cmpnlw9x0000cti83v6vsemb6?tab=details`
-   - `/profile`
-   - `/feedback`
-3. Decide the next YouTube step:
-   - Add YouTube API key to the still-todo setup list if not already tracked elsewhere.
-   - After key is available, wire official statement search/matching behind a review-safe sync.
-4. If testers report cross-device stance mismatch, promote bill stances from browser storage into account/database persistence.
-5. Keep using direct Node check scripts instead of full `tsc` in this workspace until the local process-kill/hang issue is resolved.
+1. Let the weekly digest decision breathe:
+   - Do not add email/push delivery yet.
+   - Next product decision is whether Weekly Brief stays an in-app weekly brief, becomes a broader weekly digest, or splits into both.
+2. If continuing Weekly Brief in app, tighten summary ranking:
+   - Prioritize supported bills, Priority Feed items, unread alerts, followed officials, district/member activity, and vote movement.
+   - Avoid duplicating Dashboard, Priority Feed, or Alerts one-for-one.
+3. Run `/feedback/review` before the next feature pass:
+   - Triage any new High or Launch Blocker reports first.
+   - Do not mark anything resolved without production verification.
+4. Add `Save current brief` only after deciding how Recent Briefs should work:
+   - saved snapshot,
+   - live regenerated digest,
+   - or weekly archive.
+5. When a dependency-complete local workspace is available, rerun:
+   - `production-auth:check`,
+   - full build/typecheck,
+   - beta triage with production database access if needed.
