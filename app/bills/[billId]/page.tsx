@@ -167,7 +167,7 @@ function progressStepState(index: number, currentIndex: number): ProgressStep["s
 }
 
 function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): ProgressStep[] {
-  const introducedDate = bill.introducedDate ?? bill.latestActionDate;
+  const introducedDate = bill.introducedDate;
   const originChamber = billOriginChamber(bill.billType);
 
   if (originChamber) {
@@ -188,10 +188,10 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
       const currentIndex = 4;
 
       return [
-        { label: `Introduced in ${originChamber}`, date: formatDate(introducedDate), icon: FileCheck2, state: progressStepState(0, currentIndex) },
+        { label: `Introduced in ${originChamber}`, date: introducedDate ? formatDate(introducedDate) : "", icon: FileCheck2, state: progressStepState(0, currentIndex) },
         {
           label: `${originChamber} committee`,
-          date: formatDate(introducedDate),
+          date: introducedDate ? formatDate(introducedDate) : "",
           icon: FileText,
           detail: `Initial review started in the ${originChamber}, where this ${bill.displayNumber} originated.`,
           state: progressStepState(1, currentIndex)
@@ -239,7 +239,7 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
 
   return labels.map((step, index) => ({
     ...step,
-    date: index === 0 ? formatDate(introducedDate) : index === currentIndex ? formatDate(bill.latestActionDate) : "",
+    date: index === 0 ? (introducedDate ? formatDate(introducedDate) : "") : index === currentIndex ? formatDate(bill.latestActionDate) : "",
     detail: index === currentIndex ? bill.latestActionText : step.detail,
     state: progressStepState(index, currentIndex)
   }));
@@ -359,7 +359,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
   if (headerTitle.length > 90) headerTitleSizeClass = "text-[24px] leading-[1.12]";
   else if (headerTitle.length > 54) headerTitleSizeClass = "text-[27px] leading-[1.1]";
-  const introducedDate = bill.introducedDate ?? bill.latestActionDate;
+  const introducedDate = bill.introducedDate;
   const progressSteps = buildBillProgressSteps(bill, billVotes, status);
 
   return (
@@ -845,7 +845,7 @@ function KeyDetailsCard({
 }: {
   bill: Bill;
   cosponsors: Member[];
-  introducedDate: string;
+  introducedDate?: string | null;
   sponsor?: Member;
   status: string;
 }) {
@@ -870,7 +870,7 @@ function KeyDetailsCard({
           href={sponsor ? `/members/${sponsor.bioguideId}` : undefined}
         />
         <CosponsorsRow cosponsors={cosponsors} />
-        <DetailRow icon={<CalendarDays />} label="Introduced" value={formatDate(introducedDate)} />
+        <DetailRow icon={<CalendarDays />} label="Introduced" value={introducedDate ? formatDate(introducedDate) : "Date pending"} />
         <DetailRow icon={<BriefcaseBusiness />} label={committeeDetail.label} value={committeeDetail.value} href={committeeDetail.href} />
       </div>
     </MobileCard>
