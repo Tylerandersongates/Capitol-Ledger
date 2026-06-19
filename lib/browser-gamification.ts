@@ -36,6 +36,9 @@ type GamificationStorageKeys = {
   snapshotKey: string;
   streakKey: string;
 };
+type RecordGamificationEventOptions = {
+  creditStreakOnDedupe?: boolean;
+};
 
 function scopedStorageKey(baseKey: string, scope: string) {
   return `${baseKey}:${scope}`;
@@ -263,7 +266,7 @@ async function hydrateGamificationFromApi() {
   return accountSnapshot;
 }
 
-export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1) {
+export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1, options: RecordGamificationEventOptions = {}) {
   if (typeof window === "undefined") return false;
 
   const rule = getGamificationEventRule(event);
@@ -274,7 +277,31 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   const existingCount = counts.get(event) ?? 0;
   const key = dedupeKey(event, targetId);
   const dedupeKeys = readDedupeKeys();
-  if (key && dedupeKeys.includes(key) && !(rule.dedupe === "once" && existingCount === 0)) return false;
+  const currentDay = todayKey();
+  const lastStreakCredit = current.lastStreakCreditDate ?? readLocalStreakCreditDate();
+
+  if (key && dedupeKeys.includes(key) && !(rule.dedupe === "once" && existingCount === 0)) {
+    const shouldCreditDedupedAction =
+      options.creditStreakOnDedupe !== false &&
+      rule.streakCredit &&
+      rule.dedupe === "once-per-target" &&
+      current.totalActions > 0 &&
+      lastStreakCredit !== currentDay;
+
+    if (!shouldCreditDedupedAction) return false;
+
+    const next = normalizeAccountGamification({
+      ...current,
+      dayStreak: current.dayStreak + 1,
+      lastStreakCreditDate: currentDay
+    });
+
+    writeLocalStreakCreditDate(currentDay);
+    writeLocalGamificationSnapshot(next);
+    gamificationHydrationPromise = null;
+    void syncGamificationToAccount(next);
+    return true;
+  }
 
   if (rule.dedupe === "once" && existingCount > 0) {
     const earnedBadgeIds = new Set(current.earnedBadgeIds);
@@ -309,8 +336,6 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
     if (nextCount >= progress.threshold) earnedBadgeIds.add(progress.badgeId);
   });
 
-  const currentDay = todayKey();
-  const lastStreakCredit = current.lastStreakCreditDate ?? readLocalStreakCreditDate();
   const baselineStreakCredit = rule.streakCredit && current.dayStreak <= 1 && current.totalActions === 0;
   const streakCredit = rule.streakCredit && !baselineStreakCredit && lastStreakCredit !== currentDay;
   if (streakCredit || baselineStreakCredit) {
@@ -380,5 +405,5 @@ export function recordCompletedDistrictSetupIfReady() {
   const district = readLocalDistrictProfile();
   if (!district.districtCode) return false;
 
-  return recordGamificationEvent("complete-onboarding", district.districtCode);
+  return recordGamificationEvent("complete-onboarding", district.districtCode, 1, { creditStreakOnDedupe: false });
 }

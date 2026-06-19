@@ -156,7 +156,7 @@ export function mergeAccountGamificationForWrite(
   let lastStreakCreditDate = incomingDate ?? currentDate;
 
   if (incomingDate && incomingDate === currentDate) {
-    dayStreak = current.dayStreak;
+    dayStreak = Math.max(current.dayStreak, Math.min(incoming.dayStreak, current.dayStreak + 1));
   } else if (incomingDate && incoming.dayStreak > current.dayStreak + 1) {
     dayStreak = current.dayStreak + 1;
   } else if (!incomingDate && incoming.dayStreak > current.dayStreak) {

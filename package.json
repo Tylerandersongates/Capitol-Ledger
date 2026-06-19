@@ -22,6 +22,7 @@
     "billing:check": "node scripts/check-billing-readiness.mjs",
     "billing-transition:check": "node scripts/check-billing-transition-fixtures.mjs",
     "policy-edge:check": "node scripts/check-policy-edge-routes.mjs && node scripts/check-policy-edge-feed.mjs",
+    "gamification:check": "node scripts/check-gamification-streak.mjs",
     "backend:check": "node scripts/check-backend-readiness.mjs",
     "ai-policy-lens:check": "tsx scripts/check-ai-policy-lens-fixtures.ts",
     "video-links:check": "node scripts/check-video-links.mjs",
