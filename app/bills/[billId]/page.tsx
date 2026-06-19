@@ -690,7 +690,7 @@ function VotesTab({
         <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Vote History</div>
         <h2 className="mt-2 text-[24px] font-medium leading-tight">From bill to law</h2>
         <p className="mt-3 text-[14px] leading-snug text-white/56">
-          The overview highlights the decisive vote for the bill's current status. This tab shows every linked vote in sequence and how members voted.
+          The overview highlights the decisive vote for the bill&apos;s current status. This tab shows every linked vote in sequence and how members voted.
         </p>
       </MobileCard>
 
