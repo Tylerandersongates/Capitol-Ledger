@@ -21,6 +21,7 @@ import {
   resolveBillStanceStorageKey,
   type BillStance
 } from "@/lib/browser-bill-stances";
+import { isBillLawActionText } from "@/lib/bill-status";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import { memberResultMeta, memberStateCode } from "@/lib/member-display";
 import { countPriorityFeedBills, getPolicyEdgeBillKey } from "@/lib/policy-edge-ranking";
@@ -102,7 +103,7 @@ type BillTrackerStage = (typeof billTrackerStages)[number]["label"];
 function resolveBillTrackerStage(actionText?: string): BillTrackerStage {
   const action = actionText?.toLowerCase() ?? "";
 
-  if (action.includes("public law") || action.includes("signed by president") || action.includes("enacted") || action.includes("became law")) return "Enacted";
+  if (isBillLawActionText(action)) return "Enacted";
   if (action.includes("passed") || action.includes("agreed to")) return "Passed";
   if (action.includes("floor") || action.includes("consideration") || action.includes("roll call") || action.includes("vote")) return "Floor";
   if (action.includes("calendar") || action.includes("placed on")) return "Calendar";

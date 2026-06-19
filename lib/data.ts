@@ -3,6 +3,7 @@ import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert
 import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
+import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
@@ -1080,13 +1081,7 @@ export async function getBillDetailWithLiveData(billId: string): Promise<BillDet
 }
 
 export function getBillStatus(bill: Bill) {
-  const action = bill.latestActionText.toLowerCase();
-
-  if (action.includes("enacted")) return "Enacted";
-  if (action.includes("passed")) return "Passed";
-  if (action.includes("committee") || action.includes("hearing") || action.includes("reported")) return "In Committee";
-  if (action.includes("calendar") || action.includes("floor")) return "On Floor";
-  return "In Progress";
+  return resolveBillStatus(bill);
 }
 
 type BillStatusFilter = "passed" | "in-committee" | "in-progress";

@@ -39,6 +39,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
+import { isBillLawActionText } from "@/lib/bill-status";
 import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
@@ -135,7 +136,7 @@ function resolveProgressStepIndex(actionText: string, status: string, stepCount:
   const action = actionText.toLowerCase();
   const normalizedStatus = status.toLowerCase();
 
-  if (action.includes("public law") || action.includes("signed by president") || action.includes("enacted") || normalizedStatus === "enacted") return stepCount - 1;
+  if (isBillLawActionText(action) || normalizedStatus === "enacted") return stepCount - 1;
   if (action.includes("passed") || action.includes("agreed to") || normalizedStatus === "passed") return Math.max(0, stepCount - 2);
   if (action.includes("floor") || action.includes("consideration") || action.includes("roll call") || action.includes("vote")) return Math.min(stepCount - 1, 5);
   if (action.includes("calendar") || action.includes("placed on")) return Math.min(stepCount - 1, 4);
@@ -292,7 +293,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
       <main className="mt-7 space-y-5 pb-8">
         {activeTab === "overview" ? (
           <>
-            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} />
+            <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} status={status} />
             <ProgressSummaryCard billId={bill.id} progressSteps={progressSteps} />
             <VoteBreakdownCard billId={bill.id} vote={billVote} voteTotals={voteTotals} />
           </>
@@ -665,13 +666,17 @@ function KeyDetailsCard({
   bill,
   cosponsors,
   introducedDate,
-  sponsor
+  sponsor,
+  status
 }: {
   bill: Bill;
   cosponsors: Member[];
   introducedDate: string;
   sponsor?: Member;
+  status: string;
 }) {
+  const committeeDetail = resolveCommitteeDetail(bill, status);
+
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
@@ -692,10 +697,17 @@ function KeyDetailsCard({
         />
         <CosponsorsRow cosponsors={cosponsors} />
         <DetailRow icon={<CalendarDays />} label="Introduced" value={formatDate(introducedDate)} />
-        <DetailRow icon={<BriefcaseBusiness />} label="Committee" value={bill.committeeName ?? "Committee pending"} href="/search?type=bills" />
+        <DetailRow icon={<BriefcaseBusiness />} label={committeeDetail.label} value={committeeDetail.value} href={committeeDetail.href} />
       </div>
     </MobileCard>
   );
+}
+
+function resolveCommitteeDetail(bill: Bill, status: string) {
+  if (bill.committeeName) return { href: "/search?type=bills", label: "Committee", value: bill.committeeName };
+  if (status === "Enacted") return { label: "Law Status", value: "Enacted into law" };
+  if (status === "Passed") return { label: "Chamber Status", value: "Passed chamber" };
+  return { href: "/search?type=bills", label: "Committee", value: "Committee pending" };
 }
 
 function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {

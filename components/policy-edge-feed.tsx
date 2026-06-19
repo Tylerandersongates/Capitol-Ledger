@@ -20,6 +20,7 @@ import {
   resolveBillStanceStorageKey,
   type BillStance
 } from "@/lib/browser-bill-stances";
+import { getBillStatus } from "@/lib/bill-status";
 import {
   filterPriorityFeedBills,
   getPolicyEdgeBillKey,
@@ -321,11 +322,5 @@ function PolicyEdgeBillRow({ actionLabel, bill, index, mode, sponsorName }: { ac
 }
 
 function getPolicyEdgeBillStatus(bill: Bill) {
-  const action = bill.latestActionText.toLowerCase();
-
-  if (action.includes("enacted")) return "Enacted";
-  if (action.includes("passed")) return "Passed";
-  if (action.includes("committee") || action.includes("hearing") || action.includes("reported")) return "In Committee";
-  if (action.includes("calendar") || action.includes("floor")) return "On Floor";
-  return "In Progress";
+  return getBillStatus(bill);
 }

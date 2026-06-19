@@ -1,3 +1,4 @@
+import { isBillLawActionText } from "./bill-status";
 import type { Bill, SavedFollowRecord } from "../types/capitol";
 
 export type PolicyEdgeFeedMode = "priority" | "risk";
@@ -21,6 +22,7 @@ export function getPolicyEdgeScore(bill: Bill, mode: PolicyEdgeFeedMode) {
   const action = bill.latestActionText.toLowerCase();
   let score = mode === "priority" ? 54 : 58;
 
+  if (isBillLawActionText(action)) score += mode === "risk" ? 26 : 18;
   if (action.includes("reported") || action.includes("ordered to be reported")) score += mode === "priority" ? 22 : 12;
   if (action.includes("hearing") || action.includes("markup")) score += mode === "priority" ? 18 : 8;
   if (action.includes("committee") || action.includes("subcommittee")) score += mode === "priority" ? 14 : 6;
@@ -171,6 +173,7 @@ function isPriorityMovementBill(bill: Bill) {
 
   return (
     isRecentBillAction(bill.latestActionDate) ||
+    isBillLawActionText(action) ||
     action.includes("reported") ||
     action.includes("ordered to be reported") ||
     action.includes("hearing") ||

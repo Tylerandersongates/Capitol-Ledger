@@ -1,3 +1,4 @@
+import { isBillLawActionText } from "./bill-status";
 import type { Bill } from "../types/capitol";
 
 export type AiBillAnalysis = {
@@ -322,6 +323,10 @@ function matchesAny(text: string, terms: string[]) {
 
 function getPersonalStatusLine(bill: Bill) {
   const action = bill.latestActionText.toLowerCase();
+
+  if (isBillLawActionText(action)) {
+    return "Because this bill has become law, the practical question shifts from whether it will pass to when agencies, funding, deadlines, and compliance rules make it real for people.";
+  }
 
   if (action.includes("committee") || action.includes("hearing") || action.includes("referred")) {
     return "Because it is still moving through committee, nothing changes for you today, but this is where details can decide who qualifies, who pays, and how fast anything reaches people.";
