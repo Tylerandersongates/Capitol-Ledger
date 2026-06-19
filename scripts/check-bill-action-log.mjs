@@ -31,5 +31,7 @@ assert.ok(billPage.includes("OfficialActionLogCard"), "Timeline tab should rende
 assert.ok(billPage.includes('ariaLabel="Official bill action log"'), "Official action log should be a labeled scroll box");
 assert.ok(billPage.includes("Vote Detail"), "Action rows should link roll-call actions to vote detail");
 assert.ok(billPage.includes("Date only"), "Action rows should disclose date-only source precision");
+assert.ok(billPage.includes('const billSummary = activeTab === "details" ? await getBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");
+assert.ok(!billPage.includes("const billSummary = await getBillSummary(bill);"), "Bill summary should not be fetched before tab routing");
 
 console.log("Bill action log check passed.");

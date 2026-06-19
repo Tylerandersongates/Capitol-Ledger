@@ -349,11 +349,11 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   if (!detail) notFound();
 
   const { bill, billActions, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
-  const billSummary = await getBillSummary(bill);
   const status = getBillStatus(bill);
   const voteEvents = buildBillVoteEvents(bill, billVotes, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const activeTab = normalizeTab(searchParams?.tab);
+  const billSummary = activeTab === "details" ? await getBillSummary(bill) : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
@@ -425,7 +425,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 
         {activeTab === "timeline" ? <TimelineTab bill={bill} billActions={billActions} billVideos={billVideos} progressSteps={progressSteps} status={status} /> : null}
 
-        {activeTab === "details" ? (
+        {activeTab === "details" && billSummary ? (
           <>
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
