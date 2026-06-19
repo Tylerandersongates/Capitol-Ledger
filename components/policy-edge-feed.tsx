@@ -3,10 +3,9 @@ import { ArrowLeft, Bell, CalendarClock, FileText, Home, Search, Settings, Shiel
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { getBillSponsor, getBillStatus } from "@/lib/data";
+import { getPolicyEdgeScore, isRecentBillAction, rankPolicyEdgeBills, type PolicyEdgeFeedMode } from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
 import type { Bill } from "@/types/capitol";
-
-export type PolicyEdgeFeedMode = "priority" | "risk";
 
 type PolicyEdgeFeedProps = {
   bills: Bill[];
@@ -182,34 +181,4 @@ function PolicyEdgeBillRow({ actionLabel, bill, index, mode }: { actionLabel: st
       </div>
     </Link>
   );
-}
-
-function rankPolicyEdgeBills(bills: Bill[], mode: PolicyEdgeFeedMode) {
-  return [...bills].sort((left, right) => {
-    const scoreDelta = getPolicyEdgeScore(right, mode) - getPolicyEdgeScore(left, mode);
-    if (scoreDelta) return scoreDelta;
-    return Date.parse(right.latestActionDate) - Date.parse(left.latestActionDate);
-  });
-}
-
-function getPolicyEdgeScore(bill: Bill, mode: PolicyEdgeFeedMode) {
-  const action = bill.latestActionText.toLowerCase();
-  let score = mode === "priority" ? 54 : 58;
-
-  if (action.includes("reported") || action.includes("ordered to be reported")) score += mode === "priority" ? 22 : 12;
-  if (action.includes("hearing") || action.includes("markup")) score += mode === "priority" ? 18 : 8;
-  if (action.includes("committee") || action.includes("subcommittee")) score += mode === "priority" ? 14 : 6;
-  if (action.includes("calendar") || action.includes("floor")) score += mode === "risk" ? 22 : 10;
-  if (action.includes("passed") || action.includes("received in")) score += mode === "risk" ? 14 : 4;
-  if (isRecentBillAction(bill.latestActionDate)) score += 10;
-
-  return Math.min(99, score);
-}
-
-function isRecentBillAction(value?: string) {
-  if (!value) return false;
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) return false;
-
-  return Date.now() - timestamp <= 1000 * 60 * 60 * 24 * 21;
 }
