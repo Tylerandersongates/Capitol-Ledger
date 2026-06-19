@@ -3,6 +3,7 @@ import { BillStanceControl } from "@/components/bill-stance-controls";
 import { GamificationEventAnchor } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
+import { BillVoteMemberBreakdown } from "@/components/bill-vote-member-breakdown";
 import { HistoryBackButton } from "@/components/history-back-button";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import { PlanFeatureGate } from "@/components/subscription-controls";
@@ -34,7 +35,6 @@ import {
   Sparkles,
   UsersRound,
   Settings,
-  UserRound,
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
@@ -44,7 +44,7 @@ import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
-import type { Bill, BillSourceMatch, BillVideo, Member, Vote, VotePosition } from "@/types/capitol";
+import type { Bill, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
 
 type BillPageProps = {
   params: {
@@ -62,6 +62,15 @@ type ProgressStep = {
   icon: LucideIcon;
   label: string;
   state?: "complete" | "current" | "pending";
+};
+type BillVoteKind = "Final Passage" | "Veto Override" | "Amendment" | "Procedural" | "Committee" | "Recorded Vote";
+type BillVoteEvent = {
+  impact: string;
+  kind: BillVoteKind;
+  positions: VoteMemberPositionRecord[];
+  score: number;
+  totals: ReturnType<typeof getVoteTotals>;
+  vote: Vote;
 };
 
 const billTabs: Array<{ label: string; value: BillTab }> = [
@@ -222,15 +231,114 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
   }));
 }
 
+function buildBillVoteEvents(bill: Bill, billVotes: Vote[], voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>): BillVoteEvent[] {
+  return [...billVotes]
+    .sort((left, right) => Date.parse(left.voteDate) - Date.parse(right.voteDate))
+    .map((vote) => {
+      const kind = classifyBillVote(vote);
+      const score = getBillVoteScore(vote, kind);
+
+      return {
+        impact: explainBillVoteImpact(bill, vote, kind),
+        kind,
+        positions: voteMemberPositionsByVoteId[vote.id] ?? [],
+        score,
+        totals: getVoteTotals(vote),
+        vote
+      };
+    });
+}
+
+function selectOverviewVoteEvent(bill: Bill, voteEvents: BillVoteEvent[], status: string) {
+  if (!voteEvents.length) return undefined;
+
+  const lawTimestamp = Date.parse(bill.latestActionDate);
+  const candidates = voteEvents.filter((event) => {
+    if (!Number.isFinite(lawTimestamp)) return true;
+    return Date.parse(event.vote.voteDate) <= lawTimestamp;
+  });
+  const eligibleEvents = candidates.length ? candidates : voteEvents;
+  const substantiveEvents = eligibleEvents.filter((event) => event.kind !== "Procedural");
+  const decisivePool = status === "Enacted" || status === "Passed" ? substantiveEvents : substantiveEvents.length ? substantiveEvents : eligibleEvents;
+
+  return [...(decisivePool.length ? decisivePool : eligibleEvents)].sort((left, right) => {
+    const scoreDelta = right.score - left.score;
+    if (scoreDelta) return scoreDelta;
+    return Date.parse(right.vote.voteDate) - Date.parse(left.vote.voteDate);
+  })[0];
+}
+
+function classifyBillVote(vote: Vote): BillVoteKind {
+  const text = `${vote.question} ${vote.result}`.toLowerCase();
+
+  if (text.includes("veto") && text.includes("override")) return "Veto Override";
+  if (text.includes("amendment") || text.includes("amdt")) return "Amendment";
+  if (text.includes("committee")) return "Committee";
+  if (text.includes("passage") || text.includes("passed") || text.includes("on passage") || text.includes("final passage")) return "Final Passage";
+  if (text.includes("motion") || text.includes("rule") || text.includes("table") || text.includes("previous question") || text.includes("cloture")) return "Procedural";
+  return "Recorded Vote";
+}
+
+function getBillVoteScore(vote: Vote, kind: BillVoteKind) {
+  const text = `${vote.question} ${vote.result}`.toLowerCase();
+  let score = 20;
+
+  if (kind === "Final Passage") score += 80;
+  if (kind === "Veto Override") score += 78;
+  if (kind === "Recorded Vote") score += 50;
+  if (kind === "Committee") score += 40;
+  if (kind === "Amendment") score += 28;
+  if (kind === "Procedural") score += 12;
+  if (text.includes("passed") || text.includes("agreed to")) score += 18;
+  if (text.includes("failed") || text.includes("rejected")) score -= 10;
+
+  return score;
+}
+
+function explainBillVoteImpact(bill: Bill, vote: Vote, kind: BillVoteKind) {
+  if (kind === "Final Passage") return `This ${vote.chamber} vote is the clearest recorded passage vote linked to ${bill.displayNumber}.`;
+  if (kind === "Veto Override") return "This vote would decide whether Congress overrides a presidential veto.";
+  if (kind === "Amendment") return "This vote changed or attempted to change the bill text before final action.";
+  if (kind === "Committee") return "This vote reflects committee action before the full chamber considered the bill.";
+  if (kind === "Procedural") return "This vote affected whether or how the chamber could keep moving the bill.";
+  return "This recorded vote is part of the bill history and helps explain how lawmakers acted along the way.";
+}
+
+function getOverviewVoteLabel(status: string, voteEvent?: BillVoteEvent) {
+  if (!voteEvent) {
+    if (status === "Enacted") return "Passed without linked roll-call";
+    if (status === "Passed") return "No linked passage roll-call";
+    return "No recorded roll-call yet";
+  }
+
+  if (status === "Enacted") return "Final vote before law";
+  if (voteEvent.kind === "Final Passage") return "Final passage vote";
+  return voteEvent.kind;
+}
+
+function getNoRecordedVoteMessage(status: string) {
+  if (status === "Enacted") {
+    return "This bill is recorded as law, but Capitol Ledger does not have a linked roll-call vote for final passage yet. It may have passed by voice vote, unanimous consent, or a vote sync may still be pending.";
+  }
+  if (status === "Passed") {
+    return "This bill is recorded as passed, but no linked roll-call vote is available yet. It may have passed without a recorded roll call or vote data may still be syncing.";
+  }
+  return "No recorded roll-call votes are linked to this bill yet.";
+}
+
+function hasRecordedVoteTotals(event: BillVoteEvent) {
+  return event.totals.yes + event.totals.no + event.totals.present + event.totals.notVoting > 0;
+}
+
 export default async function BillPage({ params, searchParams }: BillPageProps) {
   const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
   if (!detail) notFound();
 
   const { bill, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
   const billSummary = await getBillSummary(bill);
-  const billVote = billVotes[0];
-  const voteTotals = getVoteTotals(billVote);
   const status = getBillStatus(bill);
+  const voteEvents = buildBillVoteEvents(bill, billVotes, voteMemberPositionsByVoteId);
+  const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const activeTab = normalizeTab(searchParams?.tab);
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
@@ -295,11 +403,11 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
           <>
             <KeyDetailsCard bill={bill} cosponsors={cosponsors} introducedDate={introducedDate} sponsor={sponsor} status={status} />
             <ProgressSummaryCard billId={bill.id} progressSteps={progressSteps} />
-            <VoteBreakdownCard billId={bill.id} vote={billVote} voteTotals={voteTotals} />
+            <VoteBreakdownCard billId={bill.id} status={status} voteEvent={overviewVoteEvent} />
           </>
         ) : null}
 
-        {activeTab === "votes" ? <VotesTab billVotes={billVotes} voteMemberPositionsByVoteId={voteMemberPositionsByVoteId} /> : null}
+        {activeTab === "votes" ? <VotesTab overviewVoteId={overviewVoteEvent?.vote.id} status={status} voteEvents={voteEvents} /> : null}
 
         {activeTab === "timeline" ? <TimelineTab bill={bill} billVideos={billVideos} progressSteps={progressSteps} status={status} /> : null}
 
@@ -516,66 +624,118 @@ function ScrollableTextBox({ children, className = "" }: { children: ReactNode; 
 
 function VoteBreakdownCard({
   billId,
-  vote,
-  voteTotals
+  status,
+  voteEvent
 }: {
   billId: string;
-  vote?: Vote;
-  voteTotals: { yes: number; no: number; present: number; notVoting: number };
+  status: string;
+  voteEvent?: BillVoteEvent;
 }) {
+  const hasTotals = voteEvent ? hasRecordedVoteTotals(voteEvent) : false;
+
   return (
     <MobileCard variant="rust" className="px-6 py-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-[23px] font-medium">Vote Breakdown</h2>
-        <Link href={vote ? `/votes/${vote.id}` : tabHref(billId, "votes")} className={mobileViewAllClass}>
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">{getOverviewVoteLabel(status, voteEvent)}</div>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Vote Breakdown</h2>
+        </div>
+        <Link href={voteEvent ? `/bills/${billId}?tab=votes` : tabHref(billId, "votes")} className={mobileViewAllClass}>
           View All
         </Link>
       </div>
-      <VoteSpreadPanel className="mt-5" totals={voteTotals} yesLabel="For" noLabel="Against" />
+      {voteEvent && hasTotals ? (
+        <>
+          <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-3">
+            <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">
+              {voteEvent.vote.chamber} Roll Call {voteEvent.vote.rollCall}
+            </div>
+            <p className="mt-2 line-clamp-2 text-[15px] leading-snug text-white/68">{voteEvent.vote.question}</p>
+            <div className="mt-2 text-[12px] leading-snug text-white/50">
+              {voteEvent.impact} / {formatDate(voteEvent.vote.voteDate)}
+            </div>
+          </div>
+          <VoteSpreadPanel className="mt-5" totals={voteEvent.totals} yesLabel="For" noLabel="Against" />
+        </>
+      ) : (
+        <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
+          {voteEvent ? "A roll-call vote is linked, but member totals are still pending from the source feed." : getNoRecordedVoteMessage(status)}
+        </div>
+      )}
     </MobileCard>
   );
 }
 
 function VotesTab({
-  billVotes,
-  voteMemberPositionsByVoteId
+  overviewVoteId,
+  status,
+  voteEvents
 }: {
-  billVotes: Vote[];
-  voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>;
+  overviewVoteId?: string;
+  status: string;
+  voteEvents: BillVoteEvent[];
 }) {
-  if (!billVotes.length) {
+  if (!voteEvents.length) {
     return (
       <MobileCard variant="rust" className="px-6 py-6">
         <h2 className="text-[23px] font-medium">Recorded Votes</h2>
-        <p className="mt-3 text-[15px] leading-6 text-white/58">No recorded votes are linked to this bill yet.</p>
+        <p className="mt-3 text-[15px] leading-6 text-white/58">{getNoRecordedVoteMessage(status)}</p>
       </MobileCard>
     );
   }
 
   return (
     <>
-      {billVotes.map((vote) => {
-        const totals = getVoteTotals(vote);
-        const positions = voteMemberPositionsByVoteId[vote.id] ?? [];
+      <MobileCard variant="rust" className="px-5 py-5">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Vote History</div>
+        <h2 className="mt-2 text-[24px] font-medium leading-tight">From bill to law</h2>
+        <p className="mt-3 text-[14px] leading-snug text-white/56">
+          The overview highlights the decisive vote for the bill's current status. This tab shows every linked vote in sequence and how members voted.
+        </p>
+      </MobileCard>
+
+      {voteEvents.map((event, index) => {
+        const totals = event.totals;
+        const positions = event.positions;
+        const isOverviewVote = event.vote.id === overviewVoteId;
+        const hasTotals = hasRecordedVoteTotals(event);
+
         return (
-          <MobileCard key={vote.id} variant="rust" className="px-6 py-6">
+          <MobileCard key={event.vote.id} variant="rust" className="px-6 py-6">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
               <div className="min-w-0">
-                <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">{vote.chamber} Roll Call {vote.rollCall}</div>
-                <h2 className="mt-2 text-[22px] font-medium leading-tight">{vote.question}</h2>
-                <p className="mt-2 text-[15px] leading-snug text-white/58">{formatDate(vote.voteDate)}</p>
+                <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">
+                  Step {index + 1} / {event.vote.chamber} Roll Call {event.vote.rollCall}
+                </div>
+                <h2 className="mt-2 text-[22px] font-medium leading-tight">{event.vote.question}</h2>
+                <p className="mt-2 text-[15px] leading-snug text-white/58">{formatDate(event.vote.voteDate)}</p>
               </div>
-              <span className="shrink-0 rounded-full bg-[#2be68d]/10 px-3 py-2 text-[15px] font-medium leading-none text-[#2be68d]">{vote.result}</span>
+              <span className="shrink-0 rounded-full bg-[#2be68d]/10 px-3 py-2 text-[15px] font-medium leading-none text-[#2be68d]">{event.vote.result}</span>
             </div>
-            <div className="mt-5 grid grid-cols-3 text-center">
-              <VoteStat value={String(totals.yes)} label="Yea" tone="text-[#58e883]" />
-              <VoteStat value={String(totals.no)} label="Nay" tone="text-[#ff503d]" />
-              <VoteStat value={String(totals.notVoting)} label="Not Voting" tone="text-white/60" />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b]">{event.kind}</span>
+              {isOverviewVote ? (
+                <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[12px] font-semibold text-[#43ed74]">Overview vote</span>
+              ) : null}
             </div>
-            <div className="mt-5 divide-y divide-white/8">
-              {positions.slice(0, 3).map((record) => record.member ? <MemberVoteRow key={record.member.bioguideId} member={record.member} position={record.position} /> : null)}
+            <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-3 text-[14px] leading-snug text-white/58">
+              {event.impact}
             </div>
-            <Link href={`/votes/${vote.id}`} className="mt-5 flex h-12 items-center justify-center rounded-xl border border-rust/45 bg-rust/10 text-[17px] font-medium text-[#ffb12b]">
+            {hasTotals ? (
+              <>
+                <div className="mt-5 grid grid-cols-3 text-center">
+                  <VoteStat value={String(totals.yes)} label="Yea" tone="text-[#58e883]" />
+                  <VoteStat value={String(totals.no)} label="Nay" tone="text-[#ff503d]" />
+                  <VoteStat value={String(totals.notVoting)} label="Not Voting" tone="text-white/60" />
+                </div>
+                <BillVoteMemberBreakdown chamber={event.vote.chamber} positions={positions} />
+              </>
+            ) : (
+              <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
+                Roll-call totals are not available for this linked vote yet.
+              </div>
+            )}
+            <Link href={`/votes/${event.vote.id}`} className="mt-5 flex h-12 items-center justify-center rounded-xl border border-rust/45 bg-rust/10 text-[17px] font-medium text-[#ffb12b]">
               Open Vote Detail
               <ChevronRight className="ml-2 h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             </Link>
@@ -856,37 +1016,6 @@ function TimelineRow({
         {step.detail ? <p className="mt-2 text-[13px] leading-5 text-white/48">{step.detail}</p> : null}
       </div>
     </div>
-  );
-}
-
-function MemberVoteRow({ member, position }: { member: Member; position: VotePosition }) {
-  return (
-    <Link href={`/members/${member.bioguideId}`} className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4">
-      {member.photoUrl ? <Image src={member.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
-      <span className="min-w-0">
-        <span className="block truncate text-[16px] font-semibold text-white">{member.fullName}</span>
-        <span className="mt-1 block text-[13px] text-white/52">{member.state} · {member.party}</span>
-      </span>
-      <PositionPill position={position} />
-    </Link>
-  );
-}
-
-function PositionPill({ position }: { position: VotePosition }) {
-  const classes =
-    position === "Yes"
-      ? "bg-[#43ed74]/12 text-[#43ed74]"
-      : position === "No"
-        ? "bg-[#ff503d]/12 text-[#ff6b5c]"
-        : position === "Present"
-          ? "bg-[#ffb12b]/12 text-[#ffb12b]"
-          : "bg-white/8 text-white/60";
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium leading-none ${classes}`}>
-      {position === "Yes" ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : <VoteIcon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />}
-      {position}
-    </span>
   );
 }
 

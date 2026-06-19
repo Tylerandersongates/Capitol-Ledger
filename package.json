@@ -24,6 +24,7 @@
     "policy-edge:check": "node scripts/check-policy-edge-routes.mjs && node scripts/check-policy-edge-feed.mjs",
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
     "bill-status:check": "node scripts/check-bill-law-status.mjs",
+    "bill-votes:check": "node scripts/check-bill-vote-history.mjs",
     "gamification:check": "node scripts/check-gamification-streak.mjs",
     "backend:check": "node scripts/check-backend-readiness.mjs",
     "ai-policy-lens:check": "tsx scripts/check-ai-policy-lens-fixtures.ts",
