@@ -1181,12 +1181,16 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
     voteFeed,
     favoriteTargets: {
       bills: sourceBills.map((bill) => ({
+        billNumber: bill.billNumber,
+        billType: bill.billType,
+        congress: bill.congress,
         displayNumber: bill.displayNumber,
         id: bill.id,
         latestActionDate: bill.latestActionDate,
         latestActionText: bill.latestActionText,
         policyArea: bill.policyArea,
-        shortTitle: bill.shortTitle
+        shortTitle: bill.shortTitle,
+        title: bill.title
       })),
       members: members.map((member) => ({
         bioguideId: member.bioguideId,

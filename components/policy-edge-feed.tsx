@@ -1,9 +1,24 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, Bell, CalendarClock, FileText, Home, Search, Settings, ShieldAlert, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
-import { getBillSponsor, getBillStatus } from "@/lib/data";
-import { getPolicyEdgeScore, isRecentBillAction, rankPolicyEdgeBills, type PolicyEdgeFeedMode } from "@/lib/policy-edge-ranking";
+import {
+  billStanceChangedEvent,
+  isRiskWatchBillStance,
+  readBillStances,
+  resolveBillStanceStorageKey,
+  type BillStance
+} from "@/lib/browser-bill-stances";
+import {
+  getPolicyEdgeBillKey,
+  getPolicyEdgeScore,
+  isRecentBillAction,
+  rankPolicyEdgeBills,
+  type PolicyEdgeFeedMode
+} from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
 import type { Bill } from "@/types/capitol";
 
@@ -12,6 +27,8 @@ type PolicyEdgeFeedProps = {
   generatedAt: string;
   locked?: boolean;
   mode: PolicyEdgeFeedMode;
+  personalRiskOnly?: boolean;
+  sponsorNamesByBillId?: Record<string, string>;
 };
 
 const panelClass =
@@ -33,8 +50,8 @@ const feedConfig = {
   risk: {
     actionLabel: "Review Risk",
     badge: "Watch",
-    deck: "Bills with open floor paths, unresolved action, or movement that could change quickly.",
-    empty: "No risk-watch bills are active right now.",
+    deck: "Bills you oppose or are watching, ranked so you can decide whether action is needed.",
+    empty: "No opposed or watching bills are in your Risk Watch yet.",
     icon: ShieldAlert,
     metricLabel: "Risk",
     title: "Risk Watch",
@@ -42,12 +59,62 @@ const feedConfig = {
   }
 } as const;
 
-export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode }: PolicyEdgeFeedProps) {
+export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, personalRiskOnly = false, sponsorNamesByBillId = {} }: PolicyEdgeFeedProps) {
   const config = feedConfig[mode];
   const Icon = config.icon;
-  const rankedBills = rankPolicyEdgeBills(bills, mode);
-  const recentCount = rankedBills.filter((bill) => isRecentBillAction(bill.latestActionDate)).length;
-  const topAreaCount = new Set(rankedBills.map((bill) => bill.policyArea).filter(Boolean)).size;
+  const [riskStances, setRiskStances] = useState<Record<string, BillStance> | null>(personalRiskOnly ? null : {});
+  const rankedBills = useMemo(() => rankPolicyEdgeBills(bills, mode), [bills, mode]);
+  const riskBillKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (!personalRiskOnly || !riskStances) return keys;
+
+    bills.forEach((bill) => {
+      if (isRiskWatchBillStance(riskStances[bill.id])) {
+        keys.add(getPolicyEdgeBillKey(bill));
+      }
+    });
+
+    return keys;
+  }, [bills, personalRiskOnly, riskStances]);
+  const visibleBills = useMemo(() => {
+    if (!personalRiskOnly) return rankedBills;
+    if (!riskStances) return [];
+
+    return rankedBills.filter((bill) => isRiskWatchBillStance(riskStances[bill.id]) || riskBillKeys.has(getPolicyEdgeBillKey(bill)));
+  }, [personalRiskOnly, rankedBills, riskBillKeys, riskStances]);
+  const isLoadingPersonalRisk = personalRiskOnly && riskStances === null;
+  const recentCount = visibleBills.filter((bill) => isRecentBillAction(bill.latestActionDate)).length;
+  const topAreaCount = new Set(visibleBills.map((bill) => bill.policyArea).filter(Boolean)).size;
+
+  useEffect(() => {
+    if (!personalRiskOnly || locked) return;
+    let active = true;
+    let activeStorageKey = "";
+
+    function refreshStances() {
+      if (!activeStorageKey || !active) return;
+      setRiskStances(readBillStances(activeStorageKey));
+    }
+
+    resolveBillStanceStorageKey().then((storageKey) => {
+      if (!active) return;
+      activeStorageKey = storageKey;
+      refreshStances();
+    });
+
+    window.addEventListener("storage", refreshStances);
+    window.addEventListener("focus", refreshStances);
+    window.addEventListener("pageshow", refreshStances);
+    window.addEventListener(billStanceChangedEvent, refreshStances);
+
+    return () => {
+      active = false;
+      window.removeEventListener("storage", refreshStances);
+      window.removeEventListener("focus", refreshStances);
+      window.removeEventListener("pageshow", refreshStances);
+      window.removeEventListener(billStanceChangedEvent, refreshStances);
+    };
+  }, [locked, personalRiskOnly]);
 
   return (
     <MobileShell
@@ -84,7 +151,7 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode }: Pol
               <span className="rounded-full border border-[#2be68d]/30 bg-[#2be68d]/10 px-2.5 py-1 text-[11px] font-medium text-[#2be68d]">Live</span>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-2">
-              <FeedMetric label={config.metricLabel} value={rankedBills.length} />
+              <FeedMetric label={config.metricLabel} value={visibleBills.length} />
               <FeedMetric label="Recent" value={recentCount} />
               <FeedMetric label="Areas" value={topAreaCount} />
             </div>
@@ -97,15 +164,19 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode }: Pol
 
         {locked ? <LockedPolicyEdgeCard title={config.title} /> : null}
 
-        {!locked && rankedBills.length ? (
+        {!locked && isLoadingPersonalRisk ? (
+          <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>Checking your saved bill stances...</div>
+        ) : null}
+
+        {!locked && !isLoadingPersonalRisk && visibleBills.length ? (
           <div className="space-y-3">
-            {rankedBills.slice(0, 12).map((bill, index) => (
-              <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} />
+            {visibleBills.slice(0, 12).map((bill, index) => (
+              <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
             ))}
           </div>
         ) : null}
 
-        {!locked && !rankedBills.length ? <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>{config.empty}</div> : null}
+        {!locked && !isLoadingPersonalRisk && !visibleBills.length ? <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>{config.empty}</div> : null}
       </main>
 
       <MobileBottomNav
@@ -147,9 +218,8 @@ function LockedPolicyEdgeCard({ title }: { title: string }) {
   );
 }
 
-function PolicyEdgeBillRow({ actionLabel, bill, index, mode }: { actionLabel: string; bill: Bill; index: number; mode: PolicyEdgeFeedMode }) {
-  const sponsor = getBillSponsor(bill);
-  const status = getBillStatus(bill);
+function PolicyEdgeBillRow({ actionLabel, bill, index, mode, sponsorName }: { actionLabel: string; bill: Bill; index: number; mode: PolicyEdgeFeedMode; sponsorName?: string }) {
+  const status = getPolicyEdgeBillStatus(bill);
   const score = getPolicyEdgeScore(bill, mode);
   const toneClass = mode === "priority" ? "text-[#ffb12b]" : "text-[#ff6f61]";
 
@@ -163,7 +233,7 @@ function PolicyEdgeBillRow({ actionLabel, bill, index, mode }: { actionLabel: st
           <div className={`text-[12px] font-semibold uppercase tracking-[0.08em] ${toneClass}`}>{bill.displayNumber}</div>
           <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
           <div className="mt-2 text-[13px] leading-snug text-white/52">
-            {sponsor?.fullName ?? "Congress"} - {bill.policyArea}
+            {sponsorName ?? "Congress"} - {bill.policyArea}
           </div>
         </div>
         <span className={`h-fit rounded-full border px-2.5 py-1 text-[11px] font-semibold ${mode === "priority" ? "border-[#ffb12b]/28 bg-[#ffb12b]/10 text-[#ffb12b]" : "border-[#ff6f61]/28 bg-[#ff6f61]/10 text-[#ff8a7e]"}`}>
@@ -181,4 +251,14 @@ function PolicyEdgeBillRow({ actionLabel, bill, index, mode }: { actionLabel: st
       </div>
     </Link>
   );
+}
+
+function getPolicyEdgeBillStatus(bill: Bill) {
+  const action = bill.latestActionText.toLowerCase();
+
+  if (action.includes("enacted")) return "Enacted";
+  if (action.includes("passed")) return "Passed";
+  if (action.includes("committee") || action.includes("hearing") || action.includes("reported")) return "In Committee";
+  if (action.includes("calendar") || action.includes("floor")) return "On Floor";
+  return "In Progress";
 }

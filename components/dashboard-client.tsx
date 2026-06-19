@@ -13,8 +13,16 @@ import {
 } from "@/lib/browser-gamification";
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import {
+  billStanceChangedEvent,
+  isRiskWatchBillStance,
+  readBillStances,
+  resolveBillStanceStorageKey,
+  type BillStance
+} from "@/lib/browser-bill-stances";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import { memberResultMeta, memberStateCode } from "@/lib/member-display";
+import { getPolicyEdgeBillKey } from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -126,6 +134,7 @@ export function DashboardClient({
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>(() => uniqueFavoriteRecords(initialLedger?.follows ?? []));
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
+  const [billStances, setBillStances] = useState<Record<string, BillStance>>({});
   const selectedVoteFeed = useMemo(
     () => resolveDashboardVoteFeed(data.voteFeed, favoriteRecords, data.favoriteTargets, accountProfile),
     [accountProfile, data.favoriteTargets, data.voteFeed, favoriteRecords]
@@ -148,6 +157,7 @@ export function DashboardClient({
   const trackerProgressStep = `${trackerStageIndex + 1}/${billTrackerStages.length}`;
   const trackerStagePill = getBillTrackerStagePill(trackerStage);
   const inProgressCount = data.statusCounts.inProgress || Math.max(0, data.billsInAction - data.statusCounts.passed - data.statusCounts.inCommittee);
+  const riskWatchCount = useMemo(() => countRiskWatchBills(data.favoriteTargets.bills, billStances), [billStances, data.favoriteTargets.bills]);
   const passedPercent = data.billsInAction ? (data.statusCounts.passed / data.billsInAction) * 100 : 0;
   const committeePercent = data.billsInAction ? (data.statusCounts.inCommittee / data.billsInAction) * 100 : 0;
   const inProgressPercent = data.billsInAction ? (inProgressCount / data.billsInAction) * 100 : 0;
@@ -160,6 +170,35 @@ export function DashboardClient({
   const visibleFavorites = resolvedFavoriteItems.length ? resolvedFavoriteItems : suggestedFavorites;
   const showingSavedFavorites = resolvedFavoriteItems.length > 0;
   const shouldScrollFavorites = showingSavedFavorites && visibleFavorites.length > 3;
+
+  useEffect(() => {
+    let active = true;
+    let activeStorageKey = "";
+
+    function refreshStances() {
+      if (!activeStorageKey || !active) return;
+      setBillStances(readBillStances(activeStorageKey));
+    }
+
+    resolveBillStanceStorageKey().then((storageKey) => {
+      if (!active) return;
+      activeStorageKey = storageKey;
+      refreshStances();
+    });
+
+    window.addEventListener("storage", refreshStances);
+    window.addEventListener("focus", refreshStances);
+    window.addEventListener("pageshow", refreshStances);
+    window.addEventListener(billStanceChangedEvent, refreshStances);
+
+    return () => {
+      active = false;
+      window.removeEventListener("storage", refreshStances);
+      window.removeEventListener("focus", refreshStances);
+      window.removeEventListener("pageshow", refreshStances);
+      window.removeEventListener(billStanceChangedEvent, refreshStances);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -459,12 +498,12 @@ export function DashboardClient({
                         </summary>
                         <div className="mt-3 grid grid-cols-3 gap-2">
                           <LockedStatPill label="Priority Queue" value={`${data.statusCounts.inCommittee}`} />
-                          <LockedStatPill label="Risk Watch" value={`${inProgressCount}`} />
+                          <LockedStatPill label="Risk Watch" value={`${riskWatchCount}`} />
                           <LockedStatPill label="New Movement" value={`${data.updateCount}`} />
                         </div>
                         <div className="mt-3 grid grid-cols-1 gap-2">
                           <LockedProRow label="Priority bill queue" subtitle="Track which bills are most likely to move next." />
-                          <LockedProRow label="Vote risk monitor" subtitle="Flag split-vote legislation before floor action." />
+                          <LockedProRow label="Personal risk monitor" subtitle="Track bills you oppose or are still watching." />
                           <LockedProRow label="Movement alerts" subtitle="Spot hearings and amendments sooner." />
                         </div>
                       </details>
@@ -480,7 +519,7 @@ export function DashboardClient({
                         <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">Pro Intelligence Active</div>
                         <h2 className="mt-2 text-[25px] font-semibold leading-tight">Today&apos;s policy edge</h2>
                         <p className="mt-3 text-[15px] leading-snug text-white/62">
-                          Priority-ranked bills, early vote-risk warnings, and movement alerts focused on your district and interests.
+                          Priority-ranked bills, personal Risk Watch, and movement alerts focused on your district and interests.
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
@@ -492,7 +531,7 @@ export function DashboardClient({
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
                       <ProStatPill label="Priority Queue" value={data.statusCounts.inCommittee} />
-                      <ProStatPill label="Risk Watch" value={inProgressCount} />
+                      <ProStatPill label="Risk Watch" value={riskWatchCount} />
                       <ProStatPill label="New Movement" value={data.updateCount} />
                     </div>
                     <div className="mt-4 grid grid-cols-1 gap-2">
@@ -501,7 +540,7 @@ export function DashboardClient({
                         label="Priority bill queue"
                         subtitle="Bills with near-term committee movement"
                       />
-                      <ProInsightRow value={inProgressCount} label="Vote risk monitor" subtitle="Tracked bills with uncertain floor path" />
+                      <ProInsightRow value={riskWatchCount} label="Personal risk monitor" subtitle="Bills you oppose or are still watching" />
                       <ProInsightRow value={data.updateCount} label="Movement alerts" subtitle="New hearings, referrals, and policy shifts" />
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
@@ -976,6 +1015,18 @@ function LockedProRow({ label, subtitle }: { label: string; subtitle: string }) 
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
+}
+
+function countRiskWatchBills(bills: DashboardData["favoriteTargets"]["bills"], stances: Record<string, BillStance>) {
+  const riskBillKeys = new Set<string>();
+
+  bills.forEach((bill) => {
+    if (isRiskWatchBillStance(stances[bill.id])) {
+      riskBillKeys.add(getPolicyEdgeBillKey(bill));
+    }
+  });
+
+  return riskBillKeys.size;
 }
 
 let dashboardLedgerPromise: Promise<AccountLedgerSnapshot | null> | null = null;

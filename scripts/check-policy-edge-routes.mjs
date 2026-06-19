@@ -21,6 +21,11 @@ assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}Open Risk Watch/.test(dashboard),
 
 assert.ok(priorityPage.includes('mode="priority"'), "Priority Feed page should render the priority mode");
 assert.ok(riskPage.includes('mode="risk"'), "Risk Watch page should render the risk mode");
+assert.ok(riskPage.includes('searchRecordsWithLiveData({ type: "bills" })'), "Risk Watch should consider all bills before applying personal stance filters");
+assert.ok(riskPage.includes("personalRiskOnly"), "Risk Watch should filter to personal opposed/watching bills");
+assert.ok(!riskPage.includes('status: "in-progress"'), "Risk Watch should not be triggered by generic in-progress status");
+assert.ok(sharedFeed.includes("isRiskWatchBillStance"), "Risk Watch feed should read opposed/watching bill stances");
+assert.ok(dashboard.includes("riskWatchCount"), "Dashboard Risk Watch count should use personal stance count");
 assert.ok(sharedFeed.includes("Priority Feed") && sharedFeed.includes("Risk Watch"), "Dedicated policy edge feed labels should render");
 assert.ok(!priorityPage.includes("redirect(\"/search") && !riskPage.includes("redirect(\"/search"), "Policy edge routes should not redirect to Search");
 

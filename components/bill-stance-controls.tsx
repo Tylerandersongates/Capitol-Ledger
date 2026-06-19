@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Eye, ThumbsDown, ThumbsUp, UserCircle } from "lucide-react";
-
-type BillStance = "support" | "oppose" | "watching";
-
-const billStanceKey = "capitol-ledger:bill-stances";
-const billStanceChangedEvent = "capitol-ledger:bill-stances-changed";
-const anonymousBillStanceKey = `${billStanceKey}:anonymous`;
+import {
+  billStanceChangedEvent,
+  readBillStance,
+  resolveBillStanceStorageKey,
+  writeBillStance,
+  type BillStance
+} from "@/lib/browser-bill-stances";
 
 const stanceOptions: Array<{
   description: string;
@@ -32,64 +33,6 @@ const stanceTone: Record<BillStance, string> = {
   support: "text-[#43ed74]",
   watching: "text-[#ffb12b]"
 };
-
-type AuthSessionResponse = {
-  authenticated?: boolean;
-  mode?: string;
-  user?: {
-    email?: string;
-    id?: string;
-  } | null;
-};
-
-function isBillStance(value: unknown): value is BillStance {
-  return value === "support" || value === "oppose" || value === "watching";
-}
-
-function storageScopeFromSession(data: AuthSessionResponse | null) {
-  if (!data?.authenticated || !data.user) return anonymousBillStanceKey;
-
-  const userKey = data.user.id || data.user.email;
-  if (!userKey) return anonymousBillStanceKey;
-
-  const mode = data.mode === "demo" ? "demo" : "account";
-  return `${billStanceKey}:${mode}:${encodeURIComponent(userKey.toLowerCase())}`;
-}
-
-async function resolveBillStanceStorageKey() {
-  const response = await fetch("/api/auth/session", { cache: "no-store" }).catch(() => null);
-  if (!response?.ok) return anonymousBillStanceKey;
-
-  const data = (await response.json().catch(() => null)) as AuthSessionResponse | null;
-  return storageScopeFromSession(data);
-}
-
-function readBillStances(storageKey: string) {
-  if (typeof window === "undefined") return {};
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Record<string, BillStance>;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function readBillStance(billId: string, storageKey: string) {
-  const stance = readBillStances(storageKey)[billId];
-  return isBillStance(stance) ? stance : null;
-}
-
-function writeBillStance(billId: string, stance: BillStance, storageKey: string) {
-  window.localStorage.setItem(
-    storageKey,
-    JSON.stringify({
-      ...readBillStances(storageKey),
-      [billId]: stance
-    })
-  );
-  window.dispatchEvent(new Event(billStanceChangedEvent));
-}
 
 function useBillStance(billId: string) {
   const [stance, setStance] = useState<BillStance | null>(null);

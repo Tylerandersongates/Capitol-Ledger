@@ -52,7 +52,7 @@ function dedupePolicyEdgeBills(bills: Bill[], mode: PolicyEdgeFeedMode) {
   return uniqueBills;
 }
 
-function getPolicyEdgeBillKey(bill: Bill) {
+export function getPolicyEdgeBillKey(bill: Pick<Bill, "billNumber" | "billType" | "congress" | "displayNumber" | "id" | "shortTitle" | "title">) {
   const congress = String(bill.congress || "").trim();
   const billType = normalizePolicyEdgeKeyPart(bill.billType);
   const billNumber = normalizePolicyEdgeKeyPart(bill.billNumber);
