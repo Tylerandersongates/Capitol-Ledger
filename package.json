@@ -18,6 +18,7 @@
     "team:qa": "node scripts/qa-team-flow.mjs",
     "auth-email:check": "node scripts/check-auth-email-delivery.mjs",
     "weekly-brief:check": "node scripts/check-weekly-brief-delivery.mjs",
+    "weekly-brief:in-app-check": "node scripts/check-weekly-brief-in-app.mjs",
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
     "billing:check": "node scripts/check-billing-readiness.mjs",
     "billing-transition:check": "node scripts/check-billing-transition-fixtures.mjs",

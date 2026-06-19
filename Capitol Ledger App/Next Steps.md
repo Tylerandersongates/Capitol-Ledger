@@ -11,8 +11,12 @@ Status: updated June 12, 2026. Capitol Ledger is waiting for Round 2 tester feed
 3. Phase 3: Design QA and Beta Polish - Round 1 blocker pass complete. Remaining work is feedback-driven polish from Round 2.
 4. Phase 4: Subscription Demo Integration - Demo complete for beta. Live Stripe/App Store subscription setup remains on hold until price IDs and the App Store subscription path are chosen.
 5. Phase 5: Core Civic Data Expansion - Partially complete. Live-first search, dashboard, and bill detail paths are connected; more civic surfaces and larger sync passes remain before App Store upload.
-6. Phase 6: External Production Services - Partially complete. Auth/email, billing, Weekly Brief, push, monitoring, and production rate limiting still need final provider decisions and production checks.
+6. Phase 6: External Production Services - Partially complete. Auth/email, billing, push, monitoring, and production rate limiting still need final provider decisions and production checks. Weekly Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Weekly Brief in app.
 7. Phase 7: App Store and TestFlight - Not started. Begin after Round 2 feedback is triaged and the beta-tested core flow is frozen.
+
+### Post-Launch Next Build
+
+1. Weekly Brief outbound delivery: after launch, evaluate email/push delivery for Weekly Briefs, choose the provider bridge, define unsubscribe/history behavior, configure the cron secret/provider settings, and run `pnpm weekly-brief:check` plus `pnpm weekly-brief:qa` before turning on real sends.
 
 ### Current Waiting State
 
@@ -100,7 +104,7 @@ Remaining before App Store upload:
 2. Fix all launch blockers and high-severity account/data contradictions.
 3. Batch non-blocking copy/spacing polish after Round 2 feedback slows.
 4. Capture final App Store screenshot candidates from stable mobile pages.
-5. Decide final Weekly Brief visual treatment once delivery provider behavior is known.
+5. Keep Weekly Brief visual treatment focused on the in-app beta page; revisit outbound delivery treatment in the Post-Launch Next Build.
 
 ### Phase 4: Subscription Demo Integration - Demo Complete, Live Billing Pending
 
@@ -162,7 +166,7 @@ Remaining before App Store upload:
 
 1. Run `pnpm backend:check` as the broad outside-service tracker before production freeze.
 2. Choose final auth email provider settings and verify production delivery.
-3. Choose Weekly Brief email/push provider bridge, configure task secret/provider settings, then run `pnpm weekly-brief:check` and `pnpm weekly-brief:qa`.
+3. Keep Weekly Brief in app for beta/App Store v1. Defer email/push provider bridge, cron activation, and real outbound sends to the Post-Launch Next Build.
 4. Choose push-notification provider and implement device token storage, alert-triggered sends, permission prompts, and unsubscribe/preference controls if push is part of App Store v1.
 5. Add monitoring/error reporting and production rate limiting before public launch.
 6. Confirm privacy policy, support URL, data retention, and account deletion story for Apple review.

@@ -249,12 +249,12 @@ export function buildWeeklyBrief({
     actionItems: buildActionItems(profile, subscription, unreadAlerts),
     cadence: defaultCadence,
     delivery: {
-      channel: "In-app now, email-ready later",
+      channel: "In-app beta",
       enabled,
-      nextDelivery: "Next Monday, 8:00 AM",
+      nextDelivery: "Next Monday in app",
       note: enabled
-        ? "Weekly Brief is ready for scheduled delivery once email or push delivery is connected."
-        : "Weekly Brief is paused. Enable it in Alert Preferences to include it in scheduled delivery.",
+        ? "This beta brief stays inside Capitol Ledger and refreshes from your saved ledger, alerts, district profile, and issue interests."
+        : "This beta brief stays available in app. Enable Weekly Brief in Alert Preferences when you want it included in future scheduled delivery.",
       status: enabled ? "ready" : "paused"
     },
     district: {

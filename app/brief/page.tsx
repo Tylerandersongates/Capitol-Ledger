@@ -7,20 +7,30 @@ import {
   Crown,
   FileText,
   Home,
+  ListChecks,
   LockKeyhole,
-  MailCheck,
   Search,
   Settings
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
+import { readWeeklyBriefDeliveryHistoryFromDatabase } from "@/lib/account-database";
 import { requireAccountSession } from "@/lib/route-guards";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import { formatBriefGeneratedAt, getWeeklyBriefForUser, type WeeklyBriefSnapshot } from "@/lib/weekly-brief";
+import {
+  getWeeklyBriefDeliveryHistory,
+  getWeeklyBriefStatusLabel,
+  type WeeklyBriefDeliveryRecord
+} from "@/lib/weekly-brief-history";
 
 export default async function WeeklyBriefPage() {
   const session = await requireAccountSession("/brief");
-  const brief = await getWeeklyBriefForUser(session.user);
+  const [brief, databaseHistory] = await Promise.all([
+    getWeeklyBriefForUser(session.user),
+    readWeeklyBriefDeliveryHistoryFromDatabase(session.user.id).catch(() => null)
+  ]);
+  const briefHistory = databaseHistory ?? getWeeklyBriefDeliveryHistory(session.user.id);
 
   if (!isPlanFeatureEnabled(brief.plan.id, "weeklyBrief")) {
     return <LockedWeeklyBriefPage planLabel={brief.plan.label} />;
@@ -48,19 +58,19 @@ export default async function WeeklyBriefPage() {
             <div>
               <div className="flex items-center gap-2 text-[#ffb12b]">
                 <CalendarClock className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                <span className="text-[13px] font-medium uppercase tracking-wide">Delivery</span>
+                <span className="text-[13px] font-medium uppercase tracking-wide">In-App Brief</span>
               </div>
               <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.title}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/58">{brief.delivery.note}</p>
             </div>
-            <span className={`rounded-full px-3 py-1.5 text-[13px] font-medium ${brief.delivery.enabled ? "bg-[#43ed74]/12 text-[#43ed74]" : "bg-white/8 text-white/52"}`}>
-              {brief.delivery.enabled ? "Ready" : "Paused"}
+            <span className="rounded-full bg-[#43ed74]/12 px-3 py-1.5 text-[13px] font-medium text-[#43ed74]">
+              Live in app
             </span>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3 text-[13px]">
             <BriefMeta label="District" value={brief.district.code} />
             <BriefMeta label="Plan" value={brief.plan.label} />
-            <BriefMeta label="Next" value={brief.delivery.nextDelivery} />
+            <BriefMeta label="Mode" value={brief.delivery.channel} />
             <BriefMeta label="Updated" value={formatBriefGeneratedAt(brief.generatedAt)} />
           </div>
         </MobileCard>
@@ -80,6 +90,10 @@ export default async function WeeklyBriefPage() {
         </MobileCard>
 
         <MetricGrid brief={brief} />
+
+        <BriefSignalCard brief={brief} />
+
+        <BriefHistoryCard records={briefHistory} />
 
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-center justify-between">
@@ -124,11 +138,24 @@ export default async function WeeklyBriefPage() {
               </span>
             ))}
           </div>
+          {brief.watchlist.officials.length ? (
+            <div className="mt-5 border-t border-white/8 pt-4">
+              <div className="text-[12px] font-medium uppercase tracking-wide text-white/38">Following Officials</div>
+              <div className="mt-3 space-y-2">
+                {brief.watchlist.officials.map((official) => (
+                  <Link key={official.id} href={official.href} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2.5">
+                    <span className="text-[14px] font-medium text-white/68">{official.title}</span>
+                    <span className="text-[12px] text-[#ffb12b]">Open</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </MobileCard>
 
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-center gap-2">
-            <MailCheck className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+            <ListChecks className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
             <h2 className="text-[21px] font-medium leading-none text-white">Action Queue</h2>
           </div>
           <div className="mt-5 space-y-3">
@@ -221,6 +248,82 @@ function BriefMeta({ label, value }: { label: string; value: string }) {
       <div className="text-[11px] uppercase tracking-wide text-white/38">{label}</div>
       <div className="mt-1 truncate text-[14px] font-medium text-white/74">{value}</div>
     </div>
+  );
+}
+
+function BriefSignalCard({ brief }: { brief: WeeklyBriefSnapshot }) {
+  const signals = [
+    {
+      label: "District context",
+      value: brief.district.label
+    },
+    {
+      label: "Saved ledger",
+      value: `${brief.metrics.savedRecords} saved record${brief.metrics.savedRecords === 1 ? "" : "s"}`
+    },
+    {
+      label: "Issue interests",
+      value: `${brief.metrics.policyInterests} tracked topic${brief.metrics.policyInterests === 1 ? "" : "s"}`
+    },
+    {
+      label: "Unread alerts",
+      value: `${brief.metrics.unreadAlerts} unread update${brief.metrics.unreadAlerts === 1 ? "" : "s"}`
+    }
+  ];
+
+  return (
+    <MobileCard variant="dashboard" className="px-5 py-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[21px] font-medium leading-none text-white">Built From</h2>
+        <span className={`rounded-full px-3 py-1.5 text-[12px] font-medium ${brief.delivery.enabled ? "bg-[#43ed74]/12 text-[#43ed74]" : "bg-white/8 text-white/52"}`}>
+          {brief.delivery.enabled ? "Brief on" : "Pref paused"}
+        </span>
+      </div>
+      <div className="mt-5 divide-y divide-white/8">
+        {signals.map((signal) => (
+          <div key={signal.label} className="grid grid-cols-[112px_1fr] gap-3 py-3 first:pt-0 last:pb-0">
+            <div className="text-[12px] font-medium uppercase tracking-wide text-white/38">{signal.label}</div>
+            <div className="min-w-0 text-[14px] leading-snug text-white/68">{signal.value}</div>
+          </div>
+        ))}
+      </div>
+    </MobileCard>
+  );
+}
+
+function BriefHistoryCard({ records }: { records: WeeklyBriefDeliveryRecord[] }) {
+  const visibleRecords = records.slice(0, 3);
+
+  return (
+    <MobileCard variant="dashboard" className="px-5 py-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[21px] font-medium leading-none text-white">Recent Briefs</h2>
+        <span className="rounded-full bg-white/8 px-3 py-1.5 text-[12px] font-medium text-white/52">
+          {visibleRecords.length ? `${visibleRecords.length} saved` : "Live only"}
+        </span>
+      </div>
+      {visibleRecords.length ? (
+        <div className="mt-5 divide-y divide-white/8">
+          {visibleRecords.map((record) => (
+            <div key={record.id} className="py-3 first:pt-0 last:pb-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 text-[14px] font-medium leading-snug text-white/72">{record.summary}</div>
+                <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[11px] text-white/50">
+                  {getWeeklyBriefStatusLabel(record.status)}
+                </span>
+              </div>
+              <div className="mt-2 text-[12px] leading-snug text-white/42">
+                {formatBriefGeneratedAt(record.createdAt)} - {record.trackedBillCount} bills - {record.issueCount} topics - {record.unreadAlertCount} unread
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-[14px] leading-snug text-white/54">
+          No saved brief captures yet. The current in-app brief is generated live from your latest account activity.
+        </p>
+      )}
+    </MobileCard>
   );
 }
 
