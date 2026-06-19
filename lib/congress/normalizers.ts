@@ -1,4 +1,5 @@
 import type {
+  CongressBillActionItem,
   CongressBillCosponsorItem,
   CongressBillListItem,
   CongressBillSummaryItem,
@@ -9,7 +10,7 @@ import type {
   CongressMemberListItem
 } from "./client";
 import { currentCongressLabel, federalElectionDateIso } from "../utils";
-import type { Bill, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
+import type { Bill, BillAction, BillActionKind, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
 
 const VERIFIED_AT = "2026-05-19";
 
@@ -97,6 +98,68 @@ function normalizeDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
   return date.toISOString().slice(0, 10);
+}
+
+function formatDisplayTime(hour: number, minute: number) {
+  const period = hour >= 12 ? "pm" : "am";
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${String(minute).padStart(2, "0")}${period}`;
+}
+
+function normalizeActionDateTime(actionDate?: string, actionTime?: string) {
+  const date = normalizeDate(actionDate ?? actionTime);
+  const timeSource = actionTime ?? actionDate;
+  const timeMatch = timeSource?.match(/(?:T|\s|^)(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?/i);
+  if (!date || !timeMatch) {
+    return {
+      date,
+      occurredAt: date,
+      time: undefined,
+      timePrecision: "date" as const
+    };
+  }
+
+  let hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const period = timeMatch[3]?.toLowerCase();
+  if (period === "pm" && hour < 12) hour += 12;
+  if (period === "am" && hour === 12) hour = 0;
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return {
+      date,
+      occurredAt: date,
+      time: undefined,
+      timePrecision: "date" as const
+    };
+  }
+
+  return {
+    date,
+    occurredAt: `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`,
+    time: formatDisplayTime(hour, minute),
+    timePrecision: "minute" as const
+  };
+}
+
+function normalizeSourceSystem(value: CongressBillActionItem["sourceSystem"]) {
+  if (typeof value === "string") return value;
+  return value?.name ?? value?.code;
+}
+
+function rollCallFromText(value: string) {
+  return value.match(/Roll\s+(?:no|No)\.?\s*(\d+)/i)?.[1];
+}
+
+function classifyBillAction(text: string, type?: string): BillActionKind {
+  const value = `${type ?? ""} ${text}`.toLowerCase();
+  if (value.includes("introduced")) return "Introduced";
+  if (value.includes("public law") || value.includes("signed by the president") || value.includes("became")) return "Enacted";
+  if (value.includes("roll no") || value.includes("yeas and nays") || value.includes("recorded vote")) return "Vote";
+  if (value.includes("received in the senate") || value.includes("received in the house") || value.includes("message on") || value.includes("sent to")) return "Chamber Transfer";
+  if (value.includes("committee") || value.includes("reported to house") || value.includes("reported to senate") || value.includes("referred")) return "Committee";
+  if (value.includes("debate") || value.includes("considered") || value.includes("floor") || value.includes("passed house") || value.includes("passed senate")) return "Floor";
+  if (value.includes("motion") || value.includes("rule") || value.includes("previous question") || value.includes("postponed")) return "Procedural";
+  return "Source Update";
 }
 
 function normalizeParty(value?: string): Party {
@@ -416,6 +479,38 @@ export function resolveCongressBillSummary(summaries: CongressBillSummaryItem[])
     publishedAt: normalizeDate(officialSummary.updateDate ?? officialSummary.actionDate),
     text: stripSummaryMarkup(officialSummary.text),
     versionCode: officialSummary.versionCode
+  };
+}
+
+export function normalizeCongressBillAction(raw: CongressBillActionItem, bill: Bill, index: number): BillAction | null {
+  const action = raw.text?.replace(/\s+/g, " ").trim();
+  const timing = normalizeActionDateTime(raw.actionDate ?? raw.updateDate, raw.actionTime);
+  if (!action || !timing.date) return null;
+
+  const recordedVote = raw.recordedVotes?.find((vote) => vote.rollCallNumber || vote.rollNumber);
+  const rollCall = normalizeStringNumber(recordedVote?.rollCallNumber ?? recordedVote?.rollNumber) ?? rollCallFromText(action);
+  const sourceSystem = normalizeSourceSystem(raw.sourceSystem) ?? "Congress.gov";
+  const actionKey = [timing.date, timing.time?.replace(/[^a-z0-9]/gi, "") ?? "date", raw.actionCode ?? raw.type ?? slugify(action).slice(0, 42), index]
+    .join("-")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-");
+  const chamber = normalizeChamber(raw.chamber);
+
+  return {
+    action,
+    actionCode: raw.actionCode,
+    billId: bill.id,
+    chamber,
+    date: timing.date,
+    id: `${bill.id}-action-${actionKey}`,
+    kind: classifyBillAction(action, raw.type),
+    occurredAt: timing.occurredAt ?? timing.date,
+    rollCall,
+    sourceLabel: sourceSystem === "Congress.gov" ? "Congress.gov All Actions" : `${sourceSystem} action`,
+    sourceSystem,
+    sourceUrl: raw.url ?? recordedVote?.url ?? `${bill.sourceUrl}/all-actions`,
+    time: timing.time,
+    timePrecision: timing.timePrecision
   };
 }
 

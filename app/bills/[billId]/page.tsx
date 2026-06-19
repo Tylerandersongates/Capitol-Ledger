@@ -44,7 +44,7 @@ import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
-import type { Bill, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
+import type { Bill, BillAction, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
 
 type BillPageProps = {
   params: {
@@ -348,7 +348,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
   if (!detail) notFound();
 
-  const { bill, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
+  const { bill, billActions, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
   const billSummary = await getBillSummary(bill);
   const status = getBillStatus(bill);
   const voteEvents = buildBillVoteEvents(bill, billVotes, voteMemberPositionsByVoteId);
@@ -423,7 +423,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 
         {activeTab === "votes" ? <VotesTab overviewVoteId={overviewVoteEvent?.vote.id} status={status} voteEvents={voteEvents} /> : null}
 
-        {activeTab === "timeline" ? <TimelineTab bill={bill} billVideos={billVideos} progressSteps={progressSteps} status={status} /> : null}
+        {activeTab === "timeline" ? <TimelineTab bill={bill} billActions={billActions} billVideos={billVideos} progressSteps={progressSteps} status={status} /> : null}
 
         {activeTab === "details" ? (
           <>
@@ -762,11 +762,13 @@ function VotesTab({
 
 function TimelineTab({
   bill,
+  billActions,
   billVideos,
   progressSteps,
   status
 }: {
   bill: Bill;
+  billActions: BillAction[];
   billVideos: BillVideo[];
   progressSteps: ProgressStep[];
   status: string;
@@ -831,8 +833,94 @@ function TimelineTab({
         </div>
       </MobileCard>
 
+      <OfficialActionLogCard actions={billActions} />
+
       <VideoCard billVideos={billVideos} compact />
     </>
+  );
+}
+
+function OfficialActionLogCard({ actions }: { actions: BillAction[] }) {
+  return (
+    <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+        <div className="min-w-0">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Official Actions</div>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Action Log</h2>
+        </div>
+        <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
+          {actions.length} {actions.length === 1 ? "row" : "rows"}
+        </span>
+      </div>
+
+      {actions.length ? (
+        <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Official bill action log">
+          {actions.map((action) => (
+            <BillActionRow key={action.id} action={action} />
+          ))}
+        </MobileGlassScrollFrame>
+      ) : (
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">
+          No official action rows linked yet.
+        </div>
+      )}
+    </MobileCard>
+  );
+}
+
+function actionKindTone(kind: BillAction["kind"]) {
+  if (kind === "Vote") return "border-[#79a8ff]/28 bg-[#79a8ff]/10 text-[#9fbeff]";
+  if (kind === "Chamber Transfer") return "border-[#ffb12b]/30 bg-[#ffb12b]/10 text-[#ffb12b]";
+  if (kind === "Committee") return "border-[#43ed74]/24 bg-[#43ed74]/10 text-[#7cf29a]";
+  if (kind === "Enacted") return "border-[#43ed74]/30 bg-[#43ed74]/12 text-[#7cf29a]";
+  if (kind === "Procedural") return "border-white/12 bg-white/[0.045] text-white/54";
+  return "border-white/12 bg-white/[0.04] text-white/60";
+}
+
+function formatActionTimestamp(action: BillAction) {
+  return action.time ? `${formatDate(action.date)} / ${action.time}` : formatDate(action.date);
+}
+
+function BillActionRow({ action }: { action: BillAction }) {
+  const detailHref = action.linkedVoteId ? `/votes/${action.linkedVoteId}` : action.sourceUrl;
+  const detailLabel = action.linkedVoteId ? "Vote Detail" : "Source";
+
+  return (
+    <article className="snap-start rounded-[1.05rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.18)_0%,rgba(7,23,50,0.72)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_10px_22px_rgba(2,10,28,0.2)]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-white/62">
+              {formatActionTimestamp(action)}
+            </span>
+            {action.chamber ? (
+              <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-white/48">
+                {action.chamber}
+              </span>
+            ) : null}
+            <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.07em] ${actionKindTone(action.kind)}`}>
+              {action.kind}
+            </span>
+          </div>
+          <p className="mt-3 text-[14px] leading-5 text-white/72">{action.action}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] font-medium text-white/42">
+            <span>{action.sourceLabel}</span>
+            {action.rollCall ? <span>Roll Call {action.rollCall}</span> : null}
+            {action.timePrecision === "date" ? <span>Date only</span> : null}
+          </div>
+        </div>
+        {detailHref ? (
+          <Link
+            href={detailHref}
+            target={action.linkedVoteId ? undefined : "_blank"}
+            rel={action.linkedVoteId ? undefined : "noreferrer"}
+            className="grid h-10 min-w-10 place-items-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 text-[12px] font-semibold text-[#ffb12b] transition hover:bg-[#ffb12b]/14"
+          >
+            {detailLabel}
+          </Link>
+        ) : null}
+      </div>
+    </article>
   );
 }
 

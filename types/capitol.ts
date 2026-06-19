@@ -125,6 +125,26 @@ export type Bill = {
   sourceUrl: string;
 };
 
+export type BillActionKind = "Introduced" | "Committee" | "Floor" | "Vote" | "Chamber Transfer" | "Procedural" | "Enacted" | "Source Update";
+
+export type BillAction = {
+  id: string;
+  billId: string;
+  action: string;
+  actionCode?: string;
+  chamber?: Chamber;
+  date: string;
+  kind: BillActionKind;
+  linkedVoteId?: string;
+  occurredAt: string;
+  rollCall?: string;
+  sourceLabel: string;
+  sourceSystem?: string;
+  sourceUrl?: string;
+  time?: string;
+  timePrecision: "date" | "minute";
+};
+
 export type CommitteeRecord = {
   id: string;
   name: string;

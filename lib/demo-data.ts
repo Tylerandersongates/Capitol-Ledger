@@ -1,5 +1,5 @@
 import { withMemberServiceFallback } from "@/lib/member-service-history";
-import type { Bill, BillVideo, Cosponsor, Member, MemberVote, UpdateEvent, Vote } from "@/types/capitol";
+import type { Bill, BillAction, BillVideo, Cosponsor, Member, MemberVote, UpdateEvent, Vote } from "@/types/capitol";
 
 const memberRecords: Member[] = [
   {
@@ -595,6 +595,249 @@ export const votes: Vote[] = [
     billId: "demo-hr-471",
     explanation: "Official House roll call 25 recorded passage of the Fix Our Forests Act.",
     sourceUrl: "https://clerk.house.gov/Votes/2025025"
+  }
+];
+
+const hr22ActionsSourceUrl = "https://www.congress.gov/bill/119th-congress/house-bill/22/all-actions";
+
+export const billActions: BillAction[] = [
+  {
+    id: "demo-hr-22-action-20250103-introduced",
+    billId: "demo-hr-22",
+    action: "Introduced in House",
+    chamber: "House",
+    date: "2025-01-03",
+    kind: "Introduced",
+    occurredAt: "2025-01-03",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    timePrecision: "date"
+  },
+  {
+    id: "demo-hr-22-action-20250103-referred",
+    billId: "demo-hr-22",
+    action: "Referred to the House Committee on House Administration.",
+    chamber: "House",
+    date: "2025-01-03",
+    kind: "Committee",
+    occurredAt: "2025-01-03",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    timePrecision: "date"
+  },
+  {
+    id: "demo-hr-22-action-20250401-rules-reported",
+    billId: "demo-hr-22",
+    action: "Rules Committee Resolution H. Res. 282 Reported to House. Rule provides for consideration of H.R. 22, H.R. 1526, S.J. Res. 18 and S.J. Res. 28. The resolution provides for one hour of debate on each measure and one motion to recommit on H.R. 22 and H.R. 1526, and one motion to commit on S.J. Res. 18 and S.J. Res. 28.",
+    chamber: "House",
+    date: "2025-04-01",
+    kind: "Committee",
+    occurredAt: "2025-04-01T10:03:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "10:03am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250407-rules-reported",
+    billId: "demo-hr-22",
+    action: "Rules Committee Resolution H. Res. 294 Reported to House. Rule provides for consideration of S.J. Res. 18, S.J. Res. 28, H.R. 1526 and H.R. 22 under a closed rule.",
+    chamber: "House",
+    date: "2025-04-07",
+    kind: "Committee",
+    occurredAt: "2025-04-07T19:20:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "7:20pm",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250408-rule-passed",
+    billId: "demo-hr-22",
+    action: "Rule H. Res. 294 passed House.",
+    chamber: "House",
+    date: "2025-04-08",
+    kind: "Floor",
+    occurredAt: "2025-04-08T15:23:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "3:23pm",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-considered-rule",
+    billId: "demo-hr-22",
+    action: "Considered under the provisions of rule H. Res. 294. (consideration: CR H1569-1579)",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Floor",
+    occurredAt: "2025-04-10T09:19:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "9:19am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-rule-provides",
+    billId: "demo-hr-22",
+    action: "Rule provides for consideration of S.J. Res. 18, S.J. Res. 28, H.R. 1526 and H.R. 22. The resolution provides for one hour of debate on each measure and one motion to recommit on H.R. 22 and H.R. 1526.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T09:19:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "9:19am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-debate",
+    billId: "demo-hr-22",
+    action: "DEBATE - The House proceeded with one hour of debate on H.R. 22.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Floor",
+    occurredAt: "2025-04-10T09:19:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "9:19am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-previous-question",
+    billId: "demo-hr-22",
+    action: "The previous question was ordered pursuant to the rule.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T10:30:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "10:30am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-recommit-motion",
+    billId: "demo-hr-22",
+    action: "Ms. Johnson (TX) moved to recommit to the Committee on House Administration. (text: CR H1569)",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T10:30:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "10:30am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-recommit-previous-question",
+    billId: "demo-hr-22",
+    action: "The previous question on the motion to recommit was ordered pursuant to clause 2(b) of rule XIX.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T10:31:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "10:31am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-postponed",
+    billId: "demo-hr-22",
+    action: "POSTPONED PROCEEDINGS - At the conclusion of debate on H.R. 22, the Chair put the question on motion to recommit and by voice vote, announced the noes had prevailed. Ms. Johnson (TX) demanded the yeas and nays and the Chair postponed further proceedings until a time to be announced.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T10:31:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "10:31am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-unfinished",
+    billId: "demo-hr-22",
+    action: "Considered as unfinished business. (consideration: CR H1580-1581)",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Floor",
+    occurredAt: "2025-04-10T11:11:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "11:11am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-roll-101",
+    billId: "demo-hr-22",
+    action: "On motion to recommit Failed by the Yeas and Nays: 211 - 215 (Roll no. 101).",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Vote",
+    occurredAt: "2025-04-10T11:17:00",
+    rollCall: "101",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "11:17am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-roll-102",
+    billId: "demo-hr-22",
+    action: "On passage Passed by the Yeas and Nays: 220 - 208 (Roll no. 102). (text: CR H1569-1571)",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Vote",
+    linkedVoteId: "demo-vote-house-102",
+    occurredAt: "2025-04-10T11:23:00",
+    rollCall: "102",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "11:23am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-reconsider",
+    billId: "demo-hr-22",
+    action: "Motion to reconsider laid on the table Agreed to without objection.",
+    chamber: "House",
+    date: "2025-04-10",
+    kind: "Procedural",
+    occurredAt: "2025-04-10T11:23:00",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    time: "11:23am",
+    timePrecision: "minute"
+  },
+  {
+    id: "demo-hr-22-action-20250410-senate-received",
+    billId: "demo-hr-22",
+    action: "Received in the Senate.",
+    chamber: "Senate",
+    date: "2025-04-10",
+    kind: "Chamber Transfer",
+    occurredAt: "2025-04-10",
+    sourceLabel: "Congress.gov All Actions",
+    sourceSystem: "Congress.gov",
+    sourceUrl: hr22ActionsSourceUrl,
+    timePrecision: "date"
   }
 ];
 

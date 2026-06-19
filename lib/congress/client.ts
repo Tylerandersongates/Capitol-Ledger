@@ -175,6 +175,45 @@ export type CongressBillSummariesResponse = {
 
 export type CongressBillSummaryItem = NonNullable<CongressBillSummariesResponse["summaries"]>[number];
 
+export type CongressBillActionItem = {
+  actionCode?: string;
+  actionDate?: string;
+  actionTime?: string;
+  calendarNumber?: number | string;
+  chamber?: string;
+  committees?: Array<{
+    name?: string;
+    systemCode?: string;
+    url?: string;
+  }>;
+  committee?: {
+    name?: string;
+    systemCode?: string;
+    url?: string;
+  };
+  recordedVotes?: Array<{
+    chamber?: string;
+    congress?: number | string;
+    rollNumber?: number | string;
+    rollCallNumber?: number | string;
+    sessionNumber?: number | string;
+    url?: string;
+  }>;
+  sourceSystem?: {
+    code?: string;
+    name?: string;
+  } | string;
+  text?: string;
+  type?: string;
+  updateDate?: string;
+  url?: string;
+};
+
+export type CongressBillActionsResponse = {
+  actions?: CongressBillActionItem[];
+  pagination?: CongressPagination;
+};
+
 export type CongressBillCosponsorsResponse = {
   pagination?: CongressPagination;
   cosponsors?: Array<{
@@ -274,6 +313,10 @@ export async function fetchBill(congress: number, billType: string, billNumber: 
 
 export async function fetchBillSummaries(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {
   return congressFetch<CongressBillSummariesResponse>(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}/summaries`, options);
+}
+
+export async function fetchBillActions(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressBillActionsResponse>(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}/actions`, options);
 }
 
 export async function fetchBillCosponsors(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {

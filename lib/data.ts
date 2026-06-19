@@ -1,6 +1,7 @@
-import { bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
+import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
+import { CongressApiError, fetchBillActions, fetchBillSummaries } from "@/lib/congress/client";
+import { normalizeCongressBillAction } from "@/lib/congress/normalizers";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -9,7 +10,7 @@ import { matchBillSources } from "@/lib/source-matching";
 import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
-import type { Bill, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
+import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
 
 export type SearchFilters = {
   q?: string;
@@ -45,6 +46,7 @@ export type MemberVoteRecord = {
 
 export type BillDetailData = {
   bill: Bill;
+  billActions: BillAction[];
   billVideos: BillVideo[];
   billVotes: Vote[];
   cosponsors: Member[];
@@ -875,6 +877,151 @@ export function getBillVotes(billId: string) {
   return votes.filter((vote) => vote.billId === billId);
 }
 
+function sameBillKey(left: Pick<Bill, "billNumber" | "billType" | "congress">, right: Pick<Bill, "billNumber" | "billType" | "congress">) {
+  return left.congress === right.congress && left.billType.toUpperCase() === right.billType.toUpperCase() && left.billNumber === right.billNumber;
+}
+
+function actionSortValue(action: BillAction) {
+  const timestamp = Date.parse(action.occurredAt);
+  if (Number.isFinite(timestamp)) return timestamp;
+  const dateTimestamp = Date.parse(action.date);
+  return Number.isFinite(dateTimestamp) ? dateTimestamp : 0;
+}
+
+function extractRollCall(action: string) {
+  return action.match(/Roll\s+(?:no|No)\.?\s*(\d+)/i)?.[1];
+}
+
+function classifyDerivedAction(action: string): BillAction["kind"] {
+  const value = action.toLowerCase();
+  if (value.includes("introduced")) return "Introduced";
+  if (value.includes("public law") || value.includes("signed by the president")) return "Enacted";
+  if (value.includes("roll no") || value.includes("yeas and nays") || value.includes("recorded vote")) return "Vote";
+  if (value.includes("received in the senate") || value.includes("received in the house")) return "Chamber Transfer";
+  if (value.includes("committee") || value.includes("referred") || value.includes("reported")) return "Committee";
+  if (value.includes("debate") || value.includes("considered") || value.includes("passed")) return "Floor";
+  if (value.includes("motion") || value.includes("rule") || value.includes("postponed")) return "Procedural";
+  return "Source Update";
+}
+
+function billAllActionsUrl(bill: Bill) {
+  return `${bill.sourceUrl.replace(/\/$/, "")}/all-actions`;
+}
+
+function getDemoBillActionsForBill(bill: Bill) {
+  const matchingDemoBill = bills.find((demoBill) => sameBillKey(demoBill, bill));
+  if (!matchingDemoBill) return [];
+
+  return billActions
+    .filter((action) => action.billId === matchingDemoBill.id)
+    .map((action) => ({
+      ...action,
+      billId: bill.id,
+      id: action.id.replace(matchingDemoBill.id, bill.id)
+    }));
+}
+
+function buildDerivedBillActions(bill: Bill, billVotes: Vote[]) {
+  const actions: BillAction[] = [];
+
+  if (bill.introducedDate) {
+    actions.push({
+      action: `Introduced as ${bill.displayNumber}.`,
+      billId: bill.id,
+      chamber: bill.billType.toUpperCase().startsWith("H") ? "House" : "Senate",
+      date: bill.introducedDate,
+      id: `${bill.id}-derived-introduced`,
+      kind: "Introduced",
+      occurredAt: bill.introducedDate,
+      sourceLabel: "Congress.gov bill record",
+      sourceSystem: "Congress.gov",
+      sourceUrl: bill.sourceUrl,
+      timePrecision: "date"
+    });
+  }
+
+  billVotes.forEach((vote) => {
+    actions.push({
+      action: `${vote.question} ${vote.result ? `${vote.result}.` : ""}`.trim(),
+      billId: bill.id,
+      chamber: vote.chamber,
+      date: vote.voteDate,
+      id: `${bill.id}-derived-vote-${vote.chamber.toLowerCase()}-${vote.rollCall}`,
+      kind: "Vote",
+      linkedVoteId: vote.id,
+      occurredAt: vote.voteDate,
+      rollCall: vote.rollCall,
+      sourceLabel: "Roll-call vote",
+      sourceSystem: vote.chamber === "House" ? "Office of the Clerk" : "U.S. Senate",
+      sourceUrl: vote.sourceUrl,
+      timePrecision: "date"
+    });
+  });
+
+  if (bill.latestActionText && bill.latestActionDate) {
+    actions.push({
+      action: bill.latestActionText,
+      billId: bill.id,
+      chamber: bill.latestActionText.toLowerCase().includes("senate") ? "Senate" : bill.latestActionText.toLowerCase().includes("house") ? "House" : undefined,
+      date: bill.latestActionDate,
+      id: `${bill.id}-derived-latest-action`,
+      kind: classifyDerivedAction(bill.latestActionText),
+      occurredAt: bill.latestActionDate,
+      rollCall: extractRollCall(bill.latestActionText),
+      sourceLabel: "Congress.gov latest action",
+      sourceSystem: "Congress.gov",
+      sourceUrl: billAllActionsUrl(bill),
+      timePrecision: "date"
+    });
+  }
+
+  return actions;
+}
+
+function hydrateBillActionVoteLinks(actions: BillAction[], billVotes: Vote[]) {
+  return actions.map((action) => {
+    if (action.linkedVoteId || !action.rollCall) return action;
+    const vote = billVotes.find((candidate) => candidate.rollCall === action.rollCall && (!action.chamber || candidate.chamber === action.chamber));
+    return vote
+      ? {
+          ...action,
+          linkedVoteId: vote.id,
+          sourceUrl: action.sourceUrl ?? vote.sourceUrl
+        }
+      : action;
+  });
+}
+
+function dedupeBillActions(actions: BillAction[]) {
+  return Array.from(
+    new Map(
+      actions.map((action) => [
+        [action.date, action.time ?? "", action.chamber ?? "", action.action.toLowerCase()].join("|"),
+        action
+      ])
+    ).values()
+  );
+}
+
+function buildBillActionsForDetail(bill: Bill, billVotes: Vote[], officialActions: BillAction[] = []) {
+  const demoActions = getDemoBillActionsForBill(bill);
+  const derivedActions = buildDerivedBillActions(bill, billVotes);
+  return hydrateBillActionVoteLinks(dedupeBillActions([...officialActions, ...demoActions, ...derivedActions]), billVotes).sort(
+    (left, right) => actionSortValue(right) - actionSortValue(left)
+  );
+}
+
+async function fetchOfficialBillActionsForBill(bill: Bill) {
+  try {
+    const response = await fetchBillActions(bill.congress, bill.billType, bill.billNumber, { limit: 250 });
+    return (response.actions ?? [])
+      .map((action, index) => normalizeCongressBillAction(action, bill, index))
+      .filter((action): action is BillAction => action !== null);
+  } catch {
+    return [];
+  }
+}
+
 export function getVoteMemberPositions(voteId: string) {
   return memberVotes
     .filter((memberVote) => memberVote.voteId === voteId)
@@ -911,6 +1058,7 @@ function getDemoBillDetailData(billId: string): BillDetailData | null {
 
   return {
     bill,
+    billActions: buildBillActionsForDetail(bill, billVotes),
     billVideos: getBillVideos(bill.id),
     billVotes,
     cosponsors: getBillCosponsors(bill.id),
@@ -1021,6 +1169,7 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     const bill = mapDatabaseBill(billRow);
     const billVotes = billRow.votes.map(mapDatabaseVote);
+    const officialBillActions = await fetchOfficialBillActionsForBill(bill);
     const sourceTargetIds = uniqueStrings([billRow.id, bill.id, stableLiveBillId(bill)]);
     const sourceLinks = await prisma.$queryRaw<DatabaseSourceLinkRow[]>`
         SELECT "id", "targetType", "targetId", "label", "url", "source", "sourceKind", "verifiedAt"
@@ -1048,6 +1197,7 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     return {
       bill,
+      billActions: buildBillActionsForDetail(bill, billVotes, officialBillActions),
       billVideos,
       billVotes,
       cosponsors: liveCosponsors.length ? liveCosponsors : getBillCosponsors(bill.id),
