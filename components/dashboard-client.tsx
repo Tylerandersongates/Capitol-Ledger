@@ -415,7 +415,7 @@ export function DashboardClient({
                     <p className="mt-2 text-[17px] text-white/62">{data.billsInAction} bills moving through the ledger</p>
                   </div>
                   <Link
-                    href="/search?type=bills&focus=results"
+                    href="/live-docket"
                     className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
                     aria-label={`Open ${data.billsInAction} live docket bill results`}
                   >
@@ -426,33 +426,33 @@ export function DashboardClient({
                 <div className={`${dashboardInnerPanelClass} mt-5 px-3 py-3`}>
                   <div className="flex h-3 overflow-hidden rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
                     <Link
-                      href="/search?type=bills&status=passed&focus=results"
+                      href="/live-docket?status=passed"
                       className="block h-full bg-[#28c98a] transition hover:brightness-110"
                       style={{ width: `${passedPercent}%` }}
                       aria-label={`${data.statusCounts.passed} passed bills`}
                     />
                     <Link
-                      href="/search?type=bills&status=in-committee&focus=results"
+                      href="/live-docket?status=in-committee"
                       className="block h-full bg-[#ffc047] transition hover:brightness-110"
                       style={{ width: `${committeePercent}%` }}
                       aria-label={`${data.statusCounts.inCommittee} bills in committee`}
                     />
                     <Link
-                      href="/search?type=bills&status=in-progress&focus=results"
+                      href="/live-docket?status=in-progress"
                       className="block h-full bg-[#2f9fff] transition hover:brightness-110"
                       style={{ width: `${inProgressPercent}%` }}
                       aria-label={`${inProgressCount} bills in progress`}
                     />
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    <StatusCountLink color="#28c98a" href="/search?type=bills&status=passed&focus=results" label="Passed" value={data.statusCounts.passed} />
+                    <StatusCountLink color="#28c98a" href="/live-docket?status=passed" label="Passed" value={data.statusCounts.passed} />
                     <StatusCountLink
                       color="#ffc047"
-                      href="/search?type=bills&status=in-committee&focus=results"
+                      href="/live-docket?status=in-committee"
                       label="In Committee"
                       value={data.statusCounts.inCommittee}
                     />
-                    <StatusCountLink color="#2f9fff" href="/search?type=bills&status=in-progress&focus=results" label="In Progress" value={inProgressCount} />
+                    <StatusCountLink color="#2f9fff" href="/live-docket?status=in-progress" label="In Progress" value={inProgressCount} />
                   </div>
                 </div>
               </div>
