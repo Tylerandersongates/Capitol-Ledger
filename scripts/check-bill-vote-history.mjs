@@ -12,6 +12,12 @@ const memberBreakdown = read("components/bill-vote-member-breakdown.tsx");
 
 assert.ok(billPage.includes("type BillVoteEvent"), "Bill page should model linked votes as vote-history events");
 assert.ok(billPage.includes("buildBillVoteEvents"), "Bill page should build a full vote history");
+assert.ok(billPage.includes("buildActionVoteEvent"), "Votes tab should derive roll-call vote events from official actions");
+assert.ok(billPage.includes("parseActionVoteCounts"), "Votes tab should parse action-log roll-call counts when available");
+assert.ok(billPage.includes("sourceAction?: BillAction"), "Vote events should preserve the official action they came from");
+assert.ok(billPage.includes("From action log"), "Votes tab should label action-derived vote rows");
+assert.ok(billPage.includes("Source action /"), "Votes tab should show which official action produced the vote row");
+assert.ok(billPage.includes("Member-level votes are pending"), "Action-derived votes should not imply member-level data is synced");
 assert.ok(billPage.includes("selectOverviewVoteEvent"), "Overview vote should be selected from decisive vote rules");
 assert.ok(!billPage.includes("const billVote = billVotes[0]"), "Overview should not blindly use the first linked vote");
 assert.ok(billPage.includes("getNoRecordedVoteMessage"), "Overview should explain missing roll-call data instead of showing fake zeroes");

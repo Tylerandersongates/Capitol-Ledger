@@ -65,10 +65,14 @@ type ProgressStep = {
 };
 type BillVoteKind = "Final Passage" | "Veto Override" | "Amendment" | "Procedural" | "Committee" | "Recorded Vote";
 type BillVoteEvent = {
+  detailHref?: string;
+  detailLabel?: string;
   impact: string;
   kind: BillVoteKind;
   positions: VoteMemberPositionRecord[];
   score: number;
+  sourceAction?: BillAction;
+  sourceType: "linked-vote" | "official-action";
   totals: ReturnType<typeof getVoteTotals>;
   vote: Vote;
 };
@@ -245,22 +249,125 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
   }));
 }
 
-function buildBillVoteEvents(bill: Bill, billVotes: Vote[], voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>): BillVoteEvent[] {
-  return [...billVotes]
-    .sort((left, right) => Date.parse(left.voteDate) - Date.parse(right.voteDate))
-    .map((vote) => {
-      const kind = classifyBillVote(vote);
-      const score = getBillVoteScore(vote, kind);
+function voteActionKey(chamber?: string, rollCall?: string) {
+  return chamber && rollCall ? `${chamber.toLowerCase()}:${rollCall}` : "";
+}
 
-      return {
-        impact: explainBillVoteImpact(bill, vote, kind),
-        kind,
-        positions: voteMemberPositionsByVoteId[vote.id] ?? [],
-        score,
-        totals: getVoteTotals(vote),
-        vote
-      };
-    });
+function parseActionVoteCounts(actionText: string) {
+  const countMatch =
+    actionText.match(/(?:yeas? and nays?|ayes? and noes?|yea-nay vote|recorded vote)[^0-9]*(\d+)\s*[-–]\s*(\d+)/i) ??
+    actionText.match(/:\s*(\d+)\s*[-–]\s*(\d+)\s*\(/);
+
+  if (!countMatch) return undefined;
+
+  return {
+    no: Number(countMatch[2]),
+    yes: Number(countMatch[1])
+  };
+}
+
+function resultFromActionVote(actionText: string) {
+  const normalized = actionText.toLowerCase();
+  if (normalized.includes("passed")) return "Passed";
+  if (normalized.includes("agreed to")) return "Agreed";
+  if (normalized.includes("failed")) return "Failed";
+  if (normalized.includes("rejected")) return "Rejected";
+  return "Recorded";
+}
+
+function questionFromActionVote(actionText: string) {
+  return actionText
+    .replace(/\s*\(Roll no\.\s*\d+\)\.?/i, "")
+    .replace(/\s*\(text:\s*[^)]+\)/gi, "")
+    .trim();
+}
+
+function buildActionVoteEvent(bill: Bill, action: BillAction): BillVoteEvent {
+  const counts = parseActionVoteCounts(action.action);
+  const chamber = action.chamber ?? billOriginChamber(bill.billType) ?? "House";
+  const vote: Vote = {
+    billId: bill.id,
+    chamber,
+    congress: bill.congress,
+    explanation: `Extracted from the official action log for ${bill.displayNumber}.`,
+    id: action.linkedVoteId ?? `${bill.id}-action-vote-${action.id}`,
+    noCount: counts?.no,
+    notVotingCount: undefined,
+    presentCount: undefined,
+    question: questionFromActionVote(action.action),
+    result: resultFromActionVote(action.action),
+    rollCall: action.rollCall ?? "Pending",
+    sourceUrl: action.sourceUrl ?? bill.sourceUrl,
+    voteDate: action.date,
+    yesCount: counts?.yes
+  };
+  const kind = classifyBillVote(vote);
+
+  return {
+    detailHref: action.linkedVoteId ? `/votes/${action.linkedVoteId}` : action.sourceUrl,
+    detailLabel: action.linkedVoteId ? "Open Vote Detail" : "Open Source",
+    impact: `Extracted from official action: ${action.action}`,
+    kind,
+    positions: [],
+    score: getBillVoteScore(vote, kind),
+    sourceAction: action,
+    sourceType: "official-action",
+    totals: getVoteTotals(vote),
+    vote
+  };
+}
+
+function actionTimestampValue(action?: BillAction) {
+  if (!action) return 0;
+  const timestamp = Date.parse(action.occurredAt || action.date);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function voteEventTimestampValue(event: BillVoteEvent) {
+  const actionTimestamp = actionTimestampValue(event.sourceAction);
+  if (actionTimestamp) return actionTimestamp;
+  const voteTimestamp = Date.parse(event.vote.voteDate);
+  return Number.isFinite(voteTimestamp) ? voteTimestamp : 0;
+}
+
+function buildBillVoteEvents(bill: Bill, billVotes: Vote[], billActions: BillAction[], voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>): BillVoteEvent[] {
+  const voteActions = billActions.filter((action) => action.kind === "Vote" && action.rollCall);
+  const actionsByLinkedVoteId = new Map<string, BillAction>();
+  const actionsByVoteKey = new Map<string, BillAction>();
+  const eventsByVoteKey = new Map<string, BillVoteEvent>();
+
+  voteActions.forEach((action) => {
+    if (action.linkedVoteId) actionsByLinkedVoteId.set(action.linkedVoteId, action);
+    const key = voteActionKey(action.chamber, action.rollCall);
+    if (key) actionsByVoteKey.set(key, action);
+  });
+
+  billVotes.forEach((vote) => {
+    const kind = classifyBillVote(vote);
+    const sourceAction = actionsByLinkedVoteId.get(vote.id) ?? actionsByVoteKey.get(voteActionKey(vote.chamber, vote.rollCall));
+    const event: BillVoteEvent = {
+      detailHref: `/votes/${vote.id}`,
+      detailLabel: "Open Vote Detail",
+      impact: sourceAction ? `Linked to official action: ${sourceAction.action}` : explainBillVoteImpact(bill, vote, kind),
+      kind,
+      positions: voteMemberPositionsByVoteId[vote.id] ?? [],
+      score: getBillVoteScore(vote, kind),
+      sourceAction,
+      sourceType: "linked-vote",
+      totals: getVoteTotals(vote),
+      vote
+    };
+
+    eventsByVoteKey.set(voteActionKey(vote.chamber, vote.rollCall), event);
+  });
+
+  voteActions.forEach((action) => {
+    const key = voteActionKey(action.chamber, action.rollCall);
+    if (!key || eventsByVoteKey.has(key)) return;
+    eventsByVoteKey.set(key, buildActionVoteEvent(bill, action));
+  });
+
+  return [...eventsByVoteKey.values()].sort((left, right) => voteEventTimestampValue(left) - voteEventTimestampValue(right));
 }
 
 function selectOverviewVoteEvent(bill: Bill, voteEvents: BillVoteEvent[], status: string) {
@@ -350,7 +457,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
 
   const { bill, billActions, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
   const status = getBillStatus(bill);
-  const voteEvents = buildBillVoteEvents(bill, billVotes, voteMemberPositionsByVoteId);
+  const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const activeTab = normalizeTab(searchParams?.tab);
   const billSummary = activeTab === "details" ? await getBillSummary(bill) : null;
@@ -704,7 +811,7 @@ function VotesTab({
         <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Vote History</div>
         <h2 className="mt-2 text-[24px] font-medium leading-tight">From bill to law</h2>
         <p className="mt-3 text-[14px] leading-snug text-white/56">
-          The overview highlights the decisive vote for the bill&apos;s current status. This tab shows every linked vote in sequence and how members voted.
+          The overview highlights the decisive vote for the bill&apos;s current status. This tab shows linked vote records plus roll-call votes extracted from official actions.
         </p>
       </MobileCard>
 
@@ -713,6 +820,8 @@ function VotesTab({
         const positions = event.positions;
         const isOverviewVote = event.vote.id === overviewVoteId;
         const hasTotals = hasRecordedVoteTotals(event);
+        const hasSyncedVote = event.sourceType === "linked-vote";
+        const detailHrefIsExternal = event.detailHref?.startsWith("http");
 
         return (
           <MobileCard key={event.vote.id} variant="rust" className="px-6 py-6">
@@ -728,6 +837,9 @@ function VotesTab({
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b]">{event.kind}</span>
+              {event.sourceAction ? (
+                <span className="rounded-full border border-[#79a8ff]/24 bg-[#79a8ff]/10 px-3 py-1.5 text-[12px] font-semibold text-[#9fbeff]">From action log</span>
+              ) : null}
               {isOverviewVote ? (
                 <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[12px] font-semibold text-[#43ed74]">Overview vote</span>
               ) : null}
@@ -735,24 +847,45 @@ function VotesTab({
             <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-3 text-[14px] leading-snug text-white/58">
               {event.impact}
             </div>
+            {event.sourceAction ? (
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">
+                  Source action / {formatActionTimestamp(event.sourceAction)}
+                </div>
+                <p className="mt-2 text-[14px] leading-snug text-white/62">{event.sourceAction.action}</p>
+              </div>
+            ) : null}
             {hasTotals ? (
               <>
-                <div className="mt-5 grid grid-cols-3 text-center">
+                <div className={`mt-5 grid text-center ${hasSyncedVote ? "grid-cols-3" : "grid-cols-2"}`}>
                   <VoteStat value={String(totals.yes)} label="Yea" tone="text-[#58e883]" />
                   <VoteStat value={String(totals.no)} label="Nay" tone="text-[#ff503d]" />
-                  <VoteStat value={String(totals.notVoting)} label="Not Voting" tone="text-white/60" />
+                  {hasSyncedVote ? <VoteStat value={String(totals.notVoting)} label="Not Voting" tone="text-white/60" /> : null}
                 </div>
-                <BillVoteMemberBreakdown chamber={event.vote.chamber} positions={positions} />
+                {hasSyncedVote ? (
+                  <BillVoteMemberBreakdown chamber={event.vote.chamber} positions={positions} />
+                ) : (
+                  <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
+                    Member-level votes are pending until this roll call is synced as a full vote record.
+                  </div>
+                )}
               </>
             ) : (
               <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
-                Roll-call totals are not available for this linked vote yet.
+                {event.sourceAction ? "This roll-call vote was found in the official action log; totals and member-level votes are still pending from the source feed." : "Roll-call totals are not available for this linked vote yet."}
               </div>
             )}
-            <Link href={`/votes/${event.vote.id}`} className="mt-5 flex h-12 items-center justify-center rounded-xl border border-rust/45 bg-rust/10 text-[17px] font-medium text-[#ffb12b]">
-              Open Vote Detail
-              <ChevronRight className="ml-2 h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-            </Link>
+            {event.detailHref ? (
+              <Link
+                href={event.detailHref}
+                target={detailHrefIsExternal ? "_blank" : undefined}
+                rel={detailHrefIsExternal ? "noreferrer" : undefined}
+                className="mt-5 flex h-12 items-center justify-center rounded-xl border border-rust/45 bg-rust/10 text-[17px] font-medium text-[#ffb12b]"
+              >
+                {event.detailLabel}
+                <ChevronRight className="ml-2 h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+              </Link>
+            ) : null}
           </MobileCard>
         );
       })}
