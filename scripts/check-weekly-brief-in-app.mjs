@@ -19,6 +19,7 @@ assert(!briefPage.includes("MailCheck"), "Weekly Brief action queue should avoid
 assert(weeklyBrief.includes('channel: "In-app beta"'), "Weekly Brief model should keep beta channel as in-app.");
 assert(weeklyBrief.includes("This beta brief stays inside Capitol Ledger"), "Weekly Brief copy should explain in-app beta behavior.");
 assert(!weeklyBrief.includes("email-ready later"), "Weekly Brief model should not present outbound delivery as part of the beta page.");
+assert(!weeklyBrief.includes("future scheduled delivery"), "Weekly Brief beta copy should not promise future scheduled delivery in the app surface.");
 
 assert(nextSteps.includes("Post-Launch Next Build"), "Next Steps should include a post-launch build section.");
 assert(nextSteps.includes("Weekly Brief outbound delivery"), "Post-launch build should track outbound Weekly Brief delivery.");

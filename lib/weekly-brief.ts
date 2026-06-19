@@ -254,7 +254,7 @@ export function buildWeeklyBrief({
       nextDelivery: "Next Monday in app",
       note: enabled
         ? "This beta brief stays inside Capitol Ledger and refreshes from your saved ledger, alerts, district profile, and issue interests."
-        : "This beta brief stays available in app. Enable Weekly Brief in Alert Preferences when you want it included in future scheduled delivery.",
+        : "This beta brief stays available in app. Turn on Weekly Brief alerts from Alert Preferences when you want the reminder preference active.",
       status: enabled ? "ready" : "paused"
     },
     district: {

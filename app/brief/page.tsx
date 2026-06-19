@@ -276,7 +276,7 @@ function BriefSignalCard({ brief }: { brief: WeeklyBriefSnapshot }) {
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-[21px] font-medium leading-none text-white">Built From</h2>
         <span className={`rounded-full px-3 py-1.5 text-[12px] font-medium ${brief.delivery.enabled ? "bg-[#43ed74]/12 text-[#43ed74]" : "bg-white/8 text-white/52"}`}>
-          {brief.delivery.enabled ? "Brief on" : "Pref paused"}
+          {brief.delivery.enabled ? "Brief alerts on" : "Alerts paused"}
         </span>
       </div>
       <div className="mt-5 divide-y divide-white/8">
