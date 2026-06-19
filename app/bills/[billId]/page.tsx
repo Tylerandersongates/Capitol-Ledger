@@ -774,8 +774,6 @@ function TimelineTab({
   status: string;
 }) {
   const currentStepIndex = getCurrentProgressStepIndex(progressSteps);
-  const activeStepCount = Math.max(1, currentStepIndex + 1);
-  const completionPercent = Math.round((activeStepCount / Math.max(1, progressSteps.length)) * 100);
   const timelineStatus = progressSteps[currentStepIndex]?.label ?? status;
 
   return (
@@ -789,15 +787,6 @@ function TimelineTab({
           <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
             {billActions.length} {billActions.length === 1 ? "row" : "rows"}
           </span>
-        </div>
-        <div className="mt-5 rounded-xl border border-white/10 bg-[#071a38]/65 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
-            <span>Progress</span>
-            <span>{activeStepCount}/{progressSteps.length} stages</span>
-          </div>
-          <div className="mt-2 h-2 rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_16px_rgba(255,177,43,0.24)]" style={{ width: `${completionPercent}%` }} />
-          </div>
         </div>
         {billActions.length ? (
           <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Legislative timeline official actions">
