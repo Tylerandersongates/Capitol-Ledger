@@ -30,6 +30,17 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
     "va benefits",
     "health care for veterans"
   ]);
+  const isSupremeCourtStructureBill =
+    matchesAny(text, [
+      "supreme court",
+      "nine justices",
+      "composed of nine justices",
+      "court packing",
+      "number of justices",
+      "article iii"
+    ]) ||
+    (matchesAny(text, ["constitution", "constitutional amendment"]) &&
+      matchesAny(text, ["supreme court", "justices", "judiciary"]));
 
   if (matchesAny(text, ["public waters", "waterway", "waterways", "fishing restriction", "fishing restrictions", "public access", "outdoor recreation", "recreation", "outdoor recreational access", "recreational access", "recreation access", "geospatial data"])) {
     return {
@@ -75,6 +86,22 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
         "The cost may come back to households through taxes, fees, reduced services, compliance costs, or future budget pressure.",
         "Tax incentives can miss people who do not have the cash, property, or paperwork needed to use them.",
         "If oversight is weak, money can be spent or forgone without proving that people actually benefited."
+      ]
+    };
+  }
+
+  if (isSupremeCourtStructureBill) {
+    return {
+      context: `${billName} is about the structure of the Supreme Court. It could affect people through trust in the Court, separation of powers, and how stable federal constitutional rules feel over time. ${statusLine}`,
+      pros: [
+        "Locking the Court at nine justices could make it harder for either party to expand or shrink the Court for short-term political advantage.",
+        "A constitutional rule could give voters, lawyers, and lower courts a clearer expectation about the Court's size across future administrations.",
+        "If people see the Court as less vulnerable to partisan restructuring, confidence in major rulings and constitutional rights may be more stable."
+      ],
+      cons: [
+        "A fixed number of justices would not by itself resolve concerns about ethics, lifetime tenure, nomination fights, or ideological balance.",
+        "Changing the Constitution is intentionally hard, so the proposal may signal a priority without producing near-term change for households.",
+        "Freezing the Court's size could limit future options if caseloads, legitimacy concerns, or democratic pressures lead people to support structural reform."
       ]
     };
   }

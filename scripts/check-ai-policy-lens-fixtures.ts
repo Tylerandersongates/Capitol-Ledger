@@ -118,6 +118,22 @@ const fixtures: LensFixture[] = [
     },
     expected: ["tax and budget choices", "tax incentives"],
     forbidden: ["matters if it touches your work"]
+  },
+  {
+    name: "supreme court structure bills do not get public safety copy",
+    bill: {
+      billType: "hjres",
+      displayNumber: "H.J.Res. 1",
+      policyArea: "Law",
+      shortTitle:
+        "Proposing an amendment to the Constitution of the United States to require that the Supreme Court of the United States be composed of nine justices.",
+      summary:
+        "Constitutional amendment requiring the Supreme Court of the United States to be composed of nine justices.",
+      title:
+        "Proposing an amendment to the Constitution of the United States to require that the Supreme Court of the United States be composed of nine justices."
+    },
+    expected: ["structure of the Supreme Court", "nine justices", "separation of powers"],
+    forbidden: ["emergency response", "local agencies", "enforcement power"]
   }
 ];
 
