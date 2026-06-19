@@ -506,13 +506,13 @@ export function DashboardClient({
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <Link
-                        href="/search?type=bills&status=in-committee&focus=results"
+                        href="/priority-feed"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
                         Open Priority Feed
                       </Link>
                       <Link
-                        href="/search?type=bills&status=in-progress&focus=results"
+                        href="/risk-watch"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
                         Open Risk Watch
