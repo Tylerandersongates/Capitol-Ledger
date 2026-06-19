@@ -55,8 +55,13 @@ assert.ok(
   webhookSource.includes("restorePausedPersonalSubscriptionForReleasedTeamSeat"),
   "Team cancellation should restore a remembered previous Pro subscription"
 );
+assert.ok(
+  webhookSource.includes("readStripeCustomerSubscriptionForPlan") && webhookSource.includes("legacyProFallback"),
+  "legacy Team cancellations should look for an active Pro subscription before writing Free"
+);
 assert.ok(webhookSource.includes("staleSubscriptionEvent"), "webhook should expose stale-event ignore path");
 assert.ok(transitionSource.includes("team-owner-upgrade"), "owner Team upgrades should be tracked distinctly in the pause table");
 assert.ok(stripeSource.includes("metadata[userEmail]"), "Stripe checkout metadata should include user email for future audit records");
+assert.ok(stripeSource.includes("readStripeCustomerSubscriptionForPlan"), "Stripe helper should expose plan-specific subscription lookup");
 
 console.log("Billing transition fixture check passed.");

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { setAccountSubscription } from "@/lib/account-subscription";
 import { findSubscriptionUserIdByProvider, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { shouldIgnoreStaleStripeSubscriptionEvent } from "@/lib/billing/subscription-event-guards";
-import { getStripeWebhookSecret, parseStripeWebhookEvent, readStripeSubscriptionDetails, verifyStripeWebhookSignature } from "@/lib/billing/stripe";
+import {
+  getStripeWebhookSecret,
+  parseStripeWebhookEvent,
+  readStripeCustomerSubscriptionForPlan,
+  readStripeSubscriptionDetails,
+  verifyStripeWebhookSignature
+} from "@/lib/billing/stripe";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import {
@@ -126,6 +132,30 @@ export async function POST(request: NextRequest) {
           checkoutRequired: restoreResult.checkoutRequired,
           received: true,
           restoredPreviousPro: restoreResult.restored
+        });
+      }
+
+      const legacyProSubscription = object.customer ? await readStripeCustomerSubscriptionForPlan(object.customer, "pro").catch(() => null) : null;
+      const legacyProDetails = readStripeSubscriptionDetails(legacyProSubscription ?? undefined);
+      if (legacyProSubscription?.id && legacyProDetails.plan === "pro") {
+        const restoredSubscription = {
+          cycle: legacyProDetails.cycle,
+          plan: "pro" as const,
+          provider: "stripe" as const,
+          providerCustomerId: legacyProSubscription.customer ?? object.customer,
+          providerEntitlementId: "capitol-ledger-pro",
+          providerSubscriptionId: legacyProSubscription.id,
+          seatCount: undefined,
+          status: legacyProDetails.status
+        };
+
+        await writeSubscriptionToDatabase(userId, restoredSubscription).catch(() => null);
+        setAccountSubscription(userId, restoredSubscription);
+
+        return NextResponse.json({
+          legacyProFallback: true,
+          received: true,
+          restoredPreviousPro: true
         });
       }
     }

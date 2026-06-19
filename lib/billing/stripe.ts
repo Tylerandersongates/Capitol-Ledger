@@ -299,6 +299,10 @@ function isCapitolLedgerStripeSubscription(subscription: StripeSubscriptionObjec
   return metadataPlan !== "free" || Boolean(getPlanCycleForPrice(subscription.items?.data?.[0]?.price?.id));
 }
 
+function getStripeSubscriptionPlan(subscription: StripeSubscriptionObject): SubscriptionPlanId {
+  return getPlanCycleForPrice(subscription.items?.data?.[0]?.price?.id)?.plan ?? readMetadataPlan(subscription.metadata?.plan);
+}
+
 function isPendingCancellation(subscription: StripeSubscriptionObject) {
   return Boolean(subscription.cancel_at_period_end || subscription.cancel_at);
 }
@@ -355,6 +359,43 @@ export async function readStripeCustomerSubscription(customerId: string): Promis
     subscriptions.find(isPendingCancellation) ??
     subscriptions.find(isUsableSubscription) ??
     subscriptions[0] ??
+    null
+  );
+}
+
+export async function readStripeCustomerSubscriptionForPlan(
+  customerId: string,
+  plan: Exclude<SubscriptionPlanId, "free">
+): Promise<StripeSubscriptionObject | null> {
+  const secretKey = getStripeSecretKey();
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured.");
+
+  const params = new URLSearchParams({
+    customer: customerId,
+    limit: "10",
+    status: "all"
+  });
+
+  const response = await fetch(`${STRIPE_API_BASE}/subscriptions?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${secretKey}`
+    }
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "Stripe customer subscription lookup failed.");
+    throw new Error(message);
+  }
+
+  const subscriptions = ((await response.json()) as StripeSubscriptionList).data ?? [];
+  const matchingSubscriptions = subscriptions.filter(
+    (subscription) => isCapitolLedgerStripeSubscription(subscription) && getStripeSubscriptionPlan(subscription) === plan
+  );
+
+  return (
+    matchingSubscriptions.find((subscription) => isUsableSubscription(subscription) && !isPendingCancellation(subscription)) ??
+    matchingSubscriptions.find(isUsableSubscription) ??
+    matchingSubscriptions[0] ??
     null
   );
 }
