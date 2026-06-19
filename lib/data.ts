@@ -1,6 +1,6 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
+import { fetchBillSummaries } from "@/lib/congress/client";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -635,6 +635,16 @@ function resolveDashboardDatabaseReadTimeoutMs() {
   return process.env.NODE_ENV === "production" ? Math.max(optionalDatabaseReadTimeoutMs, 12_000) : optionalDatabaseReadTimeoutMs;
 }
 
+function resolveBillSummaryFetchTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_BILL_SUMMARY_FETCH_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(500, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? 3_500 : 6_000;
+}
+
 async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>, timeoutMs = optionalDatabaseReadTimeoutMs) {
   if (!shouldUseOptionalDatabaseReads()) return null;
 
@@ -674,7 +684,7 @@ export function getBill(id: string) {
 
 export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution> {
   try {
-    const data = await fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5 });
+    const data = await fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs: resolveBillSummaryFetchTimeoutMs() });
     const officialSummary = (data.summaries ?? [])
       .filter((summary) => summary.text)
       .sort((a, b) => Date.parse(b.updateDate ?? b.actionDate ?? "0") - Date.parse(a.updateDate ?? a.actionDate ?? "0"))[0];
@@ -687,8 +697,8 @@ export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution>
         text: stripSummaryMarkup(officialSummary.text)
       };
     }
-  } catch (error) {
-    if (!(error instanceof CongressApiError)) throw error;
+  } catch {
+    // Official summaries are an enhancement; fall back to stored text when Congress.gov is slow or unavailable.
   }
 
   if (bill.summary) {

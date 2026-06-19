@@ -18,6 +18,8 @@ assert.ok(demoData.includes('time: "11:23am"'), "H.R. 22 action log should prese
 
 assert.ok(congressClient.includes("export async function fetchBillActions"), "Congress client should expose bill action fetching");
 assert.ok(congressClient.includes("/actions"), "Congress client should target the bill actions endpoint");
+assert.ok(congressClient.includes("timeoutMs?: number"), "Congress client should support bounded fetches");
+assert.ok(congressClient.includes("AbortController"), "Congress client should abort timed-out requests");
 assert.ok(congressNormalizers.includes("normalizeCongressBillAction"), "Congress action normalizer should exist");
 assert.ok(congressNormalizers.includes("rollCallFromText"), "Congress action normalizer should detect roll-call references");
 
@@ -26,6 +28,8 @@ assert.ok(data.includes("buildBillActionsForDetail"), "Bill detail data should b
 assert.ok(!data.includes("await fetchBillActions"), "Bill detail render should not block on Congress.gov action fetching");
 assert.ok(data.includes("hydrateBillActionVoteLinks"), "Bill actions should link to vote detail records when possible");
 assert.ok(data.includes("getDemoBillActionsForBill"), "Live beta records should be able to reuse matching demo action rows");
+assert.ok(data.includes("resolveBillSummaryFetchTimeoutMs"), "Bill details should bound official summary fetching");
+assert.ok(data.includes("timeoutMs: resolveBillSummaryFetchTimeoutMs()"), "Bill summary fetch should use the bounded Congress.gov request");
 
 assert.ok(!billPage.includes("OfficialActionLogCard"), "Timeline tab should not render a duplicate action log card");
 assert.ok(billPage.includes('ariaLabel="Legislative timeline official actions"'), "Legislative Timeline should render official action rows in its scroll box");

@@ -8,9 +8,10 @@ const CongressResponseSchema = z.object({
 });
 
 type CongressFetchOptions = {
-  limit?: number;
   offset?: number;
   format?: "json" | "xml";
+  limit?: number;
+  timeoutMs?: number;
 };
 
 type CongressPagination = {
@@ -44,12 +45,26 @@ export async function congressFetch<T>(path: string, options: CongressFetchOptio
   if (options.limit) url.searchParams.set("limit", String(options.limit));
   if (options.offset) url.searchParams.set("offset", String(options.offset));
 
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json"
-    },
-    cache: "no-store"
-  });
+  const controller = options.timeoutMs ? new AbortController() : undefined;
+  const timeout = controller && options.timeoutMs ? setTimeout(() => controller.abort(), options.timeoutMs) : undefined;
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      headers: {
+        Accept: "application/json"
+      },
+      cache: "no-store",
+      signal: controller?.signal
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new CongressApiError(`Congress.gov request timed out for ${path}`, 408);
+    }
+    throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new CongressApiError(`Congress.gov request failed for ${path}`, response.status);
