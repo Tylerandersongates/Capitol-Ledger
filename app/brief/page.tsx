@@ -75,6 +75,8 @@ export default async function WeeklyBriefPage() {
           </div>
         </MobileCard>
 
+        <WrittenSummaryCard brief={brief} />
+
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">This Week&apos;s Civic Lens</div>
           <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.lens.headline}</h2>
@@ -248,6 +250,26 @@ function BriefMeta({ label, value }: { label: string; value: string }) {
       <div className="text-[11px] uppercase tracking-wide text-white/38">{label}</div>
       <div className="mt-1 truncate text-[14px] font-medium text-white/74">{value}</div>
     </div>
+  );
+}
+
+function WrittenSummaryCard({ brief }: { brief: WeeklyBriefSnapshot }) {
+  return (
+    <MobileCard variant="dashboard" className="px-5 py-5">
+      <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Written Summary</div>
+      <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.writtenSummary.headline}</h2>
+      <div className="mt-4 space-y-3">
+        {brief.writtenSummary.paragraphs.map((paragraph) => (
+          <p key={paragraph} className="text-[15px] leading-snug text-white/62">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+      <div className="mt-5 rounded-2xl border border-[#ffb12b]/18 bg-[#ffb12b]/10 p-4">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-[#ffb12b]/80">Suggested first read</div>
+        <p className="mt-2 text-[14px] leading-snug text-white/70">{brief.writtenSummary.nextStep}</p>
+      </div>
+    </MobileCard>
   );
 }
 

@@ -70,6 +70,11 @@ export type WeeklyBriefSnapshot = {
       title: string;
     }>;
   };
+  writtenSummary: {
+    headline: string;
+    nextStep: string;
+    paragraphs: string[];
+  };
 };
 
 const defaultCadence = "Mondays at 8:00 AM";
@@ -199,6 +204,48 @@ function buildLens(
   };
 }
 
+function buildWrittenSummary({
+  ledger,
+  priorityUpdates,
+  profile,
+  subscription,
+  unreadAlerts,
+  watchlistBills
+}: {
+  ledger: AccountLedgerSnapshot;
+  priorityUpdates: WeeklyBriefUpdate[];
+  profile: AccountProfileSnapshot;
+  subscription: AccountSubscriptionSnapshot;
+  unreadAlerts: number;
+  watchlistBills: Bill[];
+}): WeeklyBriefSnapshot["writtenSummary"] {
+  const topBill = resolveInterestBills(ledger, watchlistBills)[0] ?? watchlistBills[0];
+  const district = profile.districtCode || profile.districtLabel || "your district";
+  const interests = ledger.issueInterests.length ? ledger.issueInterests.slice(0, 3).join(", ") : "your saved civic priorities";
+  const plan = subscriptionPlans[subscription.plan].name;
+  const topUpdate = priorityUpdates[0];
+  const billStatus = topBill ? getBillStatus(topBill).toLowerCase() : null;
+  const summarySubject = topBill ? `${topBill.displayNumber}, ${topBill.shortTitle}` : "your civic ledger";
+  const updateSentence = topUpdate
+    ? `The strongest update signal is ${topUpdate.title.toLowerCase()}: ${topUpdate.body}`
+    : "There are no urgent priority updates in the brief right now, so this is a good time to review your saved ledger and keep your tracked interests current.";
+  const nextStep = unreadAlerts
+    ? `Start by clearing ${unreadAlerts} unread alert${unreadAlerts === 1 ? "" : "s"}, then review the top watched bill.`
+    : topBill
+      ? `Start with ${topBill.displayNumber}, then scan the priority updates for any new vote or committee movement.`
+      : "Start by adding one bill or official to your saved ledger so next week's summary has stronger signals.";
+
+  return {
+    headline: `This week's read for ${district}`,
+    nextStep,
+    paragraphs: [
+      `This week's brief centers on ${summarySubject}${billStatus ? `, currently ${billStatus}` : ""}. It is tied to ${interests} and is shaped by ${watchlistBills.length} tracked bill${watchlistBills.length === 1 ? "" : "s"}, ${priorityUpdates.length} priority update${priorityUpdates.length === 1 ? "" : "s"}, and ${ledger.follows.length + ledger.savedAlerts.length} saved ledger item${ledger.follows.length + ledger.savedAlerts.length === 1 ? "" : "s"}.`,
+      updateSentence,
+      `${plan} mode packages this into a voter-facing read: what moved, why it matters locally, and which action is most useful before the next check-in.`
+    ]
+  };
+}
+
 function buildActionItems(profile: AccountProfileSnapshot, subscription: AccountSubscriptionSnapshot, unreadAlerts: number) {
   const actions = [
     {
@@ -289,7 +336,15 @@ export function buildWeeklyBrief({
         id: member.bioguideId,
         title: member.fullName
       }))
-    }
+    },
+    writtenSummary: buildWrittenSummary({
+      ledger,
+      priorityUpdates,
+      profile,
+      subscription,
+      unreadAlerts,
+      watchlistBills
+    })
   };
 }
 
