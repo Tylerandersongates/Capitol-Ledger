@@ -13,6 +13,7 @@ import {
 } from "@/lib/browser-gamification";
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { interestsKey, readStringList } from "@/lib/browser-account-ledger";
 import {
   billStanceChangedEvent,
   isRiskWatchBillStance,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/browser-bill-stances";
 import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import { memberResultMeta, memberStateCode } from "@/lib/member-display";
-import { getPolicyEdgeBillKey } from "@/lib/policy-edge-ranking";
+import { countPriorityFeedBills, getPolicyEdgeBillKey } from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -132,6 +133,7 @@ export function DashboardClient({
 }) {
   const [, setUnreadAlertCount] = useState(() => countAccountUnreadAlertIds(initialLedger));
   const [favoriteRecords, setFavoriteRecords] = useState<SavedFollowRecord[]>(() => uniqueFavoriteRecords(initialLedger?.follows ?? []));
+  const [issueInterests, setIssueInterests] = useState<string[]>(() => uniqueStrings(initialLedger?.issueInterests ?? []));
   const [gamificationSnapshot, setGamificationSnapshot] = useState<AccountGamificationSnapshot>(() => getDefaultAccountGamification());
   const [accountProfile, setAccountProfile] = useState<AccountProfileSnapshot | null>(null);
   const [billStances, setBillStances] = useState<Record<string, BillStance>>({});
@@ -157,6 +159,15 @@ export function DashboardClient({
   const trackerProgressStep = `${trackerStageIndex + 1}/${billTrackerStages.length}`;
   const trackerStagePill = getBillTrackerStagePill(trackerStage);
   const inProgressCount = data.statusCounts.inProgress || Math.max(0, data.billsInAction - data.statusCounts.passed - data.statusCounts.inCommittee);
+  const priorityQueueCount = useMemo(
+    () =>
+      countPriorityFeedBills(data.favoriteTargets.bills, {
+        issueInterests,
+        savedFollows: favoriteRecords,
+        stances: billStances
+      }),
+    [billStances, data.favoriteTargets.bills, favoriteRecords, issueInterests]
+  );
   const riskWatchCount = useMemo(() => countRiskWatchBills(data.favoriteTargets.bills, billStances), [billStances, data.favoriteTargets.bills]);
   const passedPercent = data.billsInAction ? (data.statusCounts.passed / data.billsInAction) * 100 : 0;
   const committeePercent = data.billsInAction ? (data.statusCounts.inCommittee / data.billsInAction) * 100 : 0;
@@ -227,8 +238,35 @@ export function DashboardClient({
     if (!initialLedger) return;
     setUnreadAlertCount(countAccountUnreadAlertIds(initialLedger));
     setFavoriteRecords(uniqueFavoriteRecords(initialLedger.follows));
+    setIssueInterests(uniqueStrings(initialLedger.issueInterests));
     writeDashboardFavoriteRecords(initialLedger.follows, false);
   }, [initialLedger]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function refreshIssueInterests() {
+      const localInterests = readStringList(interestsKey);
+      if (active) setIssueInterests(uniqueStrings(localInterests));
+
+      const ledger = await readDashboardAccountLedger();
+      if (active && ledger) setIssueInterests(uniqueStrings(ledger.issueInterests));
+    }
+
+    void refreshIssueInterests();
+    window.addEventListener("storage", refreshIssueInterests);
+    window.addEventListener("focus", refreshIssueInterests);
+    window.addEventListener("pageshow", refreshIssueInterests);
+    window.addEventListener(persistenceEvent, refreshIssueInterests);
+
+    return () => {
+      active = false;
+      window.removeEventListener("storage", refreshIssueInterests);
+      window.removeEventListener("focus", refreshIssueInterests);
+      window.removeEventListener("pageshow", refreshIssueInterests);
+      window.removeEventListener(persistenceEvent, refreshIssueInterests);
+    };
+  }, []);
 
   useEffect(() => {
     if (!accountProfile?.districtCode) return;
@@ -497,7 +535,7 @@ export function DashboardClient({
                           <ChevronRight className="h-4 w-4 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
                         </summary>
                         <div className="mt-3 grid grid-cols-3 gap-2">
-                          <LockedStatPill label="Priority Queue" value={`${data.statusCounts.inCommittee}`} />
+                          <LockedStatPill label="Priority Queue" value={`${priorityQueueCount}`} />
                           <LockedStatPill label="Risk Watch" value={`${riskWatchCount}`} />
                           <LockedStatPill label="New Movement" value={`${data.updateCount}`} />
                         </div>
@@ -530,15 +568,15 @@ export function DashboardClient({
                       </div>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
-                      <ProStatPill label="Priority Queue" value={data.statusCounts.inCommittee} />
+                      <ProStatPill label="Priority Queue" value={priorityQueueCount} />
                       <ProStatPill label="Risk Watch" value={riskWatchCount} />
                       <ProStatPill label="New Movement" value={data.updateCount} />
                     </div>
                     <div className="mt-4 grid grid-cols-1 gap-2">
                       <ProInsightRow
-                        value={data.statusCounts.inCommittee}
+                        value={priorityQueueCount}
                         label="Priority bill queue"
-                        subtitle="Bills with near-term committee movement"
+                        subtitle="Supported, aligned, and saved-official bills"
                       />
                       <ProInsightRow value={riskWatchCount} label="Personal risk monitor" subtitle="Bills you oppose or are still watching" />
                       <ProInsightRow value={data.updateCount} label="Movement alerts" subtitle="New hearings, referrals, and policy shifts" />

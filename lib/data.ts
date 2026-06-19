@@ -1189,7 +1189,10 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
         latestActionDate: bill.latestActionDate,
         latestActionText: bill.latestActionText,
         policyArea: bill.policyArea,
+        sourceUrl: bill.sourceUrl,
         shortTitle: bill.shortTitle,
+        sponsorBioguideId: bill.sponsorBioguideId,
+        summary: bill.summary,
         title: bill.title
       })),
       members: members.map((member) => ({

@@ -1,6 +1,13 @@
-import type { Bill } from "../types/capitol";
+import type { Bill, SavedFollowRecord } from "../types/capitol";
 
 export type PolicyEdgeFeedMode = "priority" | "risk";
+export type PolicyEdgeBillStance = "support" | "oppose" | "watching";
+
+export type PriorityFeedRuleInput = {
+  issueInterests: string[];
+  savedFollows: SavedFollowRecord[];
+  stances: Record<string, PolicyEdgeBillStance | undefined>;
+};
 
 export function rankPolicyEdgeBills(bills: Bill[], mode: PolicyEdgeFeedMode) {
   return dedupePolicyEdgeBills(bills, mode).sort((left, right) => {
@@ -30,6 +37,30 @@ export function isRecentBillAction(value?: string) {
   if (!Number.isFinite(timestamp)) return false;
 
   return Date.now() - timestamp <= 1000 * 60 * 60 * 24 * 21;
+}
+
+export function filterPriorityFeedBills<T extends Bill>(bills: T[], input: PriorityFeedRuleInput) {
+  const riskBillKeys = getBillKeysForStances(bills, input.stances, "risk");
+  const savedBillIds = getSavedFollowIds(input.savedFollows, "bill");
+  const savedBillKeys = new Set(bills.filter((bill) => savedBillIds.has(bill.id)).map(getPolicyEdgeBillKey));
+  const savedMemberIds = getSavedFollowIds(input.savedFollows, "member");
+  const supportedBillKeys = getBillKeysForStances(bills, input.stances, "support");
+
+  return bills.filter((bill) =>
+    isPriorityFeedBill(bill, {
+      billStance: input.stances[bill.id],
+      issueInterests: input.issueInterests,
+      riskBillKeys,
+      savedBillIds,
+      savedBillKeys,
+      savedMemberIds,
+      supportedBillKeys
+    })
+  );
+}
+
+export function countPriorityFeedBills<T extends Bill>(bills: T[], input: PriorityFeedRuleInput) {
+  return filterPriorityFeedBills(bills, input).length;
 }
 
 function dedupePolicyEdgeBills(bills: Bill[], mode: PolicyEdgeFeedMode) {
@@ -92,4 +123,90 @@ function normalizePolicyEdgeKeyPart(value?: string | number) {
 
 function isDemoPolicyEdgeBill(bill: Bill) {
   return bill.id.startsWith("demo-") || bill.sourceUrl.includes("/demo");
+}
+
+type PriorityFeedBillInput = {
+  billStance?: PolicyEdgeBillStance;
+  issueInterests: string[];
+  riskBillKeys: Set<string>;
+  savedBillIds: Set<string>;
+  savedBillKeys: Set<string>;
+  savedMemberIds: Set<string>;
+  supportedBillKeys: Set<string>;
+};
+
+function getBillKeysForStances<T extends Bill>(bills: T[], stances: PriorityFeedRuleInput["stances"], mode: "risk" | "support") {
+  const keys = new Set<string>();
+
+  bills.forEach((bill) => {
+    const stance = stances[bill.id];
+    if ((mode === "risk" && isRiskWatchPolicyEdgeStance(stance)) || (mode === "support" && stance === "support")) {
+      keys.add(getPolicyEdgeBillKey(bill));
+    }
+  });
+
+  return keys;
+}
+
+function isPriorityFeedBill(bill: Bill, input: PriorityFeedBillInput) {
+  const billKey = getPolicyEdgeBillKey(bill);
+
+  if (isRiskWatchPolicyEdgeStance(input.billStance)) return false;
+  if (input.billStance === "support" || input.supportedBillKeys.has(billKey)) return true;
+  if (input.riskBillKeys.has(billKey)) return false;
+
+  if (isPriorityMovementBill(bill) && (input.savedBillIds.has(bill.id) || input.savedBillKeys.has(billKey))) return true;
+  if (isPriorityMovementBill(bill) && bill.sponsorBioguideId && input.savedMemberIds.has(bill.sponsorBioguideId)) return true;
+  if (isPriorityMovementBill(bill) && matchesIssueInterests(bill, input.issueInterests)) return true;
+
+  return false;
+}
+
+function isRiskWatchPolicyEdgeStance(value: unknown): value is Extract<PolicyEdgeBillStance, "oppose" | "watching"> {
+  return value === "oppose" || value === "watching";
+}
+
+function isPriorityMovementBill(bill: Bill) {
+  const action = bill.latestActionText.toLowerCase();
+
+  return (
+    isRecentBillAction(bill.latestActionDate) ||
+    action.includes("reported") ||
+    action.includes("ordered to be reported") ||
+    action.includes("hearing") ||
+    action.includes("markup") ||
+    action.includes("committee") ||
+    action.includes("subcommittee") ||
+    action.includes("calendar") ||
+    action.includes("floor") ||
+    action.includes("passed") ||
+    action.includes("received in")
+  );
+}
+
+function getSavedFollowIds(follows: SavedFollowRecord[], type: SavedFollowRecord["type"]) {
+  return new Set(follows.filter((follow) => follow.type === type).map((follow) => follow.id));
+}
+
+function matchesIssueInterests(bill: Bill, issueInterests: string[]) {
+  if (!issueInterests.length) return false;
+
+  const billText = normalizePriorityText([bill.policyArea, bill.shortTitle, bill.title, bill.summary, bill.latestActionText].join(" "));
+
+  return issueInterests.some((interest) => {
+    const normalizedInterest = normalizePriorityText(interest);
+    if (!normalizedInterest) return false;
+    if (billText.includes(normalizedInterest)) return true;
+
+    const tokens = normalizedInterest.split(" ").filter((token) => token.length >= 4);
+    return tokens.length > 0 && tokens.some((token) => billText.includes(token));
+  });
+}
+
+function normalizePriorityText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

@@ -21,6 +21,7 @@ import {
   type BillStance
 } from "@/lib/browser-bill-stances";
 import {
+  filterPriorityFeedBills,
   getPolicyEdgeBillKey,
   getPolicyEdgeScore,
   isRecentBillAction,
@@ -88,18 +89,6 @@ export function PolicyEdgeFeed({
   const [billStances, setBillStances] = useState<Record<string, BillStance> | null>(needsPersonalSignals ? null : {});
   const [prioritySignals, setPrioritySignals] = useState<PriorityFeedSignals | null>(personalPriorityOnly ? null : emptyPriorityFeedSignals);
   const rankedBills = useMemo(() => rankPolicyEdgeBills(bills, mode), [bills, mode]);
-  const supportedBillKeys = useMemo(() => {
-    const keys = new Set<string>();
-    if (!personalPriorityOnly || !billStances) return keys;
-
-    bills.forEach((bill) => {
-      if (billStances[bill.id] === "support") {
-        keys.add(getPolicyEdgeBillKey(bill));
-      }
-    });
-
-    return keys;
-  }, [billStances, bills, personalPriorityOnly]);
   const riskBillKeys = useMemo(() => {
     const keys = new Set<string>();
     if (!needsPersonalSignals || !billStances) return keys;
@@ -112,44 +101,22 @@ export function PolicyEdgeFeed({
 
     return keys;
   }, [billStances, bills, needsPersonalSignals]);
-  const savedBillKeys = useMemo(() => {
-    const keys = new Set<string>();
-    if (!personalPriorityOnly || !prioritySignals) return keys;
-
-    const savedBillIds = getSavedFollowIds(prioritySignals.savedFollows, "bill");
-    bills.forEach((bill) => {
-      if (savedBillIds.has(bill.id)) {
-        keys.add(getPolicyEdgeBillKey(bill));
-      }
-    });
-
-    return keys;
-  }, [bills, personalPriorityOnly, prioritySignals]);
   const visibleBills = useMemo(() => {
     if (personalPriorityOnly) {
       if (!billStances || !prioritySignals) return [];
 
-      const savedBillIds = getSavedFollowIds(prioritySignals.savedFollows, "bill");
-      const savedMemberIds = getSavedFollowIds(prioritySignals.savedFollows, "member");
-
-      return rankedBills.filter((bill) =>
-        isPriorityFeedBill(bill, {
-          billStance: billStances[bill.id],
-          issueInterests: prioritySignals.issueInterests,
-          riskBillKeys,
-          savedBillIds,
-          savedBillKeys,
-          savedMemberIds,
-          supportedBillKeys
-        })
-      );
+      return filterPriorityFeedBills(rankedBills, {
+        issueInterests: prioritySignals.issueInterests,
+        savedFollows: prioritySignals.savedFollows,
+        stances: billStances
+      });
     }
 
     if (!personalRiskOnly) return rankedBills;
     if (!billStances) return [];
 
     return rankedBills.filter((bill) => isRiskWatchBillStance(billStances[bill.id]) || riskBillKeys.has(getPolicyEdgeBillKey(bill)));
-  }, [billStances, personalPriorityOnly, personalRiskOnly, prioritySignals, rankedBills, riskBillKeys, savedBillKeys, supportedBillKeys]);
+  }, [billStances, personalPriorityOnly, personalRiskOnly, prioritySignals, rankedBills, riskBillKeys]);
   const isLoadingPersonalRisk = personalRiskOnly && billStances === null;
   const isLoadingPersonalPriority = personalPriorityOnly && (billStances === null || prioritySignals === null);
   const isLoadingPersonalFeed = isLoadingPersonalPriority || isLoadingPersonalRisk;
@@ -285,80 +252,11 @@ const emptyPriorityFeedSignals: PriorityFeedSignals = {
   savedFollows: []
 };
 
-type PriorityFeedBillInput = {
-  billStance?: BillStance;
-  issueInterests: string[];
-  riskBillKeys: Set<string>;
-  savedBillIds: Set<string>;
-  savedBillKeys: Set<string>;
-  savedMemberIds: Set<string>;
-  supportedBillKeys: Set<string>;
-};
-
 function readPriorityFeedSignals(): PriorityFeedSignals {
   return {
     issueInterests: readStringList(interestsKey),
     savedFollows: readSavedFollowRecords()
   };
-}
-
-function isPriorityFeedBill(bill: Bill, input: PriorityFeedBillInput) {
-  const billKey = getPolicyEdgeBillKey(bill);
-
-  if (isRiskWatchBillStance(input.billStance)) return false;
-  if (input.billStance === "support" || input.supportedBillKeys.has(billKey)) return true;
-  if (input.riskBillKeys.has(billKey)) return false;
-
-  if (isPriorityMovementBill(bill) && (input.savedBillIds.has(bill.id) || input.savedBillKeys.has(billKey))) return true;
-  if (isPriorityMovementBill(bill) && bill.sponsorBioguideId && input.savedMemberIds.has(bill.sponsorBioguideId)) return true;
-  if (isPriorityMovementBill(bill) && matchesIssueInterests(bill, input.issueInterests)) return true;
-
-  return false;
-}
-
-function isPriorityMovementBill(bill: Bill) {
-  const action = bill.latestActionText.toLowerCase();
-
-  return (
-    isRecentBillAction(bill.latestActionDate) ||
-    action.includes("reported") ||
-    action.includes("ordered to be reported") ||
-    action.includes("hearing") ||
-    action.includes("markup") ||
-    action.includes("committee") ||
-    action.includes("subcommittee") ||
-    action.includes("calendar") ||
-    action.includes("floor") ||
-    action.includes("passed") ||
-    action.includes("received in")
-  );
-}
-
-function getSavedFollowIds(follows: SavedFollowRecord[], type: SavedFollowRecord["type"]) {
-  return new Set(follows.filter((follow) => follow.type === type).map((follow) => follow.id));
-}
-
-function matchesIssueInterests(bill: Bill, issueInterests: string[]) {
-  if (!issueInterests.length) return false;
-
-  const billText = normalizePriorityText([bill.policyArea, bill.shortTitle, bill.title, bill.summary, bill.latestActionText].join(" "));
-
-  return issueInterests.some((interest) => {
-    const normalizedInterest = normalizePriorityText(interest);
-    if (!normalizedInterest) return false;
-    if (billText.includes(normalizedInterest)) return true;
-
-    const tokens = normalizedInterest.split(" ").filter((token) => token.length >= 4);
-    return tokens.length > 0 && tokens.some((token) => billText.includes(token));
-  });
-}
-
-function normalizePriorityText(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function FeedMetric({ label, value }: { label: string; value: number }) {
