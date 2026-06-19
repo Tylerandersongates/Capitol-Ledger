@@ -23,6 +23,7 @@
     "billing-transition:check": "node scripts/check-billing-transition-fixtures.mjs",
     "policy-edge:check": "node scripts/check-policy-edge-routes.mjs && node scripts/check-policy-edge-feed.mjs",
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
+    "search-filters:check": "node scripts/check-search-filter-collapse.mjs",
     "bill-status:check": "node scripts/check-bill-law-status.mjs",
     "bill-actions:check": "node scripts/check-bill-action-log.mjs",
     "bill-details:check": "node scripts/check-bill-details-summary.mjs",

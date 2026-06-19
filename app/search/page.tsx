@@ -457,11 +457,20 @@ function SmartFilterRow({
   searchParams: SearchPageProps["searchParams"];
 }) {
   const currentValue = searchParams[group.key];
+  const currentLabel = group.options.find((option) => option.value === currentValue)?.label ?? "All";
 
   return (
-    <div>
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/42">{group.label}</div>
-      <div className="flex flex-wrap gap-2">
+    <details className="group rounded-xl border border-white/10 bg-[#071a38]/50 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" open={Boolean(currentValue)}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-white/42">{group.label}</span>
+        <span className="flex items-center gap-2">
+          <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold leading-none text-[#ffb12b]">
+            {currentLabel}
+          </span>
+          <ChevronRight className="h-4 w-4 text-white/38 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
+        </span>
+      </summary>
+      <div className="mt-3 flex flex-wrap gap-2 border-t border-white/8 pt-3">
         {group.options.map((option) => (
           <FilterChip
             key={option.value ?? "all"}
@@ -471,7 +480,7 @@ function SmartFilterRow({
           />
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
