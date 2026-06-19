@@ -26,6 +26,7 @@ assert.ok(riskPage.includes("personalRiskOnly"), "Risk Watch should filter to pe
 assert.ok(!riskPage.includes('status: "in-progress"'), "Risk Watch should not be triggered by generic in-progress status");
 assert.ok(sharedFeed.includes("isRiskWatchBillStance"), "Risk Watch feed should read opposed/watching bill stances");
 assert.ok(dashboard.includes("riskWatchCount"), "Dashboard Risk Watch count should use personal stance count");
+assert.ok(sharedFeed.includes("overflow-y-auto") && sharedFeed.includes("role=\"region\""), "Policy Edge bill rows should render inside a scrollable region");
 assert.ok(sharedFeed.includes("Priority Feed") && sharedFeed.includes("Risk Watch"), "Dedicated policy edge feed labels should render");
 assert.ok(!priorityPage.includes("redirect(\"/search") && !riskPage.includes("redirect(\"/search"), "Policy edge routes should not redirect to Search");
 

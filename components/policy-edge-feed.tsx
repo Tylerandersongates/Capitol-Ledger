@@ -169,10 +169,16 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, perso
         ) : null}
 
         {!locked && !isLoadingPersonalRisk && visibleBills.length ? (
-          <div className="space-y-3">
-            {visibleBills.slice(0, 12).map((bill, index) => (
-              <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
-            ))}
+          <div
+            aria-label={`${config.title} bills`}
+            className="h-[340px] overflow-y-auto overscroll-contain rounded-[1.35rem] border border-white/10 bg-[#03152f]/55 p-1 pr-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_28px_rgba(43,141,255,0.08),0_16px_34px_rgba(1,8,24,0.26)] [scrollbar-color:rgba(255,177,43,0.68)_rgba(255,255,255,0.06)] [scrollbar-width:thin] sm:h-[420px]"
+            role="region"
+          >
+            <div className="space-y-3 pb-1">
+              {visibleBills.slice(0, 12).map((bill, index) => (
+                <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
+              ))}
+            </div>
           </div>
         ) : null}
 
