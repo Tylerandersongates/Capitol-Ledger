@@ -75,6 +75,7 @@ type BillVoteEvent = {
   sourceType: "linked-vote" | "official-action";
   totals: ReturnType<typeof getVoteTotals>;
   vote: Vote;
+  voteLabel: string;
 };
 
 const billTabs: Array<{ label: string; value: BillTab }> = [
@@ -253,6 +254,10 @@ function voteActionKey(chamber?: string, rollCall?: string) {
   return chamber && rollCall ? `${chamber.toLowerCase()}:${rollCall}` : "";
 }
 
+function voteActionEventKey(action: BillAction) {
+  return voteActionKey(action.chamber, action.rollCall) || `action:${action.id}`;
+}
+
 function parseActionVoteCounts(actionText: string) {
   const countMatch =
     actionText.match(/(?:yeas? and nays?|ayes? and noes?|yea-nay vote|recorded vote)[^0-9]*(\d+)\s*[-–]\s*(\d+)/i) ??
@@ -268,6 +273,7 @@ function parseActionVoteCounts(actionText: string) {
 
 function resultFromActionVote(actionText: string) {
   const normalized = actionText.toLowerCase();
+  if (normalized.includes("ordered to be reported")) return "Ordered Reported";
   if (normalized.includes("passed")) return "Passed";
   if (normalized.includes("agreed to")) return "Agreed";
   if (normalized.includes("failed")) return "Failed";
@@ -285,6 +291,7 @@ function questionFromActionVote(actionText: string) {
 function buildActionVoteEvent(bill: Bill, action: BillAction): BillVoteEvent {
   const counts = parseActionVoteCounts(action.action);
   const chamber = action.chamber ?? billOriginChamber(bill.billType) ?? "House";
+  const voteLabel = action.rollCall ? `${chamber} Roll Call ${action.rollCall}` : `${chamber} Action Vote`;
   const vote: Vote = {
     billId: bill.id,
     chamber,
@@ -313,7 +320,8 @@ function buildActionVoteEvent(bill: Bill, action: BillAction): BillVoteEvent {
     sourceAction: action,
     sourceType: "official-action",
     totals: getVoteTotals(vote),
-    vote
+    vote,
+    voteLabel
   };
 }
 
@@ -331,9 +339,10 @@ function voteEventTimestampValue(event: BillVoteEvent) {
 }
 
 function buildBillVoteEvents(bill: Bill, billVotes: Vote[], billActions: BillAction[], voteMemberPositionsByVoteId: Record<string, VoteMemberPositionRecord[]>): BillVoteEvent[] {
-  const voteActions = billActions.filter((action) => action.kind === "Vote" && action.rollCall);
+  const voteActions = billActions.filter((action) => action.kind === "Vote" && (action.rollCall || parseActionVoteCounts(action.action)));
   const actionsByLinkedVoteId = new Map<string, BillAction>();
   const actionsByVoteKey = new Map<string, BillAction>();
+  const syncedVoteIds = new Set(billVotes.map((vote) => vote.id));
   const eventsByVoteKey = new Map<string, BillVoteEvent>();
 
   voteActions.forEach((action) => {
@@ -355,15 +364,17 @@ function buildBillVoteEvents(bill: Bill, billVotes: Vote[], billActions: BillAct
       sourceAction,
       sourceType: "linked-vote",
       totals: getVoteTotals(vote),
-      vote
+      vote,
+      voteLabel: `${vote.chamber} Roll Call ${vote.rollCall}`
     };
 
     eventsByVoteKey.set(voteActionKey(vote.chamber, vote.rollCall), event);
   });
 
   voteActions.forEach((action) => {
-    const key = voteActionKey(action.chamber, action.rollCall);
-    if (!key || eventsByVoteKey.has(key)) return;
+    if (action.linkedVoteId && syncedVoteIds.has(action.linkedVoteId)) return;
+    const key = voteActionEventKey(action);
+    if (eventsByVoteKey.has(key)) return;
     eventsByVoteKey.set(key, buildActionVoteEvent(bill, action));
   });
 
@@ -394,7 +405,7 @@ function classifyBillVote(vote: Vote): BillVoteKind {
 
   if (text.includes("veto") && text.includes("override")) return "Veto Override";
   if (text.includes("amendment") || text.includes("amdt")) return "Amendment";
-  if (text.includes("committee")) return "Committee";
+  if (text.includes("committee") || text.includes("ordered to be reported")) return "Committee";
   if (text.includes("passage") || text.includes("passed") || text.includes("on passage") || text.includes("final passage")) return "Final Passage";
   if (text.includes("motion") || text.includes("rule") || text.includes("table") || text.includes("previous question") || text.includes("cloture")) return "Procedural";
   return "Recorded Vote";
@@ -828,7 +839,7 @@ function VotesTab({
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
               <div className="min-w-0">
                 <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">
-                  Step {index + 1} / {event.vote.chamber} Roll Call {event.vote.rollCall}
+                  Step {index + 1} / {event.voteLabel}
                 </div>
                 <h2 className="mt-2 text-[22px] font-medium leading-tight">{event.vote.question}</h2>
                 <p className="mt-2 text-[15px] leading-snug text-white/58">{formatDate(event.vote.voteDate)}</p>

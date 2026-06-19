@@ -14,6 +14,10 @@ assert.ok(billPage.includes("type BillVoteEvent"), "Bill page should model linke
 assert.ok(billPage.includes("buildBillVoteEvents"), "Bill page should build a full vote history");
 assert.ok(billPage.includes("buildActionVoteEvent"), "Votes tab should derive roll-call vote events from official actions");
 assert.ok(billPage.includes("parseActionVoteCounts"), "Votes tab should parse action-log roll-call counts when available");
+assert.ok(billPage.includes('parseActionVoteCounts(action.action)'), "Votes tab should include vote actions that have counts even without roll-call numbers");
+assert.ok(billPage.includes("voteActionEventKey"), "Action-derived votes without roll calls should still have stable event keys");
+assert.ok(billPage.includes("Action Vote"), "Action-derived votes without roll calls should use an action-vote label");
+assert.ok(!billPage.includes("Roll Call Pending"), "Votes tab should not render a fake pending roll-call label");
 assert.ok(billPage.includes("sourceAction?: BillAction"), "Vote events should preserve the official action they came from");
 assert.ok(billPage.includes("From action log"), "Votes tab should label action-derived vote rows");
 assert.ok(billPage.includes("Source action /"), "Votes tab should show which official action produced the vote row");
