@@ -23,7 +23,7 @@ assert.ok(congressNormalizers.includes("rollCallFromText"), "Congress action nor
 
 assert.ok(data.includes("billActions: BillAction[]"), "Bill detail data should carry bill actions");
 assert.ok(data.includes("buildBillActionsForDetail"), "Bill detail data should build an action ledger");
-assert.ok(data.includes("fetchOfficialBillActionsForBill"), "Bill detail data should optionally fetch official actions");
+assert.ok(!data.includes("await fetchBillActions"), "Bill detail render should not block on Congress.gov action fetching");
 assert.ok(data.includes("hydrateBillActionVoteLinks"), "Bill actions should link to vote detail records when possible");
 assert.ok(data.includes("getDemoBillActionsForBill"), "Live beta records should be able to reuse matching demo action rows");
 

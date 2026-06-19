@@ -1,7 +1,6 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { CongressApiError, fetchBillActions, fetchBillSummaries } from "@/lib/congress/client";
-import { normalizeCongressBillAction } from "@/lib/congress/normalizers";
+import { CongressApiError, fetchBillSummaries } from "@/lib/congress/client";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -1011,17 +1010,6 @@ function buildBillActionsForDetail(bill: Bill, billVotes: Vote[], officialAction
   );
 }
 
-async function fetchOfficialBillActionsForBill(bill: Bill) {
-  try {
-    const response = await fetchBillActions(bill.congress, bill.billType, bill.billNumber, { limit: 250 });
-    return (response.actions ?? [])
-      .map((action, index) => normalizeCongressBillAction(action, bill, index))
-      .filter((action): action is BillAction => action !== null);
-  } catch {
-    return [];
-  }
-}
-
 export function getVoteMemberPositions(voteId: string) {
   return memberVotes
     .filter((memberVote) => memberVote.voteId === voteId)
@@ -1169,7 +1157,6 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     const bill = mapDatabaseBill(billRow);
     const billVotes = billRow.votes.map(mapDatabaseVote);
-    const officialBillActions = await fetchOfficialBillActionsForBill(bill);
     const sourceTargetIds = uniqueStrings([billRow.id, bill.id, stableLiveBillId(bill)]);
     const sourceLinks = await prisma.$queryRaw<DatabaseSourceLinkRow[]>`
         SELECT "id", "targetType", "targetId", "label", "url", "source", "sourceKind", "verifiedAt"
@@ -1197,7 +1184,7 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     return {
       bill,
-      billActions: buildBillActionsForDetail(bill, billVotes, officialBillActions),
+      billActions: buildBillActionsForDetail(bill, billVotes),
       billVideos,
       billVotes,
       cosponsors: liveCosponsors.length ? liveCosponsors : getBillCosponsors(bill.id),
