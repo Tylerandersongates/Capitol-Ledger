@@ -124,19 +124,23 @@ function hasCrossChamberAction({
 }) {
   const action = actionText.toLowerCase();
   const receivingName = receivingChamber.toLowerCase();
+  const receivedByOtherChamber = action.includes(`received in the ${receivingName}`) || action.includes(`received in ${receivingName}`);
+  const referredInOtherChamber =
+    action.includes(`referred to the ${receivingName}`) ||
+    action.includes(`${receivingName} committee`) ||
+    (receivingChamber === "Senate" && action.includes("read twice") && action.includes("referred"));
   const receivingSignal =
-    action.includes(receivingName) ||
-    action.includes(`received in the ${receivingName}`) ||
-    action.includes(`referred to the ${receivingName}`);
+    action.includes(receivingName) || receivedByOtherChamber || referredInOtherChamber;
   const originPassageSignal =
     Boolean(originPassageVote) ||
     action.includes(`passed the ${originChamber.toLowerCase()}`) ||
     action.includes(`${originChamber.toLowerCase()} passage`);
 
-  return receivingSignal && originPassageSignal;
+  return receivingSignal && (originPassageSignal || receivedByOtherChamber || referredInOtherChamber);
 }
 
 function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "Senate") {
+  if (lowerIncludes(actionText, "referred") || lowerIncludes(actionText, "committee")) return `Referred to ${receivingChamber} committee`;
   if (lowerIncludes(actionText, `received in the ${receivingChamber}`)) return `Received in ${receivingChamber}`;
   return `${receivingChamber} action`;
 }
@@ -178,7 +182,9 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
 
     if (crossChamberAction) {
       const receivingLabel = crossChamberStepLabel(bill.latestActionText, receivingChamber);
-      const originPassageDate = originPassageVote?.voteDate ?? bill.latestActionDate;
+      const originPassageDetail = originPassageVote
+        ? `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`
+        : `${bill.displayNumber} could not move to the ${receivingChamber} without clearing the ${originChamber}; a linked roll-call for that step is not available yet.`;
       const currentIndex = 4;
 
       return [
@@ -192,17 +198,25 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
         },
         {
           label: `Passed ${originChamber}`,
-          date: formatDate(originPassageDate),
+          date: originPassageVote ? formatDate(originPassageVote.voteDate) : "",
           icon: FileCheck2,
-          detail: `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`,
+          detail: originPassageDetail,
           state: progressStepState(2, currentIndex)
         },
-        { label: `Sent to ${receivingChamber}`, date: formatDate(bill.latestActionDate), icon: FileClock, state: progressStepState(3, currentIndex) },
+        {
+          label: `Sent to ${receivingChamber}`,
+          date: formatDate(bill.latestActionDate),
+          icon: FileClock,
+          detail: `After ${originChamber} passage, ${bill.displayNumber} moved to the ${receivingChamber} for the next stage.`,
+          state: progressStepState(3, currentIndex)
+        },
         {
           label: receivingLabel,
           date: formatDate(bill.latestActionDate),
           icon: FileClock,
-          detail: `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`,
+          detail: bill.committeeName
+            ? `${originChamber} passage is complete; current activity is now tied to ${bill.committeeName}.`
+            : `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`,
           state: progressStepState(4, currentIndex)
         },
         { label: "Final passage", date: "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
@@ -783,7 +797,7 @@ function TimelineTab({
             <div className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_16px_rgba(255,177,43,0.24)]" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
-        <div className="mt-5">
+        <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="snap-y snap-mandatory" ariaLabel="Legislative timeline stages">
           {progressSteps.map((step, index) => (
             <TimelineRow
               key={step.label}
@@ -793,7 +807,7 @@ function TimelineTab({
               step={step}
             />
           ))}
-        </div>
+        </MobileGlassScrollFrame>
       </MobileCard>
 
       <MobileCard variant="rust" className="px-5 py-5">
