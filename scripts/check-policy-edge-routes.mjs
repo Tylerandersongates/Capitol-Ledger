@@ -20,11 +20,19 @@ assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}Open Priority Feed/.test(dashboar
 assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}Open Risk Watch/.test(dashboard), "Open Risk Watch should not open Search Discovery");
 
 assert.ok(priorityPage.includes('mode="priority"'), "Priority Feed page should render the priority mode");
+assert.ok(priorityPage.includes("personalPriorityOnly"), "Priority Feed should filter to personal positive/actionable bills");
+assert.ok(priorityPage.includes('searchRecordsWithLiveData({ type: "bills" })'), "Priority Feed should consider all bills before applying personal priority rules");
+assert.ok(!priorityPage.includes('status: "in-committee"'), "Priority Feed should not be only a generic in-committee feed");
 assert.ok(riskPage.includes('mode="risk"'), "Risk Watch page should render the risk mode");
 assert.ok(riskPage.includes('searchRecordsWithLiveData({ type: "bills" })'), "Risk Watch should consider all bills before applying personal stance filters");
 assert.ok(riskPage.includes("personalRiskOnly"), "Risk Watch should filter to personal opposed/watching bills");
 assert.ok(!riskPage.includes('status: "in-progress"'), "Risk Watch should not be triggered by generic in-progress status");
 assert.ok(sharedFeed.includes("isRiskWatchBillStance"), "Risk Watch feed should read opposed/watching bill stances");
+assert.ok(sharedFeed.includes("isPriorityFeedBill"), "Priority Feed should use explicit personal inclusion rules");
+assert.ok(sharedFeed.includes('input.billStance === "support"'), "Priority Feed should include supported bills");
+assert.ok(sharedFeed.includes("input.riskBillKeys.has(billKey)"), "Priority Feed should exclude bills already owned by Risk Watch");
+assert.ok(sharedFeed.includes("matchesIssueInterests"), "Priority Feed should include active issue-aligned bills");
+assert.ok(sharedFeed.includes("savedMemberIds"), "Priority Feed should include active saved-official sponsored bills");
 assert.ok(dashboard.includes("riskWatchCount"), "Dashboard Risk Watch count should use personal stance count");
 assert.ok(sharedFeed.includes("overflow-y-auto") && sharedFeed.includes("role=\"region\""), "Policy Edge bill rows should render inside a scrollable region");
 assert.ok(sharedFeed.includes("Priority Feed") && sharedFeed.includes("Risk Watch"), "Dedicated policy edge feed labels should render");

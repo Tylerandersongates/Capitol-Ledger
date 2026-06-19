@@ -6,6 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import {
+  followsChangedEvent,
+  hydrateAccountLedgerFromAccount,
+  interestsKey,
+  persistenceEvent,
+  readSavedFollowRecords,
+  readStringList
+} from "@/lib/browser-account-ledger";
+import {
   billStanceChangedEvent,
   isRiskWatchBillStance,
   readBillStances,
@@ -20,15 +28,21 @@ import {
   type PolicyEdgeFeedMode
 } from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
-import type { Bill } from "@/types/capitol";
+import type { Bill, SavedFollowRecord } from "@/types/capitol";
 
 type PolicyEdgeFeedProps = {
   bills: Bill[];
   generatedAt: string;
   locked?: boolean;
   mode: PolicyEdgeFeedMode;
+  personalPriorityOnly?: boolean;
   personalRiskOnly?: boolean;
   sponsorNamesByBillId?: Record<string, string>;
+};
+
+type PriorityFeedSignals = {
+  issueInterests: string[];
+  savedFollows: SavedFollowRecord[];
 };
 
 const panelClass =
@@ -40,8 +54,8 @@ const feedConfig = {
   priority: {
     actionLabel: "Open Bill",
     badge: "Priority",
-    deck: "Bills with committee activity, recent movement, and near-term accountability signals.",
-    empty: "No committee-priority bills are active right now.",
+    deck: "Supported, aligned, and saved-official bills with meaningful movement.",
+    empty: "No supported or aligned bills need priority attention right now.",
     icon: Sparkles,
     metricLabel: "Priority",
     title: "Priority Feed",
@@ -59,62 +73,128 @@ const feedConfig = {
   }
 } as const;
 
-export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, personalRiskOnly = false, sponsorNamesByBillId = {} }: PolicyEdgeFeedProps) {
+export function PolicyEdgeFeed({
+  bills,
+  generatedAt,
+  locked = false,
+  mode,
+  personalPriorityOnly = false,
+  personalRiskOnly = false,
+  sponsorNamesByBillId = {}
+}: PolicyEdgeFeedProps) {
   const config = feedConfig[mode];
   const Icon = config.icon;
-  const [riskStances, setRiskStances] = useState<Record<string, BillStance> | null>(personalRiskOnly ? null : {});
+  const needsPersonalSignals = personalPriorityOnly || personalRiskOnly;
+  const [billStances, setBillStances] = useState<Record<string, BillStance> | null>(needsPersonalSignals ? null : {});
+  const [prioritySignals, setPrioritySignals] = useState<PriorityFeedSignals | null>(personalPriorityOnly ? null : emptyPriorityFeedSignals);
   const rankedBills = useMemo(() => rankPolicyEdgeBills(bills, mode), [bills, mode]);
-  const riskBillKeys = useMemo(() => {
+  const supportedBillKeys = useMemo(() => {
     const keys = new Set<string>();
-    if (!personalRiskOnly || !riskStances) return keys;
+    if (!personalPriorityOnly || !billStances) return keys;
 
     bills.forEach((bill) => {
-      if (isRiskWatchBillStance(riskStances[bill.id])) {
+      if (billStances[bill.id] === "support") {
         keys.add(getPolicyEdgeBillKey(bill));
       }
     });
 
     return keys;
-  }, [bills, personalRiskOnly, riskStances]);
-  const visibleBills = useMemo(() => {
-    if (!personalRiskOnly) return rankedBills;
-    if (!riskStances) return [];
+  }, [billStances, bills, personalPriorityOnly]);
+  const riskBillKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (!needsPersonalSignals || !billStances) return keys;
 
-    return rankedBills.filter((bill) => isRiskWatchBillStance(riskStances[bill.id]) || riskBillKeys.has(getPolicyEdgeBillKey(bill)));
-  }, [personalRiskOnly, rankedBills, riskBillKeys, riskStances]);
-  const isLoadingPersonalRisk = personalRiskOnly && riskStances === null;
+    bills.forEach((bill) => {
+      if (isRiskWatchBillStance(billStances[bill.id])) {
+        keys.add(getPolicyEdgeBillKey(bill));
+      }
+    });
+
+    return keys;
+  }, [billStances, bills, needsPersonalSignals]);
+  const savedBillKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (!personalPriorityOnly || !prioritySignals) return keys;
+
+    const savedBillIds = getSavedFollowIds(prioritySignals.savedFollows, "bill");
+    bills.forEach((bill) => {
+      if (savedBillIds.has(bill.id)) {
+        keys.add(getPolicyEdgeBillKey(bill));
+      }
+    });
+
+    return keys;
+  }, [bills, personalPriorityOnly, prioritySignals]);
+  const visibleBills = useMemo(() => {
+    if (personalPriorityOnly) {
+      if (!billStances || !prioritySignals) return [];
+
+      const savedBillIds = getSavedFollowIds(prioritySignals.savedFollows, "bill");
+      const savedMemberIds = getSavedFollowIds(prioritySignals.savedFollows, "member");
+
+      return rankedBills.filter((bill) =>
+        isPriorityFeedBill(bill, {
+          billStance: billStances[bill.id],
+          issueInterests: prioritySignals.issueInterests,
+          riskBillKeys,
+          savedBillIds,
+          savedBillKeys,
+          savedMemberIds,
+          supportedBillKeys
+        })
+      );
+    }
+
+    if (!personalRiskOnly) return rankedBills;
+    if (!billStances) return [];
+
+    return rankedBills.filter((bill) => isRiskWatchBillStance(billStances[bill.id]) || riskBillKeys.has(getPolicyEdgeBillKey(bill)));
+  }, [billStances, personalPriorityOnly, personalRiskOnly, prioritySignals, rankedBills, riskBillKeys, savedBillKeys, supportedBillKeys]);
+  const isLoadingPersonalRisk = personalRiskOnly && billStances === null;
+  const isLoadingPersonalPriority = personalPriorityOnly && (billStances === null || prioritySignals === null);
+  const isLoadingPersonalFeed = isLoadingPersonalPriority || isLoadingPersonalRisk;
   const recentCount = visibleBills.filter((bill) => isRecentBillAction(bill.latestActionDate)).length;
   const topAreaCount = new Set(visibleBills.map((bill) => bill.policyArea).filter(Boolean)).size;
 
   useEffect(() => {
-    if (!personalRiskOnly || locked) return;
+    if (!needsPersonalSignals || locked) return;
     let active = true;
     let activeStorageKey = "";
 
-    function refreshStances() {
-      if (!activeStorageKey || !active) return;
-      setRiskStances(readBillStances(activeStorageKey));
+    function refreshPersonalSignals() {
+      if (!active) return;
+      if (activeStorageKey) setBillStances(readBillStances(activeStorageKey));
+      if (personalPriorityOnly) setPrioritySignals(readPriorityFeedSignals());
     }
 
     resolveBillStanceStorageKey().then((storageKey) => {
       if (!active) return;
       activeStorageKey = storageKey;
-      refreshStances();
+      refreshPersonalSignals();
     });
 
-    window.addEventListener("storage", refreshStances);
-    window.addEventListener("focus", refreshStances);
-    window.addEventListener("pageshow", refreshStances);
-    window.addEventListener(billStanceChangedEvent, refreshStances);
+    if (personalPriorityOnly) {
+      refreshPersonalSignals();
+      hydrateAccountLedgerFromAccount().then(() => refreshPersonalSignals());
+    }
+
+    window.addEventListener("storage", refreshPersonalSignals);
+    window.addEventListener("focus", refreshPersonalSignals);
+    window.addEventListener("pageshow", refreshPersonalSignals);
+    window.addEventListener(billStanceChangedEvent, refreshPersonalSignals);
+    window.addEventListener(followsChangedEvent, refreshPersonalSignals);
+    window.addEventListener(persistenceEvent, refreshPersonalSignals);
 
     return () => {
       active = false;
-      window.removeEventListener("storage", refreshStances);
-      window.removeEventListener("focus", refreshStances);
-      window.removeEventListener("pageshow", refreshStances);
-      window.removeEventListener(billStanceChangedEvent, refreshStances);
+      window.removeEventListener("storage", refreshPersonalSignals);
+      window.removeEventListener("focus", refreshPersonalSignals);
+      window.removeEventListener("pageshow", refreshPersonalSignals);
+      window.removeEventListener(billStanceChangedEvent, refreshPersonalSignals);
+      window.removeEventListener(followsChangedEvent, refreshPersonalSignals);
+      window.removeEventListener(persistenceEvent, refreshPersonalSignals);
     };
-  }, [locked, personalRiskOnly]);
+  }, [locked, needsPersonalSignals, personalPriorityOnly]);
 
   return (
     <MobileShell
@@ -164,11 +244,13 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, perso
 
         {locked ? <LockedPolicyEdgeCard title={config.title} /> : null}
 
-        {!locked && isLoadingPersonalRisk ? (
-          <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>Checking your saved bill stances...</div>
+        {!locked && isLoadingPersonalFeed ? (
+          <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>
+            {personalPriorityOnly ? "Checking your supported bills and civic interests..." : "Checking your saved bill stances..."}
+          </div>
         ) : null}
 
-        {!locked && !isLoadingPersonalRisk && visibleBills.length ? (
+        {!locked && !isLoadingPersonalFeed && visibleBills.length ? (
           <div
             aria-label={`${config.title} bills`}
             className="h-[340px] overflow-y-auto overscroll-contain rounded-[1.35rem] border border-white/10 bg-[#03152f]/55 p-1 pr-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_28px_rgba(43,141,255,0.08),0_16px_34px_rgba(1,8,24,0.26)] [scrollbar-color:rgba(255,177,43,0.68)_rgba(255,255,255,0.06)] [scrollbar-width:thin] sm:h-[420px]"
@@ -182,7 +264,7 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, perso
           </div>
         ) : null}
 
-        {!locked && !isLoadingPersonalRisk && !visibleBills.length ? <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>{config.empty}</div> : null}
+        {!locked && !isLoadingPersonalFeed && !visibleBills.length ? <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>{config.empty}</div> : null}
       </main>
 
       <MobileBottomNav
@@ -196,6 +278,87 @@ export function PolicyEdgeFeed({ bills, generatedAt, locked = false, mode, perso
       />
     </MobileShell>
   );
+}
+
+const emptyPriorityFeedSignals: PriorityFeedSignals = {
+  issueInterests: [],
+  savedFollows: []
+};
+
+type PriorityFeedBillInput = {
+  billStance?: BillStance;
+  issueInterests: string[];
+  riskBillKeys: Set<string>;
+  savedBillIds: Set<string>;
+  savedBillKeys: Set<string>;
+  savedMemberIds: Set<string>;
+  supportedBillKeys: Set<string>;
+};
+
+function readPriorityFeedSignals(): PriorityFeedSignals {
+  return {
+    issueInterests: readStringList(interestsKey),
+    savedFollows: readSavedFollowRecords()
+  };
+}
+
+function isPriorityFeedBill(bill: Bill, input: PriorityFeedBillInput) {
+  const billKey = getPolicyEdgeBillKey(bill);
+
+  if (isRiskWatchBillStance(input.billStance)) return false;
+  if (input.billStance === "support" || input.supportedBillKeys.has(billKey)) return true;
+  if (input.riskBillKeys.has(billKey)) return false;
+
+  if (isPriorityMovementBill(bill) && (input.savedBillIds.has(bill.id) || input.savedBillKeys.has(billKey))) return true;
+  if (isPriorityMovementBill(bill) && bill.sponsorBioguideId && input.savedMemberIds.has(bill.sponsorBioguideId)) return true;
+  if (isPriorityMovementBill(bill) && matchesIssueInterests(bill, input.issueInterests)) return true;
+
+  return false;
+}
+
+function isPriorityMovementBill(bill: Bill) {
+  const action = bill.latestActionText.toLowerCase();
+
+  return (
+    isRecentBillAction(bill.latestActionDate) ||
+    action.includes("reported") ||
+    action.includes("ordered to be reported") ||
+    action.includes("hearing") ||
+    action.includes("markup") ||
+    action.includes("committee") ||
+    action.includes("subcommittee") ||
+    action.includes("calendar") ||
+    action.includes("floor") ||
+    action.includes("passed") ||
+    action.includes("received in")
+  );
+}
+
+function getSavedFollowIds(follows: SavedFollowRecord[], type: SavedFollowRecord["type"]) {
+  return new Set(follows.filter((follow) => follow.type === type).map((follow) => follow.id));
+}
+
+function matchesIssueInterests(bill: Bill, issueInterests: string[]) {
+  if (!issueInterests.length) return false;
+
+  const billText = normalizePriorityText([bill.policyArea, bill.shortTitle, bill.title, bill.summary, bill.latestActionText].join(" "));
+
+  return issueInterests.some((interest) => {
+    const normalizedInterest = normalizePriorityText(interest);
+    if (!normalizedInterest) return false;
+    if (billText.includes(normalizedInterest)) return true;
+
+    const tokens = normalizedInterest.split(" ").filter((token) => token.length >= 4);
+    return tokens.length > 0 && tokens.some((token) => billText.includes(token));
+  });
+}
+
+function normalizePriorityText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function FeedMetric({ label, value }: { label: string; value: number }) {
