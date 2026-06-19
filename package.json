@@ -20,6 +20,7 @@
     "weekly-brief:check": "node scripts/check-weekly-brief-delivery.mjs",
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
     "billing:check": "node scripts/check-billing-readiness.mjs",
+    "billing-transition:check": "node scripts/check-billing-transition-fixtures.mjs",
     "backend:check": "node scripts/check-backend-readiness.mjs",
     "ai-policy-lens:check": "tsx scripts/check-ai-policy-lens-fixtures.ts",
     "video-links:check": "node scripts/check-video-links.mjs",

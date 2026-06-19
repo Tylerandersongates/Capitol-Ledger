@@ -154,10 +154,12 @@ export async function createStripeCheckoutSession(input: CheckoutInput): Promise
   appendParam(params, "line_items[0][price]", priceId);
   appendParam(params, "line_items[0][quantity]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : 1);
   appendParam(params, "metadata[userId]", input.user.id);
+  appendParam(params, "metadata[userEmail]", input.user.email);
   appendParam(params, "metadata[plan]", input.plan);
   appendParam(params, "metadata[cycle]", input.cycle);
   appendParam(params, "metadata[seatCount]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : undefined);
   appendParam(params, "subscription_data[metadata][userId]", input.user.id);
+  appendParam(params, "subscription_data[metadata][userEmail]", input.user.email);
   appendParam(params, "subscription_data[metadata][plan]", input.plan);
   appendParam(params, "subscription_data[metadata][cycle]", input.cycle);
   appendParam(params, "subscription_data[metadata][seatCount]", input.plan === "team" ? normalizeTeamSeatCount(input.seatCount) : undefined);

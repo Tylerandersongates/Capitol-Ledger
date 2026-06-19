@@ -31,6 +31,13 @@ type PauseInput = {
   workspaceId: string;
 };
 
+type TeamOwnerUpgradeInput = {
+  email?: string;
+  previousSubscription?: AccountSubscriptionSnapshot | null;
+  teamSubscriptionId?: string | null;
+  userId: string;
+};
+
 type RestoreInput = {
   userId?: string | null;
 };
@@ -233,6 +240,40 @@ async function readPersonalSubscription(userId: string) {
 async function persistSubscription(userId: string, subscription: AccountSubscriptionSnapshot) {
   const databaseSubscription = await writeSubscriptionToDatabase(userId, subscription).catch(() => null);
   return databaseSubscription ?? setAccountSubscription(userId, subscription);
+}
+
+export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
+  email = "",
+  previousSubscription,
+  teamSubscriptionId,
+  userId
+}: TeamOwnerUpgradeInput): Promise<TeamSubscriptionPauseResult> {
+  if (!previousSubscription || !isActiveProSubscription(previousSubscription)) {
+    return {
+      paused: false,
+      subscription: previousSubscription ?? undefined
+    };
+  }
+
+  const existingPause = await readActivePauseRecord(userId).catch(() => null);
+  if (existingPause) {
+    return {
+      paused: false,
+      subscription: existingPause.previousSubscription
+    };
+  }
+
+  await writeActivePauseRecord(userId, email, {
+    previousSubscription,
+    status: "active",
+    teamMemberId: teamSubscriptionId ? `team-owner-${teamSubscriptionId}` : "team-owner-upgrade",
+    workspaceId: "team-owner-upgrade"
+  });
+
+  return {
+    paused: true,
+    subscription: previousSubscription
+  };
 }
 
 export async function pausePersonalProSubscriptionForTeamSeat(input: PauseInput): Promise<TeamSubscriptionPauseResult> {
