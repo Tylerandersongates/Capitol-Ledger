@@ -669,7 +669,6 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Bill Summary</div>
-          <h2 className="mt-2 text-[24px] font-medium leading-tight">{bill.shortTitle}</h2>
           <div className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold leading-none ${sourceTone}`}>
             {summary.label}
           </div>

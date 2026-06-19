@@ -25,6 +25,7 @@
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
     "bill-status:check": "node scripts/check-bill-law-status.mjs",
     "bill-actions:check": "node scripts/check-bill-action-log.mjs",
+    "bill-details:check": "node scripts/check-bill-details-summary.mjs",
     "bill-timeline:check": "node scripts/check-bill-timeline.mjs",
     "bill-votes:check": "node scripts/check-bill-vote-history.mjs",
     "gamification:check": "node scripts/check-gamification-streak.mjs",
