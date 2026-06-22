@@ -306,7 +306,7 @@ Upload checklist:
 19. Removed bright page-level gradients in favor of a darker shared navy mobile shell so the existing glass cards and gold/white controls read more like the desired iPhone Liquid Glass direction.
 20. Combined `/search` search, result type tabs, quick discovery chips, and Pro refine controls into one cohesive discovery panel, with advanced filters collapsed by default.
 21. Condensed `/account` by moving subscription management to `/upgrade`, moving Weekly Brief delivery/history to `/brief`, adding a compact dashboard entry point, and making Account Settings collapsible.
-22. Added party-grouped member vote breakdowns to standalone vote detail pages and bill vote-history rows, with filters for Yes, No, Present, and Not Voting positions.
+22. Added neutral member vote lists to standalone vote detail pages and bill vote-history rows, with optional filters for party plus Yes, No, Present, and Not Voting positions.
 
 ## Notes For Continuing
 

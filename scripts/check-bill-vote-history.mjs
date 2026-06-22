@@ -38,11 +38,14 @@ assert.ok(memberBreakdown.includes("district.districtCode"), "Member vote breakd
 assert.ok(memberBreakdown.includes("getMatchedOfficials"), "Member vote breakdown should resolve district officials");
 assert.ok(memberBreakdown.includes("voteFilters"), "Member vote breakdown should include position filters");
 assert.ok(memberBreakdown.includes('{ label: "Present", value: "Present" }'), "Member vote breakdown should include the Present filter");
-assert.ok(memberBreakdown.includes("All Member Votes By Party"), "Member vote breakdown should show the full member vote list grouped by party");
-assert.ok(memberBreakdown.includes("partyGroupDefinitions"), "Member vote breakdown should define party group order");
-assert.ok(memberBreakdown.includes('key: "Republican"') && memberBreakdown.includes('key: "Democrat"') && memberBreakdown.includes('key: "Independent"'), "Member vote breakdown should group Republican, Democrat, and Independent positions");
-assert.ok(memberBreakdown.includes("groupPositionsByParty"), "Member vote breakdown should group filtered member positions by party");
-assert.ok(memberBreakdown.includes("partyWeight"), "Member vote breakdown should sort members by party before position and name");
-assert.ok(memberBreakdown.includes('ariaLabel="All member vote positions by party"'), "Member vote breakdown should expose an accessible grouped scroll region");
+assert.ok(memberBreakdown.includes("partyFilters"), "Member vote breakdown should include optional party filters");
+assert.ok(memberBreakdown.includes('{ label: "All parties", value: "all" }'), "Member vote breakdown should default to all parties");
+assert.ok(memberBreakdown.includes('{ label: "Republican", value: "Republican" }') && memberBreakdown.includes('{ label: "Democrat", value: "Democrat" }') && memberBreakdown.includes('{ label: "Independent", value: "Independent" }'), "Member vote breakdown should offer Republican, Democrat, and Independent filters");
+assert.ok(memberBreakdown.includes("partyFilter === \"all\" || record.member?.party === partyFilter"), "Member vote breakdown should apply the party filter only when selected");
+assert.ok(memberBreakdown.includes("All Member Votes"), "Member vote breakdown should show the full member vote list neutrally");
+assert.ok(memberBreakdown.includes('ariaLabel="All member vote positions"'), "Member vote breakdown should expose an accessible neutral scroll region");
+assert.ok(!memberBreakdown.includes("All Member Votes By Party"), "Member vote breakdown should not label the default list as party grouped");
+assert.ok(!memberBreakdown.includes("groupPositionsByParty"), "Member vote breakdown should not auto-group filtered member positions by party");
+assert.ok(!memberBreakdown.includes("partyWeight"), "Member vote breakdown should not sort members by party before position and name");
 
 console.log("Bill vote history check passed.");
