@@ -37,6 +37,12 @@ assert.ok(memberBreakdown.includes("readLocalDistrictProfile"), "Member vote bre
 assert.ok(memberBreakdown.includes("district.districtCode"), "Member vote breakdown should not pin default district officials without setup");
 assert.ok(memberBreakdown.includes("getMatchedOfficials"), "Member vote breakdown should resolve district officials");
 assert.ok(memberBreakdown.includes("voteFilters"), "Member vote breakdown should include position filters");
-assert.ok(memberBreakdown.includes("All Member Votes"), "Member vote breakdown should show the full member vote list");
+assert.ok(memberBreakdown.includes('{ label: "Present", value: "Present" }'), "Member vote breakdown should include the Present filter");
+assert.ok(memberBreakdown.includes("All Member Votes By Party"), "Member vote breakdown should show the full member vote list grouped by party");
+assert.ok(memberBreakdown.includes("partyGroupDefinitions"), "Member vote breakdown should define party group order");
+assert.ok(memberBreakdown.includes('key: "Republican"') && memberBreakdown.includes('key: "Democrat"') && memberBreakdown.includes('key: "Independent"'), "Member vote breakdown should group Republican, Democrat, and Independent positions");
+assert.ok(memberBreakdown.includes("groupPositionsByParty"), "Member vote breakdown should group filtered member positions by party");
+assert.ok(memberBreakdown.includes("partyWeight"), "Member vote breakdown should sort members by party before position and name");
+assert.ok(memberBreakdown.includes('ariaLabel="All member vote positions by party"'), "Member vote breakdown should expose an accessible grouped scroll region");
 
 console.log("Bill vote history check passed.");

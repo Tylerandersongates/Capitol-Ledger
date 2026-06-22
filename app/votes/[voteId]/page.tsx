@@ -1,4 +1,5 @@
 import { MobileShell } from "@/components/mobile-shell";
+import { BillVoteMemberBreakdown } from "@/components/bill-vote-member-breakdown";
 import { GamificationEventAnchor, RecordGamificationEvent } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
@@ -15,7 +16,8 @@ import {
   Link2,
   Search,
   ShieldCheck,
-  Settings
+  Settings,
+  UsersRound
 } from "lucide-react";
 import { getBill, getVote, getVoteMemberPositions, getVoteTotals } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
@@ -97,6 +99,18 @@ export default function VoteDetailPage({ params }: VotePageProps) {
         </MobileCard>
 
         <VoteSavedOfficialPositions memberPositions={memberPositions} />
+
+        <MobileCard variant="dashboard" className="px-5 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">All Member Votes</div>
+              <h2 className="mt-2 text-[21px] font-medium leading-tight">Party breakdown</h2>
+              <p className="mt-2 text-[14px] leading-snug text-white/52">{memberPositions.length} recorded member positions</p>
+            </div>
+            <UsersRound className="h-7 w-7 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+          </div>
+          <BillVoteMemberBreakdown chamber={vote.chamber} positions={memberPositions} showPinnedSection={false} />
+        </MobileCard>
 
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-start gap-4">

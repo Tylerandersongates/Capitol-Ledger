@@ -15,6 +15,7 @@ import {
   readLocalDistrictProfile
 } from "@/lib/browser-account-profile";
 import { getMatchedOfficials } from "@/lib/beta-district-presets";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import type { Member, VotePosition } from "@/types/capitol";
 import type { VoteMemberPositionRecord } from "@/lib/data";
 import { UserRound } from "lucide-react";
@@ -22,26 +23,48 @@ import { UserRound } from "lucide-react";
 type VoteMemberBreakdownProps = {
   chamber: "House" | "Senate";
   positions: VoteMemberPositionRecord[];
+  showPinnedSection?: boolean;
 };
 
 type VoteFilter = "all" | VotePosition;
+type PartyGroupKey = Member["party"] | "Unknown";
+type PositionCounts = {
+  no: number;
+  notVoting: number;
+  present: number;
+  yes: number;
+};
+type PartyVoteGroup = {
+  counts: PositionCounts;
+  key: PartyGroupKey;
+  label: string;
+  records: VoteMemberPositionRecord[];
+};
 
 const voteFilters: Array<{ label: string; value: VoteFilter }> = [
   { label: "All", value: "all" },
   { label: "Yes", value: "Yes" },
   { label: "No", value: "No" },
+  { label: "Present", value: "Present" },
   { label: "Not Voting", value: "Not Voting" }
 ];
 
-export function BillVoteMemberBreakdown({ chamber, positions }: VoteMemberBreakdownProps) {
+const partyGroupDefinitions: Array<{ key: PartyGroupKey; label: string }> = [
+  { key: "Republican", label: "Republicans" },
+  { key: "Democrat", label: "Democrats" },
+  { key: "Independent", label: "Independents" },
+  { key: "Unknown", label: "Party pending" }
+];
+
+export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection = true }: VoteMemberBreakdownProps) {
   const [filter, setFilter] = useState<VoteFilter>("all");
   const [pinnedMemberIds, setPinnedMemberIds] = useState<string[]>([]);
   const members = useMemo(() => positions.map((record) => record.member).filter((member): member is Member => Boolean(member)), [positions]);
   const pinnedMemberSet = useMemo(() => new Set(pinnedMemberIds), [pinnedMemberIds]);
   const sortedPositions = useMemo(() => sortVotePositions(positions), [positions]);
-  const pinnedPositions = sortedPositions.filter((record) => pinnedMemberSet.has(record.memberBioguideId));
-  const filteredPositions = sortedPositions.filter((record) => filter === "all" || record.position === filter);
-  const visibleFilteredPositions = filteredPositions.slice(0, 60);
+  const pinnedPositions = useMemo(() => sortedPositions.filter((record) => pinnedMemberSet.has(record.memberBioguideId)), [pinnedMemberSet, sortedPositions]);
+  const filteredPositions = useMemo(() => sortedPositions.filter((record) => filter === "all" || record.position === filter), [filter, sortedPositions]);
+  const groupedFilteredPositions = useMemo(() => groupPositionsByParty(filteredPositions), [filteredPositions]);
 
   useEffect(() => {
     let active = true;
@@ -95,31 +118,33 @@ export function BillVoteMemberBreakdown({ chamber, positions }: VoteMemberBreakd
 
   return (
     <div className="mt-5 space-y-4">
-      <section className="rounded-xl border border-[#ffb12b]/20 bg-[#ffb12b]/8 px-4 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#ffb12b]">Your Representatives</div>
-            <div className="mt-1 text-[13px] leading-snug text-white/52">Pinned from district setup and saved officials.</div>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold text-white/56">
-            {pinnedPositions.length}
-          </span>
-        </div>
-        <div className="mt-3 divide-y divide-white/8">
-          {pinnedPositions.length ? (
-            pinnedPositions.map((record) => <MemberVoteRow key={`pinned-${record.voteId}-${record.memberBioguideId}`} record={record} pinned />)
-          ) : (
-            <div className="py-3 text-[13px] leading-snug text-white/52">
-              Complete district setup or save officials to pin your delegation on recorded votes.
+      {showPinnedSection ? (
+        <section className="rounded-xl border border-[#ffb12b]/20 bg-[#ffb12b]/8 px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#ffb12b]">Your Representatives</div>
+              <div className="mt-1 text-[13px] leading-snug text-white/52">Pinned from district setup and saved officials.</div>
             </div>
-          )}
-        </div>
-      </section>
+            <span className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold text-white/56">
+              {pinnedPositions.length}
+            </span>
+          </div>
+          <div className="mt-3 divide-y divide-white/8">
+            {pinnedPositions.length ? (
+              pinnedPositions.map((record) => <MemberVoteRow key={`pinned-${record.voteId}-${record.memberBioguideId}`} record={record} pinned />)
+            ) : (
+              <div className="py-3 text-[13px] leading-snug text-white/52">
+                Complete district setup or save officials to pin your delegation on recorded votes.
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">All Member Votes</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">All Member Votes By Party</div>
             <div className="mt-1 text-[13px] text-white/50">{positions.length} recorded positions</div>
           </div>
         </div>
@@ -139,13 +164,24 @@ export function BillVoteMemberBreakdown({ chamber, positions }: VoteMemberBreakd
             </button>
           ))}
         </div>
-        <div className="mt-3 max-h-[19rem] overflow-y-auto rounded-xl border border-white/10 bg-[#071a38]/48 px-3 py-1 [scrollbar-color:rgba(255,177,43,0.68)_rgba(255,255,255,0.06)] [scrollbar-width:thin]">
-          <div className="divide-y divide-white/8">
-            {visibleFilteredPositions.map((record) => (
-              <MemberVoteRow key={`${record.voteId}-${record.memberBioguideId}`} record={record} pinned={pinnedMemberSet.has(record.memberBioguideId)} />
-            ))}
-          </div>
-        </div>
+        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[21rem]" className="space-y-4 px-3 py-3" ariaLabel="All member vote positions by party">
+          {groupedFilteredPositions.length ? (
+            groupedFilteredPositions.map((group) => (
+              <div key={group.key} className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2">
+                <PartyGroupHeader group={group} />
+                <div className="mt-2 divide-y divide-white/8">
+                  {group.records.map((record) => (
+                    <MemberVoteRow key={`${group.key}-${record.voteId}-${record.memberBioguideId}`} record={record} pinned={pinnedMemberSet.has(record.memberBioguideId)} />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[13px] leading-snug text-white/52">
+              No member positions match this filter.
+            </div>
+          )}
+        </MobileGlassScrollFrame>
       </section>
     </div>
   );
@@ -153,11 +189,22 @@ export function BillVoteMemberBreakdown({ chamber, positions }: VoteMemberBreakd
 
 function sortVotePositions(positions: VoteMemberPositionRecord[]) {
   return [...positions].sort((left, right) => {
-    const leftPinnedWeight = positionWeight(left.position);
-    const rightPinnedWeight = positionWeight(right.position);
-    if (leftPinnedWeight !== rightPinnedWeight) return leftPinnedWeight - rightPinnedWeight;
+    const partyDelta = partyWeight(left) - partyWeight(right);
+    if (partyDelta) return partyDelta;
+
+    const positionDelta = positionWeight(left.position) - positionWeight(right.position);
+    if (positionDelta) return positionDelta;
+
     return (left.member?.lastName ?? left.member?.fullName ?? left.memberBioguideId).localeCompare(right.member?.lastName ?? right.member?.fullName ?? right.memberBioguideId);
   });
+}
+
+function partyWeight(record: VoteMemberPositionRecord) {
+  const party = record.member?.party;
+  if (party === "Republican") return 0;
+  if (party === "Democrat") return 1;
+  if (party === "Independent") return 2;
+  return 3;
 }
 
 function positionWeight(position: VotePosition) {
@@ -167,9 +214,62 @@ function positionWeight(position: VotePosition) {
   return 3;
 }
 
+function groupPositionsByParty(positions: VoteMemberPositionRecord[]): PartyVoteGroup[] {
+  return partyGroupDefinitions
+    .map((definition) => {
+      const records = positions.filter((record) => (record.member?.party ?? "Unknown") === definition.key);
+
+      return {
+        counts: countPartyPositions(records),
+        key: definition.key,
+        label: definition.label,
+        records
+      };
+    })
+    .filter((group) => group.records.length > 0);
+}
+
+function countPartyPositions(positions: VoteMemberPositionRecord[]): PositionCounts {
+  return positions.reduce(
+    (counts, record) => {
+      if (record.position === "Yes") counts.yes += 1;
+      else if (record.position === "No") counts.no += 1;
+      else if (record.position === "Present") counts.present += 1;
+      else counts.notVoting += 1;
+
+      return counts;
+    },
+    { no: 0, notVoting: 0, present: 0, yes: 0 }
+  );
+}
+
 function countPositions(positions: VoteMemberPositionRecord[], filter: VoteFilter) {
   if (filter === "all") return positions.length;
   return positions.filter((record) => record.position === filter).length;
+}
+
+function PartyGroupHeader({ group }: { group: PartyVoteGroup }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/8 pb-2">
+      <div className="min-w-0">
+        <div className={`text-[12px] font-semibold uppercase tracking-[0.09em] ${partyToneClass(group.key)}`}>{group.label}</div>
+        <div className="mt-1 text-[12px] text-white/45">{group.records.length} positions</div>
+      </div>
+      <div className="flex flex-wrap justify-end gap-1.5">
+        <span className="rounded-full border border-[#43ed74]/22 bg-[#43ed74]/10 px-2 py-1 text-[10px] font-semibold text-[#43ed74]">Y {group.counts.yes}</span>
+        <span className="rounded-full border border-[#ff503d]/22 bg-[#ff503d]/10 px-2 py-1 text-[10px] font-semibold text-[#ff6b5c]">N {group.counts.no}</span>
+        <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2 py-1 text-[10px] font-semibold text-[#ffb12b]">P {group.counts.present}</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-1 text-[10px] font-semibold text-white/58">NV {group.counts.notVoting}</span>
+      </div>
+    </div>
+  );
+}
+
+function partyToneClass(party: PartyGroupKey) {
+  if (party === "Republican") return "text-[#ff9b8f]";
+  if (party === "Democrat") return "text-[#9fbeff]";
+  if (party === "Independent") return "text-[#d7b8ff]";
+  return "text-white/54";
 }
 
 function MemberVoteRow({ pinned, record }: { pinned?: boolean; record: VoteMemberPositionRecord }) {
