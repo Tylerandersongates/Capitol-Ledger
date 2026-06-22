@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -321,34 +321,7 @@ export function AuthFlowClient({
 
   const postAuthReturnTo = setupComplete && returnTo === "/onboarding" && !userRequestedAccountCreation ? "/dashboard" : returnTo;
 
-  useEffect(() => {
-    if (mode !== "verify" || verifyToken) return;
-
-    let cancelled = false;
-
-    fetch("/api/auth/session", { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) return null;
-        return (await response.json().catch(() => null)) as AuthApiResponse | null;
-      })
-      .then((session) => {
-        if (cancelled || !session?.authenticated || session.requiresVerification) return;
-
-        markBrowserAccountCreated();
-        setBrowserSessionAuthenticated(true);
-        setAllowAccountCreation(false);
-        setAccountCreated(true);
-        setStatus("Session verified. Continuing...");
-        void finishProductionAuth(postAuthReturnTo, false);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, postAuthReturnTo, verifyToken]);
-
-  async function syncLocalAccountData() {
+  const syncLocalAccountData = useCallback(async () => {
     await fetch("/api/account/ledger", {
       method: "POST",
       headers: {
@@ -380,7 +353,43 @@ export function AuthFlowClient({
       },
       body: JSON.stringify(readLocalGamificationSnapshot())
     }).catch(() => null);
-  }
+  }, []);
+
+  const finishProductionAuth = useCallback(
+    async (href = postAuthReturnTo, syncLocalData = false) => {
+      if (syncLocalData) await syncLocalAccountData();
+      router.push(href);
+      router.refresh();
+    },
+    [postAuthReturnTo, router, syncLocalAccountData]
+  );
+
+  useEffect(() => {
+    if (mode !== "verify" || verifyToken) return;
+
+    let cancelled = false;
+
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json().catch(() => null)) as AuthApiResponse | null;
+      })
+      .then((session) => {
+        if (cancelled || !session?.authenticated || session.requiresVerification) return;
+
+        markBrowserAccountCreated();
+        setBrowserSessionAuthenticated(true);
+        setAllowAccountCreation(false);
+        setAccountCreated(true);
+        setStatus("Session verified. Continuing...");
+        void finishProductionAuth(postAuthReturnTo, false);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [finishProductionAuth, mode, postAuthReturnTo, verifyToken]);
 
   async function hasCompletedAccountSetup() {
     const [profileResult, ledgerResult] = await Promise.all([
@@ -472,12 +481,6 @@ export function AuthFlowClient({
     setAccountCreated(true);
     void syncLocalAccountData();
 
-    router.push(href);
-    router.refresh();
-  }
-
-  async function finishProductionAuth(href = postAuthReturnTo, syncLocalData = false) {
-    if (syncLocalData) await syncLocalAccountData();
     router.push(href);
     router.refresh();
   }
