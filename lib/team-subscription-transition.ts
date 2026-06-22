@@ -38,6 +38,10 @@ type TeamOwnerUpgradeInput = {
   userId: string;
 };
 
+type TeamOwnerDowngradeInput = {
+  previousSubscription?: AccountSubscriptionSnapshot | null;
+};
+
 type RestoreInput = {
   userId?: string | null;
 };
@@ -76,6 +80,10 @@ function isDatabaseConnectionError(error: unknown) {
 
 function isActiveProSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
   return subscription.plan === "pro" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
+}
+
+function isActiveTeamSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
+  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 function canUpdateStripeSubscription(subscription: AccountSubscriptionSnapshot) {
@@ -263,12 +271,36 @@ export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
     };
   }
 
+  if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
+    await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId).catch(() => null);
+  }
+
   await writeActivePauseRecord(userId, email, {
     previousSubscription,
     status: "active",
     teamMemberId: teamSubscriptionId ? `team-owner-${teamSubscriptionId}` : "team-owner-upgrade",
     workspaceId: "team-owner-upgrade"
   });
+
+  return {
+    paused: true,
+    subscription: previousSubscription
+  };
+}
+
+export async function cancelPreviousTeamSubscriptionForProCheckout({
+  previousSubscription
+}: TeamOwnerDowngradeInput): Promise<TeamSubscriptionPauseResult> {
+  if (!previousSubscription || !isActiveTeamSubscription(previousSubscription)) {
+    return {
+      paused: false,
+      subscription: previousSubscription ?? undefined
+    };
+  }
+
+  if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
+    await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId).catch(() => null);
+  }
 
   return {
     paused: true,

@@ -42,6 +42,8 @@ const guardSource = read("lib/billing/subscription-event-guards.ts");
 const webhookSource = read("app/api/billing/stripe/webhook/route.ts");
 const transitionSource = read("lib/team-subscription-transition.ts");
 const stripeSource = read("lib/billing/stripe.ts");
+const subscriptionControlsSource = read("components/subscription-controls.tsx");
+const checkoutRouteSource = read("app/api/account/subscription/checkout/route.ts");
 
 assert.ok(
   guardSource.includes("currentSubscription.providerSubscriptionId !== eventSubscriptionId"),
@@ -50,6 +52,10 @@ assert.ok(
 assert.ok(
   webhookSource.includes("rememberPersonalProSubscriptionForTeamOwnerUpgrade"),
   "Team checkout completion should remember the owner's previous Pro subscription"
+);
+assert.ok(
+  webhookSource.includes("cancelPreviousTeamSubscriptionForProCheckout") && webhookSource.includes('if (plan === "pro")'),
+  "Pro checkout completion should cancel the previous Team subscription in the background"
 );
 assert.ok(
   webhookSource.includes("restorePausedPersonalSubscriptionForReleasedTeamSeat"),
@@ -61,7 +67,29 @@ assert.ok(
 );
 assert.ok(webhookSource.includes("staleSubscriptionEvent"), "webhook should expose stale-event ignore path");
 assert.ok(transitionSource.includes("team-owner-upgrade"), "owner Team upgrades should be tracked distinctly in the pause table");
+assert.ok(
+  transitionSource.includes("cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId)"),
+  "owner Team upgrades should cancel the previous Pro subscription in the background"
+);
+assert.ok(
+  transitionSource.includes("isActiveTeamSubscription") && transitionSource.includes("cancelPreviousTeamSubscriptionForProCheckout"),
+  "owner Pro downgrades should detect and cancel the previous active Team subscription"
+);
 assert.ok(stripeSource.includes("metadata[userEmail]"), "Stripe checkout metadata should include user email for future audit records");
 assert.ok(stripeSource.includes("readStripeCustomerSubscriptionForPlan"), "Stripe helper should expose plan-specific subscription lookup");
+assert.ok(
+  subscriptionControlsSource.includes("return subscription.plan === targetPlan") &&
+    subscriptionControlsSource.includes("shouldUseBillingPortal(subscription, plan)") &&
+    !subscriptionControlsSource.includes("Downgrade in Billing") &&
+    !subscriptionControlsSource.includes("Change in Billing") &&
+    !subscriptionControlsSource.includes("const billingPortalManaged = shouldUseBillingPortal(subscription);"),
+  "plan switches should bypass the billing portal and use app-controlled checkout or cancellation"
+);
+assert.ok(
+  checkoutRouteSource.includes("cancelStripeSubscriptionAtPeriodEnd(currentSubscription.providerSubscriptionId)") &&
+    checkoutRouteSource.includes("canceledPreviousSubscription") &&
+    checkoutRouteSource.includes('plan === "free"'),
+  "Free downgrades should cancel the previous paid Stripe subscription in the background"
+);
 
 console.log("Billing transition fixture check passed.");

@@ -844,6 +844,7 @@ export const billActions: BillAction[] = [
 export const memberVotes: MemberVote[] = [
   { voteId: "demo-vote-house-102", memberBioguideId: "R000614", position: "Yes" },
   { voteId: "demo-vote-house-102", memberBioguideId: "M001157", position: "Yes" },
+  { voteId: "demo-vote-house-102", memberBioguideId: "FCA030", position: "No" },
   { voteId: "demo-vote-house-102", memberBioguideId: "O000172", position: "No" },
   { voteId: "demo-vote-house-102", memberBioguideId: "P000197", position: "No" },
   { voteId: "demo-vote-house-25", memberBioguideId: "W000821", position: "Yes" },

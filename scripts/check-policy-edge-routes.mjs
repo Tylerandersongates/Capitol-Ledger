@@ -12,6 +12,7 @@ const data = read("lib/data.ts");
 const priorityPage = read("app/priority-feed/page.tsx");
 const riskPage = read("app/risk-watch/page.tsx");
 const sharedFeed = read("components/policy-edge-feed.tsx");
+const scrollFrame = read("components/mobile-glass-scroll-frame.tsx");
 const ranking = read("lib/policy-edge-ranking.ts");
 
 assert.ok(dashboard.includes('href="/priority-feed"'), "Open Priority Feed should route to the dedicated Priority Feed page");
@@ -43,7 +44,10 @@ assert.ok(!dashboard.includes('<LockedStatPill label="Priority Queue" value={`${
 assert.ok(data.includes("sponsorBioguideId: bill.sponsorBioguideId"), "Dashboard target bills should include sponsor IDs for saved-official priority rules");
 assert.ok(data.includes("summary: bill.summary"), "Dashboard target bills should include summaries for issue-aligned priority rules");
 assert.ok(dashboard.includes("riskWatchCount"), "Dashboard Risk Watch count should use personal stance count");
-assert.ok(sharedFeed.includes("overflow-y-auto") && sharedFeed.includes("role=\"region\""), "Policy Edge bill rows should render inside a scrollable region");
+assert.ok(
+  sharedFeed.includes("MobileGlassScrollFrame") && scrollFrame.includes("overflow-y-auto") && scrollFrame.includes('role={ariaLabel ? "region" : undefined}'),
+  "Policy Edge bill rows should render inside the shared scrollable region"
+);
 assert.ok(sharedFeed.includes("Priority Feed") && sharedFeed.includes("Risk Watch"), "Dedicated policy edge feed labels should render");
 assert.ok(!priorityPage.includes("redirect(\"/search") && !riskPage.includes("redirect(\"/search"), "Policy edge routes should not redirect to Search");
 

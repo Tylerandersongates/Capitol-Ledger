@@ -611,6 +611,60 @@ function mergeBy<T>(live: T[], demo: T[], key: (value: T) => string) {
   return Array.from(new Map([...live, ...demo].map((value) => [key(value), value])).values());
 }
 
+function mergeBillsByRecordKey(live: Bill[], demo: Bill[]) {
+  return dedupeDashboardBills([...live, ...demo]);
+}
+
+function dedupeDashboardBills(values: Bill[]) {
+  const billsByKey = new Map<string, Bill>();
+
+  values.forEach((bill) => {
+    const key = getDashboardBillKey(bill);
+    const current = billsByKey.get(key);
+    billsByKey.set(key, current ? chooseDashboardBill(current, bill) : bill);
+  });
+
+  return Array.from(billsByKey.values());
+}
+
+function getDashboardBillKey(bill: Pick<Bill, "billNumber" | "billType" | "congress" | "displayNumber" | "id" | "shortTitle" | "title">) {
+  const congress = String(bill.congress || "").trim();
+  const billType = normalizeDashboardBillKeyPart(bill.billType);
+  const billNumber = normalizeDashboardBillKeyPart(bill.billNumber);
+
+  if (congress && billType && billNumber) return `${congress}:${billType}:${billNumber}`;
+
+  return [normalizeDashboardBillKeyPart(bill.displayNumber), normalizeDashboardBillKeyPart(bill.shortTitle || bill.title)].filter(Boolean).join(":") || bill.id;
+}
+
+function normalizeDashboardBillKeyPart(value?: string | number) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
+}
+
+function chooseDashboardBill(current: Bill, candidate: Bill) {
+  const currentIsDemo = isDemoDashboardBill(current);
+  const candidateIsDemo = isDemoDashboardBill(candidate);
+
+  if (currentIsDemo !== candidateIsDemo) return candidateIsDemo ? current : candidate;
+
+  const actionDelta = Date.parse(candidate.latestActionDate) - Date.parse(current.latestActionDate);
+  if (actionDelta > 0) return candidate;
+  if (actionDelta < 0) return current;
+
+  const currentIsOfficial = current.sourceUrl.includes("congress.gov");
+  const candidateIsOfficial = candidate.sourceUrl.includes("congress.gov");
+  if (currentIsOfficial !== candidateIsOfficial) return candidateIsOfficial ? candidate : current;
+
+  return current;
+}
+
+function isDemoDashboardBill(bill: Bill) {
+  return bill.id.startsWith("demo-") || bill.sourceUrl.includes("/demo");
+}
+
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -1279,7 +1333,8 @@ function dashboardVoteSourceKind(vote: Vote) {
 }
 
 function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
-  const sortedBills = [...sourceBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
+  const dashboardBills = dedupeDashboardBills(sourceBills);
+  const sortedBills = [...dashboardBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
   const recentVote = sortedVotes[0];
   const recentVoteBill = recentVote?.billId ? sourceBills.find((bill) => bill.id === recentVote.billId) : undefined;
@@ -1291,7 +1346,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
     vote
   }));
   const trackedBill = sortedBills.find((bill) => getBillStatus(bill) === "In Committee") ?? sortedBills[0];
-  const statusCounts = sourceBills.reduce(
+  const statusCounts = dashboardBills.reduce(
     (counts, bill) => {
       const status = getBillStatus(bill);
       if (status === "Passed" || status === "Enacted") counts.passed += 1;
@@ -1303,7 +1358,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
   );
 
   return {
-    billsInAction: sourceBills.length,
+    billsInAction: dashboardBills.length,
     generatedAt: new Date().toISOString(),
     defaultUnreadAlertIds: [
       recentVoteBill || trackedBill ? systemVoteReminderAlertId : "",
@@ -1322,7 +1377,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
       : undefined,
     voteFeed,
     favoriteTargets: {
-      bills: sourceBills.map((bill) => ({
+      bills: dashboardBills.map((bill) => ({
         billNumber: bill.billNumber,
         billType: bill.billType,
         congress: bill.congress,
@@ -1385,7 +1440,7 @@ async function getDatabaseDashboardRecords() {
       .filter((bill): bill is PrismaBill => Boolean(bill));
 
     return {
-      bills: mergeBy([...billRows, ...voteBills].map(mapDatabaseBill), bills, (bill) => bill.id),
+      bills: mergeBillsByRecordKey([...billRows, ...voteBills].map(mapDatabaseBill), bills),
       votes: mergeBy(voteRows.map(mapDatabaseVote), votes, (vote) => vote.id)
     };
   } catch {
@@ -1568,7 +1623,7 @@ export async function searchRecordsWithLiveData(filters: SearchFilters) {
   return {
     mode: "live+demo" as const,
     results: {
-      bills: mergeBy(liveResults.bills, demoResults.bills, (bill) => bill.id),
+      bills: mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
       members: mergeBy(liveResults.members, demoResults.members, (member) => member.bioguideId),
       votes: mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
     }

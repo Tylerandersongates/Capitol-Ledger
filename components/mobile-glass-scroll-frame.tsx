@@ -97,7 +97,12 @@ export function MobileGlassScrollFrame({
 
   return (
     <div className={`${frameBaseClass} ${frameClassName}`}>
-      <div ref={scrollRef} className={`${resolvedHeightClassName} ${scrollPanelBaseClass} ${className}`} aria-label={ariaLabel}>
+      <div
+        ref={scrollRef}
+        className={`${resolvedHeightClassName} ${scrollPanelBaseClass} ${className}`}
+        aria-label={ariaLabel}
+        role={ariaLabel ? "region" : undefined}
+      >
         {children}
       </div>
       <div className={glassOverlayClass} aria-hidden="true" />

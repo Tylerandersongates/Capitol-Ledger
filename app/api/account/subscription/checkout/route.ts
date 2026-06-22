@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, writeSubscriptionToDatabase } from "@/lib/account-database";
-import { createStripeCheckoutSession } from "@/lib/billing/stripe";
+import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
+import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { cancelStripeSubscriptionAtPeriodEnd, createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { isTeamSeatCountOverMaximum, maximumTeamSeatCount, normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
@@ -14,6 +14,14 @@ function readPlan(value: unknown): SubscriptionPlanId | null {
 
 function readCycle(value: unknown): BillingCycle {
   return value === "annual" ? "annual" : "monthly";
+}
+
+function canCancelStripeSubscription(subscription: {
+  plan?: SubscriptionPlanId;
+  provider?: string;
+  providerSubscriptionId?: string;
+}) {
+  return subscription.provider === "stripe" && subscription.plan !== "free" && Boolean(subscription.providerSubscriptionId?.startsWith("sub_"));
 }
 
 export async function POST(request: NextRequest) {
@@ -52,6 +60,18 @@ export async function POST(request: NextRequest) {
 
   if (plan === "free") {
     const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+    const currentSubscription = (await readSubscriptionFromDatabase(accountUserId).catch(() => null)) ?? getAccountSubscription(accountUserId);
+    let canceledPreviousSubscription = false;
+
+    if (canCancelStripeSubscription(currentSubscription) && currentSubscription.providerSubscriptionId) {
+      try {
+        await cancelStripeSubscriptionAtPeriodEnd(currentSubscription.providerSubscriptionId);
+        canceledPreviousSubscription = true;
+      } catch {
+        return NextResponse.json({ error: "Unable to schedule paid subscription cancellation." }, { status: 503 });
+      }
+    }
+
     const nextSubscription = {
       cycle,
       plan,
@@ -65,6 +85,7 @@ export async function POST(request: NextRequest) {
     const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, nextSubscription);
 
     return NextResponse.json({
+      canceledPreviousSubscription,
       checkoutMode: "demo",
       mode: databaseSubscription ? "database" : "account",
       subscription

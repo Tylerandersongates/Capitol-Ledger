@@ -25,4 +25,11 @@ assert.ok(liveDocketPage.includes("matchesLiveDocketStatus"), "Live Docket shoul
 assert.ok(liveDocketPage.includes('href="/dashboard"'), "Live Docket should return to the dashboard");
 assert.ok(!liveDocketPage.includes('redirect("/search'), "Live Docket should not redirect to Search Discovery");
 
+const data = read("lib/data.ts");
+assert.ok(data.includes("function dedupeDashboardBills"), "Dashboard data should dedupe live/demo bill records before rendering docket rows");
+assert.ok(data.includes("const dashboardBills = dedupeDashboardBills(sourceBills);"), "Dashboard data should derive counts from deduped bills");
+assert.ok(data.includes("billsInAction: dashboardBills.length"), "Live docket counts should not include duplicate live/demo bill identities");
+assert.ok(data.includes("bills: dashboardBills.map"), "Live docket favorite targets should render deduped bill identities");
+assert.ok(data.includes("mergeBillsByRecordKey"), "Live+demo bill merges should use a stable bill identity key");
+
 console.log("Live docket route check passed.");

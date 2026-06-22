@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Bell, CalendarClock, FileText, Home, Search, Settings, ShieldAlert, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import {
@@ -219,17 +220,11 @@ export function PolicyEdgeFeed({
         ) : null}
 
         {!locked && !isLoadingPersonalFeed && visibleBills.length ? (
-          <div
-            aria-label={`${config.title} bills`}
-            className="h-[340px] overflow-y-auto overscroll-contain rounded-[1.35rem] border border-white/10 bg-[#03152f]/55 p-1 pr-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_28px_rgba(43,141,255,0.08),0_16px_34px_rgba(1,8,24,0.26)] [scrollbar-color:rgba(255,177,43,0.68)_rgba(255,255,255,0.06)] [scrollbar-width:thin] sm:h-[420px]"
-            role="region"
-          >
-            <div className="space-y-3 pb-1">
-              {visibleBills.slice(0, 12).map((bill, index) => (
-                <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
-              ))}
-            </div>
-          </div>
+          <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="h-[340px] sm:h-[420px]" className="space-y-3 pb-4" ariaLabel={`${config.title} bills`}>
+            {visibleBills.slice(0, 12).map((bill, index) => (
+              <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
+            ))}
+          </MobileGlassScrollFrame>
         ) : null}
 
         {!locked && !isLoadingPersonalFeed && !visibleBills.length ? <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>{config.empty}</div> : null}

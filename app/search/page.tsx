@@ -506,7 +506,7 @@ function ResultSection({
   count: number;
   title: string;
 }) {
-  const shouldScroll = count > 3;
+  const shouldScroll = count > 2;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -519,7 +519,7 @@ function ResultSection({
         {shouldScroll ? <span className={premiumPillClass}>Scroll</span> : null}
       </div>
       {shouldScroll ? (
-        <MobileGlassScrollFrame heightClassName="max-h-[19rem]" className="space-y-3" ariaLabel={`${title} search results`}>
+        <MobileGlassScrollFrame heightClassName="h-[15.75rem]" className="space-y-3" ariaLabel={`${title} search results`}>
           {children}
         </MobileGlassScrollFrame>
       ) : (

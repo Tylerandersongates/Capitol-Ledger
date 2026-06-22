@@ -279,6 +279,10 @@ Upload checklist:
 73. Added `pnpm video-links:check` to verify the current speech/video demo layer before investor or beta walkthroughs.
 74. Added a visible Capitol Ledger Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
 
+## Open Product Todos
+
+1. Add vote sorting/grouping by party on vote detail and bill vote-history views so Republican, Democrat, Independent, and Not Voting positions can be scanned quickly.
+
 ## Completed Design Work
 
 1. Added mobile vote record detail pages with dashboard-consistent cards, vote breakdown visualization, linked bill context, featured official positions, and official source access.

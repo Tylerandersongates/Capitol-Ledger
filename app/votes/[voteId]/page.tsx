@@ -2,13 +2,12 @@ import { MobileShell } from "@/components/mobile-shell";
 import { GamificationEventAnchor, RecordGamificationEvent } from "@/components/gamification-actions";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
-import Image from "next/image";
+import { VoteSavedOfficialPositions } from "@/components/vote-saved-official-positions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Bell,
-  CheckCircle2,
   ChevronRight,
   ExternalLink,
   FileText,
@@ -16,14 +15,10 @@ import {
   Link2,
   Search,
   ShieldCheck,
-  Settings,
-  UserRound,
-  UsersRound,
-  Vote
+  Settings
 } from "lucide-react";
 import { getBill, getVote, getVoteMemberPositions, getVoteTotals } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
-import type { VotePosition } from "@/types/capitol";
 
 type VotePageProps = {
   params: {
@@ -101,31 +96,7 @@ export default function VoteDetailPage({ params }: VotePageProps) {
           ) : null}
         </MobileCard>
 
-        <MobileCard variant="dashboard" className="px-5 py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Recorded Positions</div>
-              <h2 className="mt-2 text-[21px] font-medium leading-none">Featured officials</h2>
-            </div>
-            <UsersRound className="h-7 w-7 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-          </div>
-          <div className="mt-5 divide-y divide-white/8">
-            {memberPositions.map((record) => {
-              if (!record.member) return null;
-
-              return (
-                <Link key={record.member.bioguideId} href={`/members/${record.member.bioguideId}`} className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4">
-                  {record.member.photoUrl ? <Image src={record.member.photoUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full border border-rust/35 object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-white/6 text-white/54"><UserRound className="h-6 w-6" /></span>}
-                  <span className="min-w-0">
-                    <span className="block truncate text-[16px] font-semibold text-white">{record.member.fullName}</span>
-                    <span className="mt-1 block text-[13px] text-white/52">{record.member.state} · {record.member.party}</span>
-                  </span>
-                  <PositionPill position={record.position} />
-                </Link>
-              );
-            })}
-          </div>
-        </MobileCard>
+        <VoteSavedOfficialPositions memberPositions={memberPositions} />
 
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-start gap-4">
@@ -155,23 +126,5 @@ export default function VoteDetailPage({ params }: VotePageProps) {
         ]}
       />
     </MobileShell>
-  );
-}
-
-function PositionPill({ position }: { position: VotePosition }) {
-  const classes =
-    position === "Yes"
-      ? "bg-[#43ed74]/12 text-[#43ed74]"
-      : position === "No"
-        ? "bg-[#ff503d]/12 text-[#ff6b5c]"
-        : position === "Present"
-          ? "bg-[#ffb12b]/12 text-[#ffb12b]"
-          : "bg-white/8 text-white/60";
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium leading-none ${classes}`}>
-      {position === "Yes" ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : <Vote className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />}
-      {position}
-    </span>
   );
 }

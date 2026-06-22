@@ -29,6 +29,11 @@ const electionBadgeProgress = getGamificationEventRule(electionEvent)?.badgeProg
 const voterElectionGoal = electionBadgeProgress.find((progress) => progress.badgeId === "voter")?.threshold ?? 4;
 const ballotVeteranElectionGoal = getGamificationEventRule(electionEvent)?.badgeProgress.find((progress) => progress.badgeId === "ballot-veteran")?.threshold ?? 5;
 const superVoterElectionGoal = electionBadgeProgress.find((progress) => progress.badgeId === "super-voter")?.threshold ?? totalElectionCount;
+const electionBadgeMilestones = [
+  { label: "Voter Badge", threshold: voterElectionGoal },
+  { label: "Ballot Veteran", threshold: ballotVeteranElectionGoal },
+  { label: "Super Voter", threshold: superVoterElectionGoal }
+];
 
 function readStoredElectionIds() {
   if (typeof window === "undefined") return [];
@@ -62,16 +67,11 @@ function pillTone(type: ElectionEntry["type"]) {
 }
 
 function nextElectionBadgeMessage(electionCount: number) {
-  if (electionCount < voterElectionGoal) {
-    return `Log ${voterElectionGoal} of ${totalElectionCount} unique elections to unlock Voter.`;
-  }
+  const nextMilestone = electionBadgeMilestones.find((milestone) => electionCount < milestone.threshold);
 
-  if (electionCount < ballotVeteranElectionGoal) {
-    return `Log ${ballotVeteranElectionGoal} of ${totalElectionCount} unique elections to unlock Ballot Veteran.`;
-  }
-
-  if (electionCount < superVoterElectionGoal) {
-    return `Log ${superVoterElectionGoal} of ${totalElectionCount} unique elections to unlock Super Voter.`;
+  if (nextMilestone) {
+    const remainingElections = nextMilestone.threshold - electionCount;
+    return `${remainingElections} more unique election${remainingElections === 1 ? "" : "s"} to unlock ${nextMilestone.label}.`;
   }
 
   return "All election participation badges unlocked.";
@@ -187,7 +187,10 @@ export function ElectionParticipationCard() {
 
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#43ed74]/20 bg-[#43ed74]/8 px-3 py-2 text-[12px] text-[#8ef8af]">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden="true" />
-          <span>{status || nextElectionBadgeMessage(electionCount)}</span>
+          <span>
+            <span className="block">{nextElectionBadgeMessage(electionCount)}</span>
+            {status ? <span className="mt-1 block text-white/48">{status}</span> : null}
+          </span>
         </div>
       </MobileCard>
     </div>

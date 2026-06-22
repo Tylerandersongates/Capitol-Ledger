@@ -12,6 +12,7 @@ import {
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import {
+  cancelPreviousTeamSubscriptionForProCheckout,
   rememberPersonalProSubscriptionForTeamOwnerUpgrade,
   restorePausedPersonalSubscriptionForReleasedTeamSeat
 } from "@/lib/team-subscription-transition";
@@ -79,6 +80,11 @@ export async function POST(request: NextRequest) {
         previousSubscription: currentSubscription,
         teamSubscriptionId: object.subscription,
         userId
+      }).catch(() => null);
+    }
+    if (plan === "pro") {
+      await cancelPreviousTeamSubscriptionForProCheckout({
+        previousSubscription: currentSubscription
       }).catch(() => null);
     }
 

@@ -236,8 +236,10 @@ function applySubscriptionSnapshot(subscription: AccountSubscriptionSnapshot) {
   return normalized;
 }
 
-function shouldUseBillingPortal(subscription: AccountSubscriptionSnapshot) {
-  return subscription.provider === "stripe" && subscription.plan !== "free";
+function shouldUseBillingPortal(subscription: AccountSubscriptionSnapshot, targetPlan: SubscriptionPlanId) {
+  if (subscription.provider !== "stripe" || subscription.plan === "free") return false;
+
+  return subscription.plan === targetPlan;
 }
 
 async function openBillingPortal() {
@@ -334,7 +336,7 @@ export function PlanActionButton({
   const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
   const active = subscription.plan === plan;
-  const billingPortalManaged = shouldUseBillingPortal(subscription);
+  const billingPortalManaged = shouldUseBillingPortal(subscription, plan);
 
   async function handlePlanAction() {
     if (pending || (active && !billingPortalManaged)) return;
@@ -366,7 +368,7 @@ export function PlanActionButton({
       });
 
       if (!response.ok) {
-        if (plan === "free") updateSubscription({ plan });
+        if (plan === "free" && subscription.provider !== "stripe") updateSubscription({ plan });
         return;
       }
 
@@ -394,15 +396,7 @@ export function PlanActionButton({
     }
   }
 
-  const actionLabel = billingPortalManaged
-    ? active
-      ? "Manage Billing"
-      : plan === "free"
-        ? "Downgrade in Billing"
-        : "Change in Billing"
-    : active
-      ? "Current Plan"
-      : inactiveLabel;
+  const actionLabel = billingPortalManaged ? "Manage Billing" : active ? "Current Plan" : inactiveLabel;
 
   return (
     <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
