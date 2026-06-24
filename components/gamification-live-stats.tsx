@@ -88,8 +88,8 @@ export function AccountGamificationStats({ className = "mt-5 grid grid-cols-3 ga
 
   return (
     <div className={className}>
-      <MiniStat href="/impact" value={snapshot.civicScore.toLocaleString()} label="Civic Score" />
-      <MiniStat href="/impact" value={String(snapshot.dayStreak)} label="Day Streak" />
+      <MiniStat href="/impact" value={snapshot.civicScore.toLocaleString()} label="Civic score" />
+      <MiniStat href="/impact" value={String(snapshot.dayStreak)} label="Day streak" />
       <MiniStat href="/badges" value={String(snapshot.earnedBadgeIds.length)} label="Badges" />
     </div>
   );

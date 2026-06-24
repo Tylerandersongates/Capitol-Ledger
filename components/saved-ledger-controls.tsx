@@ -400,16 +400,16 @@ export function PolicyInterestsEditor({
       {!compact ? (
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div className="min-w-0">
-            <div className={premiumEyebrowClass}>Civic Signals</div>
-            <h2 className={`${premiumCardTitleClass} mt-2`}>Policy Interests</h2>
+            <div className={premiumEyebrowClass}>Alert topics</div>
+            <h2 className={`${premiumCardTitleClass} mt-2`}>Topics you follow</h2>
             <p className={premiumCardDescriptionClass}>
-              {editing ? "Choose the topics that shape alerts and weekly civic briefs." : "Topics currently shaping alerts and weekly civic briefs."}
+              {editing ? "Choose topics for alerts and your weekly brief." : "These topics shape your alerts and weekly brief."}
             </p>
           </div>
           <button
             type="button"
             onClick={() => setEditing((current) => !current)}
-            aria-label={editing ? "Finish editing policy interests" : "Edit policy interests"}
+            aria-label={editing ? "Finish editing topics" : "Edit topics"}
             className={`shrink-0 rounded-full border px-4 py-2 text-[14px] font-medium leading-none transition ${
               editing ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/8 text-[#ffb12b]"
             }`}
@@ -475,10 +475,10 @@ export function PolicyInterestsEditor({
           <span>{selected.length} selected</span>
           {editing ? (
             <button type="button" onClick={resetInterests} className="font-medium text-[#ffb12b]">
-              Reset interests
+              Clear topics
             </button>
           ) : (
-            <span>Saved to your civic ledger</span>
+            <span>Saved to your profile</span>
           )}
         </div>
       ) : null}
@@ -487,9 +487,9 @@ export function PolicyInterestsEditor({
 }
 
 function savedLedgerPlanDescription(plan: AccountSubscriptionSnapshot["plan"]) {
-  if (plan === "team") return "Connects saved records to Team workspace tracking, shared watchlists, and alert coordination.";
-  if (plan === "pro") return "Turns saved records into briefs, policy intelligence, and exportable reports.";
-  return "Saves your watchlist. Pro converts it into briefs and exportable reports.";
+  if (plan === "team") return "Shares saved items with your team workspace.";
+  if (plan === "pro") return "Turns saved items into briefs and reports.";
+  return "Keeps your saved items in one place. Pro adds briefs and reports.";
 }
 
 export function SavedLedgerSummary({
@@ -537,13 +537,13 @@ export function SavedLedgerSummary({
         </span>
       </div>
       <div className={`rounded-full border px-3 py-2 text-center text-[12px] font-semibold ${accountSynced ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/5 text-white/46"}`}>
-        {accountSynced ? "Account sync active" : "Browser fallback until sign-in"}
+        {accountSynced ? "Saved to account" : "Saved on this device"}
       </div>
       <div className="grid grid-cols-4 gap-2">
         <SavedCount value={counts.officials} label="Officials" />
         <SavedCount value={counts.bills} label="Bills" />
         <SavedCount value={counts.alerts} label="Alerts" />
-        <SavedCount value={counts.interests} label="Issues" />
+        <SavedCount value={counts.interests} label="Topics" />
       </div>
     </div>
   );

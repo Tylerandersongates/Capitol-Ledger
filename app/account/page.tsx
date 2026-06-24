@@ -60,9 +60,9 @@ export default async function AccountPage() {
     >
       <GamificationSync />
       <header className="mt-12">
-        <div className={premiumEyebrowClass}>Account Center</div>
+        <div className={premiumEyebrowClass}>Your profile</div>
         <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Profile</h1>
-        <p className="mt-3 max-w-[335px] text-[14px] leading-snug text-white/54">Manage your local civic profile, saved ledger, and alert signals.</p>
+        <p className="mt-3 max-w-[335px] text-[14px] leading-snug text-white/54">Manage your profile, saved items, and alerts.</p>
       </header>
 
       <main className="mt-7 space-y-4 pb-8">
@@ -74,11 +74,11 @@ export default async function AccountPage() {
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#43ed74]/18 bg-[#43ed74]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74f49a]">
                       <CheckCircle2 className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
-                      Synced
+                      Saved
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <div className={premiumEyebrowClass}>Citizen Profile</div>
+                    <div className={premiumEyebrowClass}>Profile details</div>
                     <h2 className={`${premiumCardTitleClass} mt-2`}>{profileDisplayName}</h2>
                     <AccountDistrictDisplay />
                     <div className="mt-3 grid max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 [&>*]:mt-0 [&>*]:min-w-0 [&>*]:px-2 [&>*]:py-1 [&>*]:text-[10px]">
@@ -88,7 +88,7 @@ export default async function AccountPage() {
                   </div>
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 text-[12px] leading-snug text-white/50">
-                  The avatar is a placeholder for the citizen account. The sync check means account storage is connected; complete district setup to personalize officials, alerts, and saved records.
+                  Your profile personalizes your district, alerts, and saved items. You can update these details in Settings.
                 </div>
                 <div className={`mt-5 ${premiumPanelClass} p-3`}>
                   <AccountGamificationStats className="grid grid-cols-3 gap-3" />
@@ -97,11 +97,11 @@ export default async function AccountPage() {
 
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
                 <PremiumAccountHeader
-                  description="Save officials, bills, alerts, and issue interests here. Pro turns them into briefs and reports; Team connects them to shared workspace tracking."
-                  eyebrow="Saved Ledger"
+                  description="Keep officials, bills, alerts, and topics in one place. Pro adds briefs and reports; Team adds shared tracking."
+                  eyebrow="Saved items"
                   icon={<ShieldCheck />}
                   iconTone="green"
-                  title="Tracked civic watchlist"
+                  title="Your watchlist"
                 />
                 <div className="mt-5">
                   <SavedLedgerSummary initialAlertCount={initialAlertCount} initialLedger={accountLedger} initialSubscription={initialSubscription} />

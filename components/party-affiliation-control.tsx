@@ -76,7 +76,7 @@ export function PartyAffiliationDisplay() {
     <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] font-medium text-white/52">
       <Flag className="h-3.5 w-3.5 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
       <span className="truncate">
-        Affiliation: <span className="text-white/76">{getPartyLabel(party)}</span>
+        Party: <span className="text-white/76">{getPartyLabel(party)}</span>
       </span>
     </div>
   );
