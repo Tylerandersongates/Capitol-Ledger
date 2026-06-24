@@ -97,8 +97,8 @@ export function PartyAffiliationSelector() {
         <Flag className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <div className="text-[16px] font-semibold text-white">Party Affiliation</div>
-        <div className="mt-1 text-[13px] text-white/52">Optional profile preference</div>
+        <div className="text-[16px] font-semibold text-white">Party affiliation</div>
+        <div className="mt-1 text-[13px] text-white/52">Optional</div>
       </div>
       <div className="relative w-[142px]">
         <select

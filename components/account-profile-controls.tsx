@@ -41,17 +41,17 @@ const OnboardingSetupMetricsContext = createContext<SetupMetrics | null>(null);
 
 const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: string }[] = [
   {
-    detail: "Floor votes and committee movement",
+    detail: "Votes and committee updates",
     key: "voteReminders",
     label: "Vote reminders"
   },
   {
-    detail: "Federal, state, and local updates",
+    detail: "Updates tied to your district",
     key: "districtAlerts",
     label: "District alerts"
   },
   {
-    detail: "Personal civic intelligence summary",
+    detail: "Weekly summary of your saved items",
     key: "weeklyBrief",
     label: "Weekly brief"
   }
@@ -887,7 +887,7 @@ export function NotificationPreferencesEditor({ compact = false, dense = false }
                   </span>
                 ) : null}
               </span>
-              <span className={`mt-1 block text-white/50 ${dense ? "text-[11px]" : "text-[13px]"}`}>{locked ? "Unlocks with Pro Intelligence" : row.detail}</span>
+              <span className={`mt-1 block text-white/50 ${dense ? "text-[11px]" : "text-[13px]"}`}>{locked ? "Upgrade to Pro" : row.detail}</span>
             </span>
             <PreferenceToggle enabled={enabled} disabled={locked} dense={dense} />
           </button>

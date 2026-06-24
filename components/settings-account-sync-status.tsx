@@ -104,12 +104,12 @@ export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authen
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Sync Status</div>
-          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">{snapshot.signedIn ? "Account connected" : "Local profile ready"}</h2>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Profile</div>
+          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">{snapshot.signedIn ? "Signed in" : "Saved on this device"}</h2>
           <p className="mt-2 text-[13px] leading-snug text-white/54">
             {snapshot.signedIn
-              ? `${snapshot.userEmail ?? "Signed-in account"} is linked to your setup and saved ledger.`
-              : "Sign in to keep setup choices and saved records connected across sessions."}
+              ? `${snapshot.userEmail ?? "Your account"} is keeping your settings and saved items up to date.`
+              : "Sign in to keep your settings and saved items on another device."}
           </p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)]">
@@ -119,31 +119,31 @@ export function SettingsAccountSyncStatus({ authenticated, userEmail }: { authen
 
       <div className="mt-5 grid grid-cols-3 gap-2">
         <SyncMetric
-          detail={snapshot.signedIn ? "Signed in" : "Sign in"}
+          detail={snapshot.signedIn ? "Signed in" : "Not signed in"}
           icon={<UserRound />}
           label="Account"
           tone={snapshot.signedIn ? "green" : "gold"}
-          value={snapshot.signedIn ? "On" : "Local"}
+          value={snapshot.signedIn ? "On" : "This device"}
         />
         <SyncMetric
-          detail={`${snapshot.setupCount}/${setupSignalTotal} signals`}
+          detail={`${snapshot.setupCount}/${setupSignalTotal} steps`}
           icon={<CheckCircle2 />}
-          label="Setup"
+          label="Profile"
           tone={setupReady ? "green" : "gold"}
           value={setupReady ? "Ready" : "Partial"}
         />
         <SyncMetric
           detail={`${snapshot.savedCount} saved`}
           icon={<Cloud />}
-          label="Sync"
+          label="Saved"
           tone={syncReady ? "green" : snapshot.pendingSync ? "gold" : "muted"}
-          value={syncReady ? "Synced" : snapshot.pendingSync ? "Syncing" : "Local"}
+          value={syncReady ? "Up to date" : snapshot.pendingSync ? "Saving" : "This device"}
         />
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] leading-tight text-white/48">
         <span className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">{snapshot.districtLabel}</span>
-        <span className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">{snapshot.issueCount} interests</span>
+        <span className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">{snapshot.issueCount} topics</span>
         <span className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-2">{snapshot.enabledAlertCount} alerts</span>
       </div>
 

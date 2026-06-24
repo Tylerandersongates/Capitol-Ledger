@@ -29,26 +29,26 @@ import {
 
 const settingRows = [
   {
-    label: "Beta Testing",
-    value: "Checklist and feedback",
+    label: "Beta feedback",
+    value: "Testing checklist",
     href: "/beta",
     icon: <MessageSquarePlus />
   },
   {
-    label: "Privacy & Data",
-    value: "Export, local data, and account privacy",
+    label: "Privacy",
+    value: "Data export and privacy",
     href: "/settings#data-handling",
     icon: <ShieldCheck />
   },
   {
-    label: "Subscription",
-    value: "Manage active plan",
+    label: "Plan",
+    value: "Manage billing",
     href: "/upgrade",
     icon: <CreditCard />
   },
   {
-    label: "Weekly Brief",
-    value: "Delivery and history",
+    label: "Weekly brief",
+    value: "Recent briefs",
     href: "/brief",
     icon: <CalendarClock />
   }
@@ -74,10 +74,10 @@ export default async function SettingsPage() {
     >
       <header className="mt-12 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className={premiumEyebrowClass}>Account Center</div>
+          <div className={premiumEyebrowClass}>Your account</div>
           <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Settings</h1>
           <p className="mt-3 max-w-[335px] text-[14px] leading-snug text-white/54">
-            Manage account controls, preferences, billing links, privacy, and sync behavior.
+            Manage your profile, alerts, plan, privacy, and sign-in.
           </p>
         </div>
         <Link href="/profile" className={mobileProfileShortcutClass} aria-label="Open profile">
@@ -91,10 +91,10 @@ export default async function SettingsPage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumSettingsHeader
-            description="Account controls now live here so the profile screen can stay focused on the citizen profile and civic signals."
-            eyebrow="Controls"
+            description="Update the basics used to personalize your dashboard and alerts."
+            eyebrow="Account"
             icon={<Settings />}
-            title="Account Settings"
+            title="Account"
           />
           <MobileGlassScrollFrame className="divide-y divide-white/8">
             <PartyAffiliationSelector />
@@ -106,7 +106,7 @@ export default async function SettingsPage() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[16px] font-semibold text-white">Notifications</span>
-                  <span className="mt-1 block text-[13px] leading-snug text-white/52">Votes, district alerts, weekly brief</span>
+                  <span className="mt-1 block text-[13px] leading-snug text-white/52">Votes, local updates, weekly brief</span>
                 </span>
                 <ChevronRight className="h-5 w-5 text-white/42 transition group-open/notification:rotate-90" strokeWidth={1.8} aria-hidden="true" />
               </summary>
@@ -135,7 +135,7 @@ export default async function SettingsPage() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[16px] font-semibold text-white">Sign in</span>
-                  <span className="mt-1 block truncate text-[13px] text-white/52">Enable account sync and protected features</span>
+                  <span className="mt-1 block truncate text-[13px] text-white/52">Save settings across sessions</span>
                 </span>
                 <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
               </Link>
@@ -146,15 +146,15 @@ export default async function SettingsPage() {
         <div id="data-handling" className="scroll-mt-8">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumSettingsHeader
-              description="Your district, interests, and alert preferences stay private and are used only to personalize civic intelligence."
-              eyebrow="Data Handling"
+              description="Your district, topics, and alert choices stay private and are used only to personalize the app."
+              eyebrow="Privacy"
               icon={<LockKeyhole />}
               iconTone="green"
-              title="Privacy Protected"
+              title="Your data"
             />
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/56">Data export planned</div>
-              <div className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/82">Security controls planned</div>
+              <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/56">Export planned</div>
+              <div className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/82">Security settings planned</div>
             </div>
           </MobileCard>
         </div>
