@@ -203,7 +203,7 @@ export async function POST(
     contactUrl,
     letter,
     mailtoUrl,
-    message: "Draft prepared.",
+    message: "Message prepared.",
     mode: "manual",
     status: "prepared"
   });

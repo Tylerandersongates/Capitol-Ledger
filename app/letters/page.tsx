@@ -21,8 +21,8 @@ export default function LettersPage() {
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
         <div className="ml-7 min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Civic Engagement</div>
-          <h1 className="mt-2 text-[28px] font-medium leading-none text-white">Action Ledger</h1>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Civic engagement</div>
+          <h1 className="mt-2 text-[28px] font-medium leading-none text-white">Letters & Comments</h1>
         </div>
       </header>
 
@@ -33,9 +33,9 @@ export default function LettersPage() {
               <Mail className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-[21px] font-medium leading-tight text-white">Civic action history</h2>
+              <h2 className="text-[21px] font-medium leading-tight text-white">Messages to officials</h2>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
-                Keep a record of prepared letters, confirmed sends, civic actions, recipients, and issues.
+                Track prepared messages, confirmed sends, and completed public comments in one place.
               </p>
             </div>
           </div>

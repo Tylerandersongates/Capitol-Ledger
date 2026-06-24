@@ -115,10 +115,10 @@ export function LettersSentClient() {
       <section className={`${panelClass} overflow-hidden px-4 py-4`}>
         <div className="grid grid-cols-[minmax(0,1fr)_92px] items-center gap-4">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/46">Civic Action Ledger</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/46">Action history</div>
             <div className="mt-2 text-[34px] font-medium leading-none text-[#ffb12b]">{totalActions}</div>
             <div className="mt-2 text-[13px] leading-snug text-white/56">
-              {totalActions === 1 ? "Tracked action" : "Tracked actions"}
+              {totalActions === 1 ? "Tracked record" : "Tracked records"}
             </div>
           </div>
           <div className="relative grid h-[92px] w-[92px] place-items-center rounded-full border border-[#ffb12b]/26 bg-[radial-gradient(circle,rgba(255,177,43,0.14)_0%,rgba(33,127,194,0.18)_46%,rgba(4,18,42,0.94)_76%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_26px_rgba(255,177,43,0.16)]">
@@ -130,31 +130,31 @@ export function LettersSentClient() {
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <SummaryPill label="Letters" value={letters.length} tone="green" />
-          <SummaryPill label="Actions" value={petitions.length} tone="purple" />
+          <SummaryPill label="Messages" value={letters.length} tone="green" />
+          <SummaryPill label="Comments" value={petitions.length} tone="purple" />
           <SummaryPill label="Latest" value={lastActivity} tone="blue" />
         </div>
       </section>
 
       <section id="letters" className={`${panelClass} scroll-mt-6 px-3 py-3`}>
         <div className="flex items-center justify-between gap-3 px-1">
-          <h2 className="text-[21px] font-medium leading-none text-white">Recent Letters</h2>
+          <h2 className="text-[21px] font-medium leading-none text-white">Messages to officials</h2>
           <Link
             href="/search?type=members"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-medium text-[#ffb12b]"
           >
             <Search className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
-            Find
+            Find official
           </Link>
         </div>
         <div className="mt-2 flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-white/40">
           <span>{sentCount} sent</span>
           <span className="h-1 w-1 rounded-full bg-white/24" />
-          <span>{preparedCount} drafts</span>
+          <span>{preparedCount} prepared</span>
         </div>
 
         {lettersLoading && letters.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading letter history...</div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading message history...</div>
         ) : letters.length ? (
           <div className="mt-3 space-y-2">
             {letters.map((letter) => (
@@ -168,9 +168,9 @@ export function LettersSentClient() {
                 <Mail className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <div className="text-[16px] font-semibold text-white">No letters tracked yet</div>
+                <div className="text-[16px] font-semibold text-white">No messages tracked yet</div>
                 <p className="mt-1 text-[13px] leading-snug text-white/54">
-                  Representative messages will appear here after a draft is prepared or confirmed as sent.
+                  Messages to your officials appear here after a draft is prepared or marked sent.
                 </p>
               </div>
             </div>
@@ -179,7 +179,7 @@ export function LettersSentClient() {
               className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-semibold text-[#ffb12b]"
             >
               <UserRound className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              Find Representatives
+              Find officials
             </Link>
           </div>
         )}
@@ -187,18 +187,18 @@ export function LettersSentClient() {
 
       <section id="petitions" className={`${panelClass} scroll-mt-6 px-3 py-3`}>
         <div className="flex items-center justify-between gap-3 px-1">
-          <h2 className="text-[21px] font-medium leading-none text-white">Archived civic actions</h2>
+          <h2 className="text-[21px] font-medium leading-none text-white">Completed public comments</h2>
           <Link
             href="/petitions"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-medium text-[#d5b8ff]"
           >
             <Megaphone className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
-            Browse
+            Open
           </Link>
         </div>
 
         {petitionsLoading && petitions.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading saved actions...</div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading public comments...</div>
         ) : petitions.length ? (
           <div className="mt-3 space-y-2">
             {petitions.map((petition) => (
@@ -212,9 +212,9 @@ export function LettersSentClient() {
                 <Megaphone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <div className="text-[16px] font-semibold text-white">No archived actions yet</div>
+                <div className="text-[16px] font-semibold text-white">No public comments recorded yet</div>
                 <p className="mt-1 text-[13px] leading-snug text-white/54">
-                  Public comments marked complete are tracked from the Civic actions page.
+                  Public comments marked complete on the Civic actions page appear here.
                 </p>
               </div>
             </div>
@@ -262,7 +262,7 @@ function LetterRow({ letter }: { letter: SentLetterRecord }) {
         </div>
         <span className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2 text-[11px] font-semibold ${statusClass}`}>
           <StatusIcon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          {statusSent ? "Sent" : "Draft"}
+          {statusSent ? "Sent" : "Prepared"}
         </span>
       </div>
 
@@ -281,7 +281,7 @@ function LetterRow({ letter }: { letter: SentLetterRecord }) {
               rel="noreferrer"
               className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/10 px-3 text-[12px] font-medium text-white/62"
             >
-              Source
+              Contact form
               <ExternalLink className="h-3 w-3" strokeWidth={1.8} aria-hidden="true" />
             </a>
           ) : null}
@@ -289,7 +289,7 @@ function LetterRow({ letter }: { letter: SentLetterRecord }) {
             href={`/members/${letter.memberBioguideId}`}
             className="inline-flex h-8 items-center rounded-full border border-[#ffb12b]/22 bg-[#ffb12b]/8 px-3 text-[12px] font-medium text-[#ffc75a]"
           >
-            Profile
+            Official profile
           </Link>
         </div>
       </div>
@@ -306,11 +306,11 @@ function PetitionRow({ petition }: { petition: BrowserSignedPetitionRecord }) {
         </div>
         <div className="min-w-0">
           <div className="line-clamp-2 text-[16px] font-semibold leading-tight text-white">{petition.title}</div>
-          <div className="mt-1 truncate text-[12px] text-white/48">{petition.progressLabel ?? "Civic action"}</div>
+          <div className="mt-1 truncate text-[12px] text-white/48">{petition.progressLabel ?? "Public comment"}</div>
         </div>
         <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-2 text-[11px] font-semibold text-[#74f49a]">
           <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          Recorded
+          Commented
         </span>
       </div>
 
@@ -326,7 +326,7 @@ function PetitionRow({ petition }: { petition: BrowserSignedPetitionRecord }) {
           href="/petitions"
           className="inline-flex h-8 items-center rounded-full border border-[#9563d5]/22 bg-[#9563d5]/10 px-3 text-[12px] font-medium text-[#d5b8ff]"
         >
-          Actions
+          Open
         </Link>
       </div>
     </article>

@@ -79,7 +79,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
     if (payload?.mode === "manual") {
       setPendingLetter(localLetter ?? payload?.letter ?? null);
       setStatus("confirming");
-      setStatusMessage("Draft opened. After you send it, confirm here so Capitol Ledger can log the civic action.");
+      setStatusMessage("Message opened. After you send it, confirm here so Capitol Ledger can mark it sent.");
       return;
     }
 
@@ -111,7 +111,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
 
     recordGamificationEvent("contact-representative", bioguideId);
     setStatus("success");
-    setStatusMessage("Civic action logged. Replies and follow-up correspondence will stay in your email provider.");
+    setStatusMessage("Message marked sent. Replies and follow-up correspondence stay in your email provider.");
     setPendingLetter(null);
     setExpanded(false);
     setMessage("");
@@ -130,7 +130,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
         className="inline-flex items-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[15px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110"
       >
         <Mail className="h-4 w-4" />
-        Email
+        Message
       </button>
 
       {expanded ? (
@@ -142,9 +142,9 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="text-[14px] font-semibold text-white">Finish in your email app</div>
+                  <div className="text-[14px] font-semibold text-white">Finish sending</div>
                   <p className="mt-1 text-[12px] leading-snug text-white/58">
-                    Once you send it, replies and follow-up correspondence will happen in your own email provider.
+                    Use the opened email draft or contact form. Replies will go to your own email provider.
                   </p>
                 </div>
               </div>
@@ -173,7 +173,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           ) : (
             <>
               <p className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-[12px] leading-snug text-white/56">
-                Capitol Ledger prepares the message. After sending, replies and future correspondence stay in your own email provider.
+                Write a message for this office. Capitol Ledger opens the official contact path and keeps a record when you mark it sent.
               </p>
 
               <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Your email</label>
@@ -202,7 +202,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[14px] font-semibold text-[#071225] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <Send className="h-4 w-4" />
-                  {status === "sending" ? "Preparing..." : "Prepare draft"}
+                  {status === "sending" ? "Preparing..." : "Prepare message"}
                 </button>
                 <button
                   type="button"
