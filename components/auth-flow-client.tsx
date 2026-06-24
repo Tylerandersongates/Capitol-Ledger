@@ -485,44 +485,6 @@ export function AuthFlowClient({
     router.refresh();
   }
 
-  async function submitInputFallbackReport() {
-    setPending(true);
-    setStatus("Sending report...");
-
-    const response = await fetch("/api/feedback", {
-      body: JSON.stringify({
-        category: "bug",
-        context: {
-          browserPath: window.location.pathname,
-          reportSource: "sign-in-input-fallback",
-          reportSourceLabel: "Cannot type in sign-in fields",
-          reportedArea: "/sign-in",
-          screen: `${window.innerWidth}x${window.innerHeight}`,
-          userAgent: window.navigator.userAgent
-        },
-        message:
-          "Tester used the tap-only sign-in fallback because text fields would not accept typing after sign-out. Buttons could still be tapped.",
-        pageUrl: `${window.location.pathname}${window.location.search}`,
-        severity: "high",
-        title: "Cannot type in sign-in text fields"
-      }),
-      headers: {
-        "Content-Type": "application/json"
-      },
-      method: "POST"
-    }).catch(() => null);
-    const data = response ? ((await response.json().catch(() => null)) as { error?: string; mode?: string } | null) : null;
-
-    setPending(false);
-
-    if (!response?.ok) {
-      setStatus(data?.error ?? "Typing issue could not be sent. Please message Tyler directly.");
-      return;
-    }
-
-    setStatus(data?.mode === "database" ? "Typing issue sent to the beta review queue." : "Typing issue captured in demo mode.");
-  }
-
   async function submit() {
     if (mode === "signIn") {
       if (!isEmail(form.email)) {
@@ -910,14 +872,6 @@ export function AuthFlowClient({
               >
                 {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
                 <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => void submitInputFallbackReport()}
-                disabled={pending}
-                className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffb12b] transition hover:brightness-110 disabled:opacity-45"
-              >
-                Report typing issue
               </button>
             </div>
           )}
