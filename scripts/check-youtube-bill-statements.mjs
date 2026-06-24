@@ -37,7 +37,7 @@ addCheck("Sync script is API-key gated", syncScript.includes("YOUTUBE_API_KEY") 
 addCheck("Sync script uses required YouTube endpoints", syncScript.includes('"channels"') && syncScript.includes('"search"') && syncScript.includes('"videos"'), "channels/search/videos endpoints referenced");
 addCheck("Sync script writes ignored review artifacts", syncScript.includes("artifacts") && syncScript.includes("youtube-bill-statement-matches.json"), "review artifact path wired");
 addCheck("Package scripts expose sync and check", packageJson.includes("youtube-statements:sync") && packageJson.includes("youtube-statements:check"), "npm scripts present");
-addCheck("Bill detail page still renders official video actions", billPage.includes("VideoCard") && billPage.includes("watch-speech-video") && billPage.includes("Official Statements"), "official statements card wired");
+addCheck("Bill detail page still renders official video actions", billPage.includes("VideoCard") && billPage.includes("watch-speech-video") && billPage.includes("Statements and video"), "official statements card wired");
 
 const failures = checks.filter((check) => !check.passed);
 

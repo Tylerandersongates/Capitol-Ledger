@@ -19,13 +19,13 @@ const stanceOptions: Array<{
 }> = [
   { description: "You support this bill", icon: ThumbsUp, label: "Support", value: "support" },
   { description: "You oppose this bill", icon: ThumbsDown, label: "Oppose", value: "oppose" },
-  { description: "You are tracking before choosing", icon: Eye, label: "Watching", value: "watching" }
+  { description: "Follow this bill before deciding", icon: Eye, label: "Follow", value: "watching" }
 ];
 
 const stanceLabels: Record<BillStance, string> = {
   oppose: "Oppose",
   support: "Support",
-  watching: "Watching"
+  watching: "Follow"
 };
 
 const stanceTone: Record<BillStance, string> = {
@@ -90,7 +90,7 @@ export function BillStanceControl({ billId }: { billId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[12px] font-medium uppercase tracking-wide text-white/45">Your position</div>
-          <h3 className="mt-1 text-[18px] font-medium leading-tight text-white">{stance ? stanceLabels[stance] : "Choose your stance"}</h3>
+          <h3 className="mt-1 text-[18px] font-medium leading-tight text-white">{stance ? stanceLabels[stance] : "Choose your position"}</h3>
         </div>
         {stance ? <CheckCircle2 className={`h-6 w-6 ${stanceTone[stance]}`} strokeWidth={1.9} aria-hidden="true" /> : null}
       </div>
@@ -132,7 +132,7 @@ export function BillStanceDetailRow({ billId }: { billId: string }) {
       <span className="text-white/56">
         <UserCircle className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
       </span>
-      <span className="text-[15px] text-white/63">Your Position</span>
+      <span className="text-[15px] text-white/63">Your position</span>
       {stance ? (
         <span className={`max-w-[225px] truncate text-right text-[15px] font-semibold ${stanceTone[stance]}`}>{stanceLabels[stance]}</span>
       ) : (

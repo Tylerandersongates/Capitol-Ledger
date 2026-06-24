@@ -107,7 +107,7 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
   if (!positions.length) {
     return (
       <div className="mt-4 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/52">
-        Member-level votes are not linked for this roll call yet.
+        Member votes are not linked for this roll call yet.
       </div>
     );
   }
@@ -118,8 +118,8 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
         <section className="rounded-xl border border-[#ffb12b]/20 bg-[#ffb12b]/8 px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#ffb12b]">Your Representatives</div>
-              <div className="mt-1 text-[13px] leading-snug text-white/52">Pinned from district setup and saved officials.</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#ffb12b]">Your officials</div>
+              <div className="mt-1 text-[13px] leading-snug text-white/52">From your district and saved officials.</div>
             </div>
             <span className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-semibold text-white/56">
               {pinnedPositions.length}
@@ -130,7 +130,7 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
               pinnedPositions.map((record) => <MemberVoteRow key={`pinned-${record.voteId}-${record.memberBioguideId}`} record={record} pinned />)
             ) : (
               <div className="py-3 text-[13px] leading-snug text-white/52">
-                Complete district setup or save officials to pin your delegation on recorded votes.
+                Add your district or save officials to show them here.
               </div>
             )}
           </div>
@@ -140,8 +140,8 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
       <section>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">All Member Votes</div>
-            <div className="mt-1 text-[13px] text-white/50">{filteredPositions.length} of {positions.length} recorded positions</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">All votes</div>
+            <div className="mt-1 text-[13px] text-white/50">{filteredPositions.length} of {positions.length} member votes</div>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -176,7 +176,7 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
             </button>
           ))}
         </div>
-        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[21rem]" className="px-3 py-1" ariaLabel="All member vote positions">
+        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[21rem]" className="px-3 py-1" ariaLabel="All member votes">
           {filteredPositions.length ? (
             <div className="divide-y divide-white/8">
               {filteredPositions.map((record) => (
@@ -185,7 +185,7 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[13px] leading-snug text-white/52">
-              No member positions match this filter.
+              No member votes match this filter.
             </div>
           )}
         </MobileGlassScrollFrame>

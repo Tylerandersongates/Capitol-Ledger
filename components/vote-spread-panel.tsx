@@ -56,11 +56,11 @@ function buildVoteSegments(totals: VoteSpreadTotals, segmentCount = 40) {
 }
 
 export function VoteSpreadPanel({
-  centerLabel = "Vote Spread",
+  centerLabel = "Vote split",
   className = "",
-  noLabel = "Nay",
+  noLabel = "No",
   totals,
-  yesLabel = "Yea"
+  yesLabel = "Yes"
 }: {
   centerLabel?: string;
   className?: string;

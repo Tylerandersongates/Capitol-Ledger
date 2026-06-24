@@ -312,8 +312,8 @@ function buildActionVoteEvent(bill: Bill, action: BillAction): BillVoteEvent {
 
   return {
     detailHref: action.linkedVoteId ? `/votes/${action.linkedVoteId}` : action.sourceUrl,
-    detailLabel: action.linkedVoteId ? "Open Vote Detail" : "Open Source",
-    impact: `Extracted from official action: ${action.action}`,
+    detailLabel: action.linkedVoteId ? "Open vote" : "Open source",
+    impact: `From official action: ${action.action}`,
     kind,
     positions: [],
     score: getBillVoteScore(vote, kind),
@@ -356,8 +356,8 @@ function buildBillVoteEvents(bill: Bill, billVotes: Vote[], billActions: BillAct
     const sourceAction = actionsByLinkedVoteId.get(vote.id) ?? actionsByVoteKey.get(voteActionKey(vote.chamber, vote.rollCall));
     const event: BillVoteEvent = {
       detailHref: `/votes/${vote.id}`,
-      detailLabel: "Open Vote Detail",
-      impact: sourceAction ? `Linked to official action: ${sourceAction.action}` : explainBillVoteImpact(bill, vote, kind),
+      detailLabel: "Open vote",
+      impact: sourceAction ? `From official action: ${sourceAction.action}` : explainBillVoteImpact(bill, vote, kind),
       kind,
       positions: voteMemberPositionsByVoteId[vote.id] ?? [],
       score: getBillVoteScore(vote, kind),
@@ -428,34 +428,34 @@ function getBillVoteScore(vote: Vote, kind: BillVoteKind) {
 }
 
 function explainBillVoteImpact(bill: Bill, vote: Vote, kind: BillVoteKind) {
-  if (kind === "Final Passage") return `This ${vote.chamber} vote is the clearest recorded passage vote linked to ${bill.displayNumber}.`;
+  if (kind === "Final Passage") return `This ${vote.chamber} vote is the main recorded vote tied to ${bill.displayNumber}.`;
   if (kind === "Veto Override") return "This vote would decide whether Congress overrides a presidential veto.";
-  if (kind === "Amendment") return "This vote changed or attempted to change the bill text before final action.";
-  if (kind === "Committee") return "This vote reflects committee action before the full chamber considered the bill.";
-  if (kind === "Procedural") return "This vote affected whether or how the chamber could keep moving the bill.";
-  return "This recorded vote is part of the bill history and helps explain how lawmakers acted along the way.";
+  if (kind === "Amendment") return "This vote changed, or tried to change, the bill before a final decision.";
+  if (kind === "Committee") return "This vote happened in committee before the full chamber took it up.";
+  if (kind === "Procedural") return "This vote affected whether the chamber could keep moving the bill forward.";
+  return "This vote is part of the bill history and helps explain how lawmakers acted.";
 }
 
 function getOverviewVoteLabel(status: string, voteEvent?: BillVoteEvent) {
   if (!voteEvent) {
-    if (status === "Enacted") return "Passed without linked roll-call";
-    if (status === "Passed") return "No linked passage roll-call";
-    return "No recorded roll-call yet";
+    if (status === "Enacted") return "Passed without a recorded vote";
+    if (status === "Passed") return "No recorded passage vote";
+    return "No recorded vote yet";
   }
 
   if (status === "Enacted") return "Final vote before law";
-  if (voteEvent.kind === "Final Passage") return "Final passage vote";
+  if (voteEvent.kind === "Final Passage") return "Main passage vote";
   return voteEvent.kind;
 }
 
 function getNoRecordedVoteMessage(status: string) {
   if (status === "Enacted") {
-    return "This bill is recorded as law, but Capitol Ledger does not have a linked roll-call vote for final passage yet. It may have passed by voice vote, unanimous consent, or a vote sync may still be pending.";
+    return "This bill is law, but a recorded final vote is not linked here yet. It may have passed by voice vote, unanimous consent, or the vote may still be syncing.";
   }
   if (status === "Passed") {
-    return "This bill is recorded as passed, but no linked roll-call vote is available yet. It may have passed without a recorded roll call or vote data may still be syncing.";
+    return "This bill is marked as passed, but a recorded vote is not linked here yet. It may have passed without a roll call or the vote may still be syncing.";
   }
-  return "No recorded roll-call votes are linked to this bill yet.";
+  return "No recorded votes are linked to this bill yet.";
 }
 
 function hasRecordedVoteTotals(event: BillVoteEvent) {
@@ -581,9 +581,9 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
   return (
     <MobileCard variant="rust" className="px-5 py-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-[23px] font-medium">Bill Progress</h2>
+        <h2 className="text-[23px] font-medium">Where it stands</h2>
         <Link href={tabHref(billId, "timeline")} className={mobileViewAllClass}>
-          View Timeline
+          See timeline
         </Link>
       </div>
       <div className="mt-7 px-2">
@@ -613,7 +613,7 @@ function ProgressSummaryCard({ billId, progressSteps }: { billId: string; progre
         </div>
         <div className="mt-4 rounded-xl border border-[#ffb12b]/28 bg-[#ffb12b]/8 px-3 py-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/45">Current</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/45">Now</span>
             <span className="min-w-0 truncate text-right text-[13px] font-medium text-[#ffb12b]">
               {currentStep.label}
               {currentStep.date ? <span className="font-normal text-[#ffd083]"> / {currentStep.date}</span> : null}
@@ -637,18 +637,21 @@ function getCurrentProgressStepIndex(progressSteps: ProgressStep[]) {
 }
 
 function compactProgressLabel(label: string) {
-  if (label === "Introduced in House" || label === "Introduced in Senate") return "Introduced";
-  if (label === "House committee" || label === "Senate committee") return "Committee";
+  if (label === "Introduced in House" || label === "Introduced in Senate" || label === "Introduced") return "Start";
+  if (label === "House committee" || label === "Senate committee") return "Review";
   if (label === "Committee Review") return "Review";
-  if (label === "Referred to Committee") return "Referred";
+  if (label === "Referred to Committee") return "Review";
   if (label === "Committee Hearing") return "Hearing";
   if (label === "Floor Action") return "Floor";
   if (label === "Passed Chamber") return "Passed";
+  if (label.startsWith("Passed ")) return "Passed";
   if (label.startsWith("Sent to ")) return "Sent";
   if (label === "Received in House") return "House";
   if (label === "Received in Senate") return "Senate";
   if (label === "House action" || label === "Senate action") return "Action";
   if (label === "Marked Up") return "Markup";
+  if (label === "Final passage") return "Final";
+  if (label === "Enacted") return "Law";
   return label;
 }
 
@@ -668,7 +671,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Bill Summary</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Summary</div>
           <div className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold leading-none ${sourceTone}`}>
             {summary.label}
           </div>
@@ -705,9 +708,9 @@ function AiPolicyLensCard({ analysis }: { analysis: AiBillAnalysis }) {
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">AI Policy Lens</div>
-          <h2 className="mt-2 text-[24px] font-medium leading-tight">Personal Impact</h2>
-          <p className="mt-2 text-[13px] leading-5 text-white/54">An easy read on how this bill could show up in your household, community, wallet, or rights.</p>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Plain-language view</div>
+          <h2 className="mt-2 text-[24px] font-medium leading-tight">What it could mean for you</h2>
+          <p className="mt-2 text-[13px] leading-5 text-white/54">A quick read on how this bill could affect your household, community, wallet, or rights.</p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
           <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -717,8 +720,8 @@ function AiPolicyLensCard({ analysis }: { analysis: AiBillAnalysis }) {
         {analysis.context}
       </ScrollableTextBox>
       <div className="mt-5 grid gap-4">
-        <AiPointGroup title="How It Could Help You" tone="pro" points={analysis.pros} />
-        <AiPointGroup title="What Could Work Against You" tone="con" points={analysis.cons} />
+        <AiPointGroup title="Possible benefits" tone="pro" points={analysis.pros} />
+        <AiPointGroup title="Possible drawbacks" tone="con" points={analysis.cons} />
       </div>
     </MobileCard>
   );
@@ -769,10 +772,10 @@ function VoteBreakdownCard({
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">{getOverviewVoteLabel(status, voteEvent)}</div>
-          <h2 className="mt-2 text-[23px] font-medium leading-tight">Vote Breakdown</h2>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Vote results</h2>
         </div>
         <Link href={voteEvent ? `/bills/${billId}?tab=votes` : tabHref(billId, "votes")} className={mobileViewAllClass}>
-          View All
+          All votes
         </Link>
       </div>
       {voteEvent && hasTotals ? (
@@ -790,7 +793,7 @@ function VoteBreakdownCard({
         </>
       ) : (
         <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
-          {voteEvent ? "A roll-call vote is linked, but member totals are still pending from the source feed." : getNoRecordedVoteMessage(status)}
+          {voteEvent ? "A roll-call vote is linked, but member totals are still pending from the official source." : getNoRecordedVoteMessage(status)}
         </div>
       )}
     </MobileCard>
@@ -809,7 +812,7 @@ function VotesTab({
   if (!voteEvents.length) {
     return (
       <MobileCard variant="rust" className="px-6 py-6">
-        <h2 className="text-[23px] font-medium">Recorded Votes</h2>
+        <h2 className="text-[23px] font-medium">Votes</h2>
         <p className="mt-3 text-[15px] leading-6 text-white/58">{getNoRecordedVoteMessage(status)}</p>
       </MobileCard>
     );
@@ -818,10 +821,10 @@ function VotesTab({
   return (
     <>
       <MobileCard variant="rust" className="px-5 py-5">
-        <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Vote History</div>
-        <h2 className="mt-2 text-[24px] font-medium leading-tight">From bill to law</h2>
+        <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Votes</div>
+        <h2 className="mt-2 text-[24px] font-medium leading-tight">How the votes fit</h2>
         <p className="mt-3 text-[14px] leading-snug text-white/56">
-          The overview highlights the decisive vote for the bill&apos;s current status. This tab shows linked vote records plus roll-call votes extracted from official actions.
+          The overview shows the vote most tied to this bill&apos;s current status. This tab shows linked votes and roll calls found in official actions.
         </p>
       </MobileCard>
 
@@ -848,10 +851,10 @@ function VotesTab({
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b]">{event.kind}</span>
               {event.sourceAction ? (
-                <span className="rounded-full border border-[#79a8ff]/24 bg-[#79a8ff]/10 px-3 py-1.5 text-[12px] font-semibold text-[#9fbeff]">From action log</span>
+                <span className="rounded-full border border-[#79a8ff]/24 bg-[#79a8ff]/10 px-3 py-1.5 text-[12px] font-semibold text-[#9fbeff]">From official action</span>
               ) : null}
               {isOverviewVote ? (
-                <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[12px] font-semibold text-[#43ed74]">Overview vote</span>
+                <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[12px] font-semibold text-[#43ed74]">Shown on overview</span>
               ) : null}
             </div>
             <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-3 text-[14px] leading-snug text-white/58">
@@ -860,7 +863,7 @@ function VotesTab({
             {event.sourceAction ? (
               <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">
-                  Source action / {formatActionTimestamp(event.sourceAction)}
+                  Official action / {formatActionTimestamp(event.sourceAction)}
                 </div>
                 <p className="mt-2 text-[14px] leading-snug text-white/62">{event.sourceAction.action}</p>
               </div>
@@ -868,21 +871,21 @@ function VotesTab({
             {hasTotals ? (
               <>
                 <div className={`mt-5 grid text-center ${hasSyncedVote ? "grid-cols-3" : "grid-cols-2"}`}>
-                  <VoteStat value={String(totals.yes)} label="Yea" tone="text-[#58e883]" />
-                  <VoteStat value={String(totals.no)} label="Nay" tone="text-[#ff503d]" />
+                  <VoteStat value={String(totals.yes)} label="Yes" tone="text-[#58e883]" />
+                  <VoteStat value={String(totals.no)} label="No" tone="text-[#ff503d]" />
                   {hasSyncedVote ? <VoteStat value={String(totals.notVoting)} label="Not Voting" tone="text-white/60" /> : null}
                 </div>
                 {hasSyncedVote ? (
                   <BillVoteMemberBreakdown chamber={event.vote.chamber} positions={positions} />
                 ) : (
                   <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
-                    Member-level votes are pending until this roll call is synced as a full vote record.
+                    Member votes will appear once this roll call is synced as a full vote record.
                   </div>
                 )}
               </>
             ) : (
               <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
-                {event.sourceAction ? "This roll-call vote was found in the official action log; totals and member-level votes are still pending from the source feed." : "Roll-call totals are not available for this linked vote yet."}
+                {event.sourceAction ? "This roll-call vote was found in the official actions. Totals and member votes are still pending from the official source." : "Vote totals are not available for this linked vote yet."}
               </div>
             )}
             {event.detailHref ? (
@@ -924,22 +927,22 @@ function TimelineTab({
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Legislative Timeline</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Timeline</div>
             <h2 className="mt-2 text-[24px] font-medium leading-tight">{timelineStatus}</h2>
           </div>
           <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
-            {billActions.length} {billActions.length === 1 ? "row" : "rows"}
+            {billActions.length} {billActions.length === 1 ? "update" : "updates"}
           </span>
         </div>
         {billActions.length ? (
-          <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Legislative timeline official actions">
+          <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Bill timeline updates">
             {billActions.map((action) => (
               <BillActionRow key={action.id} action={action} />
             ))}
           </MobileGlassScrollFrame>
         ) : (
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">
-            No official action rows linked yet.
+            No official updates linked yet.
           </div>
         )}
       </MobileCard>
@@ -947,8 +950,8 @@ function TimelineTab({
       <MobileCard variant="rust" className="px-5 py-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div className="min-w-0">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Current action</div>
-            <h2 className="mt-2 text-[22px] font-medium leading-tight">Latest Action</h2>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Latest update</div>
+            <h2 className="mt-2 text-[22px] font-medium leading-tight">Latest update</h2>
           </div>
           <span className="grid h-11 w-11 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.14)]">
             <CalendarDays className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
@@ -985,7 +988,7 @@ function formatActionTimestamp(action: BillAction) {
 
 function BillActionRow({ action }: { action: BillAction }) {
   const detailHref = action.linkedVoteId ? `/votes/${action.linkedVoteId}` : action.sourceUrl;
-  const detailLabel = action.linkedVoteId ? "Vote Detail" : "Source";
+  const detailLabel = action.linkedVoteId ? "Vote" : "Source";
 
   return (
     <article className="snap-start rounded-[1.05rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.18)_0%,rgba(7,23,50,0.72)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_10px_22px_rgba(2,10,28,0.2)]">
@@ -1045,8 +1048,8 @@ function KeyDetailsCard({
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Bill Metadata</div>
-          <h2 className="mt-2 text-[24px] font-medium leading-tight">Key Details</h2>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Bill basics</div>
+          <h2 className="mt-2 text-[24px] font-medium leading-tight">At a glance</h2>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
           <FileCheck2 className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -1069,9 +1072,9 @@ function KeyDetailsCard({
 
 function resolveCommitteeDetail(bill: Bill, status: string) {
   if (bill.committeeName) return { href: "/search?type=bills", label: "Committee", value: bill.committeeName };
-  if (status === "Enacted") return { label: "Law Status", value: "Enacted into law" };
-  if (status === "Passed") return { label: "Chamber Status", value: "Passed chamber" };
-  return { href: "/search?type=bills", label: "Committee", value: "Committee pending" };
+  if (status === "Enacted") return { label: "Status", value: "Enacted into law" };
+  if (status === "Passed") return { label: "Status", value: "Passed chamber" };
+  return { href: "/search?type=bills", label: "Committee", value: "Committee not listed yet" };
 }
 
 function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {
@@ -1109,9 +1112,9 @@ function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) 
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Evidence Trail</div>
-          <h2 className="mt-2 text-[24px] font-medium leading-tight">Official Source Map</h2>
-          <p className="mt-2 text-[13px] leading-5 text-white/54">Matched evidence trail for bill record, votes, hearings, floor video, and sponsor records.</p>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Sources</div>
+          <h2 className="mt-2 text-[24px] font-medium leading-tight">Official sources</h2>
+          <p className="mt-2 text-[13px] leading-5 text-white/54">Official links used for this bill, votes, hearings, video, and sponsor records.</p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#43ed74]/24 bg-[#43ed74]/10 text-[#43ed74] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(67,237,116,0.14)]">
           <ShieldCheck className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
@@ -1125,7 +1128,7 @@ function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) 
       {sourceMatches.length > 1 ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
           <span>Scroll sources</span>
-          <span>{sourceMatches.length} linked records</span>
+          <span>{sourceMatches.length} sources</span>
         </div>
       ) : null}
     </MobileCard>
@@ -1141,16 +1144,16 @@ function VideoCard({ billVideos, compact = false }: { billVideos: BillVideo[]; c
         <div>
           <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">
             <PlayCircle className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.9} aria-hidden="true" />
-            Official media
+            Official video
           </div>
-          <h2 className="mt-2 text-[23px] font-medium leading-tight">Official Statements</h2>
+          <h2 className="mt-2 text-[23px] font-medium leading-tight">Statements and video</h2>
         </div>
         <span className="shrink-0 rounded-full border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold leading-none text-[#ffb12b]">
           {billVideos.length} {billVideos.length === 1 ? "link" : "links"}
         </span>
       </div>
       <div className="mt-5 space-y-3">
-        {visibleVideos.length ? visibleVideos.map((video) => <VideoRow key={video.id} video={video} />) : <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">No linked official statements or video yet.</div>}
+        {visibleVideos.length ? visibleVideos.map((video) => <VideoRow key={video.id} video={video} />) : <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[15px] text-white/52">No official statements or video linked yet.</div>}
       </div>
     </MobileCard>
   );

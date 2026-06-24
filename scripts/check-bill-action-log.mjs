@@ -32,9 +32,9 @@ assert.ok(data.includes("resolveBillSummaryFetchTimeoutMs"), "Bill details shoul
 assert.ok(data.includes("timeoutMs: resolveBillSummaryFetchTimeoutMs()"), "Bill summary fetch should use the bounded Congress.gov request");
 
 assert.ok(!billPage.includes("OfficialActionLogCard"), "Timeline tab should not render a duplicate action log card");
-assert.ok(billPage.includes('ariaLabel="Legislative timeline official actions"'), "Legislative Timeline should render official action rows in its scroll box");
-assert.ok(billPage.includes("<BillActionRow key={action.id} action={action} />"), "Legislative Timeline should use official action rows");
-assert.ok(billPage.includes("Vote Detail"), "Action rows should link roll-call actions to vote detail");
+assert.ok(billPage.includes('ariaLabel="Bill timeline updates"'), "Timeline should render official action rows in its scroll box");
+assert.ok(billPage.includes("<BillActionRow key={action.id} action={action} />"), "Timeline should use official action rows");
+assert.ok(billPage.includes('const detailLabel = action.linkedVoteId ? "Vote" : "Source"'), "Action rows should link roll-call actions to vote detail");
 assert.ok(billPage.includes("Date only"), "Action rows should disclose date-only source precision");
 assert.ok(billPage.includes('const billSummary = activeTab === "details" ? await getBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");
 assert.ok(!billPage.includes("const billSummary = await getBillSummary(bill);"), "Bill summary should not be fetched before tab routing");

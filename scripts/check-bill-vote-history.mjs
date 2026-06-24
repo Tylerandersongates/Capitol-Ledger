@@ -19,9 +19,9 @@ assert.ok(billPage.includes("voteActionEventKey"), "Action-derived votes without
 assert.ok(billPage.includes("Action Vote"), "Action-derived votes without roll calls should use an action-vote label");
 assert.ok(!billPage.includes("Roll Call Pending"), "Votes tab should not render a fake pending roll-call label");
 assert.ok(billPage.includes("sourceAction?: BillAction"), "Vote events should preserve the official action they came from");
-assert.ok(billPage.includes("From action log"), "Votes tab should label action-derived vote rows");
-assert.ok(billPage.includes("Source action /"), "Votes tab should show which official action produced the vote row");
-assert.ok(billPage.includes("Member-level votes are pending"), "Action-derived votes should not imply member-level data is synced");
+assert.ok(billPage.includes("From official action"), "Votes tab should label action-derived vote rows");
+assert.ok(billPage.includes("Official action /"), "Votes tab should show which official action produced the vote row");
+assert.ok(billPage.includes("Member votes will appear"), "Action-derived votes should not imply member data is synced");
 assert.ok(billPage.includes("selectOverviewVoteEvent"), "Overview vote should be selected from decisive vote rules");
 assert.ok(!billPage.includes("const billVote = billVotes[0]"), "Overview should not blindly use the first linked vote");
 assert.ok(billPage.includes("getNoRecordedVoteMessage"), "Overview should explain missing roll-call data instead of showing fake zeroes");
@@ -31,7 +31,7 @@ assert.ok(billPage.includes("Veto Override"), "Vote history should classify veto
 assert.ok(billPage.includes("Procedural"), "Vote history should distinguish procedural votes");
 assert.ok(billPage.includes("<BillVoteMemberBreakdown"), "Votes tab should render member-level vote breakdowns");
 
-assert.ok(memberBreakdown.includes("Your Representatives"), "Member vote breakdown should pin the voter's representatives");
+assert.ok(memberBreakdown.includes("Your officials"), "Member vote breakdown should pin the voter's officials");
 assert.ok(memberBreakdown.includes("readSavedFollowRecords"), "Member vote breakdown should use saved officials");
 assert.ok(memberBreakdown.includes("readLocalDistrictProfile"), "Member vote breakdown should use district setup");
 assert.ok(memberBreakdown.includes("district.districtCode"), "Member vote breakdown should not pin default district officials without setup");
@@ -42,8 +42,8 @@ assert.ok(memberBreakdown.includes("partyFilters"), "Member vote breakdown shoul
 assert.ok(memberBreakdown.includes('{ label: "All parties", value: "all" }'), "Member vote breakdown should default to all parties");
 assert.ok(memberBreakdown.includes('{ label: "Republican", value: "Republican" }') && memberBreakdown.includes('{ label: "Democrat", value: "Democrat" }') && memberBreakdown.includes('{ label: "Independent", value: "Independent" }'), "Member vote breakdown should offer Republican, Democrat, and Independent filters");
 assert.ok(memberBreakdown.includes("partyFilter === \"all\" || record.member?.party === partyFilter"), "Member vote breakdown should apply the party filter only when selected");
-assert.ok(memberBreakdown.includes("All Member Votes"), "Member vote breakdown should show the full member vote list neutrally");
-assert.ok(memberBreakdown.includes('ariaLabel="All member vote positions"'), "Member vote breakdown should expose an accessible neutral scroll region");
+assert.ok(memberBreakdown.includes("All votes"), "Member vote breakdown should show the full member vote list neutrally");
+assert.ok(memberBreakdown.includes('ariaLabel="All member votes"'), "Member vote breakdown should expose an accessible neutral scroll region");
 assert.ok(!memberBreakdown.includes("All Member Votes By Party"), "Member vote breakdown should not label the default list as party grouped");
 assert.ok(!memberBreakdown.includes("groupPositionsByParty"), "Member vote breakdown should not auto-group filtered member positions by party");
 assert.ok(!memberBreakdown.includes("partyWeight"), "Member vote breakdown should not sort members by party before position and name");

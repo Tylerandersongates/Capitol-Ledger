@@ -6,7 +6,7 @@ const summaryCardStart = billPage.indexOf("function BillSummaryCard");
 const summaryCardEnd = billPage.indexOf("function AiPolicyLensCard");
 const summaryCard = billPage.slice(summaryCardStart, summaryCardEnd);
 
-assert.ok(summaryCard.includes("Bill Summary"), "Details card should keep the Bill Summary heading");
+assert.ok(summaryCard.includes("Summary"), "Details card should keep the summary heading");
 assert.ok(summaryCard.includes("summary.label"), "Details card should keep the summary source label");
 assert.ok(summaryCard.includes("summary.text"), "Details card should render the summary body");
 assert.ok(!summaryCard.includes("{bill.shortTitle}</h2>"), "Bill Summary should not repeat the bill title from the page header");
