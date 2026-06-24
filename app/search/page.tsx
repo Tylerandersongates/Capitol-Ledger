@@ -24,6 +24,7 @@ import {
 import { getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { memberResultMeta } from "@/lib/member-display";
+import { searchPartyOptions } from "@/lib/party-affiliations";
 import { formatDate } from "@/lib/utils";
 
 type SearchParamValue = string | string[] | undefined;
@@ -92,12 +93,7 @@ const smartFilterGroups: Array<{
   {
     key: "party",
     label: "Party",
-    options: [
-      { label: "All" },
-      { label: "Democrat", value: "Democrat" },
-      { label: "Republican", value: "Republican" },
-      { label: "Independent", value: "Independent" }
-    ]
+    options: [{ label: "All" }, ...searchPartyOptions]
   },
   {
     key: "state",

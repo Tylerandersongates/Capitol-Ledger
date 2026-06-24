@@ -6,6 +6,7 @@ import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
+import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
 import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
@@ -1488,7 +1489,7 @@ export function searchRecords(filters: SearchFilters) {
   const billSearchTerms = q ? getIssueSearchTerms(q) : [];
   const statusFilter = normalizeBillStatusFilter(filters.status);
   const chamber = filters.chamber as Chamber | undefined;
-  const party = filters.party as Party | undefined;
+  const party = normalizeSearchPartyFilter(filters.party);
   const states = normalizeSearchStateFilters(filters.state);
   const type = filters.type ?? "all";
 
@@ -1539,7 +1540,8 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
     const billSearchTerms = q ? getIssueSearchTerms(q) : [];
     const statusFilter = normalizeBillStatusFilter(filters.status);
     const chamber = filters.chamber && filters.chamber in filterChamberMap ? filterChamberMap[filters.chamber as Chamber] : undefined;
-    const party = filters.party && filters.party in filterPartyMap ? filterPartyMap[filters.party as Party] : undefined;
+    const party = normalizeSearchPartyFilter(filters.party);
+    const prismaParty = isOfficialSearchParty(party) ? filterPartyMap[party] : undefined;
     const states = normalizeSearchStateFilters(filters.state);
     const type = filters.type ?? "all";
 
@@ -1561,7 +1563,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
                     }
                   : {},
                 chamber ? { chamber } : {},
-                party ? { party } : {},
+                party ? (prismaParty ? { party: prismaParty } : { bioguideId: "__unsupported-party-filter__" }) : {},
                 states.length ? { state: { in: states } } : {}
               ]
             }

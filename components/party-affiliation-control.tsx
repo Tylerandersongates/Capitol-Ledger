@@ -10,21 +10,9 @@ import {
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { getPartyLabel, partyOptions } from "@/lib/party-affiliations";
 
-export const partyOptions = [
-  { value: "", label: "Not selected", display: "Not selected" },
-  { value: "prefer-not", label: "Prefer not to say", display: "Prefer not to say" },
-  { value: "democrat", label: "Democrat", display: "Democrat" },
-  { value: "republican", label: "Republican", display: "Republican" },
-  { value: "independent", label: "Independent", display: "Independent" },
-  { value: "libertarian", label: "Libertarian", display: "Libertarian" },
-  { value: "green", label: "Green", display: "Green" },
-  { value: "other", label: "Other", display: "Other" }
-];
-
-export function getPartyLabel(value: string) {
-  return partyOptions.find((option) => option.value === value)?.display ?? partyOptions[0].display;
-}
+export { getPartyLabel, partyOptions };
 
 function readPartyAffiliation() {
   return readLocalAccountProfile().partyAffiliation ?? "";
