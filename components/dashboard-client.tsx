@@ -83,7 +83,7 @@ const gamificationCategories = [
   { href: "/impact", label: "Civic Score" },
   { href: "/impact", label: "Day Streak" },
   { href: "/badges", label: "Badges" },
-  { href: "/impact", label: "Impact Actions" }
+  { href: "/impact", label: "Civic Activity" }
 ] as const;
 const impactCategoryHrefs: Record<ImpactActionId, string> = {
   "bills-tracked": "/search?type=bills",
@@ -393,11 +393,11 @@ export function DashboardClient({
 
             <div className="mt-5 flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">Command Center</div>
-                <h1 className="mt-1 text-[24px] font-semibold leading-tight text-white">Civic Dashboard</h1>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">Home</div>
+                <h1 className="mt-1 text-[24px] font-semibold leading-tight text-white">Dashboard</h1>
               </div>
               <Link href="/search?focus=results" className={mobileViewAllClass}>
-                View All
+                Search
               </Link>
             </div>
 
@@ -410,15 +410,15 @@ export function DashboardClient({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">
                       <FileText className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                      Live docket
+                      Live bill tracker
                     </div>
-                    <h2 className="mt-2 max-w-[19rem] text-[26px] font-semibold leading-tight">Today in Congress</h2>
-                    <p className="mt-2 text-[17px] text-white/62">{data.billsInAction} bills moving through the ledger</p>
+                    <h2 className="mt-2 max-w-[19rem] text-[26px] font-semibold leading-tight">Today&apos;s bills</h2>
+                    <p className="mt-2 text-[17px] text-white/62">{data.billsInAction} active bills in Congress</p>
                   </div>
                   <Link
                     href="/live-docket"
                     className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
-                    aria-label={`Open ${data.billsInAction} live docket bill results`}
+                    aria-label={`Open ${data.billsInAction} active bill results`}
                   >
                     <span>{data.billsInAction}</span>
                     <ChevronRight className="h-5 w-5 text-white/46" aria-hidden="true" />
@@ -470,7 +470,7 @@ export function DashboardClient({
                       </span>
                       Favorites
                     </div>
-                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Saved civic watchlist</h2>
+                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Saved officials and bills</h2>
                   </div>
                   <Link href="/search?type=members&focus=results" className={mobileViewAllClass}>
                     Find
@@ -479,7 +479,7 @@ export function DashboardClient({
                 <div className={`${dashboardInnerPanelClass} mt-3 px-2 py-2`}>
                   <div className="flex items-center justify-between px-1 pb-2">
                     <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
-                      {showingSavedFavorites ? "Pinned" : "Suggested"}
+                      {showingSavedFavorites ? "Saved" : "Suggested"}
                     </div>
                     <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white/52">
                       {resolvedFavoriteItems.length} saved
@@ -487,7 +487,7 @@ export function DashboardClient({
                   </div>
                   {visibleFavorites.length ? (
                     shouldScrollFavorites ? (
-                      <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="max-h-[13.25rem]" className="grid gap-1.5" ariaLabel="Saved civic watchlist">
+                      <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="max-h-[13.25rem]" className="grid gap-1.5" ariaLabel="Saved officials and bills">
                         <FavoriteRows favorites={visibleFavorites} favoriteRecords={favoriteRecords} onToggleFavorite={toggleFavorite} />
                       </MobileGlassScrollFrame>
                     ) : (
@@ -497,7 +497,7 @@ export function DashboardClient({
                     )
                   ) : (
                     <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3 text-[13px] leading-snug text-white/58">
-                      Finish district setup to see local official suggestions.
+                      Finish district setup to see local officials here.
                     </div>
                   )}
                 </div>
@@ -514,16 +514,16 @@ export function DashboardClient({
                     <div className="relative z-10">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/45">Locked Preview</div>
-                          <h2 className="mt-2 text-[22px] font-semibold leading-tight">Pro intelligence desk</h2>
+                          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/45">Pro feature</div>
+                          <h2 className="mt-2 text-[22px] font-semibold leading-tight">Priority updates</h2>
                           <p className="mt-2 text-[14px] leading-snug text-white/58">
-                            Upgrade to unlock ranked priorities, risk flags, and district movement alerts that surface what needs attention first.
+                            Upgrade to see priority bills, bills to watch, and district alerts in one place.
                           </p>
                           <Link
                             href="/upgrade"
                             className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/8 px-4 text-[13px] font-medium text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/12"
                           >
-                            Unlock Pro Intelligence
+                            View Pro Options
                           </Link>
                         </div>
                         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[0_0_22px_rgba(255,177,43,0.16)]">
@@ -532,18 +532,18 @@ export function DashboardClient({
                       </div>
                       <details className="group mt-4">
                         <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/48 [&::-webkit-details-marker]:hidden">
-                          <span>Preview signals</span>
+                          <span>What&apos;s included</span>
                           <ChevronRight className="h-4 w-4 transition group-open:rotate-90" strokeWidth={1.8} aria-hidden="true" />
                         </summary>
                         <div className="mt-3 grid grid-cols-3 gap-2">
-                          <LockedStatPill label="Priority Queue" value={`${priorityQueueCount}`} />
-                          <LockedStatPill label="Risk Watch" value={`${riskWatchCount}`} />
-                          <LockedStatPill label="New Movement" value={`${data.updateCount}`} />
+                          <LockedStatPill label="Priority" value={`${priorityQueueCount}`} />
+                          <LockedStatPill label="Watch List" value={`${riskWatchCount}`} />
+                          <LockedStatPill label="Updates" value={`${data.updateCount}`} />
                         </div>
                         <div className="mt-3 grid grid-cols-1 gap-2">
-                          <LockedProRow label="Priority bill queue" subtitle="Track which bills are most likely to move next." />
-                          <LockedProRow label="Personal risk monitor" subtitle="Track bills you oppose or are still watching." />
-                          <LockedProRow label="Movement alerts" subtitle="Spot hearings and amendments sooner." />
+                          <LockedProRow label="Priority bills" subtitle="See which saved or supported bills need attention." />
+                          <LockedProRow label="Bills to watch" subtitle="Track bills you oppose or want to monitor closely." />
+                          <LockedProRow label="District alerts" subtitle="Spot hearings, amendments, and updates sooner." />
                         </div>
                       </details>
                     </div>
@@ -555,10 +555,10 @@ export function DashboardClient({
                   <div className="relative z-10">
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
                       <div className="min-w-0">
-                        <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">Pro Intelligence Active</div>
-                        <h2 className="mt-2 text-[25px] font-semibold leading-tight">Today&apos;s policy edge</h2>
+                        <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">Pro tools active</div>
+                        <h2 className="mt-2 text-[25px] font-semibold leading-tight">Priority updates</h2>
                         <p className="mt-3 text-[15px] leading-snug text-white/62">
-                          Priority-ranked bills, personal Risk Watch, and movement alerts focused on your district and interests.
+                          Priority bills, bills to watch, and alerts based on your district and interests.
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
@@ -569,31 +569,31 @@ export function DashboardClient({
                       </div>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
-                      <ProStatPill label="Priority Queue" value={priorityQueueCount} />
-                      <ProStatPill label="Risk Watch" value={riskWatchCount} />
-                      <ProStatPill label="New Movement" value={data.updateCount} />
+                      <ProStatPill label="Priority" value={priorityQueueCount} />
+                      <ProStatPill label="Watch List" value={riskWatchCount} />
+                      <ProStatPill label="Updates" value={data.updateCount} />
                     </div>
                     <div className="mt-4 grid grid-cols-1 gap-2">
                       <ProInsightRow
                         value={priorityQueueCount}
-                        label="Priority bill queue"
-                        subtitle="Supported, aligned, and saved-official bills"
+                        label="Priority bills"
+                        subtitle="Supported bills and bills from saved officials"
                       />
-                      <ProInsightRow value={riskWatchCount} label="Personal risk monitor" subtitle="Bills you oppose or are still watching" />
-                      <ProInsightRow value={data.updateCount} label="Movement alerts" subtitle="New hearings, referrals, and policy shifts" />
+                      <ProInsightRow value={riskWatchCount} label="Bills to watch" subtitle="Bills you oppose or want to monitor closely" />
+                      <ProInsightRow value={data.updateCount} label="District alerts" subtitle="New hearings, referrals, and policy updates" />
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <Link
                         href="/priority-feed"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
-                        Open Priority Feed
+                        View Priority Bills
                       </Link>
                       <Link
                         href="/risk-watch"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
-                        Open Risk Watch
+                        View Bills to Watch
                       </Link>
                     </div>
                   </div>
@@ -614,10 +614,10 @@ export function DashboardClient({
                           <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
                             <LockKeyhole className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                           </span>
-                          Weekly brief
+                          Weekly Brief
                         </div>
-                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Weekly brief locked</h2>
-                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro or Team to open district summaries, saved ledger updates, and priority actions.</p>
+                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Weekly Brief requires Pro</h2>
+                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro or Team to open district summaries, saved bill and official updates, and suggested actions.</p>
                       </div>
                       <Link href="/upgrade" className={mobileViewAllClass}>
                         Upgrade
@@ -625,12 +625,12 @@ export function DashboardClient({
                     </div>
                     <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                       <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Queue</div>
+                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Status</div>
                         <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white/52">
-                          Closed
+                          Locked
                         </span>
                       </div>
-                      <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly delivery unlocks with premium plans.</div>
+                      <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly delivery unlocks with Pro or Team.</div>
                     </div>
                   </div>
                 </MobileCard>
@@ -645,10 +645,10 @@ export function DashboardClient({
                       <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
                         <CalendarClock className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                       </span>
-                      Weekly brief
+                      Weekly Brief
                     </div>
-                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Monday civic summary</h2>
-                    <p className="mt-2 text-[14px] leading-snug text-white/58">Delivery status, recent history, and your district watchlist.</p>
+                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Monday summary</h2>
+                    <p className="mt-2 text-[14px] leading-snug text-white/58">Your weekly district summary and saved bill updates.</p>
                   </div>
                   <Link href="/brief" className={mobileViewAllClass}>
                     Open
@@ -656,16 +656,16 @@ export function DashboardClient({
                 </div>
                 <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                   <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Queue</div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Status</div>
                     <span className="rounded-full border border-[#2be68d]/35 bg-[#2be68d]/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#2be68d]">
                       Active
                     </span>
                   </div>
-                  <div className="mt-2 text-[13px] leading-snug text-white/66">Next issue bundles vote recap, committee movement, and district-tailored policy signals.</div>
+                  <div className="mt-2 text-[13px] leading-snug text-white/66">Next issue includes vote recaps, committee updates, and items tied to your district and interests.</div>
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                     <BriefMetricPill label="Updates" value={data.updateCount} />
                     <BriefMetricPill label="Committee" value={data.statusCounts.inCommittee} />
-                    <BriefMetricPill label="In Action" value={data.billsInAction} />
+                    <BriefMetricPill label="Active" value={data.billsInAction} />
                   </div>
                 </div>
                 </div>
@@ -673,7 +673,7 @@ export function DashboardClient({
             </PlanFeatureGate>
 
             <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-[18px] font-medium leading-none">Latest Vote Feed</h2>
+              <h2 className="text-[18px] font-medium leading-none">Latest votes</h2>
               <Link href="/search?type=votes&focus=results" className={mobileViewAllClass}>
                 View All
               </Link>
@@ -710,7 +710,7 @@ export function DashboardClient({
             </MobileCard>
 
             <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-[18px] font-medium leading-none">Bill Tracker</h2>
+              <h2 className="text-[18px] font-medium leading-none">Saved bill tracker</h2>
               <Link href="/search?type=bills&focus=results" className={mobileViewAllClass}>
                 View All
               </Link>
@@ -740,7 +740,7 @@ export function DashboardClient({
                 {hasTrackedBill ? (
                   <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                   <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
-                    <span>Stage Progress</span>
+                    <span>Bill progress</span>
                     <span>{trackerProgressStep}</span>
                   </div>
                   <div className="mt-2 rounded-lg border border-white/8 bg-[#071a38]/65 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),inset_0_-8px_16px_rgba(2,9,25,0.5)]">
@@ -797,9 +797,9 @@ export function DashboardClient({
             </MobileCard>
 
             <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-[18px] font-medium leading-none">Civic Engagement</h2>
+              <h2 className="text-[18px] font-medium leading-none">Civic activity</h2>
               <Link href="/impact" className={mobileViewAllClass}>
-                Open Hub
+                View Activity
               </Link>
             </div>
 
@@ -808,8 +808,8 @@ export function DashboardClient({
               <div className="relative z-10">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                   <div className="min-w-0">
-                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">Civic Momentum</h3>
-                    <p className="mt-1 text-[14px] leading-snug text-white/58">No direct tab needed. Track score, streaks, badges, and civic action impact from here.</p>
+                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">Your activity</h3>
+                    <p className="mt-1 text-[14px] leading-snug text-white/58">Track your score, streak, badges, and civic actions from here.</p>
                   </div>
                   <div className="shrink-0 rounded-full border border-[#ffbd39]/35 bg-[#ffbd39]/10 px-2.5 py-1 text-right text-[13px] font-medium leading-none text-[#ffbd39]">
                     Level {gamificationSnapshot.level}
@@ -827,7 +827,7 @@ export function DashboardClient({
                       href={gamificationCategories[1].href}
                       label={gamificationCategories[1].label}
                       value={`${gamificationSnapshot.dayStreak}d`}
-                      subtitle="Consistency loop"
+                      subtitle="Current streak"
                     />
                     <GamificationStatPill
                       href={gamificationCategories[2].href}
@@ -842,7 +842,7 @@ export function DashboardClient({
                       subtitle={`+${gamificationSnapshot.monthlyGain} this month`}
                     />
                   </div>
-                  <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-white/46">Most Useful Categories</div>
+                  <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-white/46">Top activity</div>
                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                     {impactCategories.map((category) => (
                       <Link
