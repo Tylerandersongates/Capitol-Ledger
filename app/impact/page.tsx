@@ -34,7 +34,7 @@ export default function ImpactPage() {
         <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
-        <h1 className="ml-7 text-[28px] font-medium leading-none text-white">Your Impact</h1>
+        <h1 className="ml-7 text-[28px] font-medium leading-none text-white">Your impact</h1>
       </header>
 
       <main className="mt-7 space-y-5 pb-8">
@@ -42,7 +42,7 @@ export default function ImpactPage() {
           <div className="grid grid-cols-[1fr_162px] items-start gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-[21px] font-medium leading-none">Civic Score</h2>
+                <h2 className="text-[21px] font-medium leading-none">Activity score</h2>
                 <Info className="h-5 w-5 text-white/48" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <CivicScoreValue className="mt-6 block text-[48px] font-medium leading-none text-[#ffb12b]" />
@@ -53,7 +53,7 @@ export default function ImpactPage() {
                 <span className="absolute inset-[-5px] rounded-full border border-[#ffb12b]/42" />
                 <Image src="/capitol-ledger-logo.png" alt="" width={72} height={72} className="h-[72px] w-[72px] rounded-full object-cover" />
               </div>
-              <div className="mt-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/46">XP Progress</div>
+              <div className="mt-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/46">Level progress</div>
               <div className="mt-1.5 h-2 rounded-full bg-white/13">
                 <LevelProgressBar />
               </div>
@@ -82,9 +82,9 @@ export default function ImpactPage() {
 
         <MobileCard variant="dashboard" className="px-5 py-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-[21px] font-medium leading-none">Recent Achievements</h2>
+            <h2 className="text-[21px] font-medium leading-none">Recent badges</h2>
             <Link href="/badges" className={mobileViewAllClass}>
-              View All
+              View badges
             </Link>
           </div>
           <RecentAchievementsList />
@@ -96,7 +96,7 @@ export default function ImpactPage() {
 
         <MobileCard variant="dashboard" className="px-5 py-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-[21px] font-medium leading-none">Engagement Streak</h2>
+            <h2 className="text-[21px] font-medium leading-none">Activity streak</h2>
             <Info className="h-5 w-5 text-white/48" strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="mt-6 grid grid-cols-[70px_1fr] items-center gap-4">
@@ -106,7 +106,7 @@ export default function ImpactPage() {
             <div className="grid grid-cols-[0.9fr_1.25fr] items-center gap-4">
               <div>
                 <DayStreakValue className="text-[30px] font-medium leading-none text-[#ffb12b]" />
-                <div className="mt-3 text-[18px] text-white/70">Keep it going!</div>
+                <div className="mt-3 text-[18px] text-white/70">Keep going.</div>
               </div>
               <StreakWeekIndicator />
             </div>

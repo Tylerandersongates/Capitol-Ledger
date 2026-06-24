@@ -85,10 +85,10 @@ export const civicLevelTiers: CivicLevelTier[] = [
 ];
 
 const impactActionDisplay: Record<ImpactActionId, Omit<ImpactAction, "id" | "value">> = {
-  "letters-sent": { label: "Letters Sent", color: "#49c878" },
-  "bills-tracked": { label: "Bills Tracked", color: "#ffad1e" },
-  "votes-cast": { label: "Votes Cast", color: "#5e83df" },
-  "petitions-signed": { label: "Petitions Signed", color: "#9563d5" }
+  "letters-sent": { label: "Letters sent", color: "#49c878" },
+  "bills-tracked": { label: "Bills tracked", color: "#ffad1e" },
+  "votes-cast": { label: "Vote activity", color: "#5e83df" },
+  "petitions-signed": { label: "Petitions signed", color: "#9563d5" }
 };
 
 const impactActionOrder: ImpactActionId[] = ["letters-sent", "bills-tracked", "votes-cast", "petitions-signed"];
@@ -333,7 +333,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "register-to-vote",
     label: "Register to Vote",
-    description: "Complete a Voter Registration Form",
+    description: "Complete a voter registration form",
     icon: "vote",
     status: "locked",
     tone: "blue"
@@ -429,7 +429,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "rapid-response",
     label: "Rapid Response",
-    description: "Respond to 10 action alerts",
+    description: "Respond to 10 alerts",
     icon: "bell",
     status: "locked",
     tone: "gold"

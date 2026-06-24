@@ -30,7 +30,7 @@ const voterElectionGoal = electionBadgeProgress.find((progress) => progress.badg
 const ballotVeteranElectionGoal = getGamificationEventRule(electionEvent)?.badgeProgress.find((progress) => progress.badgeId === "ballot-veteran")?.threshold ?? 5;
 const superVoterElectionGoal = electionBadgeProgress.find((progress) => progress.badgeId === "super-voter")?.threshold ?? totalElectionCount;
 const electionBadgeMilestones = [
-  { label: "Voter Badge", threshold: voterElectionGoal },
+  { label: "Voter badge", threshold: voterElectionGoal },
   { label: "Ballot Veteran", threshold: ballotVeteranElectionGoal },
   { label: "Super Voter", threshold: superVoterElectionGoal }
 ];
@@ -71,10 +71,10 @@ function nextElectionBadgeMessage(electionCount: number) {
 
   if (nextMilestone) {
     const remainingElections = nextMilestone.threshold - electionCount;
-    return `${remainingElections} more unique election${remainingElections === 1 ? "" : "s"} to unlock ${nextMilestone.label}.`;
+    return `${remainingElections} more election${remainingElections === 1 ? "" : "s"} to earn ${nextMilestone.label}.`;
   }
 
-  return "All election participation badges unlocked.";
+  return "All election badges earned.";
 }
 
 export function ElectionParticipationCard() {
@@ -119,7 +119,7 @@ export function ElectionParticipationCard() {
       try {
         const nextIds = loggedElectionIds.filter((id) => id !== entry.id);
         applyElectionSelection(nextIds);
-        setStatus(`Removed: ${entry.label}`);
+        setStatus(`Removed ${entry.label}.`);
       } catch {
         setStatus("Could not update this election right now. Please try again.");
       }
@@ -129,7 +129,7 @@ export function ElectionParticipationCard() {
     try {
       const nextIds = [...loggedElectionIds, entry.id];
       applyElectionSelection(nextIds);
-      setStatus(`Logged: ${entry.label}`);
+      setStatus(`Added ${entry.label}.`);
     } catch {
       setStatus("Could not update this election right now. Please try again.");
     }
@@ -141,7 +141,7 @@ export function ElectionParticipationCard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Vote className="h-5 w-5 text-[#ffbd39]" strokeWidth={1.8} aria-hidden="true" />
-            <h2 className="text-[21px] font-medium leading-none">Election Participation</h2>
+            <h2 className="text-[21px] font-medium leading-none">Elections</h2>
           </div>
           <div className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[12px] font-medium text-white/76">
             {electionCount}/{totalElectionCount}
@@ -149,10 +149,10 @@ export function ElectionParticipationCard() {
         </div>
 
         <p className="mt-3 text-[13px] leading-relaxed text-white/58">
-          Count primary, general, runoff, and special elections toward Voter, Ballot Veteran, and Super Voter badges.
+          Log elections you take part in. Primary, general, runoff, and special elections all count.
         </p>
         <p className="mt-1 text-[11px] uppercase tracking-[0.05em] text-white/42">
-          Tap once to log an election. Tap a logged row again to remove it.
+          Tap an election to log it. Tap again to remove it.
         </p>
 
         <div className="mt-4 grid gap-2">

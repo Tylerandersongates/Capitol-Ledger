@@ -102,7 +102,7 @@ export function CivicScoreValue({ className }: { className?: string }) {
 
 export function MonthlyGainValue({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
-  return <span className={className}>↑ {snapshot.monthlyGain} this month</span>;
+  return <span className={className}>{snapshot.monthlyGain} point{snapshot.monthlyGain === 1 ? "" : "s"} this month</span>;
 }
 
 export function LevelStatusValue() {
@@ -116,7 +116,7 @@ export function LevelStatusValue() {
       </div>
       <div className="pb-1 text-[18px]">
         <span className="text-[#ffb12b]">{snapshot.civicScore.toLocaleString()}</span>
-        <span className="text-white/60"> / {snapshot.nextLevelScore.toLocaleString()} XP</span>
+        <span className="text-white/60"> / {snapshot.nextLevelScore.toLocaleString()} points</span>
       </div>
     </>
   );
@@ -136,12 +136,12 @@ export function LevelProgressBar() {
 
 export function XpProgressValue({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
-  return <span className={className}>{Math.min(100, snapshot.xpProgress)}% to next level</span>;
+  return <span className={className}>{Math.min(100, snapshot.xpProgress)}% toward next level</span>;
 }
 
 export function DayStreakValue({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
-  return <span className={className}>{snapshot.dayStreak} {snapshot.dayStreak === 1 ? "Day" : "Days"}</span>;
+  return <span className={className}>{snapshot.dayStreak} {snapshot.dayStreak === 1 ? "day" : "days"}</span>;
 }
 
 const streakWeekDays = [
@@ -244,13 +244,13 @@ export function PremiumImpactBreakdown() {
     <>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-[21px] font-medium leading-none">Impact Breakdown</h2>
+          <h2 className="text-[21px] font-medium leading-none">Activity summary</h2>
           <div className="mt-2 text-[12px] font-medium uppercase tracking-[0.08em] text-white/42">
-            {activeActionCount > 0 ? `${activeActionCount} active signal${activeActionCount === 1 ? "" : "s"}` : "No actions logged"}
+            {activeActionCount > 0 ? `${activeActionCount} categor${activeActionCount === 1 ? "y" : "ies"} with activity` : "No activity yet"}
           </div>
         </div>
         <div className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#ffc44d] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          This Month
+          This month
         </div>
       </div>
 
@@ -265,7 +265,7 @@ export function PremiumImpactBreakdown() {
           <div className="absolute inset-0 grid place-items-center text-center">
             <div>
               <div className="text-[36px] font-medium leading-none text-[#ffb12b]">{totalActions}</div>
-              <div className="mt-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-white/54">Actions</div>
+              <div className="mt-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-white/54">Total</div>
             </div>
           </div>
         </div>
@@ -289,14 +289,14 @@ export function RecentAchievementsList() {
   if (!recentBadges.length) {
     return (
       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[13px] leading-snug text-white/56">
-        Achievements appear here after setup and civic actions are completed.
+        Badges appear here after you complete civic actions.
       </div>
     );
   }
 
   return (
     <div className="mt-4">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Latest unlocked badges</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Recently earned</div>
       <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[172px]" className="space-y-2">
         {recentBadges.map((achievement) => (
           <RecentAchievementRow key={achievement.id} badge={achievement} />
@@ -380,10 +380,10 @@ function MobileLevelPathShell({
     <>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Level Path</div>
-          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Civic title ladder</h2>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Titles</div>
+          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Your next title</h2>
           <p className="mt-2 text-[13px] leading-snug text-white/54">
-            Titles unlock when your Civic Score reaches each XP threshold.
+            Earn points from civic actions to unlock new titles.
           </p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/14 bg-white/8 text-[#ffb12b] shadow-[0_12px_28px_rgba(1,8,24,0.3)]">
@@ -405,10 +405,10 @@ function MobileLevelPathShell({
       </div>
 
       <div className="mt-3 rounded-2xl border border-white/10 bg-[#071a38]/62 px-3 py-3 text-[12px] leading-snug text-white/56">
-        <span className="text-[#ffb12b]">{score.toLocaleString()} XP</span>
+        <span className="text-[#ffb12b]">{score.toLocaleString()} points</span>
         <span> total · </span>
-        <span>{pointsIntoLevel.toLocaleString()} XP earned inside this level</span>
-        {nextLevel ? <span> · {pointsToNext.toLocaleString()} XP to Level {nextLevel}</span> : null}
+        <span>{pointsIntoLevel.toLocaleString()} points in this level</span>
+        {nextLevel ? <span> · {pointsToNext.toLocaleString()} points to Level {nextLevel}</span> : null}
       </div>
 
       <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[126px]">
@@ -433,7 +433,7 @@ function MobileLevelPathShell({
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-[14px] font-semibold">{tier.title}</span>
-                  <span className="mt-1 block text-[11px] text-white/42">{tier.minScore.toLocaleString()} XP</span>
+                  <span className="mt-1 block text-[11px] text-white/42">{tier.minScore.toLocaleString()} points</span>
                 </span>
                 <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] ${active ? "border-[#ffb12b]/35 bg-[#ffb12b]/10 text-[#ffb12b]" : upcoming ? "border-white/12 bg-white/[0.04] text-white/52" : "border-transparent text-white/28"}`}>
                   {active ? "Current" : upcoming ? "Next" : completed ? "Done" : "Locked"}
