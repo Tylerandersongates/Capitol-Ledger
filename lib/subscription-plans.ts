@@ -44,36 +44,36 @@ export const subscriptionPlanOrder: SubscriptionPlanId[] = ["free", "pro", "team
 export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetails> = {
   free: {
     name: "Free",
-    description: "Basic civic tracking",
+    description: "Core dashboard and alerts",
     pricing: {
       monthly: "$0",
       annual: "$0",
       unit: ""
     },
-    highlights: ["Source-linked records", "Voting dashboards", "Civic alerts"],
-    limits: ["Limited saved records", "Basic alert history", "Premium intelligence previews locked"]
+    highlights: ["Official source links", "Vote dashboards", "Bill and vote alerts"],
+    limits: ["Limited saved items", "Basic alert history", "Pro previews locked"]
   },
   pro: {
     name: "Pro Intelligence",
-    description: "Advanced civic tracking",
+    description: "More alerts, summaries, and reports",
     pricing: {
       monthly: "$2.99",
       annual: "$29.99",
       unit: "/ month"
     },
-    highlights: ["Advanced intelligence panels", "Issue and politician tracking", "Exportable civic reports", "Priority vote reminders"],
-    limits: ["Single-user workspace", "No team member seats"]
+    highlights: ["Deeper dashboard panels", "Topic and official tracking", "Exportable reports", "Priority vote reminders"],
+    limits: ["One-person plan", "No team seats"]
   },
   team: {
     name: "Civic Team",
-    description: "Shared civic workspace",
+    description: "Shared tracking for teams",
     pricing: {
       monthly: "$5.99",
       annual: "$59.99",
       unit: "/ seat"
     },
-    highlights: ["Seat-managed workspace", "Team alert coordination", "Exportable reports", "Shared watchlist setup"],
-    limits: ["Self-serve checkout supports 3-25 seats", "Email delivery, invite acceptance, and shared record editing are in rollout"]
+    highlights: ["Shared workspace", "Team alerts", "Exportable reports", "Shared watchlists"],
+    limits: ["Self-serve checkout supports 3-25 seats", "Email invites and shared editing are in rollout"]
   }
 };
 
@@ -86,26 +86,26 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   },
   {
     id: "sourceRecords",
-    label: "Source-linked records",
+    label: "Official source links",
     description: "Official bill, vote, member, and committee references.",
     minimumPlan: "free"
   },
   {
     id: "voteDashboards",
-    label: "Voting dashboards",
+    label: "Vote dashboards",
     description: "Vote totals, roll-call visuals, and official vote context.",
     minimumPlan: "free"
   },
   {
     id: "basicAlerts",
-    label: "Civic alerts",
+    label: "Bill and vote alerts",
     description: "Basic bill, vote, and representative notifications.",
     minimumPlan: "free"
   },
   {
     id: "savedLedger",
-    label: "Saved civic ledger",
-    description: "Saved bills, officials, alerts, and policy interests.",
+    label: "Saved items",
+    description: "Saved bills, officials, alerts, and topics.",
     minimumPlan: "free"
   },
   {
@@ -122,7 +122,7 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   },
   {
     id: "sourceMap",
-    label: "Official Source Map",
+    label: "Source map",
     description: "Matched evidence trail across bills, votes, hearings, video, and sponsor records.",
     minimumPlan: "pro"
   },
@@ -140,8 +140,8 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   },
   {
     id: "issueTracking",
-    label: "Issue tracking",
-    description: "Personalized issue watchlists and policy trend panels.",
+    label: "Topic tracking",
+    description: "Personal topic watchlists and trend panels.",
     minimumPlan: "pro"
   },
   {
@@ -153,13 +153,13 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   {
     id: "weeklyBrief",
     label: "Weekly Brief delivery",
-    description: "Personal civic intelligence delivered from district, saved ledger, alerts, and issue interests.",
+    description: "A weekly summary from your district, saved items, alerts, and topics.",
     minimumPlan: "pro"
   },
   {
     id: "exportReports",
     label: "Exportable reports",
-    description: "Shareable civic intelligence reports for saved bills, votes, and officials.",
+    description: "Shareable reports for saved bills, votes, and officials.",
     minimumPlan: "pro"
   },
   {
@@ -176,14 +176,14 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   },
   {
     id: "teamSeats",
-    label: "Multi-seat workspace",
+    label: "Team seats",
     description: "Invite teammates and coordinate civic tracking in one workspace.",
     minimumPlan: "team"
   },
   {
     id: "accountabilityScore",
-    label: "Team accountability scoring",
-    description: "Organization-level accountability scorecards and comparison views.",
+    label: "Team scorecards",
+    description: "Organization-level scorecards and comparison views.",
     minimumPlan: "team"
   }
 ];
@@ -192,16 +192,16 @@ export const planComparisonRows: Array<{
   featureId: SubscriptionFeatureId;
   label: string;
 }> = [
-  { featureId: "sourceRecords", label: "Source-linked records" },
-  { featureId: "voteDashboards", label: "Voting dashboards" },
-  { featureId: "basicAlerts", label: "Civic alerts" },
-  { featureId: "aiBillSummaries", label: "AI bill summaries" },
-  { featureId: "sourceMap", label: "Official source map" },
+  { featureId: "sourceRecords", label: "Official source links" },
+  { featureId: "voteDashboards", label: "Vote dashboards" },
+  { featureId: "basicAlerts", label: "Bill and vote alerts" },
+  { featureId: "aiBillSummaries", label: "Plain-language bill summaries" },
+  { featureId: "sourceMap", label: "Source map" },
   { featureId: "exportReports", label: "Exportable reports" },
-  { featureId: "teamDashboard", label: "Team workspaces" },
+  { featureId: "teamDashboard", label: "Team workspace" },
   { featureId: "sharedWatchlists", label: "Shared watchlists" },
-  { featureId: "teamSeats", label: "Multi-seat workspace" },
-  { featureId: "accountabilityScore", label: "Team accountability score" }
+  { featureId: "teamSeats", label: "Team seats" },
+  { featureId: "accountabilityScore", label: "Team scorecards" }
 ];
 
 export function getPlanRank(plan: SubscriptionPlanId) {

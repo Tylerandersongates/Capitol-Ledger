@@ -24,22 +24,22 @@ let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise
 
 const teamWorkspaceSignals = [
   {
-    detail: "Checkout quantity sets paid participant capacity.",
+    detail: "Choose how many teammates can join.",
     icon: <ListChecks />,
-    label: "Participant seats",
+    label: "Team seats",
     value: `${minimumTeamSeatCount}-${maximumTeamSeatCount}`
   },
   {
-    detail: "The Team buyer owns billing without taking a seat.",
+    detail: "The buyer manages billing and invites.",
     icon: <Bell />,
     label: "Billing owner",
-    value: "Ready"
+    value: "Included"
   },
   {
-    detail: "Pending invites reserve seats against checkout quantity.",
+    detail: "Pending invites hold a seat until accepted.",
     icon: <ShieldCheck />,
-    label: "Invite records",
-    value: "Live"
+    label: "Invites",
+    value: "Tracked"
   }
 ];
 
@@ -396,7 +396,7 @@ export function PlanActionButton({
     }
   }
 
-  const actionLabel = billingPortalManaged ? "Manage Billing" : active ? "Current Plan" : inactiveLabel;
+  const actionLabel = billingPortalManaged ? "Manage billing" : active ? "Current plan" : inactiveLabel;
 
   return (
     <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
@@ -438,7 +438,7 @@ export function TeamSeatSelector({
   const pricePerSeat = subscription.cycle === "annual" ? 59.99 : 5.99;
   const totalPrice = formatCurrency(pricePerSeat * seatCount);
   const seatUnit = subscription.cycle === "annual" ? "seat / year" : "seat / month";
-  const totalUnit = subscription.cycle === "annual" ? "workspace / year" : "workspace / month";
+  const totalUnit = subscription.cycle === "annual" ? "team / year" : "team / month";
   const showingCustomPlanCue = customPlanRequested || seatCount >= maximumTeamSeatCount;
 
   function updateSeatCount(value: unknown) {
@@ -452,9 +452,9 @@ export function TeamSeatSelector({
     <div className={`${className} rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Checkout quantity</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Team seats</div>
           <div className="mt-1 text-[13px] leading-snug text-white/56">
-            Billed per participant seat in Stripe. Self-serve supports {minimumTeamSeatCount}-{maximumTeamSeatCount} seats.
+            Choose how many teammates need access. Self-serve supports {minimumTeamSeatCount}-{maximumTeamSeatCount} seats.
           </div>
         </div>
         <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
@@ -507,7 +507,7 @@ export function TeamSeatSelector({
             </span>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white">Need more than {maximumTeamSeatCount} seats?</div>
-              <div className="mt-1 text-[12px] leading-snug text-white/54">Request a custom Civic Team plan for larger organizations.</div>
+              <div className="mt-1 text-[12px] leading-snug text-white/54">Request a custom Team plan for a larger organization.</div>
             </div>
             <Link href="/feedback?source=team-custom-plan" className="shrink-0 rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/12 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b] transition hover:bg-[#ffb12b]/18">
               Custom
@@ -520,7 +520,7 @@ export function TeamSeatSelector({
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Estimated total</div>
           <div className="mt-1 text-[12px] leading-snug text-white/48">
-            Stripe quantity {seatCount} x {formatCurrency(pricePerSeat)} / {seatUnit}
+            {seatCount} seats x {formatCurrency(pricePerSeat)} / {seatUnit}
           </div>
         </div>
         <div className="text-right">
@@ -537,11 +537,10 @@ export function TeamWorkspacePreview() {
     <div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Team Workspace</div>
-          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Coordinate civic monitoring together</h2>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Team plan</div>
+          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Work from one shared view</h2>
           <p className="mt-2 text-[13px] leading-snug text-white/54">
-            Built for campaigns, nonprofits, advocacy teams, local offices, and civic groups that need one shared view of bills,
-            officials, issues, and alerts.
+            Built for campaigns, nonprofits, local offices, and civic groups that need shared bills, officials, topics, and alerts.
           </p>
         </div>
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/14 bg-white/8 text-[#ffb12b] shadow-[0_12px_28px_rgba(1,8,24,0.3)]">
@@ -569,7 +568,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          Team checkout opens billing-owner setup, paid participant capacity, and pending invite records.
+          After checkout, invite teammates and manage shared watchlists from the Team page.
         </span>
       </div>
 
@@ -577,7 +576,7 @@ export function TeamWorkspacePreview() {
         href="/team"
         className="mt-4 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110"
       >
-        Open Team Workspace
+        Open Team page
       </Link>
     </div>
   );

@@ -82,17 +82,17 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Choose individual intelligence or a shared workspace for campaigns, nonprofits, civic groups, and local teams."
-            eyebrow="Premium Intelligence"
-            title="Choose your civic workspace"
+            description="Pick Pro for personal tracking, or Team when several people need the same view."
+            eyebrow="Plans"
+            title="Choose a plan"
           />
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <ValuePill label="Priority alerts" value="Fast" />
-            <ValuePill label="Source map" value="Deep" />
+            <ValuePill label="Alerts" value="Faster" />
+            <ValuePill label="Sources" value="Linked" />
             <ValuePill label="Briefs" value="Weekly" />
           </div>
           <Link href="#plans" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
-            View Plans
+            View plans
           </Link>
         </MobileCard>
 
@@ -101,10 +101,10 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Choose a billing cycle before selecting a plan."
+              description="Choose monthly or annual billing before selecting a plan."
               eyebrow="Billing"
               icon={<Sparkles />}
-              title="Plan cycle"
+              title="Billing cycle"
             />
             <div className="mt-5">
               <BillingCycleToggle initialSubscription={initialSubscription} defaultCycle={upgradeDefaultCycle} />
@@ -115,10 +115,10 @@ export default async function UpgradePage() {
         {showStripeSandboxNotice ? (
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Stripe is in test mode for demos. Use test card 4242 4242 4242 4242 with any future expiration, any CVC, and any ZIP code."
-              eyebrow="Sandbox Checkout"
+              description="Stripe is in test mode. Use card 4242 4242 4242 4242 with any future expiration, CVC, and ZIP code."
+              eyebrow="Test checkout"
               icon={<ShieldCheck />}
-              title="No real payment information"
+              title="No real payment needed"
             />
           </MobileCard>
         ) : null}
@@ -135,15 +135,15 @@ export default async function UpgradePage() {
           />
           <PlanTierCard
             icon={<ShieldCheck />}
-            inactiveLabel="Switch to Free"
+            inactiveLabel="Use Free"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="free"
           />
           <PlanTierCard
-            badge="Team Workspace"
+            badge="Team plan"
             icon={<Sparkles />}
-            inactiveLabel="Start Team Plan"
+            inactiveLabel="Start Team"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="team"
@@ -158,9 +158,9 @@ export default async function UpgradePage() {
           <details className="group">
             <summary className="flex cursor-pointer list-none items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
               <span className="min-w-0">
-                <span className={premiumEyebrowClass}>Plan Logistics</span>
-                <span className={`${premiumCardTitleClass} mt-2 block`}>Compare access</span>
-                <span className={premiumCardDescriptionClass}>Check the core unlocks without turning the page into a spreadsheet.</span>
+                <span className={premiumEyebrowClass}>Plan comparison</span>
+                <span className={`${premiumCardTitleClass} mt-2 block`}>Compare plans</span>
+                <span className={premiumCardDescriptionClass}>See the main differences between Free, Pro, and Team.</span>
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 <span className={premiumHeaderIconClass}>
@@ -213,12 +213,12 @@ function TeamAccessStatusCard({
 }) {
   const roleLabel = formatTeamRoleLabel(access.role);
   const proPausedForTeam = subscription?.providerEntitlementId === teamPausedProEntitlementId;
-  const personalPlanLabel = proPausedForTeam ? "Pro Intelligence paused" : subscription ? subscriptionPlans[subscription.plan].name : "Personal";
+  const personalPlanLabel = proPausedForTeam ? "Pro paused" : subscription ? subscriptionPlans[subscription.plan].name : "Personal";
   const description = access.isBillingOwner
-    ? `Your ${personalPlanLabel} billing owns this workspace and does not consume a participant seat.`
+    ? `Your ${personalPlanLabel} billing owns this workspace and does not use a team seat.`
     : proPausedForTeam
       ? `Your personal Pro billing is paused while this owner-paid Team seat gives you ${roleLabel} access.`
-      : `Your personal billing plan remains ${personalPlanLabel}. Your accepted Team seat gives you ${roleLabel} access to this workspace.`;
+      : `Your personal billing plan remains ${personalPlanLabel}. Your Team seat gives you ${roleLabel} access to this workspace.`;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -234,7 +234,7 @@ function TeamAccessStatusCard({
         <ValuePill label="Open" value={String(access.workspace.openSeats)} />
       </div>
       <Link href="/team" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
-        Open Team Workspace
+        Open Team page
       </Link>
     </MobileCard>
   );
