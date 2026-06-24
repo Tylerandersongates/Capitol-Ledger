@@ -77,11 +77,11 @@ const defaultForm: AuthFormState = {
   password: ""
 };
 
-const trustItems = ["Private district setup", "Nonpartisan records", "Source-linked alerts"];
+const trustItems = ["Private profile", "Nonpartisan records", "Source links included"];
 const authPathItems = [
-  { label: "Create", value: "New account" },
-  { label: "Return", value: "Sign back in" },
-  { label: "Sync", value: "Setup saved" }
+  { label: "Account", value: "Create or sign in" },
+  { label: "Settings", value: "Saved after sign-in" },
+  { label: "Privacy", value: "Used in this app" }
 ];
 
 function readJson<T>(key: string, fallback: T): T {
@@ -231,21 +231,21 @@ export function AuthFlowClient({
   const [verificationHandled, setVerificationHandled] = useState(false);
 
   const heading = useMemo(() => {
-    if (mode === "create") return "Create your civic command center.";
-    if (mode === "forgot") return "Recover secure access.";
-    if (mode === "reset") return "Set a new password.";
-    if (mode === "verify") return "Verify your account.";
-    if (mode === "success") return "Account ready.";
-    return "Sign in to your civic command center.";
+    if (mode === "create") return "Create your account.";
+    if (mode === "forgot") return "Reset your password.";
+    if (mode === "reset") return "Choose a new password.";
+    if (mode === "verify") return "Verify your email.";
+    if (mode === "success") return "You are signed in.";
+    return "Sign in to Capitol Ledger.";
   }, [mode]);
 
   const body = useMemo(() => {
-    if (mode === "create") return "Set up a secure profile for district alerts, saved records, subscriptions, and civic impact.";
-    if (mode === "forgot") return "Enter your email and we will prepare a password reset path for the production account system.";
+    if (mode === "create") return "Save your district, alerts, topics, and plan in one place.";
+    if (mode === "forgot") return "Enter your email and we will send reset instructions if the account exists.";
     if (mode === "reset") return "Choose a new password for your Capitol Ledger account.";
-    if (mode === "verify") return `Open the secure verification link sent to ${form.email || "your email"}, or paste the link token below.`;
-    if (mode === "success") return "Your account is ready for first-run district setup.";
-    return "Track representatives, bills, alerts, and civic impact with a secure profile.";
+    if (mode === "verify") return `Open the verification link sent to ${form.email || "your email"}, or paste the token below.`;
+    if (mode === "success") return "Continue to setup or open your dashboard.";
+    return "Open your dashboard, saved items, alerts, and profile settings.";
   }, [form.email, mode]);
 
   useEffect(() => {
@@ -462,7 +462,7 @@ export function AuthFlowClient({
     }
 
     setPending(true);
-    setStatus("Starting demo mode...");
+    setStatus("Opening demo...");
 
     const response = await fetch("/api/auth/demo", {
       method: "POST"
@@ -471,7 +471,7 @@ export function AuthFlowClient({
     if (!response?.ok) {
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       setPending(false);
-      setStatus(data?.error ?? "Demo mode could not start. Restart the preview and try again.");
+      setStatus(data?.error ?? "Demo could not start. Restart the preview and try again.");
       return;
     }
 
@@ -487,7 +487,7 @@ export function AuthFlowClient({
 
   async function submitInputFallbackReport() {
     setPending(true);
-    setStatus("Sending input issue...");
+    setStatus("Sending report...");
 
     const response = await fetch("/api/feedback", {
       body: JSON.stringify({
@@ -516,11 +516,11 @@ export function AuthFlowClient({
     setPending(false);
 
     if (!response?.ok) {
-      setStatus(data?.error ?? "Input issue could not be sent. Please message Tyler directly.");
+      setStatus(data?.error ?? "Typing issue could not be sent. Please message Tyler directly.");
       return;
     }
 
-    setStatus(data?.mode === "database" ? "Input issue sent to the beta review queue." : "Input issue captured in demo mode.");
+    setStatus(data?.mode === "database" ? "Typing issue sent to the beta review queue." : "Typing issue captured in demo mode.");
   }
 
   async function submit() {
@@ -544,7 +544,7 @@ export function AuthFlowClient({
       setPending(false);
 
       if (!result.ok) {
-        setStatus(result.data.error ?? "Production sign-in is not configured yet.");
+        setStatus(result.data.error ?? "Sign-in is not configured yet.");
         return;
       }
 
@@ -555,7 +555,7 @@ export function AuthFlowClient({
         setAllowAccountCreation(false);
         setAccountCreated(true);
         setMode("verify");
-        setStatus("Verify your email before continuing. Open the secure link from your inbox, or paste the verification token here.");
+        setStatus("Verify your email before continuing. Open the link from your inbox, or paste the token here.");
         return;
       }
 
@@ -569,15 +569,15 @@ export function AuthFlowClient({
 
     if (mode === "create") {
       if (form.firstName.trim().length < 1) {
-        setStatus("Add your first name for the account profile.");
+        setStatus("Enter your first name.");
         return;
       }
       if (form.lastName.trim().length < 1) {
-        setStatus("Add your last name for the account profile.");
+        setStatus("Enter your last name.");
         return;
       }
       if (!isEmail(form.email)) {
-        setStatus("Enter a valid email for account verification.");
+        setStatus("Enter a valid email.");
         return;
       }
       if (form.password.length < 8) {
@@ -589,7 +589,7 @@ export function AuthFlowClient({
         return;
       }
       if (!form.consent) {
-        setStatus("Confirm the privacy consent to create an account.");
+        setStatus("Confirm privacy consent to create an account.");
         return;
       }
       setPending(true);
@@ -607,7 +607,7 @@ export function AuthFlowClient({
       setPending(false);
 
       if (!result.ok) {
-        setStatus(result.data.error ?? "Production account creation is not configured yet. Use demo mode for now.");
+        setStatus(result.data.error ?? "Account creation is not configured yet. Use demo mode for now.");
         return;
       }
 
@@ -620,12 +620,12 @@ export function AuthFlowClient({
       const authData = result.data as AuthApiResponse;
       setStatus(
         authData.emailDelivery === "resend"
-          ? "Verification email sent. Open the secure link in your inbox to continue."
+          ? "Verification email sent. Open the link in your inbox to continue."
           : authData.emailDelivery === "webhook"
             ? "Verification link sent."
             : authData.verificationLink
               ? `Verification prepared. Open this link: ${authData.verificationLink}`
-              : "Verification prepared. Open the secure verification link to continue."
+              : "Verification prepared. Open the verification link to continue."
       );
       return;
     }
@@ -645,7 +645,7 @@ export function AuthFlowClient({
       setPending(false);
 
       const resetMessage = "message" in result.data ? result.data.message : undefined;
-      setStatus(result.ok ? resetMessage ?? "Password reset path prepared." : result.data.error ?? "Password reset is not configured yet.");
+      setStatus(result.ok ? resetMessage ?? "Password reset instructions are ready." : result.data.error ?? "Password reset is not configured yet.");
       return;
     }
 
@@ -736,7 +736,7 @@ export function AuthFlowClient({
         <section className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#ffb12b]">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-            Secure access
+            Secure sign-in
           </div>
           <h1 className="mt-5 max-w-[23rem] text-[29px] font-medium leading-tight text-white">{heading}</h1>
           <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">{body}</p>
@@ -764,7 +764,7 @@ export function AuthFlowClient({
                   onClick={() => selectMode("signIn")}
                   className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "signIn" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
                 >
-                  Sign In
+                  Sign in
                 </button>
                 <button
                   type="button"
@@ -844,7 +844,7 @@ export function AuthFlowClient({
             <div className="flex items-center justify-between text-[14px]">
               <span className="text-white/50">Keeps you signed in for 30 days.</span>
               <button type="button" onClick={() => selectMode("forgot")} className="font-semibold text-[#ffb12b]">
-                Forgot?
+                Forgot password?
               </button>
             </div>
           ) : null}
@@ -859,7 +859,7 @@ export function AuthFlowClient({
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded border ${form.consent ? "border-[#43ed74]/45 bg-[#43ed74]/12 text-[#43ed74]" : "border-white/15 bg-white/5"}`}>
                 {form.consent ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
               </span>
-              I agree to create my Capitol Ledger account and use my setup choices to personalize my experience.
+              I agree to create my Capitol Ledger account and use my setup choices to personalize the app.
             </button>
           ) : null}
 
@@ -869,8 +869,8 @@ export function AuthFlowClient({
               <div className="mt-3 text-[18px] font-semibold text-white">Verification complete</div>
               <p className="mt-2 text-[14px] leading-snug text-white/58">
                 {allowDemoMode
-                  ? "Finish district setup or jump into the demo dashboard."
-                  : "Finish district setup or open your dashboard."}
+                  ? "Finish setup or open the demo dashboard."
+                  : "Finish setup or open your dashboard."}
               </p>
             </div>
           ) : null}
@@ -917,7 +917,7 @@ export function AuthFlowClient({
                 disabled={pending}
                 className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffb12b] transition hover:brightness-110 disabled:opacity-45"
               >
-                Cannot type? Send input issue
+                Report typing issue
               </button>
             </div>
           )}
@@ -933,13 +933,13 @@ export function AuthFlowClient({
           <>
             <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[12px] uppercase tracking-wide text-white/38">
               <span className="h-px bg-white/10" />
-              Secure access
+              Account options
               <span className="h-px bg-white/10" />
             </div>
 
             {showDifferentAccountCta ? (
               <button type="button" onClick={useDifferentAccount} className="mt-5 w-full text-center text-[14px] font-semibold text-[#ffb12b]">
-                Create a new account
+                Create account
               </button>
             ) : null}
 
@@ -952,7 +952,7 @@ export function AuthFlowClient({
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72"
                 >
                   <UserRound className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                  New account
+                  Create account
                 </button>
               </div>
             ) : null}
@@ -969,8 +969,8 @@ export function AuthFlowClient({
               <ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/42">Data handling</div>
-              <h2 className="mt-1 text-[21px] font-semibold leading-none text-white">Private by design</h2>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/42">Privacy</div>
+              <h2 className="mt-1 text-[21px] font-semibold leading-none text-white">Your data stays private</h2>
             </div>
           </div>
           <div className={`${authInnerPanelClass} mt-5 grid gap-2 px-3 py-3`}>
@@ -992,7 +992,7 @@ export function AuthFlowClient({
             Continue in demo mode
           </button>
           <p className="max-w-xs text-[12px] leading-5 text-white/38">
-            Demo mode starts an account session and syncs browser-saved records for investor walkthroughs.
+            Demo mode opens a preview account and keeps saved items from this browser.
           </p>
         </div>
       ) : null}
