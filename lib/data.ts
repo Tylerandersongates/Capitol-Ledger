@@ -16,7 +16,7 @@ export type SearchFilters = {
   status?: string;
   chamber?: string;
   party?: string;
-  state?: string;
+  state?: string | string[];
   type?: string;
 };
 
@@ -1470,13 +1470,26 @@ export function getRecentUpdates() {
   return [...updateEvents].sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
 }
 
+function normalizeSearchStateFilters(value?: string | string[]) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+
+  return Array.from(
+    new Set(
+      values
+        .flatMap((item) => item.split(","))
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => /^[A-Z]{2}$/.test(item))
+    )
+  );
+}
+
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
   const billSearchTerms = q ? getIssueSearchTerms(q) : [];
   const statusFilter = normalizeBillStatusFilter(filters.status);
   const chamber = filters.chamber as Chamber | undefined;
   const party = filters.party as Party | undefined;
-  const state = filters.state?.toUpperCase();
+  const states = normalizeSearchStateFilters(filters.state);
   const type = filters.type ?? "all";
 
   const memberResults =
@@ -1485,7 +1498,7 @@ export function searchRecords(filters: SearchFilters) {
           if (q && !matchesText([member.fullName, member.state, member.party, member.chamber], q)) return false;
           if (chamber && member.chamber !== chamber) return false;
           if (party && member.party !== party) return false;
-          if (state && member.state !== state) return false;
+          if (states.length && !states.includes(member.state)) return false;
           return true;
         })
       : [];
@@ -1527,7 +1540,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
     const statusFilter = normalizeBillStatusFilter(filters.status);
     const chamber = filters.chamber && filters.chamber in filterChamberMap ? filterChamberMap[filters.chamber as Chamber] : undefined;
     const party = filters.party && filters.party in filterPartyMap ? filterPartyMap[filters.party as Party] : undefined;
-    const state = filters.state?.toUpperCase();
+    const states = normalizeSearchStateFilters(filters.state);
     const type = filters.type ?? "all";
 
     const [memberRows, billRows, voteRows] = await Promise.all([
@@ -1549,7 +1562,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
                   : {},
                 chamber ? { chamber } : {},
                 party ? { party } : {},
-                state ? { state } : {}
+                states.length ? { state: { in: states } } : {}
               ]
             }
           })

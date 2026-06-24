@@ -26,15 +26,17 @@ import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-
 import { memberResultMeta } from "@/lib/member-display";
 import { formatDate } from "@/lib/utils";
 
+type SearchParamValue = string | string[] | undefined;
+
 type SearchPageProps = {
   searchParams: {
-    q?: string;
-    status?: string;
-    type?: string;
-    chamber?: string;
-    focus?: string;
-    party?: string;
-    state?: string;
+    q?: SearchParamValue;
+    status?: SearchParamValue;
+    type?: SearchParamValue;
+    chamber?: SearchParamValue;
+    focus?: SearchParamValue;
+    party?: SearchParamValue;
+    state?: SearchParamValue;
   };
 };
 
@@ -55,6 +57,23 @@ const premiumPanelClass =
   "rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_24px_rgba(2,10,28,0.22)]";
 const premiumPillClass =
   "rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold leading-none text-white/56";
+
+function firstSearchParamValue(value: SearchParamValue) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function normalizeStateParamValues(value: SearchParamValue) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+
+  return Array.from(
+    new Set(
+      values
+        .flatMap((item) => item.split(","))
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => /^[A-Z]{2}$/.test(item))
+    )
+  );
+}
 
 const smartFilterGroups: Array<{
   key: SmartFilterKey;
@@ -146,12 +165,27 @@ const smartFilterGroups: Array<{
 ];
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const [{ results }, initialSubscription] = await Promise.all([searchRecordsWithLiveData(searchParams), getCurrentEffectiveAccountSubscription()]);
+  const activeType = firstSearchParamValue(searchParams.type) ?? "all";
+  const query = firstSearchParamValue(searchParams.q) ?? "";
+  const chamber = firstSearchParamValue(searchParams.chamber);
+  const focus = firstSearchParamValue(searchParams.focus);
+  const party = firstSearchParamValue(searchParams.party);
+  const status = firstSearchParamValue(searchParams.status);
+  const stateValues = normalizeStateParamValues(searchParams.state);
+  const [{ results }, initialSubscription] = await Promise.all([
+    searchRecordsWithLiveData({
+      chamber,
+      party,
+      q: query || undefined,
+      state: stateValues.length ? stateValues : undefined,
+      status,
+      type: activeType
+    }),
+    getCurrentEffectiveAccountSubscription()
+  ]);
   const resultCount = results.members.length + results.bills.length + results.votes.length;
-  const activeType = searchParams.type ?? "all";
-  const query = searchParams.q ?? "";
-  const hasSmartFilters = Boolean(searchParams.chamber || searchParams.party || searchParams.state);
-  const prioritizeResults = searchParams.focus === "results";
+  const hasSmartFilters = Boolean(chamber || party || stateValues.length);
+  const prioritizeResults = focus === "results";
 
   return (
     <MobileShell
@@ -190,12 +224,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 ) : null}
                 <DiscoverySearchForm
                   activeType={activeType}
-                  chamber={searchParams.chamber}
-                  focus={searchParams.focus}
-                  party={searchParams.party}
+                  chamber={chamber}
+                  focus={focus}
+                  party={party}
                   query={query}
-                  status={searchParams.status}
-                  state={searchParams.state}
+                  status={status}
+                  state={stateValues}
                 />
 
                 <nav className="mt-5 grid grid-cols-4 rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.22)_0%,rgba(6,25,55,0.72)_100%)] p-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -204,10 +238,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       key={tab.value}
                       href={searchHref(searchParams, {
                         type: tab.value,
-                        status: tab.value === "bills" || tab.value === "all" ? searchParams.status : undefined
+                        status: tab.value === "bills" || tab.value === "all" ? status : undefined
                       })}
                       className={`h-10 rounded-xl pt-3 text-[13px] font-semibold leading-none transition ${
-                        activeType === tab.value || (!searchParams.type && tab.value === "all")
+                        activeType === tab.value || (!firstSearchParamValue(searchParams.type) && tab.value === "all")
                           ? "bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)]"
                           : "text-white/56 hover:bg-white/[0.035] hover:text-white/78"
                       }`}
@@ -217,7 +251,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   ))}
                 </nav>
 
-                <SearchSetupChips focus={searchParams.focus} />
+                <SearchSetupChips focus={focus} />
 
                 <PlanFeatureGate
                   feature="advancedSearch"
@@ -435,6 +469,10 @@ function searchHref(searchParams: SearchPageProps["searchParams"], updates: Part
 
   (["q", "type", "status", "chamber", "party", "state", "focus"] as const).forEach((key) => {
     const value = nextParams[key];
+    if (Array.isArray(value)) {
+      value.filter(Boolean).forEach((item) => params.append(key, item));
+      return;
+    }
     if (value) params.set(key, value);
   });
 
@@ -443,6 +481,20 @@ function searchHref(searchParams: SearchPageProps["searchParams"], updates: Part
 }
 
 function smartFilterHref(searchParams: SearchPageProps["searchParams"], key: SmartFilterKey, value?: string) {
+  if (key === "state") {
+    const activeStates = normalizeStateParamValues(searchParams.state);
+    const nextStates = value
+      ? activeStates.includes(value)
+        ? activeStates.filter((state) => state !== value)
+        : [...activeStates, value]
+      : undefined;
+
+    return searchHref(searchParams, {
+      type: "members",
+      state: nextStates?.length ? nextStates : undefined
+    });
+  }
+
   return searchHref(searchParams, {
     type: "members",
     [key]: value
@@ -456,11 +508,18 @@ function SmartFilterRow({
   group: (typeof smartFilterGroups)[number];
   searchParams: SearchPageProps["searchParams"];
 }) {
-  const currentValue = searchParams[group.key];
-  const currentLabel = group.options.find((option) => option.value === currentValue)?.label ?? "All";
+  const currentValue = firstSearchParamValue(searchParams[group.key]);
+  const currentStates = group.key === "state" ? normalizeStateParamValues(searchParams.state) : [];
+  const currentLabel =
+    group.key === "state"
+      ? currentStates.length > 1
+        ? `${currentStates.length} states`
+        : currentStates[0] ?? "All"
+      : group.options.find((option) => option.value === currentValue)?.label ?? "All";
+  const hasActiveValue = group.key === "state" ? currentStates.length > 0 : Boolean(currentValue);
 
   return (
-    <details className="group rounded-xl border border-white/10 bg-[#071a38]/50 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" open={Boolean(currentValue)}>
+    <details className="group rounded-xl border border-white/10 bg-[#071a38]/50 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" open={hasActiveValue}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
         <span className="text-[11px] font-medium uppercase tracking-wide text-white/42">{group.label}</span>
         <span className="flex items-center gap-2">
@@ -476,7 +535,7 @@ function SmartFilterRow({
             key={option.value ?? "all"}
             href={smartFilterHref(searchParams, group.key, option.value)}
             label={option.label}
-            active={option.value ? currentValue === option.value : !currentValue}
+            active={option.value ? (group.key === "state" ? currentStates.includes(option.value) : currentValue === option.value) : !hasActiveValue}
           />
         ))}
       </div>

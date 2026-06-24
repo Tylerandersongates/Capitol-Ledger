@@ -21,7 +21,7 @@ type DiscoverySearchFormProps = {
   party?: string;
   query: string;
   status?: string;
-  state?: string;
+  state?: string | string[];
 };
 
 const suggestionKindLabel: Record<SuggestionKind, string> = {
@@ -128,7 +128,11 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
         {status ? <input type="hidden" name="status" value={status} /> : null}
         {chamber ? <input type="hidden" name="chamber" value={chamber} /> : null}
         {party ? <input type="hidden" name="party" value={party} /> : null}
-        {state ? <input type="hidden" name="state" value={state} /> : null}
+        {Array.isArray(state)
+          ? state.map((stateCode) => <input key={stateCode} type="hidden" name="state" value={stateCode} />)
+          : state
+            ? <input type="hidden" name="state" value={state} />
+            : null}
         <button type="submit" className="rounded-xl bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] px-4 py-2 text-[14px] font-semibold text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)] transition hover:brightness-105">
           Search
         </button>
