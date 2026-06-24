@@ -65,18 +65,18 @@ export default function OnboardingPage() {
                   <div className="relative z-10">
                     <div className="inline-flex items-center gap-2 rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#ffb12b]">
                       <MapPin className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                      District setup
+                      Get started
                     </div>
-                    <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Build your civic profile.</h1>
+                    <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Set up your civic profile.</h1>
                     <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">
-                      Start with your district so Capitol Ledger can personalize officials, bills, votes, and alerts.
+                      Add your district so Capitol Ledger can show the officials, bills, votes, and alerts that matter to you.
                     </p>
                   </div>
                   <OnboardingProgressMeter />
                 </OnboardingCard>
 
                 <OnboardingCard>
-                  <OnboardingSectionHeader icon={<LocateFixed />} title="Find Your District" />
+                  <OnboardingSectionHeader icon={<LocateFixed />} title="Find your district" />
                   <OnboardingDistrictSetup members={allMembers} />
                 </OnboardingCard>
 
@@ -85,22 +85,22 @@ export default function OnboardingPage() {
                 </OnboardingCard>
 
                 <OnboardingCard>
-                  <OnboardingSectionHeader icon={<Flag />} title="Affiliation" />
+                  <OnboardingSectionHeader icon={<Flag />} title="Party affiliation" />
                   <OnboardingPartyAffiliationSelector />
                 </OnboardingCard>
 
                 <OnboardingCard>
-                  <OnboardingSectionHeader icon={<Landmark />} title="Your Officials" />
+                  <OnboardingSectionHeader icon={<Landmark />} title="Your officials" />
                   <OnboardingMatchedOfficials members={allMembers} />
                 </OnboardingCard>
 
                 <OnboardingCard>
-                  <OnboardingSectionHeader icon={<Vote />} title="Issue Signals" />
+                  <OnboardingSectionHeader icon={<Vote />} title="Topics to follow" />
                   <IssueInterestChips interests={[...issueSignals]} />
                 </OnboardingCard>
 
                 <OnboardingCard>
-                  <OnboardingSectionHeader icon={<Bell />} title="Civic Alerts" />
+                  <OnboardingSectionHeader icon={<Bell />} title="Alerts" />
                   <NotificationPreferencesEditor compact />
                 </OnboardingCard>
               </main>

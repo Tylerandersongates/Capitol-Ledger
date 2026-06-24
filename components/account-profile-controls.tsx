@@ -41,17 +41,17 @@ const OnboardingSetupMetricsContext = createContext<SetupMetrics | null>(null);
 
 const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: string }[] = [
   {
-    detail: "Votes and committee updates",
+    detail: "Votes and committee updates you care about",
     key: "voteReminders",
     label: "Vote reminders"
   },
   {
-    detail: "Updates tied to your district",
+    detail: "New activity from your district",
     key: "districtAlerts",
     label: "District alerts"
   },
   {
-    detail: "Weekly summary of your saved items",
+    detail: "A weekly recap of what you follow",
     key: "weeklyBrief",
     label: "Weekly brief"
   }
@@ -85,7 +85,7 @@ const stateNameByCode: Record<string, string> = {
   VT: "Vermont"
 };
 
-const demoZipExamples = betaDistrictZipExamples.slice(0, 4).join(", ");
+const districtLookupExamples = betaDistrictZipExamples.slice(0, 4).join(", ");
 const demoDistrictLocations: Array<{ latitude: number; longitude: number; preset: BetaDistrictPreset }> = [
   { latitude: 34.0522, longitude: -118.2437, preset: betaDistrictPresets[0] },
   { latitude: 34.2068, longitude: -118.2245, preset: betaDistrictPresets[1] },
@@ -212,7 +212,7 @@ function buildDistrictMatch(input: string): DistrictMatchResult {
   const value = input.trim();
   if (!value) {
     return {
-      message: `Enter a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+      message: `Enter a city, ZIP, or district code. Examples: ${districtLookupExamples}.`,
       status: "review"
     };
   }
@@ -228,7 +228,7 @@ function buildDistrictMatch(input: string): DistrictMatchResult {
     }
 
     return {
-      message: `ZIP ${explicitZip} is outside the demo ZIP set. Demo ZIPs include ${demoZipExamples}; full launch should use address-level district lookup.`,
+      message: `We do not recognize ${explicitZip} yet. Try a city, district code, or one of these ZIPs: ${districtLookupExamples}.`,
       status: "review"
     };
   }
@@ -270,7 +270,7 @@ function buildDistrictMatch(input: string): DistrictMatchResult {
   }
 
   return {
-    message: `No beta district match yet. Try a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+    message: `We could not match that yet. Try a city, ZIP, or district code such as ${districtLookupExamples}.`,
     status: "review"
   };
 }
@@ -291,7 +291,7 @@ function buildDistrictMatchFromCoordinates(latitude: number, longitude: number):
   }
 
   return {
-    message: `Current location is outside the beta district set. Try a city, district code, or demo ZIP such as ${demoZipExamples}; full launch should use official address-level district lookup.`,
+    message: "We could not match your current location yet. You can enter a city, ZIP, or district code instead.",
     status: "review"
   };
 }
@@ -390,7 +390,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
     setMatchedDistrict(district);
   }, [district]);
 
-  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>, detailPrefix = `${districtPlaceLabel(nextDistrict)} is now saved to your profile.`) {
+  function saveDistrict(nextDistrict: Required<LocalDistrictProfile>, detailPrefix = `Saved ${districtPlaceLabel(nextDistrict)} to your profile.`) {
     setMatchedDistrict(nextDistrict);
     setDistrictInput("");
     writeLocalDistrictProfile(nextDistrict);
@@ -398,8 +398,8 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
     const awardedGamification = recordCompletedDistrictSetupIfReady();
     setMatchNotice({
       detail: `${detailPrefix} ${
-        seededOfficialsCount ? `${seededOfficialsCount} district officials added to your saved watchlist.` : "District officials are already in your saved watchlist."
-      } ${awardedGamification ? "+100 Civic Score recorded." : "District setup reward already counted."}`,
+        seededOfficialsCount ? `${seededOfficialsCount} district officials added to your watchlist.` : "Your district officials are already saved."
+      } ${awardedGamification ? "+100 Civic Score." : "Civic Score already counted."}`,
       title: "District saved",
       tone: "success"
     });
@@ -423,7 +423,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
   function matchCurrentLocation() {
     if (!navigator.geolocation) {
       setMatchNotice({
-        detail: `Location lookup is not available in this browser. Enter a city, district code, or demo ZIP such as ${demoZipExamples}.`,
+        detail: "Location lookup is not available in this browser. Enter a city, ZIP, or district code instead.",
         title: "Location unavailable",
         tone: "review"
       });
@@ -444,12 +444,12 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
           return;
         }
 
-        saveDistrict(result.district, `${districtPlaceLabel(result.district)} matched from your current location. Precise coordinates were not saved.`);
+        saveDistrict(result.district, `Matched ${districtPlaceLabel(result.district)} from your current location. Your exact location was not stored.`);
       },
       () => {
         setLocationLookupStatus("idle");
         setMatchNotice({
-          detail: "Location permission was not used. You can still enter a city, ZIP, or district code.",
+          detail: "Location was skipped. You can still enter a city, ZIP, or district code.",
           title: "Location skipped",
           tone: "review"
         });
@@ -476,7 +476,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/44">District lookup</div>
-            <div className="mt-1 truncate text-[13px] text-white/56">City, demo ZIP, or district code</div>
+            <div className="mt-1 truncate text-[13px] text-white/56">City, ZIP, or district code</div>
           </div>
           <span className="shrink-0 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[11px] font-semibold text-[#74f49a]">
             {matchedDistrict.districtCode || "Not set"}
@@ -490,10 +490,10 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
             value={districtInput}
             onChange={(event) => setDistrictInput(event.target.value)}
             className="h-12 min-w-0 bg-transparent text-[16px] font-medium text-white outline-none placeholder:text-white/36"
-            placeholder=""
+            placeholder="Austin, 78701, or TX-10"
           />
           <button type="submit" className="h-10 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)]">
-            Match
+            Find
           </button>
         </div>
 
@@ -511,7 +511,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
             )}
             {locationLookupStatus === "locating" ? "Locating" : "Use current location"}
           </button>
-          <span className="min-w-[11rem] flex-1 text-[11px] leading-snug text-white/44">Browser permission only; precise coordinates are not stored.</span>
+          <span className="min-w-[11rem] flex-1 text-[11px] leading-snug text-white/44">Your exact location is not stored.</span>
         </div>
 
         {matchNotice ? (
@@ -541,7 +541,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
                 <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-white">District matched</div>
+                <div className="text-[15px] font-semibold text-white">District found</div>
                 <div className="mt-1 truncate text-[13px] text-white/58">{matchedDistrict.districtLabel}</div>
               </div>
               <Link href={`/search?type=members&state=${matchedStateCode}&focus=results`} className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
@@ -554,8 +554,8 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
                 <MapPin className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-white">Choose your district</div>
-                <div className="mt-1 truncate text-[13px] text-white/58">Enter a city, demo ZIP, or district code to begin.</div>
+                <div className="text-[15px] font-semibold text-white">Find your district</div>
+                <div className="mt-1 truncate text-[13px] text-white/58">Enter a city, ZIP, or district code to begin.</div>
               </div>
             </div>
           )}
@@ -574,7 +574,7 @@ export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
   if (!hasDistrict) {
     return (
       <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] leading-snug text-white/56">
-        Match your district first to see the officials tied to your profile.
+        Find your district first to see your officials.
       </div>
     );
   }
@@ -601,7 +601,7 @@ export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
         </Link>
       ))}
       <Link href={`/search?type=members&state=${stateCode}`} className="flex items-center justify-between py-4 text-[14px] font-semibold text-[#ffb12b]">
-        View all matched officials
+        View all officials
         <ChevronRight className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
       </Link>
     </div>
@@ -700,11 +700,11 @@ export function OnboardingProgressMeter() {
   return (
     <div className="mt-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.3)]">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/44">Profile readiness</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/44">Setup progress</span>
         <span className="shrink-0 text-[12px] font-semibold text-[#ffb12b]">{percentReady}%</span>
       </div>
       <div className="mt-2 flex items-center justify-between text-[13px] text-white/52">
-        <span>{completeCount} of {setupSignalTotal} setup signals ready</span>
+        <span>{completeCount} of {setupSignalTotal} steps complete</span>
       </div>
       <div className="mt-3 h-2.5 rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
         <div
@@ -740,10 +740,10 @@ export function OnboardingCompleteButton() {
             : "cursor-not-allowed border border-white/10 bg-white/[0.045] text-white/42 shadow-none"
         }`}
       >
-        {complete ? "Complete Setup" : `Finish setup (${completeCount}/${setupSignalTotal})`}
+        {complete ? "Go to dashboard" : `Finish setup (${completeCount}/${setupSignalTotal})`}
       </button>
       <div className="mt-2 text-center text-[12px] font-medium text-white/42">
-        {complete ? "Ready for Dashboard" : `${completeCount} of ${setupSignalTotal} ready`}
+        {complete ? "You're ready to continue" : `${completeCount} of ${setupSignalTotal} steps complete`}
       </div>
     </>
   );
@@ -755,31 +755,31 @@ export function OnboardingSetupFlow() {
   const steps = [
     {
       complete: Boolean(district.districtCode),
-      detail: district.districtCode ? `${district.districtCode} located` : "Locate district",
+      detail: district.districtCode ? `${district.districtCode} found` : "Find district",
       icon: <MapPin />,
       label: "District"
     },
     {
       complete: officialsCount > 0,
-      detail: officialsCount > 0 ? `${officialsCount} matched` : "Find officials",
+      detail: officialsCount > 0 ? `${officialsCount} saved` : "Add officials",
       icon: <UserRound />,
       label: "Officials"
     },
     {
       complete: Boolean(partyAffiliation),
-      detail: partyAffiliation ? getPartyLabel(partyAffiliation) : "Choose affiliation",
+      detail: partyAffiliation ? getPartyLabel(partyAffiliation) : "Choose party",
       icon: <Flag />,
-      label: "Affiliation"
+      label: "Party"
     },
     {
       complete: issueCount > 0,
-      detail: issueCount > 0 ? `${issueCount} signals selected` : "Choose signals",
+      detail: issueCount > 0 ? `${issueCount} topics selected` : "Choose topics",
       icon: <Vote />,
-      label: "Issues"
+      label: "Topics"
     },
     {
       complete: enabledAlertCount > 0,
-      detail: enabledAlertCount > 0 ? `${enabledAlertCount} reminders active` : "Set reminders",
+      detail: enabledAlertCount > 0 ? `${enabledAlertCount} alerts on` : "Choose alerts",
       icon: <Bell />,
       label: "Alerts"
     }
@@ -789,11 +789,11 @@ export function OnboardingSetupFlow() {
     <>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">Setup flow</div>
-          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Profile readiness</h2>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">Next steps</div>
+          <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Finish your setup</h2>
         </div>
         <span className="mt-1 shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-          {district.districtCode || "Setup"}
+          {district.districtCode || "Start here"}
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2.5">
@@ -887,7 +887,7 @@ export function NotificationPreferencesEditor({ compact = false, dense = false }
                   </span>
                 ) : null}
               </span>
-              <span className={`mt-1 block text-white/50 ${dense ? "text-[11px]" : "text-[13px]"}`}>{locked ? "Upgrade to Pro" : row.detail}</span>
+              <span className={`mt-1 block text-white/50 ${dense ? "text-[11px]" : "text-[13px]"}`}>{locked ? "Available with Pro" : row.detail}</span>
             </span>
             <PreferenceToggle enabled={enabled} disabled={locked} dense={dense} />
           </button>

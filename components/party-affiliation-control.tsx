@@ -132,7 +132,7 @@ export function OnboardingPartyAffiliationSelector() {
     <div className="mt-5">
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
         <span className="min-w-0">
-          <span className="block text-[12px] font-semibold uppercase tracking-[0.1em] text-white/44">Current choice</span>
+          <span className="block text-[12px] font-semibold uppercase tracking-[0.1em] text-white/44">Selected</span>
           <span className="mt-1 block truncate text-[16px] font-semibold text-white">{getPartyLabel(party)}</span>
         </span>
         <Flag className="h-5 w-5 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
