@@ -17,7 +17,7 @@ import { ElectionParticipationCard } from "@/components/election-participation-c
 import { VoterRegistrationCard } from "@/components/voter-registration-card";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Bell, CheckCircle2, FileText, Flame, Home, Info, Settings, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, FileText, Flame, Home, Info, Settings, Trophy } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -63,8 +63,8 @@ export default function ImpactPage() {
         </MobileCard>
 
         <MobileCard variant="dashboard" className="grid grid-cols-[70px_1fr] items-center gap-4 px-5 py-5">
-          <div className="grid h-16 w-16 place-items-center border border-white/60 text-white/72" style={{ clipPath: "polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%)" }}>
-            <UserRound className="h-8 w-8" strokeWidth={1.6} aria-hidden="true" />
+          <div className="grid h-16 w-16 place-items-center rounded-2xl border border-[#ffb12b]/28 bg-[#ffb12b]/10 text-[#ffd45c] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.22)]">
+            <Trophy className="h-8 w-8" strokeWidth={1.7} aria-hidden="true" />
           </div>
           <div>
             <div className="flex items-end justify-between gap-4">
