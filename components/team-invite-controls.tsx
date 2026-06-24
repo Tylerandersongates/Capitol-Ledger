@@ -72,14 +72,14 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       setInviteLink(data.inviteDelivery?.inviteLink ?? "");
       setMessage(
         data.inviteDelivery?.sent && data.inviteDelivery?.inviteLink
-          ? "Invite sent. Manual link available below."
+          ? "Invite sent. You can also copy the link below."
           : data.inviteDelivery?.sent
             ? "Invite sent."
           : data.inviteDelivery?.inviteLink
-            ? "Invite link prepared. Share it with the invited email account."
+            ? "Invite link ready. Share it with the invited email account."
             : data.inviteDelivery?.error
-              ? "Seat reserved, but invite delivery needs attention."
-              : "Seat reserved. Email delivery is not configured."
+              ? "Invite saved, but email delivery needs attention."
+              : "Invite saved. Email delivery is not configured."
       );
     } catch {
       setError("Unable to reach the invite service.");
@@ -121,14 +121,14 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       } | null;
 
       if (!response.ok || !data?.workspace) {
-        setError(data?.error ?? "Unable to release this Team seat.");
+        setError(data?.error ?? "Unable to remove this team seat.");
         return;
       }
 
       setWorkspace(data.workspace);
       router.refresh();
       if (data.release?.type === "invite") {
-        setMessage("Invite revoked. Seat reopened.");
+        setMessage("Invite revoked. A team seat is open.");
       } else if (data.release?.personalSubscriptionRestored) {
         setMessage("Seat removed. Personal Pro billing resumed.");
       } else if (data.release?.personalSubscriptionCheckoutRequired) {
@@ -136,10 +136,10 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       } else if (data.release?.accountConvertedToFree) {
         setMessage("Seat removed. Account returned to Free.");
       } else {
-        setMessage("Seat removed. Seat reopened.");
+        setMessage("Seat removed. A team seat is open.");
       }
     } catch {
-      setError("Unable to reach the seat management service.");
+      setError("Unable to reach seat controls.");
     } finally {
       setReleasePendingId("");
     }
@@ -148,15 +148,15 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
   return (
     <div className="mt-5 space-y-4">
       <div className="grid grid-cols-3 gap-2">
-        <SeatMetric label="Participant seats" value={String(workspace.seatCount)} />
-        <SeatMetric label="Reserved" value={String(workspace.occupiedSeats)} />
+        <SeatMetric label="Team seats" value={String(workspace.seatCount)} />
+        <SeatMetric label="In use" value={String(workspace.occupiedSeats)} />
         <SeatMetric label="Open" value={String(workspace.openSeats)} />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Seat Roster</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Team roster</div>
             <div className="mt-1 truncate text-[14px] font-semibold text-white">{workspace.name}</div>
           </div>
           <span className="rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-3 py-1.5 text-[11px] font-semibold text-[#74f49a]">
@@ -173,7 +173,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
             {rosterRows.length ? (
               rosterRows.map((row) => <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />)
             ) : (
-              <div className="py-4 text-[12px] leading-snug text-white/46">No participant seats are assigned yet. Reserve seats for Admins, Analysts, or Viewers.</div>
+              <div className="py-4 text-[12px] leading-snug text-white/46">No team seats are assigned yet. Invite Admins, Analysts, or Viewers.</div>
             )}
           </div>
         </div>
@@ -185,9 +185,9 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
             <UserPlus className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <div className="text-[14px] font-semibold text-white">Reserve a teammate seat</div>
+            <div className="text-[14px] font-semibold text-white">Invite a teammate</div>
             <div className="mt-1 text-[12px] leading-snug text-white/48">
-              {workspace.openSeats > 0 ? `${workspace.openSeats} open participant seat${workspace.openSeats === 1 ? "" : "s"}.` : "All participant seats are assigned or pending."}
+              {workspace.openSeats > 0 ? `${workspace.openSeats} open team seat${workspace.openSeats === 1 ? "" : "s"}.` : "All team seats are assigned or pending."}
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110 disabled:opacity-45"
         >
           <Mail className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-          {pending ? "Saving..." : "Reserve Seat"}
+          {pending ? "Sending..." : "Send invite"}
         </button>
 
         {message ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">{message}</div> : null}
