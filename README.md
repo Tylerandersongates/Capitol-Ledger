@@ -61,6 +61,8 @@ The helper pins `vercel@54.14.1`, uses the local `.tools` Node/pnpm runtime when
 
 `CONGRESS_API_KEY` is used only in server-side routes and scripts. Do not expose it through `NEXT_PUBLIC_` variables.
 
+`REGULATIONS_GOV_API_KEY` powers the server-side Regulations.gov public-comment feed on the Civic Petitions page. Keep it server-only and add it in Vercel as a sensitive environment variable for deployed environments.
+
 `DATABASE_URL` powers account, feedback, billing, and persistence paths. Synced Congress content remains demo-first unless `CAPITOL_LEDGER_ENABLE_DATABASE_READS=true`; keep that flag off until the live member/bill sync has been reviewed for current, active records.
 
 ## MVP Notes
