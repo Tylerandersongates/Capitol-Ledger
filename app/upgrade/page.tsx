@@ -306,10 +306,11 @@ function PlanTierCard({
     : "mt-5 flex h-11 w-full items-center justify-center rounded-xl border border-white/12 bg-white/[0.045] text-[14px] font-semibold text-white/72 transition disabled:opacity-45";
 
   return (
-    <MobileCard
-      variant="rust"
-      className={`relative overflow-hidden px-5 py-5 ${featured ? "border-[#ffb12b]/55 shadow-[0_0_34px_rgba(255,177,43,0.16)]" : ""}`}
-    >
+    <div id={plan === "team" ? "team-plan" : undefined} className="scroll-mt-6">
+      <MobileCard
+        variant="rust"
+        className={`relative overflow-hidden px-5 py-5 ${featured ? "border-[#ffb12b]/55 shadow-[0_0_34px_rgba(255,177,43,0.16)]" : ""}`}
+      >
       {badge ? <div className={`absolute right-5 top-5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${featured ? "bg-[#ffb12b] text-[#061126]" : "border border-white/10 bg-white/[0.045] text-white/52"}`}>{badge}</div> : null}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="min-w-0 pr-14">
@@ -330,7 +331,8 @@ function PlanTierCard({
       {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
       <FeatureList items={planDetails.highlights} />
       <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} defaultCycle={defaultCycle} className={actionClassName} />
-    </MobileCard>
+      </MobileCard>
+    </div>
   );
 }
 

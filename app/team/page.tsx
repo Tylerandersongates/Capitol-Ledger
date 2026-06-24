@@ -405,8 +405,8 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
           {checkoutReturn ? (
             <TeamCheckoutReturnSync />
           ) : (
-            <Link href="/upgrade#plans" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
-              Choose Team plan
+            <Link href="/upgrade#team-plan" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
+              Choose Civic Team plan
             </Link>
           )}
         </MobileCard>
