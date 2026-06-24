@@ -9,7 +9,6 @@ import {
   Home,
   ListChecks,
   LockKeyhole,
-  Map as MapIcon,
   Settings,
   ShieldCheck,
   UserPlus,
@@ -455,7 +454,7 @@ function TeamShell({ children, minHeight = "min-h-[1180px]" }: { children: React
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { href: "/map", icon: <MapIcon />, label: "Map" },
+          { active: true, href: "/team", icon: <UsersRound />, label: "Team" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

@@ -9,7 +9,7 @@ import {
   FileText,
   Home,
   LockKeyhole,
-  Map,
+  Search,
   ShieldCheck,
   Sparkles,
   Settings,
@@ -195,7 +195,7 @@ export default async function UpgradePage() {
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { href: "/map", icon: <Map />, label: "Map" },
+          { href: "/search", icon: <Search />, label: "Search" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { active: true, href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

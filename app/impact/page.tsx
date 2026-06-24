@@ -122,7 +122,7 @@ export default function ImpactPage() {
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { active: true, href: "/impact", icon: <CheckCircle2 />, label: "Track" },
+          { active: true, href: "/impact", icon: <CheckCircle2 />, label: "Impact" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

@@ -48,7 +48,7 @@ export default function LettersPage() {
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { active: true, href: "/letters", icon: <CheckCircle2 />, label: "Track" },
+          { active: true, href: "/letters", icon: <CheckCircle2 />, label: "Letters" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

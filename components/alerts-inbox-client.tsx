@@ -459,7 +459,7 @@ export function AlertsInboxClient({
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { href: "/search", icon: <Search />, label: "Track" },
+          { href: "/search", icon: <Search />, label: "Search" },
           { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

@@ -35,6 +35,7 @@ import {
   FileText,
   Home,
   LockKeyhole,
+  Search,
   Sparkles,
   Star,
   Settings,
@@ -867,7 +868,7 @@ export function DashboardClient({
               items={[
                 { active: true, href: "/dashboard", icon: <Home />, label: "Home" },
                 { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-                { href: "/search?type=members", icon: <UsersRound />, label: "Representatives" },
+                { href: "/search", icon: <Search />, label: "Search" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
                 { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}

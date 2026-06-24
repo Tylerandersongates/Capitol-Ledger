@@ -3,7 +3,7 @@ import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass 
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Building2, CheckCircle2, ChevronRight, Home, Landmark, Map, Settings, UsersRound } from "lucide-react";
+import { Bell, Building2, ChevronRight, Home, Landmark, Map, Search, Settings, UsersRound } from "lucide-react";
 import { getAllBills, getBillStatus, getDemoStats } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 
@@ -230,7 +230,7 @@ export default async function MapPage({ searchParams }: { searchParams?: { level
               items={[
                 { href: "/dashboard", icon: <Home />, label: "Home" },
                 { active: true, href: "/map", icon: <Map />, label: "Map" },
-                { href: "/search", icon: <CheckCircle2 />, label: "Track" },
+                { href: "/search", icon: <Search />, label: "Search" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
                 { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}

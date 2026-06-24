@@ -620,7 +620,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
               indicatorClassName="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/70"
               items={[
                 { active: true, href: "/dashboard", icon: <Home />, label: "Home" },
-                { href: "/search?type=bills", icon: <FileText />, label: "Track" },
+                { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
                 { highlighted: true, href: "/search?type=members", icon: <Search />, label: "Search" },
                 { href: "/alerts", icon: <Bell />, label: "Alerts" },
                 { href: "/settings", icon: <Settings />, label: "Settings" }
