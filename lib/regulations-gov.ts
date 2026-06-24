@@ -2,7 +2,8 @@ import { z } from "zod";
 
 const REGULATIONS_GOV_BASE_URL = "https://api.regulations.gov/v4";
 const REGULATIONS_GOV_SITE_URL = "https://www.regulations.gov";
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_ACTION_LIMIT = 5;
+const DEFAULT_FETCH_PAGE_SIZE = 25;
 const DEFAULT_TIMEOUT_MS = 8_000;
 
 const RegulationsGovDocumentSchema = z.object({
@@ -84,10 +85,38 @@ function formatDateLabel(value?: string | null) {
   }).format(date)}`;
 }
 
+function hasStarted(value?: string | null) {
+  if (!value) return true;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return true;
+
+  return date.getTime() <= Date.now();
+}
+
+function hasFutureDeadline(value?: string | null) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return date.getTime() > Date.now();
+}
+
 function normalizeDocument(document: RegulationsGovDocument): RegulationsGovAction | null {
   const attributes = document.attributes;
   const title = attributes.title?.trim();
-  if (!title || attributes.withdrawn || !attributes.openForComment || !attributes.withinCommentPeriod) return null;
+  const docketId = attributes.docketId?.trim();
+
+  if (
+    !title ||
+    !docketId ||
+    attributes.withdrawn ||
+    !attributes.openForComment ||
+    !attributes.withinCommentPeriod ||
+    !hasStarted(attributes.commentStartDate) ||
+    !hasFutureDeadline(attributes.commentEndDate)
+  ) {
+    return null;
+  }
 
   const agencyId = attributes.agencyId?.trim() || "Agency";
   const documentType = attributes.documentType?.trim() || "Document";
@@ -100,7 +129,7 @@ function normalizeDocument(document: RegulationsGovDocument): RegulationsGovActi
     commentUrl: `${REGULATIONS_GOV_SITE_URL}/commenton/${encodeURIComponent(document.id)}`,
     documentId: document.id,
     documentType,
-    docketId: attributes.docketId ?? undefined,
+    docketId,
     frDocNum: attributes.frDocNum ?? undefined,
     id: `regulations:${document.id}`,
     postedDate: attributes.postedDate ?? undefined,
@@ -111,16 +140,28 @@ function normalizeDocument(document: RegulationsGovDocument): RegulationsGovActi
   };
 }
 
+function dedupeActionsByDocket(actions: RegulationsGovAction[]) {
+  const seen = new Set<string>();
+
+  return actions.filter((action) => {
+    const key = `${action.docketId ?? action.documentId}:${action.title.toLowerCase()}`;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function fetchOpenRegulationsGovActions({
-  pageSize = DEFAULT_PAGE_SIZE,
+  limit = DEFAULT_ACTION_LIMIT,
   timeoutMs = DEFAULT_TIMEOUT_MS
 }: {
-  pageSize?: number;
+  limit?: number;
   timeoutMs?: number;
 } = {}) {
   const url = new URL(`${REGULATIONS_GOV_BASE_URL}/documents`);
   url.searchParams.set("filter[withinCommentPeriod]", "true");
-  url.searchParams.set("page[size]", String(Math.max(5, Math.min(25, pageSize))));
+  url.searchParams.set("page[size]", String(DEFAULT_FETCH_PAGE_SIZE));
   url.searchParams.set("sort", "-postedDate");
 
   const controller = new AbortController();
@@ -150,10 +191,14 @@ export async function fetchOpenRegulationsGovActions({
   }
 
   const json = RegulationsGovDocumentsResponseSchema.parse(await response.json());
-  const actions = (json.data ?? []).map(normalizeDocument).filter((action): action is RegulationsGovAction => Boolean(action));
+  const actions = (json.data ?? [])
+    .map(normalizeDocument)
+    .filter((action): action is RegulationsGovAction => Boolean(action));
+  const dedupedActions = dedupeActionsByDocket(actions)
+    .slice(0, Math.max(1, Math.min(DEFAULT_FETCH_PAGE_SIZE, limit)));
 
   return {
-    actions,
+    actions: dedupedActions,
     total: json.meta?.totalElements ?? actions.length
   };
 }
