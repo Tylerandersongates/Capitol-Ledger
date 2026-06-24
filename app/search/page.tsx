@@ -167,7 +167,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
                 </Link>
                 <div>
-                  <div className={premiumEyebrowClass}>Discovery</div>
+                  <div className={premiumEyebrowClass}>Find</div>
                   <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Search</h1>
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
                 {prioritizeResults ? (
                   <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-[17px] font-medium leading-none text-white/84">Refine Search</h2>
+                    <h2 className="text-[17px] font-medium leading-none text-white/84">Filters</h2>
                     <span className={premiumPillClass}>Filters</span>
                   </div>
                 ) : null}
@@ -226,7 +226,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <div className={`mt-4 flex items-center justify-between gap-3 px-4 py-3 ${premiumPanelClass}`}>
                       <span className="flex items-center gap-2 text-[13px] font-medium text-white/56">
                         <Filter className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                        Refine results
+                        More filters
                       </span>
                       <Link href="/upgrade" className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ffb12b]">
                         Pro
@@ -238,7 +238,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-medium text-white/64 [&::-webkit-details-marker]:hidden">
                       <span className="flex items-center gap-2">
                         <Filter className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                        Refine results
+                        More filters
                       </span>
                       <span className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ffb12b]">
                         {hasSmartFilters ? "Active" : "Optional"}
@@ -255,7 +255,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             Clear filters
                           </Link>
                         ) : (
-                          <span>Pro refine</span>
+                          <span>Pro filters</span>
                         )}
                       </div>
                     </div>
@@ -264,7 +264,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </MobileCard>
 
               <div className="grid grid-cols-3 gap-3">
-                <MiniMetric value={String(resultCount)} label="Records" />
+                <MiniMetric value={String(resultCount)} label="Results" />
                 <MiniMetric value={String(results.members.length)} label="Officials" />
                 <MiniMetric value={String(results.bills.length)} label="Bills" />
               </div>
@@ -275,11 +275,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <div>
                       <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">
                         <Sparkles className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                        Pro report builder
+                        Pro export
                       </div>
-                      <h2 className="mt-2 text-[19px] font-medium leading-tight">Export this search as a civic report</h2>
+                      <h2 className="mt-2 text-[19px] font-medium leading-tight">Export these results</h2>
                       <p className="mt-3 text-[14px] leading-snug text-white/56">
-                        Package matched bills, officials, votes, and source links into a shareable accountability brief.
+                        Save matched bills, officials, votes, and source links as a shareable summary.
                       </p>
                     </div>
                     <Link href="/brief" className={premiumIconTileClass} aria-label="Preview report export">
@@ -512,9 +512,9 @@ function ResultSection({
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className={premiumEyebrowClass}>Search Results</div>
+          <div className={premiumEyebrowClass}>Results</div>
           <h2 className="mt-2 text-[22px] font-medium leading-none">{title}</h2>
-          <div className="mt-2 text-[13px] text-white/46">{count} records</div>
+          <div className="mt-2 text-[13px] text-white/46">{count} results</div>
         </div>
         {shouldScroll ? <span className={premiumPillClass}>Scroll</span> : null}
       </div>
@@ -527,7 +527,7 @@ function ResultSection({
       )}
       {shouldScroll ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
-          <span>Scroll records</span>
+          <span>Scroll results</span>
           <span>{count} total</span>
         </div>
       ) : null}

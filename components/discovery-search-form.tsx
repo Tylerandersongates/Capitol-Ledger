@@ -130,14 +130,14 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
         {party ? <input type="hidden" name="party" value={party} /> : null}
         {state ? <input type="hidden" name="state" value={state} /> : null}
         <button type="submit" className="rounded-xl bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] px-4 py-2 text-[14px] font-semibold text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)] transition hover:brightness-105">
-          Go
+          Search
         </button>
       </form>
 
       {showDropdown ? (
         <div className="absolute inset-x-0 top-full z-30 mt-2 rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,39,74,0.98)_0%,rgba(5,18,42,0.98)_100%)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_38px_rgba(1,8,24,0.52)] backdrop-blur-xl">
           {loading ? (
-            <div className="px-3 py-2 text-[13px] text-white/52">Finding closest matches...</div>
+            <div className="px-3 py-2 text-[13px] text-white/52">Finding matches...</div>
           ) : (
             <ul className="space-y-1" role="listbox" aria-label="Closest search suggestions">
               {suggestions.map((suggestion) => (
