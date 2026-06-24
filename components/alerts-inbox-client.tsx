@@ -53,7 +53,7 @@ let readAlertsHydrationPromise: Promise<string[]> | null = null;
 
 const notificationFilters: Array<{ label: string; value: AlertsInboxFilter }> = [
   { label: "All", value: "all" },
-  { label: "Action Needed", value: "action" },
+  { label: "Needs Action", value: "action" },
   { label: "Unread", value: "unread" }
 ];
 
@@ -287,7 +287,7 @@ export function AlertsInboxClient({
       if (!response.ok) {
         setTeamInviteErrors((current) => ({
           ...current,
-          [notification.id]: data?.error ?? "Unable to accept this Team invite."
+          [notification.id]: data?.error ?? "Unable to accept this team invite."
         }));
         return;
       }
@@ -297,7 +297,7 @@ export function AlertsInboxClient({
     } catch {
       setTeamInviteErrors((current) => ({
         ...current,
-        [notification.id]: "Unable to reach the Team invite service."
+        [notification.id]: "Unable to accept this team invite right now."
       }));
     } finally {
       setPendingTeamInviteId("");
@@ -342,7 +342,7 @@ export function AlertsInboxClient({
     <>
       {teamInviteNotifications.length ? (
         <section className="mt-7 space-y-4">
-          <SectionLabel>Team Invite</SectionLabel>
+          <SectionLabel>Team invite</SectionLabel>
           {teamInviteNotifications.map((notification) => (
             <NotificationCard
               key={notification.id}
@@ -386,13 +386,13 @@ export function AlertsInboxClient({
                 </div>
                 <div className="min-w-0">
                   <div className="inline-flex rounded-full border border-[#43ed74]/30 bg-[#43ed74]/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#43ed74]">
-                    Priority alert lane
+                    Important alerts
                   </div>
-                  <h2 className="mt-3 text-[21px] font-medium leading-tight text-white">Pro reminders surface first</h2>
+                  <h2 className="mt-3 text-[21px] font-medium leading-tight text-white">Important updates stay at the top</h2>
                   <p className="mt-3 text-[16px] leading-snug text-white/58">
                     {priorityNotifications.length
-                      ? `${priorityNotifications.length} urgent ${priorityNotifications.length === 1 ? "alert is" : "alerts are"} ranked above standard updates.`
-                      : "Vote reminders, hearings, and district-specific movement are promoted above standard civic updates."}
+                      ? `${priorityNotifications.length} ${priorityNotifications.length === 1 ? "alert needs" : "alerts need"} attention now.`
+                      : "Vote reminders, hearings, and updates in your district appear before other alerts."}
                   </p>
                 </div>
                 <div className="self-start whitespace-nowrap rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-3 py-2 text-[14px] font-medium leading-none text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]">
@@ -409,7 +409,7 @@ export function AlertsInboxClient({
           <>
             {priorityNotifications.length ? (
               <section className="space-y-4">
-                <SectionLabel>Priority Lane</SectionLabel>
+                <SectionLabel>Important</SectionLabel>
                 {priorityNotifications.map((notification, index) => (
                   <NotificationCard
                     key={notification.id}
@@ -481,10 +481,10 @@ function EmptyNotifications({ activeFilter }: { activeFilter: AlertsInboxFilter 
         : "No unread alerts yet";
   const description =
     activeFilter === "all"
-      ? "New civic activity will appear here as bills, votes, and official updates are tracked."
+      ? "New updates will appear here when tracked bills, votes, or officials change."
       : activeFilter === "action"
-        ? "Alerts that need a response will appear here when tracked civic activity requires attention."
-        : "Unread alerts will appear here when new tracked civic activity arrives.";
+        ? "Alerts that need a response will appear here."
+        : "Unread alerts will appear here when new tracked updates arrive.";
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-6 text-center">
@@ -503,8 +503,8 @@ function LoadingNotifications() {
       <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-[#ffb12b]">
         <Bell className="h-6 w-6 animate-pulse" strokeWidth={1.8} aria-hidden="true" />
       </div>
-      <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">Syncing alerts</h2>
-      <p className="mt-2 text-[15px] leading-6 text-white/56">Checking your account ledger before showing unread updates.</p>
+      <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">Loading alerts</h2>
+      <p className="mt-2 text-[15px] leading-6 text-white/56">Checking which updates are unread.</p>
     </MobileCard>
   );
 }
@@ -549,14 +549,14 @@ function NotificationCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-rust/35 bg-rust/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#ffb12b]">{categoryLabel}</span>
-              {actionNeeded ? <span className="rounded-full border border-[#43ed74]/30 bg-[#43ed74]/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#43ed74]">Action</span> : null}
+              {actionNeeded ? <span className="rounded-full border border-[#43ed74]/30 bg-[#43ed74]/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#43ed74]">Needs action</span> : null}
               {priorityRank ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#4aa3ff]/35 bg-[#168dff]/12 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#9fd1ff]">
                   <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                   #{priorityRank}
                 </span>
               ) : null}
-              {showStatusIndicator ? <span className="h-2 w-2 rounded-full bg-[#ffb12b] shadow-[0_0_12px_rgba(255,177,43,0.8)]" aria-label={unread ? "Unread" : "Action needed"} /> : null}
+              {showStatusIndicator ? <span className="h-2 w-2 rounded-full bg-[#ffb12b] shadow-[0_0_12px_rgba(255,177,43,0.8)]" aria-label={unread ? "Unread" : "Needs action"} /> : null}
             </div>
             <div className="shrink-0 whitespace-nowrap rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-3 py-2 text-[14px] font-medium leading-none text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.11)]">
               {time}
@@ -576,11 +576,11 @@ function NotificationCard({
             </button>
           ) : (
             <Link href={href} onClick={onRead} className="mt-4 inline-flex items-center gap-2 text-[17px] font-medium text-[#ffb12b]">
-              {acceptedTeamInvite ? "Open Workspace" : action}
+              {acceptedTeamInvite ? "Open team" : action}
               <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
             </Link>
           )}
-          {acceptedTeamInvite ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">Seat accepted.</div> : null}
+          {acceptedTeamInvite ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">Invite accepted.</div> : null}
           {actionError ? <div className="mt-3 rounded-xl border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 px-3 py-2 text-[12px] font-semibold text-[#ffb1b1]">{actionError}</div> : null}
         </div>
       </div>

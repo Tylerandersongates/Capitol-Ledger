@@ -27,11 +27,11 @@ function eventCategoryLabel(event: ReturnType<typeof getRecentUpdates>[number]) 
   const text = `${event.title} ${event.body}`.toLowerCase();
 
   if (text.includes("committee")) return "Committee";
-  if (text.includes("vote")) return "Vote Update";
-  if (event.targetType === "member") return "Representative";
-  if (event.targetType === "bill") return "Bill Update";
+  if (text.includes("vote")) return "Vote";
+  if (event.targetType === "member") return "Official";
+  if (event.targetType === "bill") return "Bill";
 
-  return "Civic Update";
+  return "Update";
 }
 
 function teamRoleLabel(role: TeamWorkspacePendingInvite["invite"]["role"]) {
@@ -49,10 +49,10 @@ function teamInviteAlert(invite: TeamWorkspacePendingInvite): AlertsInboxItem {
     id: `team-invite:${invite.invite.id}`,
     title: "Team invite",
     body: `${ownerName} invited you to join ${invite.workspace.name} as ${roleLabel}.`,
-    categoryLabel: "Team Invite",
+    categoryLabel: "Team invite",
     preference: "account",
     actionNeeded: true,
-    action: "Accept Invite",
+    action: "Accept invite",
     actionKind: "teamInviteAccept",
     teamInviteId: invite.invite.id,
     href: "/team",
@@ -77,7 +77,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
     const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
     const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
     const href = bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search";
-    const targetLabel = bill?.displayNumber ?? member?.fullName ?? "Record";
+    const targetLabel = bill?.displayNumber ?? member?.fullName ?? "Update";
     const icon: AlertsInboxIcon = bill ? "file" : member ? "user" : "scale";
     const group = getAlertGroupFromDate(event.occurredAt);
 
@@ -88,7 +88,7 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
       categoryLabel: eventCategoryLabel(event),
       preference: getAlertNotificationPreference(event),
       actionNeeded: isActionNeededAlertEvent(event),
-      action: bill ? "View Bill" : member ? "View Profile" : "View Record",
+      action: bill ? "View bill" : member ? "View official" : "View update",
       href,
       group,
       time: group === "today" ? "Today" : group === "yesterday" ? "Yesterday" : formatDate(event.occurredAt),
@@ -102,11 +102,11 @@ export default async function AlertsPage({ searchParams }: { searchParams?: { fi
         {
           id: systemVoteReminderAlertId,
           title: "Vote reminder",
-          body: `${voteAlertBill.displayNumber} - ${voteAlertBill.shortTitle} has a tracked civic action pending.`,
-          categoryLabel: "Vote Reminder",
+          body: `${voteAlertBill.displayNumber} - ${voteAlertBill.shortTitle} needs your attention.`,
+          categoryLabel: "Vote reminder",
           preference: "voteReminders",
           actionNeeded: true,
-          action: "View Alert",
+          action: "View details",
           href: "/alerts/detail",
           group: "today",
           time: "Today",

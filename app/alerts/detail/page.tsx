@@ -33,9 +33,9 @@ export default function AlertDetailPage() {
   const districtMemberHref = districtMember ? `/members/${districtMember.bioguideId}#contact` : "/search?type=members";
   const chamber = vote?.chamber === "House" ? "House of Representatives" : vote?.chamber ?? "Congress";
   const alertDetails = [
-    { label: "Bill Number", value: bill?.displayNumber ?? "Tracked Bill", icon: <FileText /> },
+    { label: "Bill", value: bill?.displayNumber ?? "Tracked bill", icon: <FileText /> },
     { label: "Chamber", value: chamber, icon: <Landmark /> },
-    { label: "Vote Date", value: vote ? formatDate(vote.voteDate) : "Date pending", icon: <CalendarDays /> },
+    { label: "Vote date", value: vote ? formatDate(vote.voteDate) : "Date pending", icon: <CalendarDays /> },
     { label: `Your ${districtMemberRole}`, value: districtMember?.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "") ?? districtMemberRole, icon: <UserCircle /> }
   ];
 
@@ -50,7 +50,7 @@ export default function AlertDetailPage() {
               <HistoryBackButton className={`absolute left-0 ${mobileIconButtonClass}`}>
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
               </HistoryBackButton>
-              <h1 className="text-[22px] font-medium leading-none text-white">Alert Details</h1>
+              <h1 className="text-[22px] font-medium leading-none text-white">Alert details</h1>
               <SaveAlertButton alertId={vote?.id ?? bill?.id ?? "demo-alert"} />
             </header>
 
@@ -70,8 +70,8 @@ export default function AlertDetailPage() {
               </section>
 
               <div className="-mt-2">
-                <span className="rounded-md bg-white/12 px-3 py-1 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/72">Vote Reminder</span>
-                <h2 className="mt-3 text-[28px] font-medium leading-none text-white">{vote ? "Vote Update" : "Bill Update"}</h2>
+                <span className="rounded-md bg-white/12 px-3 py-1 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/72">Vote reminder</span>
+                <h2 className="mt-3 text-[28px] font-medium leading-none text-white">{vote ? "Vote recorded" : "Bill update"}</h2>
                 <p className="mt-3 max-w-[420px] text-[18px] leading-snug text-white/64">
                   {bill?.displayNumber ?? "A tracked bill"} - {bill?.shortTitle ?? "A tracked bill"} {vote ? `recorded a ${vote.result.toLowerCase()} vote in the ${vote.chamber}.` : "has a new legislative update."}
                 </p>
@@ -94,10 +94,10 @@ export default function AlertDetailPage() {
                   Contact {districtMemberRole}
                 </GamificationEventLink>
                 <Link href="/petitions" className="flex h-12 items-center justify-center rounded-xl border border-[#c08dff]/52 bg-[#c08dff]/14 text-[17px] font-semibold text-[#d5b8ff]">
-                  Sign Civic Petition
+                  Sign petition
                 </Link>
                 <Link href={bill ? `/bills/${bill.id}` : "/search?type=bills"} className="flex h-12 items-center justify-center rounded-xl border border-rust/80 bg-transparent text-[17px] font-semibold text-[#ffb12b]">
-                  View Bill Details
+                  View bill
                 </Link>
               </div>
             </main>
