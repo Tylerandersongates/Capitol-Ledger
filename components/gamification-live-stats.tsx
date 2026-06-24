@@ -10,9 +10,13 @@ import {
   readLocalGamificationSnapshot
 } from "@/lib/browser-gamification";
 import { civicLevelTiers, getBadgeCollections, getImpactActions, type GamificationBadge } from "@/lib/gamification";
-import type { AccountGamificationSnapshot } from "@/lib/account-gamification";
+import { getDefaultAccountGamification, type AccountGamificationSnapshot } from "@/lib/account-gamification";
 
-let gamificationSnapshot = readLocalGamificationSnapshot();
+const hydrationGamificationSnapshot: AccountGamificationSnapshot = {
+  ...getDefaultAccountGamification(),
+  updatedAt: ""
+};
+let gamificationSnapshot = hydrationGamificationSnapshot;
 let gamificationSnapshotSignature = JSON.stringify(gamificationSnapshot);
 let gamificationStoreStarted = false;
 let gamificationRefreshPromise: Promise<void> | null = null;
@@ -20,11 +24,15 @@ let gamificationRefreshPromise: Promise<void> | null = null;
 const gamificationListeners = new Set<() => void>();
 
 export function useGamificationSnapshot() {
-  return useSyncExternalStore(subscribeToGamificationSnapshot, getGamificationSnapshot, getGamificationSnapshot);
+  return useSyncExternalStore(subscribeToGamificationSnapshot, getGamificationSnapshot, getServerGamificationSnapshot);
 }
 
 function getGamificationSnapshot() {
   return gamificationSnapshot;
+}
+
+function getServerGamificationSnapshot() {
+  return hydrationGamificationSnapshot;
 }
 
 function subscribeToGamificationSnapshot(listener: () => void) {
