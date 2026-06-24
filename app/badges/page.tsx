@@ -25,14 +25,14 @@ const badgeFilters: Array<{ label: string; value: BadgeFilter }> = [
 ];
 
 const activitySignals: Array<{ event: GamificationEventType; href: string; label: string; tone: string }> = [
-  { event: "complete-voter-registration", href: "/impact#voter-registration", label: "Registration Form", tone: "#9fc4ff" },
-  { event: "track-bill", href: "/search?type=bills&focus=results", label: "Bills Tracked", tone: "#ffbd39" },
-  { event: "review-vote", href: "/search?type=votes&focus=results", label: "Votes Reviewed", tone: "#79a8ff" },
-  { event: "participate-election", href: "/impact#election-participation", label: "Elections Logged", tone: "#ffd45c" },
-  { event: "read-alert", href: "/alerts", label: "Alerts Read", tone: "#4fdb89" },
-  { event: "contact-representative", href: "/search?type=members&focus=results", label: "Rep Contacts", tone: "#d18bff" },
-  { event: "sign-petition", href: "/petitions", label: "Petitions Signed", tone: "#c08dff" },
-  { event: "open-official-source", href: "/search?focus=results", label: "Source Checks", tone: "#74dbff" }
+  { event: "complete-voter-registration", href: "/impact#voter-registration", label: "Registration form", tone: "#9fc4ff" },
+  { event: "track-bill", href: "/search?type=bills&focus=results", label: "Bills tracked", tone: "#ffbd39" },
+  { event: "review-vote", href: "/search?type=votes&focus=results", label: "Vote records", tone: "#79a8ff" },
+  { event: "participate-election", href: "/impact#election-participation", label: "Elections logged", tone: "#ffd45c" },
+  { event: "read-alert", href: "/alerts", label: "Alerts read", tone: "#4fdb89" },
+  { event: "contact-representative", href: "/search?type=members&focus=results", label: "Letters sent", tone: "#d18bff" },
+  { event: "sign-petition", href: "/petitions", label: "Petitions signed", tone: "#c08dff" },
+  { event: "open-official-source", href: "/search?focus=results", label: "Sources checked", tone: "#74dbff" }
 ];
 
 function normalizeBadgeFilter(filter?: string): BadgeFilter {
@@ -144,30 +144,30 @@ function BadgesContent() {
                 <span className="text-[48px] font-medium leading-none text-[#ffb12b]">{badgeCollections.earnedBadges.length}</span>
                 <span className="pb-1 text-[26px] text-white/72">/ {badgeCollections.totalBadges}</span>
               </div>
-              <div className="mt-3 text-[18px] text-white/58">Badges Earned</div>
+              <div className="mt-3 text-[18px] text-white/58">Badges earned</div>
               <div className="mt-5 h-2.5 rounded-full bg-white/13">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_18px_rgba(255,177,43,0.32)]"
                   style={{ width: `${badgeCollections.progressPercent}%` }}
                 />
               </div>
-              <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.06em] text-white/52">{badgeCollections.progressPercent}% completion</div>
+              <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.06em] text-white/52">{badgeCollections.progressPercent}% complete</div>
             </div>
             <div className="rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(2,10,28,0.34)]">
               <div className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-white/12 bg-[#06152b]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_6px_18px_rgba(0,0,0,0.38)]">
                 <Trophy className="h-10 w-10 text-[#ffd867]" strokeWidth={1.7} aria-hidden="true" />
               </div>
-              <div className="mt-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/46">Level State</div>
+              <div className="mt-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/46">Current title</div>
               <div className="mt-1.5 text-[19px] font-medium leading-none text-[#ffbd39]">Level {snapshot.level}</div>
               <div className="mt-1 text-[11px] text-white/58">{snapshot.levelTitle}</div>
-              <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.06em] text-white/52">{snapshot.xpProgress}% to next level</div>
+              <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.06em] text-white/52">{snapshot.xpProgress}% toward next level</div>
             </div>
           </div>
           <div className="mt-3 rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.2)_0%,rgba(7,23,50,0.64)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_8px_20px_rgba(2,10,28,0.3)]">
             <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-medium leading-none text-white">Action Signals</h2>
+              <h2 className="text-[17px] font-medium leading-none text-white">Activity by type</h2>
               <Link href="/impact" className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#ffbd39]">
-                Open Impact
+                Open impact
               </Link>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
@@ -191,7 +191,7 @@ function BadgesContent() {
         {activeFilter !== "locked" ? (
           <>
             <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-[23px] font-medium leading-none">Earned Badges</h2>
+              <h2 className="text-[23px] font-medium leading-none">Earned badges</h2>
               <span className={mobileViewAllClass}>{earnedBadges.length}/{badgeCollections.totalBadges}</span>
             </div>
 
@@ -206,7 +206,7 @@ function BadgesContent() {
         {activeFilter !== "earned" ? (
           <div className="mt-8 border-t border-white/10 pt-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-[23px] font-medium leading-none">Locked Badges</h2>
+              <h2 className="text-[23px] font-medium leading-none">Locked badges</h2>
               <span className={mobileViewAllClass}>{lockedBadges.length}/{badgeCollections.totalBadges}</span>
             </div>
             <div className="mt-7 grid grid-cols-3 gap-x-7 gap-y-10">

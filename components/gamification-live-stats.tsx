@@ -457,7 +457,7 @@ export function BadgeProgressMetrics() {
         <span className="text-[48px] font-medium leading-none text-[#ffb12b]">{snapshot.earnedBadgeIds.length}</span>
         <span className="pb-1 text-[26px] text-white">/ {snapshot.totalBadges}</span>
       </div>
-      <div className="mt-4 text-[18px] text-white/58">Badges Earned</div>
+      <div className="mt-4 text-[18px] text-white/58">Badges earned</div>
       <div className="mt-6 h-2.5 rounded-full bg-white/13">
         <div
           className="h-full rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c] shadow-[0_0_18px_rgba(255,177,43,0.32)]"

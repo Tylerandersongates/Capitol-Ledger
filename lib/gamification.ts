@@ -249,7 +249,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "voter",
     label: "Voter",
-    description: "Log 4 election participations",
+    description: "Log 4 elections",
     icon: "vote",
     status: "earned",
     tone: "blue",
@@ -258,7 +258,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "advocate",
     label: "Advocate",
-    description: "Contact 20 reps",
+    description: "Contact 20 representatives",
     icon: "megaphone",
     status: "earned",
     tone: "gold",
@@ -309,7 +309,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "civic-streak",
     label: "Civic Streak",
-    description: "Keep a 14 day streak",
+    description: "Keep a 14-day streak",
     icon: "flame",
     status: "earned",
     tone: "gold"
@@ -341,7 +341,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "super-voter",
     label: "Super Voter",
-    description: "Log 6 election participations",
+    description: "Log 6 elections",
     icon: "trophy",
     status: "locked",
     tone: "gold"
@@ -357,7 +357,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "ballot-veteran",
     label: "Ballot Veteran",
-    description: "Participate in 5 elections (primary, general, runoff, or special)",
+    description: "Log 5 elections (primary, general, runoff, or special)",
     icon: "vote",
     status: "locked",
     tone: "green"
@@ -397,7 +397,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "floor-watch",
     label: "Floor Watch",
-    description: "Watch 10 floor activity updates",
+    description: "Watch 10 floor updates",
     icon: "vote",
     status: "locked",
     tone: "gold"
