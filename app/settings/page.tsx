@@ -92,7 +92,7 @@ export default async function SettingsPage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumSettingsHeader
             description="Update the basics used to personalize your dashboard and alerts."
-            eyebrow="Account"
+            eyebrow="Preferences"
             icon={<Settings />}
             title="Account"
           />
