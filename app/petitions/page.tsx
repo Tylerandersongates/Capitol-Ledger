@@ -1,20 +1,12 @@
 "use client";
 
 import { GamificationSync } from "@/components/gamification-sync";
-import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
-import {
-  hydrateSignedPetitions,
-  readLocalSignedPetitionIds,
-  recordSignedPetition,
-  signedPetitionsChangedEvent
-} from "@/lib/browser-petition-history";
-import { civicPetitions } from "@/lib/civic-petitions";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, ExternalLink, FileText, Home, Megaphone, Settings } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, ExternalLink, FileText, Home, Megaphone, Settings } from "lucide-react";
 
 type RegulationsGovAction = {
   agencyId: string;
@@ -38,13 +30,38 @@ type RegulationsGovFeed = {
 
 type RegulationsGovStatus = "loading" | "ready" | "empty" | "error" | "not-configured";
 
+const commentedActionIdsKey = "capitol-ledger:commented-public-actions";
+
+function readCommentedActionIds() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const value = JSON.parse(window.localStorage.getItem(commentedActionIdsKey) ?? "[]");
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCommentedActionIds(ids: string[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(commentedActionIdsKey, JSON.stringify(ids));
+  } catch {
+    return;
+  }
+}
+
 export default function PetitionsPage() {
-  const snapshot = useGamificationSnapshot();
   const [regulationsActions, setRegulationsActions] = useState<RegulationsGovAction[]>([]);
   const [regulationsStatus, setRegulationsStatus] = useState<RegulationsGovStatus>("loading");
-  const [signingId, setSigningId] = useState<string | null>(null);
-  const [signedIds, setSignedIds] = useState<string[]>(() => readLocalSignedPetitionIds());
-  const signedSet = useMemo(() => new Set(signedIds), [signedIds]);
+  const [commentedActionIds, setCommentedActionIds] = useState<string[]>([]);
+  const commentedSet = useMemo(() => new Set(commentedActionIds), [commentedActionIds]);
+
+  useEffect(() => {
+    setCommentedActionIds(readCommentedActionIds());
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -83,35 +100,13 @@ export default function PetitionsPage() {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    let active = true;
+  function markCommented(action: RegulationsGovAction) {
+    if (commentedSet.has(action.id)) return;
 
-    async function refreshSignedPetitions() {
-      const records = await hydrateSignedPetitions();
-      if (active) setSignedIds(records.map((record) => record.petitionId));
-    }
-
-    void refreshSignedPetitions();
-    window.addEventListener(signedPetitionsChangedEvent, refreshSignedPetitions);
-    window.addEventListener("focus", refreshSignedPetitions);
-    window.addEventListener("storage", refreshSignedPetitions);
-
-    return () => {
-      active = false;
-      window.removeEventListener(signedPetitionsChangedEvent, refreshSignedPetitions);
-      window.removeEventListener("focus", refreshSignedPetitions);
-      window.removeEventListener("storage", refreshSignedPetitions);
-    };
-  }, []);
-
-  async function signPetition(petition: (typeof civicPetitions)[number]) {
-    if (signedSet.has(petition.id) || signingId) return;
-
-    setSigningId(petition.id);
-    recordGamificationEvent("sign-petition", petition.id);
-    const next = [...signedSet, petition.id];
-    setSignedIds(next);
-    await recordSignedPetition(petition).finally(() => setSigningId(null));
+    const next = [action.id, ...commentedActionIds];
+    setCommentedActionIds(next);
+    writeCommentedActionIds(next);
+    recordGamificationEvent("open-official-source", `${action.id}:commented`);
   }
 
   return (
@@ -125,24 +120,24 @@ export default function PetitionsPage() {
         <Link href="/dashboard" className={`absolute left-0 ${mobileIconButtonClass}`} aria-label="Back to dashboard">
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
-        <h1 className="text-[24px] font-medium leading-none text-white">Civic petitions</h1>
+        <h1 className="text-[24px] font-medium leading-none text-white">Civic actions</h1>
       </header>
 
       <main className="mt-6 pb-5">
         <MobileCard variant="dashboard" className="px-4 py-4">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <div>
-              <div className="text-[13px] font-medium uppercase tracking-[0.08em] text-white/52">Curated civic actions</div>
+              <div className="text-[13px] font-medium uppercase tracking-[0.08em] text-white/52">Official public comments</div>
               <p className="mt-2 text-[15px] leading-snug text-white/66">
-                Support petitions and keep each action in your civic record.
+                Open active Regulations.gov comment windows, then mark comments you completed.
               </p>
             </div>
             <div className="shrink-0 rounded-full border border-[#c08dff]/35 bg-[#c08dff]/14 px-2.5 py-1 text-[13px] font-medium text-[#d5b8ff]">
-              Supported {snapshot.eventCounts.find((event) => event.event === "sign-petition")?.count ?? 0}
+              Commented {commentedActionIds.length}
             </div>
           </div>
           <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.07em] text-white/48">
-            Each petition counts once toward badges and impact.
+            Comments are completed on Regulations.gov and tracked here for your record.
           </div>
         </MobileCard>
 
@@ -168,7 +163,7 @@ export default function PetitionsPage() {
           {regulationsStatus === "error" ? (
             <MobileCard variant="dashboard" className="px-4 py-5">
               <div className="text-[16px] font-medium text-white">Official feed unavailable</div>
-              <p className="mt-2 text-[13px] leading-snug text-white/54">Curated civic actions are still available below.</p>
+              <p className="mt-2 text-[13px] leading-snug text-white/54">Petitions are still listed below as coming soon.</p>
             </MobileCard>
           ) : null}
 
@@ -182,61 +177,30 @@ export default function PetitionsPage() {
           {regulationsStatus === "ready" ? (
             <div className="space-y-3">
               {regulationsActions.map((action) => (
-                <OfficialCommentCard key={action.id} action={action} />
+                <OfficialCommentCard key={action.id} action={action} commented={commentedSet.has(action.id)} onCommented={markCommented} />
               ))}
             </div>
           ) : null}
         </section>
 
         <div className="mt-5 mb-3 flex items-center justify-between px-1">
-          <h2 className="text-[21px] font-medium leading-none text-white">Curated actions</h2>
+          <h2 className="text-[21px] font-medium leading-none text-white">Petitions</h2>
           <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-white/42">Capitol Ledger</span>
         </div>
 
-        <div className="mt-4 space-y-3">
-          {civicPetitions.map((petition) => {
-            const signed = signedSet.has(petition.id);
-            const signing = signingId === petition.id;
-
-            return (
-              <MobileCard key={petition.id} variant="dashboard" className="px-4 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="text-[19px] font-medium leading-tight text-white">{petition.title}</h2>
-                    <p className="mt-2 text-[14px] leading-snug text-white/58">{petition.body}</p>
-                  </div>
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/12 bg-white/[0.04] text-[#ffbd39]">
-                    <Megaphone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-[12px] text-white/56">
-                  <span>{petition.progressLabel}</span>
-                  <span>{petition.targetLabel}</span>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => signPetition(petition)}
-                    className={`h-10 rounded-lg border text-[14px] font-medium transition ${
-                      signed
-                        ? "cursor-default border-[#4fdb89]/32 bg-[#4fdb89]/14 text-[#4fdb89]"
-                        : "border-[#c08dff]/38 bg-[#c08dff]/14 text-[#d5b8ff] hover:brightness-110"
-                    }`}
-                    disabled={signed || Boolean(signingId)}
-                  >
-                    {signed ? "Supported" : signing ? "Supporting..." : "Support petition"}
-                  </button>
-                  <Link
-                    href="/badges"
-                    className="grid h-10 place-items-center rounded-lg border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-3 text-[14px] font-medium text-[#ffb62e] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_24px_rgba(1,8,24,0.42)] transition hover:brightness-110"
-                  >
-                    View badges
-                  </Link>
-                </div>
-              </MobileCard>
-            );
-          })}
-        </div>
+        <MobileCard variant="dashboard" className="px-4 py-5">
+          <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-[#c08dff]/24 bg-[#c08dff]/12 text-[#d5b8ff]">
+              <Megaphone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[17px] font-medium leading-tight text-white">Live petitions coming soon</div>
+              <p className="mt-2 text-[13px] leading-snug text-white/54">
+                Third-party petition APIs are not connected yet. We will add partner-backed petitions when there is a reliable source that fits the budget.
+              </p>
+            </div>
+          </div>
+        </MobileCard>
       </main>
 
       <MobileBottomNav
@@ -252,7 +216,15 @@ export default function PetitionsPage() {
   );
 }
 
-function OfficialCommentCard({ action }: { action: RegulationsGovAction }) {
+function OfficialCommentCard({
+  action,
+  commented,
+  onCommented
+}: {
+  action: RegulationsGovAction;
+  commented: boolean;
+  onCommented: (action: RegulationsGovAction) => void;
+}) {
   const detailLabel = [action.docketId, action.subtype].filter(Boolean).join(" • ") || action.documentId;
 
   return (
@@ -272,24 +244,33 @@ function OfficialCommentCard({ action }: { action: RegulationsGovAction }) {
         <span>{action.commentLabel}</span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onCommented(action)}
+          disabled={commented}
+          className={`flex h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[14px] font-medium transition ${
+            commented
+              ? "cursor-default border-[#4fdb89]/32 bg-[#4fdb89]/14 text-[#4fdb89]"
+              : "border-[#c08dff]/38 bg-[#c08dff]/14 text-[#d5b8ff] hover:brightness-110"
+          }`}
+        >
+          {commented ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              Commented
+            </>
+          ) : (
+            "I commented"
+          )}
+        </button>
         <a
           href={action.commentUrl}
           target="_blank"
           rel="noreferrer"
           onClick={() => recordGamificationEvent("open-official-source", action.id)}
-          className="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#c08dff]/38 bg-[#c08dff]/14 px-2 text-[14px] font-medium text-[#d5b8ff] transition hover:brightness-110"
-        >
-          Open comment
-          <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-        </a>
-        <a
-          href={action.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => recordGamificationEvent("open-official-source", `${action.id}:source`)}
           className="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-2 text-[14px] font-medium text-[#ffb62e] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_24px_rgba(1,8,24,0.42)] transition hover:brightness-110"
         >
-          View source
+          Open comment
           <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
         </a>
       </div>
