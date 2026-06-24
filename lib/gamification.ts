@@ -267,7 +267,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "democracy-defender",
     label: "Democracy Defender",
-    description: "Review 30 voting records",
+    description: "Review 30 vote records",
     icon: "shield",
     status: "earned",
     tone: "gold",
@@ -293,7 +293,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "source-checker",
     label: "Source Checker",
-    description: "Open 20 official source links",
+    description: "Open 20 official sources",
     icon: "search",
     status: "earned",
     tone: "green"
@@ -301,7 +301,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "committee-watcher",
     label: "Committee Watcher",
-    description: "Track 10 committee actions",
+    description: "Track 10 committee updates",
     icon: "scale",
     status: "earned",
     tone: "gold"
@@ -349,7 +349,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "constitution-champion",
     label: "Constitution Champion",
-    description: "Complete 10 civic learning actions",
+    description: "Complete 10 civic learning activities",
     icon: "landmark",
     status: "locked",
     tone: "blue"
@@ -405,7 +405,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "local-builder",
     label: "Local Builder",
-    description: "Follow state and local activity",
+    description: "Follow state and local updates",
     icon: "building",
     status: "locked",
     tone: "blue"
@@ -413,7 +413,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "transparency-ally",
     label: "Transparency Ally",
-    description: "Share 10 source-linked records",
+    description: "Share 10 records with source links",
     icon: "shield",
     status: "locked",
     tone: "green"
@@ -437,7 +437,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "coalition-builder",
     label: "Coalition Builder",
-    description: "Invite a civic team",
+    description: "Invite a team member",
     icon: "user",
     status: "locked",
     tone: "blue"
@@ -445,7 +445,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "data-sentinel",
     label: "Data Sentinel",
-    description: "Verify 40 official records",
+    description: "Open 40 official sources",
     icon: "search",
     status: "locked",
     tone: "green"
@@ -453,7 +453,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "civic-luminary",
     label: "Civic Luminary",
-    description: "Reach level 10",
+    description: "Reach Level 10",
     icon: "sparkles",
     status: "locked",
     tone: "purple"
