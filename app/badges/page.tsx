@@ -31,7 +31,7 @@ const activitySignals: Array<{ event: GamificationEventType; href: string; label
   { event: "participate-election", href: "/impact#election-participation", label: "Elections logged", tone: "#ffd45c" },
   { event: "read-alert", href: "/alerts", label: "Alerts read", tone: "#4fdb89" },
   { event: "contact-representative", href: "/search?type=members&focus=results", label: "Letters sent", tone: "#d18bff" },
-  { event: "sign-petition", href: "/petitions", label: "Petitions supported", tone: "#c08dff" },
+  { event: "complete-public-comment", href: "/petitions", label: "Comments completed", tone: "#c08dff" },
   { event: "open-official-source", href: "/search?focus=results", label: "Sources checked", tone: "#74dbff" }
 ];
 

@@ -88,8 +88,8 @@ const gamificationCategories = [
 ] as const;
 const impactCategoryHrefs: Record<ImpactActionId, string> = {
   "bills-tracked": "/search?type=bills",
+  "comments-completed": "/petitions",
   "letters-sent": "/letters#letters",
-  "petitions-signed": "/letters#petitions",
   "votes-cast": "/impact#election-participation"
 };
 const dashboardCardAccentClass =

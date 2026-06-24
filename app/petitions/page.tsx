@@ -106,7 +106,7 @@ export default function PetitionsPage() {
     const next = [action.id, ...commentedActionIds];
     setCommentedActionIds(next);
     writeCommentedActionIds(next);
-    recordGamificationEvent("open-official-source", `${action.id}:commented`);
+    recordGamificationEvent("complete-public-comment", action.id);
   }
 
   return (
@@ -163,7 +163,7 @@ export default function PetitionsPage() {
           {regulationsStatus === "error" ? (
             <MobileCard variant="dashboard" className="px-4 py-5">
               <div className="text-[16px] font-medium text-white">Official feed unavailable</div>
-              <p className="mt-2 text-[13px] leading-snug text-white/54">Petitions are still listed below as coming soon.</p>
+              <p className="mt-2 text-[13px] leading-snug text-white/54">Comment opportunities will return here when the feed is available.</p>
             </MobileCard>
           ) : null}
 
@@ -185,7 +185,7 @@ export default function PetitionsPage() {
 
         <div className="mt-5 mb-3 flex items-center justify-between px-1">
           <h2 className="text-[21px] font-medium leading-none text-white">Petitions</h2>
-          <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-white/42">Capitol Ledger</span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-white/42">Coming soon</span>
         </div>
 
         <MobileCard variant="dashboard" className="px-4 py-5">
@@ -207,7 +207,7 @@ export default function PetitionsPage() {
         items={[
           { href: "/dashboard", icon: <Home />, label: "Home" },
           { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
-          { active: true, href: "/petitions", icon: <Megaphone />, label: "Petitions" },
+          { active: true, href: "/petitions", icon: <Megaphone />, label: "Actions" },
           { href: "/alerts", icon: <Bell />, label: "Alerts" },
           { href: "/settings", icon: <Settings />, label: "Settings" }
         ]}

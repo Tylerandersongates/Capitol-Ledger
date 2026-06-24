@@ -18,6 +18,7 @@ export type BadgeTone = "blue" | "gold" | "green" | "purple";
 export type BadgeStatus = "earned" | "locked";
 export type GamificationEventType =
   | "complete-onboarding"
+  | "complete-public-comment"
   | "complete-voter-registration"
   | "contact-representative"
   | "open-official-source"
@@ -29,7 +30,7 @@ export type GamificationEventType =
   | "track-bill"
   | "watch-speech-video";
 
-export type ImpactActionId = "bills-tracked" | "letters-sent" | "petitions-signed" | "votes-cast";
+export type ImpactActionId = "bills-tracked" | "comments-completed" | "letters-sent" | "votes-cast";
 export type GamificationEventRule = {
   badgeProgress: Array<{
     badgeId: string;
@@ -88,10 +89,10 @@ const impactActionDisplay: Record<ImpactActionId, Omit<ImpactAction, "id" | "val
   "letters-sent": { label: "Letters sent", color: "#49c878" },
   "bills-tracked": { label: "Bills tracked", color: "#ffad1e" },
   "votes-cast": { label: "Vote activity", color: "#5e83df" },
-  "petitions-signed": { label: "Petitions supported", color: "#9563d5" }
+  "comments-completed": { label: "Comments completed", color: "#9563d5" }
 };
 
-const impactActionOrder: ImpactActionId[] = ["letters-sent", "bills-tracked", "votes-cast", "petitions-signed"];
+const impactActionOrder: ImpactActionId[] = ["letters-sent", "bills-tracked", "votes-cast", "comments-completed"];
 
 export const gamificationEventRules: GamificationEventRule[] = [
   {
@@ -156,6 +157,18 @@ export const gamificationEventRules: GamificationEventRule[] = [
     ]
   },
   {
+    event: "complete-public-comment",
+    label: "Complete a public comment",
+    points: 25,
+    streakCredit: true,
+    dedupe: "once-per-target",
+    impactActionId: "comments-completed",
+    badgeProgress: [
+      { badgeId: "campaign-ally", threshold: 15 },
+      { badgeId: "change-maker", threshold: 50 }
+    ]
+  },
+  {
     event: "review-vote",
     label: "Review a vote record",
     points: 35,
@@ -202,11 +215,10 @@ export const gamificationEventRules: GamificationEventRule[] = [
   },
   {
     event: "sign-petition",
-    label: "Support a civic petition",
+    label: "Record legacy civic action",
     points: 25,
     streakCredit: true,
     dedupe: "once-per-target",
-    impactActionId: "petitions-signed",
     badgeProgress: [
       { badgeId: "campaign-ally", threshold: 15 },
       { badgeId: "change-maker", threshold: 50 }
@@ -220,7 +232,7 @@ export const demoGamificationEventCounts: GamificationEventCount[] = [
   { event: "track-bill", count: 8 },
   { event: "review-vote", count: 5 },
   { event: "contact-representative", count: 12 },
-  { event: "sign-petition", count: 3 },
+  { event: "complete-public-comment", count: 3 },
   { event: "read-alert", count: 16 },
   { event: "open-official-source", count: 6 },
   { event: "save-official", count: 3 },
@@ -372,9 +384,9 @@ export const badgeCatalog: GamificationBadge[] = [
   },
   {
     id: "campaign-ally",
-    label: "Campaign Ally",
-    description: "Support 15 civic petitions",
-    icon: "building",
+    label: "Public Commenter",
+    description: "Complete 15 public comments",
+    icon: "megaphone",
     status: "locked",
     tone: "gold"
   },
@@ -488,7 +500,7 @@ export function getImpactActions(eventCounts = demoGamificationEventCounts): Imp
       "letters-sent": 0,
       "bills-tracked": 0,
       "votes-cast": 0,
-      "petitions-signed": 0
+      "comments-completed": 0
     } satisfies Record<ImpactActionId, number>
   );
 

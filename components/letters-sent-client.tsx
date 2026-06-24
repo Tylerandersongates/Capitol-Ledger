@@ -131,7 +131,7 @@ export function LettersSentClient() {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <SummaryPill label="Letters" value={letters.length} tone="green" />
-          <SummaryPill label="Petitions" value={petitions.length} tone="purple" />
+          <SummaryPill label="Actions" value={petitions.length} tone="purple" />
           <SummaryPill label="Latest" value={lastActivity} tone="blue" />
         </div>
       </section>
@@ -187,7 +187,7 @@ export function LettersSentClient() {
 
       <section id="petitions" className={`${panelClass} scroll-mt-6 px-3 py-3`}>
         <div className="flex items-center justify-between gap-3 px-1">
-          <h2 className="text-[21px] font-medium leading-none text-white">Supported petitions</h2>
+          <h2 className="text-[21px] font-medium leading-none text-white">Archived civic actions</h2>
           <Link
             href="/petitions"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-medium text-[#d5b8ff]"
@@ -198,7 +198,7 @@ export function LettersSentClient() {
         </div>
 
         {petitionsLoading && petitions.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading supported petitions...</div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] text-white/54">Loading saved actions...</div>
         ) : petitions.length ? (
           <div className="mt-3 space-y-2">
             {petitions.map((petition) => (
@@ -212,9 +212,9 @@ export function LettersSentClient() {
                 <Megaphone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <div className="text-[16px] font-semibold text-white">No petitions supported yet</div>
+                <div className="text-[16px] font-semibold text-white">No archived actions yet</div>
                 <p className="mt-1 text-[13px] leading-snug text-white/54">
-                  Supported civic petitions will appear here with their issue, action type, and date.
+                  Public comments marked complete are tracked from the Civic actions page.
                 </p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export function LettersSentClient() {
               className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl border border-[#9563d5]/18 bg-[#9563d5]/10 text-[14px] font-semibold text-[#d5b8ff]"
             >
               <Megaphone className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              Browse petitions
+              Open civic actions
             </Link>
           </div>
         )}
@@ -306,11 +306,11 @@ function PetitionRow({ petition }: { petition: BrowserSignedPetitionRecord }) {
         </div>
         <div className="min-w-0">
           <div className="line-clamp-2 text-[16px] font-semibold leading-tight text-white">{petition.title}</div>
-          <div className="mt-1 truncate text-[12px] text-white/48">{petition.progressLabel ?? "Civic petition"}</div>
+          <div className="mt-1 truncate text-[12px] text-white/48">{petition.progressLabel ?? "Civic action"}</div>
         </div>
         <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#43ed74]/24 bg-[#43ed74]/10 px-2 text-[11px] font-semibold text-[#74f49a]">
           <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          Supported
+          Recorded
         </span>
       </div>
 
@@ -326,7 +326,7 @@ function PetitionRow({ petition }: { petition: BrowserSignedPetitionRecord }) {
           href="/petitions"
           className="inline-flex h-8 items-center rounded-full border border-[#9563d5]/22 bg-[#9563d5]/10 px-3 text-[12px] font-medium text-[#d5b8ff]"
         >
-          Petitions
+          Actions
         </Link>
       </div>
     </article>
