@@ -35,7 +35,7 @@ export default function LettersPage() {
             <div className="min-w-0">
               <h2 className="text-[21px] font-medium leading-tight text-white">Civic action history</h2>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
-                Keep a record of prepared letters, confirmed sends, signed petitions, recipients, and civic issues.
+                Keep a record of prepared letters, confirmed sends, supported petitions, recipients, and civic issues.
               </p>
             </div>
           </div>

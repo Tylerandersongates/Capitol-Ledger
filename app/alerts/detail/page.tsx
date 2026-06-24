@@ -95,7 +95,7 @@ export default function AlertDetailPage() {
                   Contact {districtMemberRole}
                 </GamificationEventLink>
                 <Link href="/petitions" className="flex h-12 items-center justify-center rounded-xl border border-[#c08dff]/52 bg-[#c08dff]/14 text-[17px] font-semibold text-[#d5b8ff]">
-                  Sign petition
+                  Support petition
                 </Link>
                 <Link href={bill ? `/bills/${bill.id}` : "/search?type=bills"} className="flex h-12 items-center justify-center rounded-xl border border-rust/80 bg-transparent text-[17px] font-semibold text-[#ffb12b]">
                   View bill

@@ -64,24 +64,24 @@ export default function PetitionsPage() {
         <Link href="/dashboard" className={`absolute left-0 ${mobileIconButtonClass}`} aria-label="Back to dashboard">
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
-        <h1 className="text-[24px] font-medium leading-none text-white">Civic Petitions</h1>
+        <h1 className="text-[24px] font-medium leading-none text-white">Civic petitions</h1>
       </header>
 
       <main className="mt-6 pb-5">
         <MobileCard variant="dashboard" className="px-4 py-4">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <div>
-              <div className="text-[13px] font-medium uppercase tracking-[0.08em] text-white/52">Active Civic Actions</div>
+              <div className="text-[13px] font-medium uppercase tracking-[0.08em] text-white/52">Curated civic actions</div>
               <p className="mt-2 text-[15px] leading-snug text-white/66">
-                Signing petitions records engagement, builds score, and contributes to your petition impact metric.
+                Support petitions and keep each action in your civic record.
               </p>
             </div>
             <div className="shrink-0 rounded-full border border-[#c08dff]/35 bg-[#c08dff]/14 px-2.5 py-1 text-[13px] font-medium text-[#d5b8ff]">
-              Signed {snapshot.eventCounts.find((event) => event.event === "sign-petition")?.count ?? 0}
+              Supported {snapshot.eventCounts.find((event) => event.event === "sign-petition")?.count ?? 0}
             </div>
           </div>
           <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.07em] text-white/48">
-            Each unique petition signs once and counts toward badges and impact.
+            Each petition counts once toward badges and impact.
           </div>
         </MobileCard>
 
@@ -105,12 +105,6 @@ export default function PetitionsPage() {
                   <span>{petition.progressLabel}</span>
                   <span>{petition.targetLabel}</span>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-white/12">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#9064f4] via-[#b98fff] to-[#e2ceff] shadow-[0_0_14px_rgba(174,132,255,0.3)]"
-                    style={{ width: `${petition.progressPercent}%` }}
-                  />
-                </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -122,13 +116,13 @@ export default function PetitionsPage() {
                     }`}
                     disabled={signed || Boolean(signingId)}
                   >
-                    {signed ? "Signed" : signing ? "Signing..." : "Sign Petition"}
+                    {signed ? "Supported" : signing ? "Supporting..." : "Support petition"}
                   </button>
                   <Link
                     href="/badges"
                     className="grid h-10 place-items-center rounded-lg border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.28)_0%,rgba(6,25,55,0.66)_100%)] px-3 text-[14px] font-medium text-[#ffb62e] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_10px_24px_rgba(1,8,24,0.42)] transition hover:brightness-110"
                   >
-                    View Badges
+                    View badges
                   </Link>
                 </div>
               </MobileCard>

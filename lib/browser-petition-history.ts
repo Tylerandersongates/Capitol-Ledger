@@ -73,10 +73,10 @@ function normalizeSignedPetition(value: unknown, source: "account" | "local" = "
     body: optionalString(value.body) ?? catalogPetition?.body,
     id: optionalString(value.id) ?? `${petitionId}:${signedAt}`,
     petitionId,
-    progressLabel: optionalString(value.progressLabel) ?? catalogPetition?.progressLabel,
+    progressLabel: catalogPetition?.progressLabel ?? optionalString(value.progressLabel),
     signedAt,
     source,
-    targetLabel: optionalString(value.targetLabel) ?? catalogPetition?.targetLabel,
+    targetLabel: catalogPetition?.targetLabel ?? optionalString(value.targetLabel),
     title
   };
 }

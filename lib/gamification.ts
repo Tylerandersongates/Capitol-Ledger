@@ -88,7 +88,7 @@ const impactActionDisplay: Record<ImpactActionId, Omit<ImpactAction, "id" | "val
   "letters-sent": { label: "Letters sent", color: "#49c878" },
   "bills-tracked": { label: "Bills tracked", color: "#ffad1e" },
   "votes-cast": { label: "Vote activity", color: "#5e83df" },
-  "petitions-signed": { label: "Petitions signed", color: "#9563d5" }
+  "petitions-signed": { label: "Petitions supported", color: "#9563d5" }
 };
 
 const impactActionOrder: ImpactActionId[] = ["letters-sent", "bills-tracked", "votes-cast", "petitions-signed"];
@@ -202,7 +202,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   },
   {
     event: "sign-petition",
-    label: "Sign a civic petition",
+    label: "Support a civic petition",
     points: 25,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -373,7 +373,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "campaign-ally",
     label: "Campaign Ally",
-    description: "Sign 15 civic petitions",
+    description: "Support 15 civic petitions",
     icon: "building",
     status: "locked",
     tone: "gold"
