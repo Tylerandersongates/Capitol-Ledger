@@ -21,7 +21,7 @@ import {
   Vote as VoteIcon
 } from "lucide-react";
 import { getMemberDetailWithLiveData, type MemberCaucusMembership, type MemberVoteRecord } from "@/lib/data";
-import { calculateMemberScore, type MemberScoreModel } from "@/lib/member-scoring";
+import { calculateMemberScore, type AlignmentComponent, type MemberScoreFactor, type MemberScoreModel } from "@/lib/member-scoring";
 import { getCurrentSession } from "@/lib/auth";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
@@ -46,7 +46,7 @@ const memberTabs: Array<{ label: string; value: MemberTab }> = [
   { label: "Votes", value: "votes" },
   { label: "Bills", value: "bills" },
   { label: "Committees", value: "committees" },
-  { label: "Finance", value: "finance" }
+  { label: "Records", value: "finance" }
 ];
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48";
@@ -64,9 +64,9 @@ const premiumHeaderGreenIconClass =
   "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#43ed74]/22 bg-[#43ed74]/10 text-[#43ed74]";
 
 const alignmentTopicMetricWeights = [
-  { key: "pollAverage", label: "Poll", weight: 40 },
-  { key: "voteAlignment", label: "Vote", weight: 35 },
-  { key: "publicPositioning", label: "Signals", weight: 15 },
+  { key: "pollAverage", label: "Polling", weight: 40 },
+  { key: "voteAlignment", label: "Votes", weight: 35 },
+  { key: "publicPositioning", label: "Activity", weight: 15 },
   { key: "timeInOffice", label: "Tenure", weight: 10 }
 ] as const;
 
@@ -455,10 +455,10 @@ function buildAccountabilityTrend(scoreModel: MemberScoreModel): AccountabilityT
   const signalStep = clampPercent((pollAverage * 40 + voteAlignment * 35 + publicPositioning * 15) / 90);
   const drivers = [
     { delta: voteAlignment - pollAverage, label: "Vote record" },
-    { delta: publicPositioning - pollAverage, label: "Public signals" },
+    { delta: publicPositioning - pollAverage, label: "Public activity" },
     { delta: timeInOffice - pollAverage, label: "Tenure" }
   ].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-  const driver = drivers[0] ?? { delta: 0, label: "Alignment inputs" };
+  const driver = drivers[0] ?? { delta: 0, label: "Issue match" };
 
   return {
     baseline: pollAverage,
@@ -467,9 +467,9 @@ function buildAccountabilityTrend(scoreModel: MemberScoreModel): AccountabilityT
     driverDelta: driver.delta,
     driverLabel: driver.label,
     points: [
-      { label: "Poll", value: pollAverage },
+      { label: "Polling", value: pollAverage },
       { label: "Votes", value: voteStep },
-      { label: "Signals", value: signalStep },
+      { label: "Activity", value: signalStep },
       { label: "Now", value: current }
     ]
   };
@@ -580,8 +580,8 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
 
             <MobileCard variant="dashboard" className="mt-8 overflow-hidden px-5 py-5">
               <div className="grid grid-cols-2 gap-3">
-                <ProfileStat label="State" value={state} />
-                <ProfileStat label="Terms in Office" value={termsInOfficeLabel} subvalue={seniority} />
+                <ProfileStat label="Represents" value={state} />
+                <ProfileStat label="Time in office" value={termsInOfficeLabel} subvalue={seniority} />
                 <ElectionProfileStat firstElected={firstElected} nextElection={nextElection} />
               </div>
             </MobileCard>
@@ -713,40 +713,52 @@ function OverviewTab({
   const alignmentFactor = scoreModel.factors.find((factor) => factor.key === "constituentAlignment");
   const accountabilityTrend = buildAccountabilityTrend(scoreModel);
   const topScoreFactors = [...scoreModel.factors].sort((a, b) => b.value - a.value).slice(0, 3);
+  const topScoreFactor = topScoreFactors[0];
 
   return (
     <>
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="Weighted from source-linked transparency categories and local constituent context."
-          eyebrow="Official Accountability"
+          description="Public records, votes, bill activity, and issue match summarized in one view."
+          eyebrow="Profile snapshot"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
-          title="Accountability Score"
+          title="Accountability snapshot"
           titleAccessory={<AccountabilityInfoPopover />}
         />
 
         <div className="mt-5 grid grid-cols-[1fr_auto] items-end gap-4">
           <div>
+            <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white/44">Overall score</div>
             <div className="text-[48px] font-semibold leading-none text-[#ffb12b]">{scoreModel.overallScore}%</div>
             <div className="mt-3 text-[22px] font-medium text-[#65ec68]">{scoreModel.rating}</div>
           </div>
           <div className="text-right">
-            <div className="text-[14px] uppercase tracking-[0.06em] text-white/52">Tracked Rank</div>
+            <div className="text-[14px] uppercase tracking-[0.06em] text-white/52">Chamber standing</div>
             <div className="mt-1 text-[24px] font-medium text-white">
               <span className="text-[#ffb12b]">{chamberRank.rank}</span> / {chamberRank.seatTotal}
             </div>
             <div className="mt-2 max-w-[178px] text-[13px] leading-snug text-white/54">
-              {chamberRank.label} · {chamberRank.trackedCount} synced {member.chamber === "Senate" ? "senator profiles" : "house profiles"}
+              {chamberRank.label} among {chamberRank.trackedCount} synced {member.chamber === "Senate" ? "senators" : "House members"}
             </div>
           </div>
         </div>
 
+        {topScoreFactor ? (
+          <div className={`mt-5 ${premiumPanelClass} px-4 py-3`}>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Highest scoring input</div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-[15px] font-medium text-white">{plainFactorLabel(topScoreFactor.label)}</span>
+              <span className="text-[16px] font-semibold text-[#ffb12b]">{topScoreFactor.value}%</span>
+            </div>
+          </div>
+        ) : null}
+
         <div className={`mt-5 ${premiumPanelClass} p-4`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[15px] font-medium text-white">Alignment movement</div>
-              <p className="mt-1 text-[12px] leading-snug text-white/46">Shows whether votes and public signals lift or drag against the poll baseline.</p>
+              <div className="text-[15px] font-medium text-white">Issue match</div>
+              <p className="mt-1 text-[12px] leading-snug text-white/46">Compares state issue polling with votes, bill activity, public roles, and time in office.</p>
             </div>
             <span className={`${premiumPillClass} shrink-0 text-[#ffcf54]`}>
               {accountabilityTrend.delta >= 0 ? "+" : ""}
@@ -756,13 +768,13 @@ function OverviewTab({
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
             <div>
               <div className="text-[25px] font-semibold leading-none text-[#ffb12b]">{accountabilityTrend.current}%</div>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.06em] text-white/42">current alignment</div>
+              <div className="mt-1 text-[11px] uppercase tracking-[0.06em] text-white/42">current match</div>
             </div>
             <div className="text-right text-[12px] leading-snug text-white/50">
               <span className="block text-white/68">{accountabilityTrend.driverLabel}</span>
               <span>
                 {accountabilityTrend.driverDelta >= 0 ? "+" : ""}
-                {accountabilityTrend.driverDelta} vs poll
+                {accountabilityTrend.driverDelta} vs polling
               </span>
             </div>
           </div>
@@ -772,24 +784,24 @@ function OverviewTab({
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="Top inputs feeding the accountability score."
-          eyebrow="Scoring Inputs"
+          description="The largest public-record inputs behind the snapshot."
+          eyebrow="Score breakdown"
           icon={<FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
-          title="Transparency Mix"
+          title="What shapes the score"
         />
         <div className="mt-4 grid grid-cols-3 gap-2">
           {topScoreFactors.map((factor) => (
             <div key={factor.key} className="rounded-xl border border-white/10 bg-[#071a38]/62 px-3 py-3">
-              <div className="truncate text-[11px] font-semibold uppercase tracking-[0.04em] text-white/44">{compactFactorLabel(factor.label)}</div>
+              <div className="truncate text-[11px] font-semibold uppercase tracking-[0.04em] text-white/44">{plainFactorLabel(factor.label)}</div>
               <div className="mt-2 text-[18px] font-semibold leading-none text-white">{factor.value}%</div>
-              <div className="mt-1 text-[11px] leading-none text-white/36">{factor.weight}% weight</div>
+              <div className="mt-1 text-[11px] leading-none text-white/36">{factor.weight}% of score</div>
             </div>
           ))}
         </div>
         <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/62 px-3 py-3">
           <div className="flex items-center justify-between gap-3 text-[12px] font-medium text-white/50">
-            <span>Weighted mix</span>
-            <span>{scoreModel.overallScore}% total</span>
+            <span>Score blend</span>
+            <span>{scoreModel.overallScore}% overall</span>
           </div>
           <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-white/10">
             {scoreModel.factors.map((factor) => (
@@ -797,7 +809,7 @@ function OverviewTab({
                 key={`${factor.key}-segment`}
                 className="h-full bg-gradient-to-r from-[#a96a09] via-[#ffb12b] to-[#ffcf54] opacity-90"
                 style={{ width: `${factor.weight}%` }}
-                title={`${factor.label}: ${factor.weight}% weight`}
+                title={`${plainFactorLabel(factor.label)}: ${factor.weight}% of score`}
               />
             ))}
           </div>
@@ -808,31 +820,30 @@ function OverviewTab({
         <PremiumCardHeader
           aside={
             <div className="text-right">
-              <span className={premiumPillClass}>30% overall</span>
+              <span className={premiumPillClass}>30% of score</span>
               <div className="mt-2 text-[14px] font-semibold text-[#ffb12b]">
-                {alignmentFactor?.value ?? 0}% aligned
+                {alignmentFactor?.value ?? 0}% match
               </div>
             </div>
           }
-          description={<>Scoring categories used: {scoreModel.constituentAlignment.selectedTopics.join(", ")}</>}
-          eyebrow="Constituent Alignment"
+          description={<>Topics compared: {formatTopicList(scoreModel.constituentAlignment.selectedTopics)}</>}
+          eyebrow="Issue match"
           title={`${scoreModel.constituentAlignment.viewerState} issue match`}
         />
         <div className={`mb-5 ${premiumPanelClass} px-4 py-4`}>
-          <div className="text-[15px] font-medium text-white">Beta model coverage</div>
+          <div className="text-[15px] font-medium text-white">About this estimate</div>
           <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Capitol Ledger lets you choose 14 issue signals, then rolls related signals into 8 broader scoring categories for this beta accountability model.
-            Individual issue-level scoring is planned as the model expands.
+            Saved interests are grouped into broad topics, then compared with state polling snapshots, votes, bill activity, public roles, and time in office.
           </p>
         </div>
         <MobileGlassScrollFrame heightClassName="max-h-[260px]" className="snap-y snap-mandatory space-y-4">
           {scoreModel.constituentAlignment.components.map((component) => (
             <div key={component.label} className={`snap-start ${premiumPanelClass} px-4 py-4`}>
               <div className="flex items-center justify-between gap-3">
-                <div className="text-[16px] font-medium text-white">{component.label}</div>
+                <div className="text-[16px] font-medium text-white">{plainAlignmentLabel(component.label)}</div>
                 <div className="text-right">
                   <div className="text-[16px] font-semibold text-white">{component.value}%</div>
-                  <div className="text-[12px] text-white/46">{component.weight}% in alignment</div>
+                  <div className="text-[12px] text-white/46">{component.weight}% of match</div>
                 </div>
               </div>
               <p className="mt-2 text-[13px] leading-snug text-white/50">{component.detail}</p>
@@ -841,7 +852,7 @@ function OverviewTab({
         </MobileGlassScrollFrame>
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-medium text-white">By scoring category</h3>
+            <h3 className="text-[16px] font-medium text-white">Issue categories</h3>
             <span className={premiumPillClass}>{scoreModel.constituentAlignment.topics.length} categories</span>
           </div>
           <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[410px]" className="snap-y snap-mandatory space-y-3">
@@ -850,37 +861,37 @@ function OverviewTab({
             ))}
           </MobileGlassScrollFrame>
         </div>
-        <p className="mt-4 text-[12px] leading-snug text-white/46">{scoreModel.constituentAlignment.note}</p>
+        <p className="mt-4 text-[12px] leading-snug text-white/46">Early estimate using curated polling snapshots and synced public records while live polling ingestion is being prepared.</p>
       </MobileCard>
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description={scoreModel.summary}
+          description="A nonpartisan summary based on synced public records and issue-match estimates."
           eyebrow="Methodology"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
-          title={scoreModel.methodologyLabel}
+          title="How the score is calculated"
         />
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
-          <div className="text-[15px] font-medium text-white">Formula</div>
+          <div className="text-[15px] font-medium text-white">Score formula</div>
           <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Overall score = 25% Voting Record + 15% Public Engagement + 15% Sponsored Bills + 15% Ethics &amp; Compliance + 30% Constituent Alignment.
+            Overall score = 25% votes + 15% public activity + 15% bill activity + 15% source status + 30% issue match.
           </p>
           <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Constituent Alignment = 40% Poll Average + 35% Vote Alignment + 15% Public Positioning + 10% Time in Office.
+            Issue match = 40% state issue polling + 35% vote record + 15% public activity + 10% time in office.
           </p>
         </div>
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[15px] font-medium text-white">Evidence details</div>
+            <div className="text-[15px] font-medium text-white">Public-record details</div>
             <span className={premiumPillClass}>{scoreModel.factors.length} inputs</span>
           </div>
           <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[330px]" className="snap-y snap-mandatory space-y-3">
             {scoreModel.factors.map((factor) => (
               <div key={`${factor.key}-method`} className="snap-start rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-[16px] font-medium text-white">{factor.label}</div>
-                  <span className={premiumPillClass}>{factor.status}</span>
+                  <div className="text-[16px] font-medium text-white">{plainFactorLabel(factor.label)}</div>
+                  <span className={premiumPillClass}>{plainStatusLabel(factor.status)}</span>
                 </div>
                 <p className="mt-2 text-[13px] leading-snug text-white/50">{factor.detail}</p>
                 <div className="mt-2 text-[12px] text-[#ffb12b]/82">{factor.evidence}</div>
@@ -895,31 +906,45 @@ function OverviewTab({
 
 type AlignmentTopic = MemberScoreModel["constituentAlignment"]["topics"][number];
 
-function formatContribution(value: number) {
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
-}
-
-function compactFactorLabel(label: string) {
-  if (label === "Ethics & Compliance") return "Ethics";
-  if (label === "Public Engagement") return "Engagement";
-  if (label === "Constituent Alignment") return "Alignment";
+function plainFactorLabel(label: string) {
+  if (label === "Voting Record") return "Votes";
+  if (label === "Public Engagement") return "Public activity";
+  if (label === "Sponsored Bills") return "Bill activity";
+  if (label === "Ethics & Compliance") return "Source status";
+  if (label === "Constituent Alignment") return "Issue match";
   return label;
 }
 
-function TopicMathCard({ topic }: { topic: AlignmentTopic }) {
-  const weightedTotal = alignmentTopicMetricWeights.reduce((total, metric) => total + (topic[metric.key] * metric.weight) / 100, 0);
+function plainAlignmentLabel(label: AlignmentComponent["label"]) {
+  if (label === "Poll Average") return "State issue polling";
+  if (label === "Vote Alignment") return "Vote record";
+  if (label === "Public Positioning") return "Public activity";
+  if (label === "Time in Office") return "Time in office";
+  return label;
+}
 
+function plainStatusLabel(status: MemberScoreFactor["status"]) {
+  if (status === "source-linked") return "Source linked";
+  if (status === "partial") return "Partial data";
+  return "Planned source";
+}
+
+function formatTopicList(topics: string[]) {
+  if (topics.length <= 4) return topics.join(", ");
+  return `${topics.slice(0, 4).join(", ")} and ${topics.length - 4} more`;
+}
+
+function TopicMathCard({ topic }: { topic: AlignmentTopic }) {
   return (
     <div className="snap-start rounded-xl border border-white/10 bg-[#071a38]/65 px-3.5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate text-[15px] font-medium text-white">{topic.topic}</div>
-          <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched signal{topic.signalCount === 1 ? "" : "s"}</div>
+          <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched record{topic.signalCount === 1 ? "" : "s"}</div>
         </div>
         <div className="shrink-0 text-right">
           <div className="text-[17px] font-semibold text-[#ffb12b]">{topic.topicScore}%</div>
-          <div className="mt-1 text-[11px] leading-none text-white/42">topic score</div>
+          <div className="mt-1 text-[11px] leading-none text-white/42">topic match</div>
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -932,14 +957,14 @@ function TopicMathCard({ topic }: { topic: AlignmentTopic }) {
                 <span className="font-semibold text-white">{value}%</span>
               </div>
               <div className="mt-1.5 text-[10px] leading-none text-white/35">
-                {metric.weight}% weight / {formatContribution((value * metric.weight) / 100)} pts
+                {metric.weight}% of match
               </div>
             </div>
           );
         })}
       </div>
       <div className="mt-3 rounded-lg border border-[#ffb12b]/12 bg-[#ffb12b]/6 px-3 py-2 text-[11px] font-medium leading-none text-[#ffcf54]/86">
-        {formatContribution(weightedTotal)} weighted pts rounds to {topic.topicScore}%
+        Blended topic match: {topic.topicScore}%
       </div>
     </div>
   );
@@ -973,7 +998,7 @@ function AccountabilityTrendChart({ trend }: { trend: AccountabilityTrendModel }
 
   return (
     <div className="mt-3 rounded-xl border border-white/10 bg-[#071a38]/58 px-1.5 py-2">
-      <svg className="h-[108px] w-full" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Constituent alignment signal movement chart">
+      <svg className="h-[108px] w-full" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Issue match trend chart">
         <defs>
           <linearGradient id="alignment-area-gradient" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#ffb12b" stopOpacity="0.24" />
@@ -1034,9 +1059,9 @@ function AccountabilityInfoPopover() {
         i
       </summary>
       <div className="pointer-events-none absolute left-0 top-7 z-30 w-[270px] rounded-2xl border border-white/12 bg-[#071c38]/96 p-3 text-[12px] leading-snug text-white/72 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.35)] transition group-open:pointer-events-auto group-open:opacity-100">
-        <div className="font-medium text-[#ffb12b]">Score formula</div>
+        <div className="font-medium text-[#ffb12b]">Score blend</div>
         <p className="mt-1">
-          25% Voting Record + 15% Public Engagement + 15% Sponsored Bills + 15% Ethics &amp; Compliance + 30% Constituent Alignment.
+          25% votes + 15% public activity + 15% bill activity + 15% source status + 30% issue match.
         </p>
       </div>
     </details>
@@ -1047,7 +1072,7 @@ function VotesTab({ memberVotes }: { memberVotes: MemberVoteRecord[] }) {
   const records = memberVotes.filter((record) => record.vote).slice(0, 12);
 
   if (!records.length) {
-    return <EmptyTab icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />} title="No recorded votes yet" body="Vote records will appear here after Capitol Ledger links this official to synced roll-call data." />;
+    return <EmptyTab icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />} title="No votes linked yet" body="Roll-call votes will appear here after this official is connected to synced vote records." />;
   }
 
   return (
@@ -1055,7 +1080,7 @@ function VotesTab({ memberVotes }: { memberVotes: MemberVoteRecord[] }) {
       <PremiumCardHeader
         aside={<span className={premiumPillClass}>{records.length} records</span>}
         eyebrow="Roll-call activity"
-        title="Voting Record"
+        title="Votes"
       />
       <div className="mt-5 space-y-3">
         {records.map((record) => {
@@ -1089,7 +1114,7 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
   ];
 
   if (!records.length) {
-    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="No linked bills yet" body="Sponsored and cosponsored bills will appear here after this official's legislative records are synced." />;
+    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="No bills linked yet" body="Sponsored and cosponsored bills will appear here after this official's legislative records are synced." />;
   }
 
   return (
@@ -1097,7 +1122,7 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
       <PremiumCardHeader
         aside={<span className={premiumPillClass}>{records.length} bills</span>}
         eyebrow="Legislative activity"
-        title="Bill Activity"
+        title="Bills"
       />
       <div className="mt-5 space-y-3">
         {records.slice(0, 12).map(({ bill, label }) => (
@@ -1137,7 +1162,7 @@ function CommitteesTab({
       <EmptyTab
         icon={<Landmark className="h-6 w-6" strokeWidth={1.8} />}
         title="Committee records pending"
-        body={`Committee assignments for this ${member.chamber.toLowerCase()} official will appear here when official committee data is connected.`}
+        body={`Committee assignments for this ${member.chamber.toLowerCase()} official will appear here when official committee records are connected.`}
       />
     );
   }
@@ -1148,8 +1173,8 @@ function CommitteesTab({
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumCardHeader
             aside={<span className={premiumPillClass}>Linked bills</span>}
-            eyebrow="Committee signals"
-            title="Committee Activity"
+            eyebrow="Committee connections"
+            title="Committees"
           />
           <div className="mt-5 space-y-3">
             {committees.map((committee) => (
@@ -1206,21 +1231,21 @@ function FinanceTab({ member }: { member: Member }) {
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
-        eyebrow="Source readiness"
+        eyebrow="Public records"
         icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
         iconTone="green"
-        title="Finance & Records"
+        title="Records"
       />
       <div className="mt-5 space-y-4">
         <FinanceRow
           icon={<BriefcaseBusiness className="h-5 w-5" strokeWidth={1.8} />}
           label="Financial disclosure"
-          value="Public-record feed planned"
+          value="Feed planned"
         />
         <FinanceRow
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} />}
-          label="Ethics & compliance"
-          value="Source-linked review ready"
+          label="Ethics sources"
+          value="Source review ready"
         />
         <a
           href={member.sourceUrl}
@@ -1228,7 +1253,7 @@ function FinanceTab({ member }: { member: Member }) {
           rel="noreferrer"
           className={`mt-2 flex items-center justify-between px-4 py-4 text-[15px] font-semibold text-[#ffb12b] transition hover:brightness-110 ${premiumPanelClass}`}
         >
-          Open official profile source
+          Open official source
           <ExternalLink className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
         </a>
       </div>
