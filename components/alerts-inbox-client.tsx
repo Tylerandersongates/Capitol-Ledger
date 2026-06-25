@@ -287,7 +287,7 @@ export function AlertsInboxClient({
       if (!response.ok) {
         setTeamInviteErrors((current) => ({
           ...current,
-          [notification.id]: data?.error ?? "Unable to accept this team invite."
+          [notification.id]: data?.error ?? "This invite could not be accepted."
         }));
         return;
       }
@@ -297,7 +297,7 @@ export function AlertsInboxClient({
     } catch {
       setTeamInviteErrors((current) => ({
         ...current,
-        [notification.id]: "Unable to accept this team invite right now."
+        [notification.id]: "This invite could not be accepted right now."
       }));
     } finally {
       setPendingTeamInviteId("");
@@ -384,7 +384,7 @@ export function AlertsInboxClient({
             </div>
             <h2 className="mt-3 text-[21px] font-medium leading-tight text-white">Alerts with a next step</h2>
             <p className="mt-3 text-[15px] leading-snug text-white/58">
-              Vote reminders, team invites, deadlines, and tracked updates that need a response appear here.
+              Use this view for reminders, invites, deadlines, and tracked updates that need a response.
             </p>
           </MobileCard>
         ) : null}
@@ -489,14 +489,14 @@ function EmptyNotifications({ activeFilter }: { activeFilter: AlertsInboxFilter 
     activeFilter === "all"
       ? "No alerts yet"
       : activeFilter === "action"
-        ? "No action needed yet"
-        : "No unread alerts yet";
+        ? "Nothing needs action"
+        : "All caught up";
   const description =
     activeFilter === "all"
-      ? "New updates will appear here when tracked bills, votes, or officials change."
+      ? "Updates from tracked bills, votes, and officials will appear here."
       : activeFilter === "action"
-        ? "Alerts that need a response will appear here."
-        : "Unread alerts will appear here when new tracked updates arrive.";
+        ? "You're clear for now. New reminders, invites, and deadlines will land here when they need a response."
+        : "New tracked updates will collect here until you open them.";
 
   return (
     <MobileCard variant="dashboard" className="px-5 py-6 text-center">
@@ -516,7 +516,7 @@ function LoadingNotifications() {
         <Bell className="h-6 w-6 animate-pulse" strokeWidth={1.8} aria-hidden="true" />
       </div>
       <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">Loading alerts</h2>
-      <p className="mt-2 text-[15px] leading-6 text-white/56">Checking which updates are unread.</p>
+      <p className="mt-2 text-[15px] leading-6 text-white/56">Checking the latest tracked updates.</p>
     </MobileCard>
   );
 }

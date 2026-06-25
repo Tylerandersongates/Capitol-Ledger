@@ -721,14 +721,14 @@ export function DashboardClient({
               <div className={dashboardCardAccentClass} />
               <div className="relative z-10">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 truncate text-[15px] font-medium text-white/58">{trackedBill?.displayNumber ?? "Save a bill to start your tracker."}</p>
+                  <p className="min-w-0 truncate text-[15px] font-medium text-white/58">{trackedBill?.displayNumber ?? "Choose a bill to start tracking."}</p>
                   {hasTrackedBill ? (
                     <div className={`shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-right text-[13px] font-medium leading-none ${trackerStagePill.bgClass} ${trackerStagePill.textClass}`}>
                       {trackerStage}
                     </div>
                   ) : (
                     <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-right text-[13px] font-medium leading-none text-white/52">
-                      Empty
+                      Ready
                     </div>
                   )}
                 </div>
@@ -736,7 +736,7 @@ export function DashboardClient({
                   className="mt-2 line-clamp-4 max-w-full break-words text-[21px] font-semibold leading-[1.12] text-white"
                   title={trackedBill?.shortTitle ?? undefined}
                 >
-                  {trackedBill?.shortTitle ?? "No tracked bill yet"}
+                  {trackedBill?.shortTitle ?? "Save a bill to track it"}
                 </h3>
                 {hasTrackedBill ? (
                   <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
@@ -783,11 +783,11 @@ export function DashboardClient({
                 ) : (
                   <div className={`${dashboardInnerPanelClass} mt-2 px-3 py-3`}>
                     <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">
-                      <span>Saved tracker</span>
-                      <span>0 bills</span>
+                      <span>Tracking list</span>
+                      <span>Ready</span>
                     </div>
                     <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3 text-[13px] leading-snug text-white/58">
-                      Bills will appear here only after this account saves one from search or bill detail.
+                      Save a bill from search or a bill detail page and its next steps will appear here.
                     </div>
                     <Link href="/search?type=bills&focus=results" className="mt-3 flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[13px] font-medium text-[#ffb12b]">
                       Find Bills
@@ -1140,8 +1140,8 @@ function getUtcDateKey(value?: string) {
 function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undefined, generatedAt: string) {
   if (!candidate?.vote) {
     return {
-      detail: "Vote feed is waiting for records.",
-      label: "No recorded votes",
+      detail: "Recent votes will appear here when records are available.",
+      label: "Waiting for votes",
       tone: "empty" as const
     };
   }
@@ -1169,7 +1169,7 @@ function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undef
 
   return {
     detail: recordedLabel,
-    label: candidate.sourceLabel === "National feed" ? "No new vote today" : "No matched vote today",
+    label: candidate.sourceLabel === "National feed" ? "No vote update today" : "No saved-bill vote today",
     tone: "quiet" as const
   };
 }
