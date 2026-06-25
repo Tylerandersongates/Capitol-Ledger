@@ -79,7 +79,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
     if (payload?.mode === "manual") {
       setPendingLetter(localLetter ?? payload?.letter ?? null);
       setStatus("confirming");
-      setStatusMessage("Message opened. After you send it, confirm here so Capitol Ledger can mark it sent.");
+      setStatusMessage("Message opened. After you send it, confirm here so Capitol Ledger CE can mark it sent.");
       return;
     }
 
@@ -173,7 +173,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           ) : (
             <>
               <p className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-[12px] leading-snug text-white/56">
-                Write a message for this office. Capitol Ledger opens the official contact path and keeps a record when you mark it sent.
+                Write a message for this office. Capitol Ledger CE opens the official contact path and keeps a record when you mark it sent.
               </p>
 
               <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Your email</label>

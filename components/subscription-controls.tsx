@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Crown, ExternalLink, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   getSubscriptionFeature,
   isPlanFeatureEnabled,
@@ -16,13 +16,45 @@ import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/ca
 const storageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
-const checkoutEndpoint = "/api/account/subscription/checkout";
-const billingPortalEndpoint = "/api/account/subscription/portal";
-const checkoutHandoffParam = "checkoutHandoff";
-const checkoutHandoffVerifyValue = "verify";
+const appStoreAccountTokenEndpoint = "/api/account/subscription/app-store/account-token";
 type SubscriptionHydrationScope = "effective" | "personal";
 type SubscriptionDefaultCycle = AccountSubscriptionSnapshot["cycle"];
 let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise<AccountSubscriptionSnapshot | null>>> = {};
+let appStoreAccountTokenPromise: Promise<string | null> | undefined;
+
+type NativePurchaseMessage =
+  | {
+      action: "purchase";
+      cycle: SubscriptionDefaultCycle;
+      plan: "pro";
+      productId: string;
+      appAccountToken?: string;
+    }
+  | { action: "restore" }
+  | { action: "manage" };
+
+type NativePurchaseBridge = {
+  postMessage(message: NativePurchaseMessage): void;
+};
+
+declare global {
+  interface Window {
+    __capitolLedgerNativeStoreKit?: boolean;
+    capitolLedgerPurchase?: NativePurchaseBridge;
+    webkit?: {
+      messageHandlers?: {
+        capitolLedgerPurchase?: NativePurchaseBridge;
+      };
+    };
+  }
+}
+
+const appStoreProductIds: Record<"pro", Record<SubscriptionDefaultCycle, string>> = {
+  pro: {
+    annual: "com.capitolledger.pro.annual",
+    monthly: "com.capitolledger.pro.monthly"
+  }
+};
 
 const teamWorkspaceSignals = [
   {
@@ -32,9 +64,9 @@ const teamWorkspaceSignals = [
     value: `${minimumTeamSeatCount}-${maximumTeamSeatCount}`
   },
   {
-    detail: "The owner manages billing and invites.",
+    detail: "The owner manages subscription access and invites.",
     icon: <Bell />,
-    label: "Billing owner",
+    label: "Owner access",
     value: "Included"
   },
   {
@@ -83,6 +115,10 @@ function readSubscription(): AccountSubscriptionSnapshot {
   } catch {
     return defaultSubscription;
   }
+}
+
+function shouldPreferNativeStoreKitSubscription(subscription: AccountSubscriptionSnapshot) {
+  return Boolean(typeof window !== "undefined" && window.__capitolLedgerNativeStoreKit && subscription.provider === "app-store");
 }
 
 function writeSubscription(next: AccountSubscriptionSnapshot, syncAccount = true) {
@@ -163,6 +199,28 @@ async function hydrateSubscriptionFromAccount(scope: SubscriptionHydrationScope)
   return subscription;
 }
 
+async function readAppStoreAccountToken() {
+  if (typeof window === "undefined") return null;
+  if (!(await hasActiveBrowserSession())) return null;
+
+  if (!appStoreAccountTokenPromise) {
+    appStoreAccountTokenPromise = fetch(appStoreAccountTokenEndpoint, {
+      cache: "no-store"
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const data = (await response.json().catch(() => null)) as { appAccountToken?: string } | null;
+        return data?.appAccountToken ?? null;
+      })
+      .catch(() => null)
+      .finally(() => {
+        appStoreAccountTokenPromise = undefined;
+      });
+  }
+
+  return appStoreAccountTokenPromise;
+}
+
 export function useSubscriptionState(
   initialSubscription?: AccountSubscriptionSnapshot | null,
   options: { defaultCycle?: SubscriptionDefaultCycle; scope?: SubscriptionHydrationScope } = {}
@@ -182,12 +240,26 @@ export function useSubscriptionState(
     }
 
     async function refresh() {
+      const nativeSubscription = readSubscription();
+      if (shouldPreferNativeStoreKitSubscription(nativeSubscription)) {
+        const nextSubscription = publishDefaultCycle(nativeSubscription);
+        if (active) setSubscription(nextSubscription);
+        return;
+      }
+
       if (normalizedInitialSubscription && !subscriptionsMatch(readSubscription(), normalizedInitialSubscription)) {
         writeSubscription(normalizedInitialSubscription, false);
       }
 
       if (await hasActiveBrowserSession()) {
         const accountSubscription = await hydrateSubscriptionFromAccount(scope);
+        const refreshedNativeSubscription = readSubscription();
+        if (shouldPreferNativeStoreKitSubscription(refreshedNativeSubscription)) {
+          const nextSubscription = publishDefaultCycle(refreshedNativeSubscription);
+          if (active) setSubscription(nextSubscription);
+          return;
+        }
+
         const nextSubscription = publishDefaultCycle(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
         if (active) setSubscription(nextSubscription);
         return;
@@ -232,41 +304,21 @@ export function useSubscriptionState(
   return [subscription, updateSubscription] as const;
 }
 
-function applySubscriptionSnapshot(subscription: AccountSubscriptionSnapshot) {
-  const normalized = normalizeSubscription(subscription);
-  writeSubscription(normalized, false);
-  return normalized;
-}
-
-function shouldHoldStripeCheckoutForVerification() {
+function postNativePurchaseMessage(message: NativePurchaseMessage) {
   if (typeof window === "undefined") return false;
 
-  return new URLSearchParams(window.location.search).get(checkoutHandoffParam) === checkoutHandoffVerifyValue;
-}
+  const webkitBridge = window.webkit?.messageHandlers?.capitolLedgerPurchase;
+  if (webkitBridge) {
+    webkitBridge.postMessage(message);
+    return true;
+  }
 
-function shouldUseBillingPortal(subscription: AccountSubscriptionSnapshot, targetPlan: SubscriptionPlanId) {
-  if (subscription.provider !== "stripe" || subscription.plan === "free") return false;
+  if (window.capitolLedgerPurchase) {
+    window.capitolLedgerPurchase.postMessage(message);
+    return true;
+  }
 
-  return subscription.plan === targetPlan;
-}
-
-async function openBillingPortal() {
-  const returnPath = `${window.location.pathname}${window.location.search}`;
-  const response = await fetch(billingPortalEndpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ returnPath })
-  });
-
-  if (!response.ok) return false;
-
-  const data = (await response.json().catch(() => null)) as { portalUrl?: string } | null;
-  if (!data?.portalUrl) return false;
-
-  window.location.assign(data.portalUrl);
-  return true;
+  return false;
 }
 
 export function BillingCycleToggle({
@@ -343,99 +395,114 @@ export function PlanActionButton({
 }) {
   const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
-  const [checkoutHandoffUrl, setCheckoutHandoffUrl] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const active = subscription.plan === plan;
-  const billingPortalManaged = shouldUseBillingPortal(subscription, plan);
+  const activePaidSubscription = subscription.plan !== "free";
+  const managesCurrentSubscription = activePaidSubscription && (active || plan === "free");
+  const teamComingLater = plan === "team" && !active;
+  const disabled = pending || teamComingLater || (active && plan !== "pro") || (active && !managesCurrentSubscription);
 
   async function handlePlanAction() {
-    if (pending || (active && !billingPortalManaged)) return;
+    if (disabled) return;
     setPending(true);
-    setCheckoutHandoffUrl("");
     setStatusMessage("");
 
-    const fallbackSubscription = normalizeSubscription({
-      ...subscription,
-      plan,
-      seatCount: plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : subscription.seatCount,
-      updatedAt: new Date().toISOString()
-    });
-
     try {
-      if (billingPortalManaged) {
-        const opened = await openBillingPortal();
-        if (!opened) setStatusMessage("Billing management is not ready yet.");
+      if (managesCurrentSubscription) {
+        const opened = postNativePurchaseMessage({ action: "manage" });
+        setStatusMessage(
+          opened
+            ? "Opening App Store subscription management."
+            : "Open Capitol Ledger CE in the iOS app or TestFlight to manage App Store purchases."
+        );
         return;
       }
 
-      const response = await fetch(checkoutEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          cycle: subscription.cycle,
-          plan,
-          seatCount: plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : undefined
-        })
-      });
-      const data = (await response.json().catch(() => null)) as {
-        checkoutMode?: "demo" | "stripe";
-        checkoutUrl?: string;
-        customPlanRequired?: boolean;
-        error?: string;
-        subscription?: AccountSubscriptionSnapshot;
-      } | null;
-
-      if (!response.ok) {
-        if (plan === "free" && subscription.provider !== "stripe") updateSubscription({ plan });
-        setStatusMessage(response.status === 401 ? "Sign in to choose this plan." : data?.error ?? "Checkout could not open. Try again.");
-        return;
-      }
-
-      if (data?.checkoutMode === "stripe" && data.checkoutUrl) {
-        if (shouldHoldStripeCheckoutForVerification()) {
-          setCheckoutHandoffUrl(data.checkoutUrl);
-          setStatusMessage(`${subscriptionPlans[plan].name} checkout is ready.`);
+      if (plan === "pro") {
+        const appAccountToken = window.__capitolLedgerNativeStoreKit ? await readAppStoreAccountToken() : null;
+        if (window.__capitolLedgerNativeStoreKit && !appAccountToken) {
+          setStatusMessage("Sign in before upgrading so Apple can link Pro to this account.");
           return;
         }
 
-        window.location.assign(data.checkoutUrl);
+        const opened = postNativePurchaseMessage({
+          action: "purchase",
+          appAccountToken: appAccountToken ?? undefined,
+          cycle: subscription.cycle,
+          plan,
+          productId: appStoreProductIds.pro[subscription.cycle]
+        });
+        setStatusMessage(
+          opened
+            ? "Opening Apple in-app purchase."
+            : "Open Capitol Ledger CE in the iOS app or TestFlight to complete this purchase."
+        );
         return;
       }
 
-      if (data?.subscription) {
-        applySubscriptionSnapshot(data.subscription);
-        setStatusMessage(`${subscriptionPlans[plan].name} is active.`);
+      if (plan === "free") {
+        updateSubscription({ plan });
+        setStatusMessage("Free plan is active.");
         return;
       }
 
-      applySubscriptionSnapshot(fallbackSubscription);
-      setStatusMessage(`${subscriptionPlans[plan].name} is active.`);
+      setStatusMessage(`${subscriptionPlans[plan].name} is not available for in-app purchase yet.`);
     } catch {
       if (plan === "free") updateSubscription({ plan });
-      setStatusMessage(plan === "free" ? "Free plan is active." : "Checkout could not open. Try again.");
+      setStatusMessage(plan === "free" ? "Free plan is active." : "Purchase could not open. Try again.");
     } finally {
       setPending(false);
     }
   }
 
-  const actionLabel = billingPortalManaged ? "Manage billing" : active ? "Current plan" : inactiveLabel;
+  const actionLabel = teamComingLater
+    ? "Team coming later"
+    : managesCurrentSubscription
+      ? "Manage subscription"
+      : active
+        ? "Current plan"
+        : inactiveLabel;
 
   return (
     <>
-      <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
+      <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={disabled}>
         {pending ? "Opening..." : actionLabel}
       </button>
       {statusMessage ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">
           <span>{statusMessage}</span>
-          {checkoutHandoffUrl ? (
-            <a href={checkoutHandoffUrl} className="mt-2 inline-flex items-center gap-1 text-[#ffb12b]">
-              Open Stripe Checkout
-              <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            </a>
-          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+export function RestorePurchasesButton({ className }: { className: string }) {
+  const [pending, setPending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  function handleRestore() {
+    if (pending) return;
+    setPending(true);
+    setStatusMessage("");
+
+    const opened = postNativePurchaseMessage({ action: "restore" });
+    setStatusMessage(
+      opened
+        ? "Checking App Store purchases."
+        : "Open Capitol Ledger CE in the iOS app or TestFlight to restore App Store purchases."
+    );
+    setPending(false);
+  }
+
+  return (
+    <>
+      <button type="button" onClick={handleRestore} className={className} disabled={pending}>
+        {pending ? "Checking..." : "Restore purchases"}
+      </button>
+      {statusMessage ? (
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">
+          {statusMessage}
         </div>
       ) : null}
     </>
@@ -449,7 +516,7 @@ export function SubscriptionBadge({ initialSubscription = null }: { initialSubsc
   return (
     <Link
       href="/upgrade"
-      aria-label={`Manage Capitol Ledger ${planName}`}
+      aria-label={`Manage Capitol Ledger CE ${planName}`}
       className="mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-medium text-[#ffb12b]"
     >
       <Crown className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
@@ -605,7 +672,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          After checkout, open the Team page to invite teammates and manage shared watchlists.
+          When Team opens, use the Team page to invite teammates and manage shared watchlists.
         </span>
       </div>
 
@@ -655,10 +722,10 @@ function LockedPlanPreview({ feature }: { feature: SubscriptionFeatureId }) {
           <LockKeyhole className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <div className="text-[12px] font-medium uppercase tracking-wide text-white/45">Locked preview</div>
-          <h3 className="mt-1 text-[18px] font-medium leading-tight text-white">{featureEntitlement?.label ?? "Premium feature"}</h3>
+          <div className="text-[12px] font-medium uppercase tracking-wide text-white/45">Upgrade required</div>
+          <h3 className="mt-1 text-[18px] font-medium leading-tight text-white">{featureEntitlement?.label ?? "Pro feature"}</h3>
           <p className="mt-2 text-[14px] leading-snug text-white/56">
-            {featureEntitlement?.description ?? "This feature is available on an upgraded Capitol Ledger plan."}
+            {featureEntitlement?.description ?? "This feature is available on an upgraded Capitol Ledger CE plan."}
           </p>
         </div>
       </div>

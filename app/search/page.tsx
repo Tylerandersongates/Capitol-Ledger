@@ -312,7 +312,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         Save matched bills, officials, votes, and source links as a shareable summary.
                       </p>
                     </div>
-                    <Link href="/brief" className={premiumIconTileClass} aria-label="Preview report export">
+                    <Link href="/brief" className={premiumIconTileClass} aria-label="Open report export">
                       <Download className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
                     </Link>
                   </div>
@@ -384,7 +384,7 @@ function SearchResultBlocks({
                   </Link>
                 ))
               ) : (
-                <EmptyState label="No officials match this search." />
+                <EmptyState label="No officials match this search. Try fewer filters or a different state." />
               )}
             </ResultSection>
           );
@@ -422,7 +422,7 @@ function SearchResultBlocks({
                   );
                 })
               ) : (
-                <EmptyState label="No bills match this search." />
+                <EmptyState label="No bills match this search. Try a broader keyword or clear one filter." />
               )}
             </ResultSection>
           );
@@ -450,7 +450,7 @@ function SearchResultBlocks({
                 </Link>
               ))
             ) : (
-              <EmptyState label="No votes match this search." />
+              <EmptyState label="No votes match this search. Try a broader keyword or clear one filter." />
             )}
           </ResultSection>
         );

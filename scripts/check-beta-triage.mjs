@@ -32,7 +32,7 @@ function formatCount(label, count) {
 }
 
 async function main() {
-  console.log("Checking Capitol Ledger live app report triage");
+  console.log("Checking Capitol Ledger CE live app report triage");
 
   if (!isSet(process.env.DATABASE_URL)) {
     console.log("WARN DATABASE_URL is not configured, so no live app report queue can be checked.");

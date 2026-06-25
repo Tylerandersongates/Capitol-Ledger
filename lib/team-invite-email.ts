@@ -24,7 +24,7 @@ function appBaseUrl() {
 }
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger";
+  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
 }
 
 function deliveryMode() {

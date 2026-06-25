@@ -13,8 +13,8 @@ export type DemoSession = {
 
 export const demoUser = {
   id: "demo-citizen",
-  email: "demo@capitolledger.local",
-  name: "Demo Citizen"
+  email: "preview@capitolledger.local",
+  name: "Capitol Ledger CE Citizen"
 };
 
 function shouldUseSecureCookies() {
@@ -119,6 +119,6 @@ export async function clearCurrentAuthSession(response: NextResponse) {
 export function requireAuthMessage() {
   return {
     error: "Sign in is required to use account-backed storage.",
-    nextStep: "Start a Capitol Ledger demo account session, then sync saved records."
+    nextStep: "Start a Capitol Ledger CE demo account session, then sync saved records."
   };
 }

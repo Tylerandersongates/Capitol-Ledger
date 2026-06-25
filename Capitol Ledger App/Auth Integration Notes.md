@@ -11,10 +11,10 @@
   - `/api/account/profile`
   - `/api/account/ledger`
   - `/api/account/subscription`
+  - `/api/account/subscription/app-store`
   - `/api/account/gamification`
   - `/api/account/weekly-brief`
   - `/api/follows`
-  - `/api/account/subscription/checkout`
 - Sign-in and demo-account handoff now migrate saved ledger, subscription state, profile settings, district setup, notification preferences, and gamification snapshots into the account paths.
 - Notification read/unread state is now part of the account ledger, so read alerts can migrate at sign-in and follow a user across devices once database persistence is enabled.
 - `/account` now requires a production or demo account session and redirects signed-out users to `/sign-in` with a return path.
@@ -22,7 +22,7 @@
 - Weekly Brief generation uses the account session to combine profile, saved ledger, subscription, and unread alert state for `/brief` and `/api/account/weekly-brief`, and now records delivery history for prepared/queued/sent/failed/paused brief states.
 - Scheduled Weekly Brief delivery is exposed through `/api/tasks/weekly-brief` and requires `WEEKLY_BRIEF_CRON_SECRET`, `CAPITOL_LEDGER_TASK_SECRET`, or `CRON_SECRET` in production.
 - Auth and account-changing API routes now reject cross-origin mutation requests.
-- Auth-sensitive routes now include in-memory rate limits for sign-in, account creation, password reset, email verification, demo session start, checkout, and weekly brief preparation.
+- Auth-sensitive routes now include in-memory rate limits for sign-in, account creation, password reset, email verification, demo session start, App Store subscription account sync, and weekly brief preparation.
 
 ## New Auth Routes
 
@@ -96,7 +96,7 @@ Optional check:
 
 ## Billing Readiness QA
 
-Use `BILLING_REQUIRE_STRIPE=true pnpm billing:check` before testing real paid checkout. See `Billing Readiness Guide.md` for Stripe price ID names, webhook requirements, and the recommended checkout/webhook QA order.
+Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on account-wide Pro sync from Apple in-app purchase. See `Billing Readiness Guide.md` for App Store product IDs, Server API environment variables, and the recommended sandbox/TestFlight QA order.
 
 ## Environment Needed For Real Accounts
 
@@ -112,13 +112,11 @@ Use `BILLING_REQUIRE_STRIPE=true pnpm billing:check` before testing real paid ch
 - `WEEKLY_BRIEF_WEBHOOK_URL` for the Weekly Brief provider/webhook endpoint
 - `WEEKLY_BRIEF_WEBHOOK_SECRET` when the Weekly Brief webhook bridge should validate Capitol Ledger requests
 - `WEEKLY_BRIEF_FROM` for the sending identity shown in Weekly Brief messages
-- `STRIPE_SECRET_KEY` for paid checkout
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` for future client-side Stripe surfaces
-- `STRIPE_WEBHOOK_SECRET` for Stripe subscription event verification
-- `CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID`
-- `CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID`
-- `CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID`
-- `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`
+- `APP_STORE_BUNDLE_ID` for App Store transaction bundle validation
+- `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` for stable StoreKit account-token generation before first TestFlight purchase
+- `APP_STORE_CONNECT_ISSUER_ID` for App Store Server API
+- `APP_STORE_CONNECT_KEY_ID` for App Store Server API
+- `APP_STORE_CONNECT_PRIVATE_KEY` for App Store Server API
 - `CONGRESS_API_KEY` for live federal civic data sync
 - `CONGRESS_SYNC_CONGRESS` and `CONGRESS_SYNC_LIMIT` for the Congress.gov sync smoke test
 
@@ -155,7 +153,7 @@ Use `?dryRun=true` or `{ "dryRun": true }` to preview eligible users without wri
 1. Apply the checked-in Prisma migration against the production database and run `pnpm production-auth:check`.
 2. Connect the auth email webhook to an email provider, run `AUTH_EMAIL_REQUIRE_PROVIDER=true pnpm auth-email:check`, and test verification links, reset links, expiry, and invalid-token states.
 3. Connect the Weekly Brief webhook to an email/push provider, configure the host scheduler to call `/api/tasks/weekly-brief`, and test sent/failed delivery history with `pnpm weekly-brief:qa`.
-4. Configure Stripe checkout and webhook values, then run `BILLING_REQUIRE_STRIPE=true pnpm billing:check`.
+4. Configure App Store Connect products and Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Configure Congress.gov values, then run `pnpm congress:check` before building live civic-data upserts.
 6. Add provider-backed or edge-backed persistent rate limiting before launch if the deployment target needs protection across multiple server instances.
 7. Decide whether `/impact`, `/badges`, and subscription management should also require account sessions or remain demo-accessible.

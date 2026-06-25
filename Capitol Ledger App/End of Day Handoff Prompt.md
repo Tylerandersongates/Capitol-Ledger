@@ -38,6 +38,7 @@ Output in this exact structure:
 Rules:
 - Keep it concise and factual.
 - Always include next best steps after each handoff or completed work block so work can keep moving.
+- Keep TestFlight/App Store upload as the default north star until the native billing path and final text-tone pass are complete.
 - Include absolute dates when referencing "today/yesterday".
 - Do not invent anything that was not done.
 - If something could not be verified, say so explicitly.

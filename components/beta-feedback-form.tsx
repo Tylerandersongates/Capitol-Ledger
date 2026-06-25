@@ -51,7 +51,7 @@ const feedbackAreas: FeedbackArea[] = [
   { label: "Notifications", value: "/alerts" },
   { label: "Badges / impact", value: "/badges" },
   { label: "Saved state / day streak", value: "/saved-state" },
-  { label: "Annual upgrade / subscriptions", value: "/upgrade" },
+  { label: "Pro upgrade / purchases", value: "/upgrade" },
   { label: "Team workspace", value: "/team" },
   { label: "Team invite acceptance", value: "/team/accept" },
   { label: "Team roles / permissions", value: "/team/roles" },
@@ -163,7 +163,7 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
     }
 
     setState("sent");
-    setStatusText(data?.mode === "database" ? "Report sent to the review queue." : "Report captured in demo mode.");
+    setStatusText(data?.mode === "database" ? "Report sent to the review queue." : "Report saved for review on this device.");
     setCategory("");
     setSeverity("");
     setPageUrl("");
@@ -190,7 +190,7 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
           userAgent: window.navigator.userAgent
         },
         message:
-          "The tap-only fallback was used because text fields would not accept typing. Buttons could still be tapped. Please follow up on text field focus.",
+          "An input issue report was sent because text fields would not accept typing. Buttons could still be tapped. Please follow up on text field focus.",
         pageUrl: `${window.location.pathname}${window.location.search}`,
         severity: "high",
         title: "Cannot type in text fields"
@@ -204,12 +204,12 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
 
     if (!response?.ok) {
       setState("error");
-      setStatusText(data?.error ?? "The tap-only report could not be sent. Please message Tyler directly.");
+      setStatusText(data?.error ?? "The input issue report could not be sent. Please message Tyler directly.");
       return;
     }
 
     setState("sent");
-    setStatusText(data?.mode === "database" ? "Tap-only input issue sent to the review queue." : "Tap-only input issue captured in demo mode.");
+    setStatusText(data?.mode === "database" ? "Input issue sent to the review queue." : "Input issue saved for review on this device.");
   }
 
   return (
@@ -222,7 +222,7 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
           <div>
             <h2 className="text-[22px] font-medium leading-tight">Report a live app issue</h2>
             <p className="mt-2 text-[14px] leading-5 text-white/56">
-              Report anything that breaks, feels confusing, looks off, or would make Capitol Ledger more useful.
+              Report anything that breaks, feels confusing, looks off, or would make Capitol Ledger CE more useful.
             </p>
           </div>
         </div>

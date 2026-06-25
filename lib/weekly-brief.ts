@@ -195,7 +195,7 @@ function buildLens(
     headline: topBill ? `${topBill.displayNumber}: ${topBill.shortTitle}` : "Your civic ledger is ready",
     body: topBill
       ? `${district} brief focus: ${topBill.shortTitle} is the highest-priority item connected to ${interests}.`
-      : `This week, Capitol Ledger will watch ${interests} and surface votes, bill movement, and district-specific updates.`,
+      : `This week, Capitol Ledger CE will watch ${interests} and surface votes, bill movement, and district-specific updates.`,
     bullets: [
       `${watchlistBills.length} tracked bill${watchlistBills.length === 1 ? "" : "s"} in this week's watchlist`,
       `${unreadAlerts} unread alert${unreadAlerts === 1 ? "" : "s"} ready for review`,
@@ -296,12 +296,12 @@ export function buildWeeklyBrief({
     actionItems: buildActionItems(profile, subscription, unreadAlerts),
     cadence: defaultCadence,
     delivery: {
-      channel: "In-app beta",
+      channel: "In app",
       enabled,
       nextDelivery: "Next Monday in app",
       note: enabled
-        ? "This beta brief stays inside Capitol Ledger and refreshes from your saved ledger, alerts, district profile, and issue interests."
-        : "This beta brief stays available in app. Turn on Weekly Brief alerts from Alert Preferences when you want the reminder preference active.",
+        ? "This brief stays inside Capitol Ledger CE and refreshes from your saved ledger, alerts, district profile, and issue interests."
+        : "This brief stays available in app. Turn on Weekly Brief alerts from Alert Preferences when you want the reminder preference active.",
       status: enabled ? "ready" : "paused"
     },
     district: {

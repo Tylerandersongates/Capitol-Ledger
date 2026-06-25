@@ -822,7 +822,7 @@ function plainFactorLabel(label: string) {
 function plainStatusLabel(status: MemberScoreFactor["status"]) {
   if (status === "source-linked") return "Records available";
   if (status === "partial") return "Some records available";
-  return "Coming soon";
+  return "Not available yet";
 }
 
 function formatTopicList(topics: string[]) {
@@ -1125,12 +1125,12 @@ function FinanceTab({ member }: { member: Member }) {
         <FinanceRow
           icon={<BriefcaseBusiness className="h-5 w-5" strokeWidth={1.8} />}
           label="Financial disclosure"
-          value="Coming soon"
+          value="Not available yet"
         />
         <FinanceRow
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} />}
           label="Ethics records"
-          value="Coming soon"
+          value="Not available yet"
         />
         <a
           href={member.sourceUrl}

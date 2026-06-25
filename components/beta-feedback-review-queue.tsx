@@ -62,6 +62,7 @@ export function BetaFeedbackReviewQueue({
   const filteredRecords = useMemo(() => searchRecords(filterRecords(records, activeFilter), searchQuery), [activeFilter, records, searchQuery]);
   const reportsLabel = canManageFeedback ? "live reports" : "submitted reports";
   const listTitle = canManageFeedback ? "Latest reports" : "My reports";
+  const modeLabel = formatFeedbackModeLabel(initialMode);
 
   useEffect(() => {
     setLastChecked(formatCheckTime(new Date()));
@@ -175,7 +176,7 @@ export function BetaFeedbackReviewQueue({
               {canManageFeedback
                 ? initialMode === "database"
                   ? "Reading from the live app report queue."
-                  : "Demo-mode reports are stored in this preview session."
+                  : "Reports are stored in this local review session."
                 : "Showing reports submitted from this account. Reviewer-only triage controls are hidden."}
             </p>
             {canManageFeedback && initialMode === "database" && metrics.total === 0 ? (
@@ -184,7 +185,7 @@ export function BetaFeedbackReviewQueue({
               </p>
             ) : null}
           </div>
-          <span className="rounded-full bg-white/8 px-3 py-1.5 text-[13px] font-medium text-white/52">{initialMode}</span>
+          <span className="rounded-full bg-white/8 px-3 py-1.5 text-[13px] font-medium text-white/52">{modeLabel}</span>
         </div>
 
         <div className="mt-5 grid grid-cols-5 gap-2">
@@ -346,6 +347,10 @@ function Metric({ label, tone, value }: { label: string; tone: string; value: nu
       <div className="mt-2 text-[11px] leading-tight text-white/46">{label}</div>
     </div>
   );
+}
+
+function formatFeedbackModeLabel(mode: "database" | "demo") {
+  return mode === "database" ? "Live queue" : "Local queue";
 }
 
 function FeedbackRecordCard({
@@ -527,7 +532,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
     .join(", ");
 
   return [
-    `Capitol Ledger live app reports - ${formatFilterLabel(filter)}`,
+    `Capitol Ledger CE live app reports - ${formatFilterLabel(filter)}`,
     `${records.length} reports in this view`,
     `Active severity: ${severityCounts}`,
     `Decision triage: ${releaseCounts}`,

@@ -1,14 +1,14 @@
-# Capitol Ledger Round 2 Beta Tester Guide
+# Capitol Ledger CE Round 2 Beta Tester Guide
 
 Last updated: June 12, 2026.
 
-## What Capitol Ledger Is
+## What Capitol Ledger CE Is
 
-Capitol Ledger is a mobile-first civic tracking app for following bills, representatives, votes, alerts, and personal civic activity in one calm, source-linked place.
+Capitol Ledger CE is a mobile-first civic tracking app for following bills, representatives, votes, alerts, and personal civic activity in one calm, source-linked place.
 
 Round 1 focused on basic usability: could testers move around, save items, report feedback, and understand the main screens without coaching?
 
-Round 2 is about whether Capitol Ledger feels useful enough to keep using. Please focus on account persistence, clarity, trust, missing data, and whether the product gives you a better civic workflow than searching government sites one by one.
+Round 2 is about whether Capitol Ledger CE feels useful enough to keep using. Please focus on account persistence, clarity, trust, missing data, and whether the product gives you a better civic workflow than searching government sites one by one.
 
 ## Start Here
 
@@ -22,7 +22,7 @@ https://project-qosv1.vercel.app/feedback?source=round-2
 
 Use test-safe information. Do not enter private personal data you would not want stored in a beta environment.
 
-New testers should use an email inbox they can access. Capitol Ledger sends a verification link during sign-up. Open that link from your email, then return to Capitol Ledger and sign back in with the verified account before continuing.
+New testers should use an email inbox they can access. Capitol Ledger CE sends a verification link during sign-up. Open that link from your email, then return to Capitol Ledger CE and sign back in with the verified account before continuing.
 
 Returning Round 1 testers should sign in with the same account they already verified. Do not create a new account unless you are intentionally testing first-time setup again.
 
@@ -37,7 +37,7 @@ Please pay special attention to:
 - Whether your district, affiliation if set, interests, saved bills, saved officials, alerts, score, badges, days logged in, and settings stay consistent after returning.
 - Whether the app explains civic data clearly enough to trust it.
 - Whether the saved ledger, dashboard, search, alerts, and profile all tell the same story.
-- Whether Free, Pro Intelligence, and Civic Team language feels clear, even though live Stripe checkout is not turned on yet.
+- Whether Free, Pro Intelligence, and Civic Team language feels clear, even though paid upgrades will happen through Apple in-app purchase in the iOS build.
 - Whether anything feels like a dead end, a fake button, or a feature promise that needs clearer beta wording.
 
 ## Suggested Test Pass
@@ -52,7 +52,7 @@ New tester:
 2. Go to Sign In.
 3. Create an account with a test-safe email you can access.
 4. Open the verification link emailed to you.
-5. Return to Capitol Ledger and sign back in with the verified email.
+5. Return to Capitol Ledger CE and sign back in with the verified email.
 6. Set your district, affiliation if you want, interests, and alert preferences.
 
 Returning tester:
@@ -96,7 +96,7 @@ This is the most important Round 2 pass. If anything disappears or contradicts i
 3. Switch monthly and annual pricing if available.
 4. Report anything confusing about plan names, pricing language, locked features, or what is still demo-only.
 
-Live paid Stripe checkout is intentionally not active yet. Please focus on clarity and trust, not payment completion.
+Live paid purchase completion is intentionally not part of this web beta. Please focus on clarity and trust, not payment completion.
 
 ## What To Report
 
@@ -148,7 +148,7 @@ If you are testing returning-user behavior, mention whether you were:
 
 These do not need to be reported unless they are confusing or look broken:
 
-- Live Stripe checkout is on hold until real price IDs are configured.
+- Paid upgrades are moving to Apple in-app purchase for the iOS build; web checkout is not part of the current launch scope.
 - Some civic records are demo-backed while live Congress.gov data expansion continues.
 - Weekly Brief delivery is prepared in-app, but production email or push delivery is not fully connected yet.
 - App Store and TestFlight packaging are not part of this web beta round.

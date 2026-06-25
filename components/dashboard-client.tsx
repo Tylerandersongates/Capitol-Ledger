@@ -56,7 +56,7 @@ import type {
 
 type DashboardData = ReturnType<typeof getDashboardData>;
 type DashboardVoteFeedCandidate = DashboardData["voteFeed"][number] & { sourceLabel?: string };
-type DashboardVoteFreshnessTone = "demo" | "empty" | "fresh" | "quiet";
+type DashboardVoteFreshnessTone = "empty" | "fresh" | "quiet" | "reference";
 type DashboardFavoriteItem = {
   id: string;
   href: string;
@@ -524,7 +524,7 @@ export function DashboardClient({
                             href="/upgrade"
                             className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/8 px-4 text-[13px] font-medium text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/12"
                           >
-                            View Pro Options
+                            View Pro options
                           </Link>
                         </div>
                         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[0_0_22px_rgba(255,177,43,0.16)]">
@@ -618,7 +618,7 @@ export function DashboardClient({
                           Weekly Brief
                         </div>
                         <h2 className="mt-2 text-[22px] font-semibold leading-tight">Weekly Brief requires Pro</h2>
-                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro or Team to open district summaries, saved bill and official updates, and suggested actions.</p>
+                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro to open district summaries, saved bill and official updates, and suggested actions.</p>
                       </div>
                       <Link href="/upgrade" className={mobileViewAllClass}>
                         Upgrade
@@ -631,7 +631,7 @@ export function DashboardClient({
                           Locked
                         </span>
                       </div>
-                      <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly delivery unlocks with Pro or Team.</div>
+                  <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly Brief unlocks with Pro.</div>
                     </div>
                   </div>
                 </MobileCard>
@@ -1151,8 +1151,8 @@ function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undef
   if (candidate.sourceKind === "demo") {
     return {
       detail: recordedLabel,
-      label: "Demo fallback",
-      tone: "demo" as const
+      label: "Reference record",
+      tone: "reference" as const
     };
   }
 
@@ -1175,7 +1175,7 @@ function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undef
 }
 
 function getDashboardVoteFreshnessToneClass(tone: DashboardVoteFreshnessTone) {
-  if (tone === "demo") return "border-[#ffb12b]/30 bg-[#ffb12b]/12 text-[#ffb12b]";
+  if (tone === "reference") return "border-[#ffb12b]/30 bg-[#ffb12b]/12 text-[#ffb12b]";
   if (tone === "fresh") return "border-[#2be68d]/28 bg-[#2be68d]/12 text-[#2be68d]";
   if (tone === "quiet") return "border-[#79a8ff]/24 bg-[#79a8ff]/10 text-[#9fc4ff]";
   return "border-white/10 bg-white/[0.045] text-white/48";

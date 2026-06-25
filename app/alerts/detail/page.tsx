@@ -52,7 +52,7 @@ export default function AlertDetailPage() {
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
               </HistoryBackButton>
               <h1 className="text-[22px] font-medium leading-none text-white">Alert details</h1>
-              <SaveAlertButton alertId={vote?.id ?? bill?.id ?? "demo-alert"} />
+              <SaveAlertButton alertId={vote?.id ?? bill?.id ?? "tracked-alert"} />
             </header>
 
             <main className="mt-7 pb-5">

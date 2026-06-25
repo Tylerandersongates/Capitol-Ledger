@@ -63,8 +63,8 @@ def main():
         leftMargin=0.62 * inch,
         topMargin=0.55 * inch,
         bottomMargin=0.52 * inch,
-        title="Capitol Ledger Backend Setup Recommendations",
-        author="Capitol Ledger",
+        title="Capitol Ledger CE Backend Setup Recommendations",
+        author="Capitol Ledger CE",
     )
 
     base = getSampleStyleSheet()
@@ -150,10 +150,10 @@ def main():
     }
 
     story = []
-    story.append(p("Capitol Ledger Backend Setup Recommendations", styles["Title"]))
+    story.append(p("Capitol Ledger CE Backend Setup Recommendations", styles["Title"]))
     story.append(
         p(
-            "Reference guide for outside services needed to move Capitol Ledger from demo mode toward production. Updated May 22, 2026.",
+            "Reference guide for outside services needed to move Capitol Ledger CE from demo mode toward production. Updated May 22, 2026.",
             styles["Subtitle"],
         )
     )
@@ -184,7 +184,7 @@ def main():
         ["Database alternative", "Supabase Postgres", "Good dashboard and backup tooling if you want a broader backend platform."],
         ["Auth email", "Resend", "Simple developer email API for verification, reset links, and future briefs."],
         ["Email alternative", "Postmark", "Strong transactional reliability if deliverability becomes the top priority."],
-        ["Subscriptions", "Stripe", "Already matches Capitol Ledger checkout and webhook architecture."],
+        ["Subscriptions", "Stripe", "Already matches Capitol Ledger CE checkout and webhook architecture."],
         ["Weekly Brief schedule", "Vercel Cron", "Simplest if hosting the app on Vercel."],
         ["Rate limiting", "Upstash Redis", "Good fit for auth, password reset, checkout, AI, and public API abuse protection."],
         ["AI analysis", "OpenAI API", "Best fit for bill summaries, policy lens, and plain-language pros/cons."],
@@ -220,8 +220,8 @@ def main():
                 "Deploy the app with HTTPS and configure core environment variables: `NEXT_PUBLIC_APP_URL`, `AUTH_SECRET`, and `AUTH_COOKIE_SECURE=true`.",
                 "Connect auth email through the existing webhook bridge and test verification plus password reset flows.",
                 "Add the Congress.gov API key and schedule live data sync after the database is ready.",
-                "Create Stripe products and prices for Pro monthly, Pro annual, Civic Team monthly, and Civic Team annual.",
-                "Configure the Stripe webhook endpoint at `/api/billing/stripe/webhook`, then run `BILLING_REQUIRE_STRIPE=true pnpm billing:check`.",
+                "Create App Store Connect subscription products for Pro monthly and Pro annual.",
+                "Configure App Store Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.",
                 "Connect Weekly Brief delivery through the webhook bridge, add the scheduler, and run `pnpm weekly-brief:check` plus `pnpm weekly-brief:qa`.",
                 "Add Upstash Redis for persistent rate limiting before heavier public traffic.",
                 "Add OpenAI API once the live bill record/source pipeline is ready for generated summaries and policy analysis.",
@@ -237,7 +237,7 @@ def main():
         ["Core app", "`DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `AUTH_SECRET`, `AUTH_COOKIE_SECURE`"],
         ["Auth email", "`AUTH_EMAIL_DELIVERY`, `AUTH_EMAIL_FROM`, `AUTH_EMAIL_WEBHOOK_URL`, `AUTH_EMAIL_WEBHOOK_SECRET`"],
         ["Government data", "`CONGRESS_API_KEY`, `CONGRESS_SYNC_CONGRESS`, `CONGRESS_SYNC_LIMIT`, `CONGRESS_SYNC_WRITE`"],
-        ["Stripe billing", "`STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, four `CAPITOL_LEDGER_STRIPE_*_PRICE_ID` values"],
+        ["App Store billing", "`APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_PRIVATE_KEY`"],
         ["Weekly Brief", "`WEEKLY_BRIEF_DELIVERY`, `WEEKLY_BRIEF_FROM`, `WEEKLY_BRIEF_WEBHOOK_URL`, `WEEKLY_BRIEF_WEBHOOK_SECRET`, `WEEKLY_BRIEF_CRON_SECRET`"],
         ["Future hardening", "`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `OPENAI_API_KEY`, `SENTRY_DSN`"],
     ]
@@ -272,7 +272,7 @@ def main():
                 "`pnpm auth-email:check` checks verification and password-reset email provider readiness.",
                 "`pnpm weekly-brief:check` checks Weekly Brief provider and scheduler settings.",
                 "`pnpm weekly-brief:qa` checks the scheduled brief task route.",
-                "`pnpm billing:check` checks Stripe/database readiness before live checkout testing.",
+                "`pnpm billing:check` checks App Store billing readiness before sandbox/TestFlight purchase testing.",
                 "`pnpm backend:check` gives one consolidated outside-service setup snapshot.",
                 "`pnpm congress:check` checks Congress.gov key, sync settings, and civic-data schema readiness.",
             ],
@@ -284,7 +284,7 @@ def main():
     story.append(
         bullet_items(
             [
-                "RevenueCat or App Store subscription plumbing can wait until native iOS work begins.",
+                "Civic Team billing can wait until the Pro App Store purchase path is verified.",
                 "Sentry can wait until Vercel Observability is not enough.",
                 "AI analysis should wait until official bill text, CRS summaries, votes, and source links are reliably synced.",
                 "A separate job platform can wait until Vercel Cron is no longer enough.",

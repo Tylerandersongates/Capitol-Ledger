@@ -125,7 +125,7 @@ function checkSender() {
 }
 
 function main() {
-  console.log("Checking Capitol Ledger Weekly Brief delivery configuration");
+  console.log("Checking Capitol Ledger CE Weekly Brief delivery configuration");
 
   checkDatabase();
   checkTaskSecret();

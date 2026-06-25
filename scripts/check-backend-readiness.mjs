@@ -154,18 +154,17 @@ function checkData() {
 
 function checkBilling() {
   console.log("\nSubscriptions and billing");
-  optional("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY, "Needed before real paid checkout.");
-  optional("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, "Optional for future client-side Stripe surfaces.");
-  optional("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET, "Needed before subscription events can update accounts.");
+  optional("APP_STORE_BUNDLE_ID", process.env.APP_STORE_BUNDLE_ID, "Defaults to com.capitolledger.app; set explicitly before App Store launch.");
+  optional("APP_STORE_ACCOUNT_TOKEN_NAMESPACE", process.env.APP_STORE_ACCOUNT_TOKEN_NAMESPACE, "Set a stable value before first TestFlight purchase if the bundle ID may change.");
+  optional("APP_STORE_CONNECT_ISSUER_ID", process.env.APP_STORE_CONNECT_ISSUER_ID, "Needed before App Store Server API account-sync QA.");
+  optional("APP_STORE_CONNECT_KEY_ID", process.env.APP_STORE_CONNECT_KEY_ID, "Needed before App Store Server API account-sync QA.");
+  optional("APP_STORE_CONNECT_PRIVATE_KEY", process.env.APP_STORE_CONNECT_PRIVATE_KEY, "Needed before App Store Server API account-sync QA.");
 
-  [
-    "CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID",
-    "CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID",
-    "CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID",
-    "CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID"
-  ].forEach((envName) => {
-    optional(envName, process.env[envName], "Needed before this paid plan/cycle can use Stripe checkout.");
-  });
+  if (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_WEBHOOK_SECRET) {
+    warn("Stripe launch config", "Present but not part of the app-only Apple in-app purchase launch path.");
+  } else {
+    pass("Stripe launch config", "Absent from the app-only launch path.");
+  }
 }
 
 function checkWeeklyBrief() {
@@ -221,7 +220,7 @@ function checkHardening() {
 }
 
 function main() {
-  console.log("Checking Capitol Ledger backend setup");
+  console.log("Checking Capitol Ledger CE backend setup");
 
   checkCore();
   checkAuthEmail();

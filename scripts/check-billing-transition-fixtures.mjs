@@ -44,6 +44,7 @@ const transitionSource = read("lib/team-subscription-transition.ts");
 const stripeSource = read("lib/billing/stripe.ts");
 const subscriptionControlsSource = read("components/subscription-controls.tsx");
 const checkoutRouteSource = read("app/api/account/subscription/checkout/route.ts");
+const upgradePageSource = read("app/upgrade/page.tsx");
 
 assert.ok(
   guardSource.includes("currentSubscription.providerSubscriptionId !== eventSubscriptionId"),
@@ -78,20 +79,29 @@ assert.ok(
 assert.ok(stripeSource.includes("metadata[userEmail]"), "Stripe checkout metadata should include user email for future audit records");
 assert.ok(stripeSource.includes("readStripeCustomerSubscriptionForPlan"), "Stripe helper should expose plan-specific subscription lookup");
 assert.ok(
-  subscriptionControlsSource.includes("return subscription.plan === targetPlan") &&
-    subscriptionControlsSource.includes("shouldUseBillingPortal(subscription, plan)") &&
-    !subscriptionControlsSource.includes("Downgrade in Billing") &&
-    !subscriptionControlsSource.includes("Change in Billing") &&
-    !subscriptionControlsSource.includes("const billingPortalManaged = shouldUseBillingPortal(subscription);"),
-  "plan switches should bypass the billing portal and use app-controlled checkout or cancellation"
+  subscriptionControlsSource.includes("capitolLedgerPurchase") &&
+    subscriptionControlsSource.includes('action: "purchase"') &&
+    subscriptionControlsSource.includes('action: "restore"') &&
+    subscriptionControlsSource.includes('action: "manage"') &&
+    subscriptionControlsSource.includes("appStoreProductIds"),
+  "visible subscription controls should use the native Apple purchase bridge"
 );
 assert.ok(
-  subscriptionControlsSource.includes('checkoutHandoffParam = "checkoutHandoff"') &&
-    subscriptionControlsSource.includes('checkoutHandoffVerifyValue = "verify"') &&
-    subscriptionControlsSource.includes("shouldHoldStripeCheckoutForVerification()") &&
-    subscriptionControlsSource.includes("setCheckoutHandoffUrl(data.checkoutUrl)") &&
-    subscriptionControlsSource.includes("Open Stripe Checkout"),
-  "Stripe checkout handoff verification should let live QA stop before the hosted payment page"
+  !subscriptionControlsSource.includes("checkoutEndpoint") &&
+    !subscriptionControlsSource.includes("billingPortalEndpoint") &&
+    !subscriptionControlsSource.includes("Open Stripe Checkout") &&
+    !subscriptionControlsSource.includes("checkoutHandoff"),
+  "visible subscription controls should not call Stripe checkout or billing portal"
+);
+assert.ok(
+  upgradePageSource.includes("RestorePurchasesButton") &&
+    upgradePageSource.includes("Upgrade with Apple") &&
+    upgradePageSource.includes("Team coming later") &&
+    !upgradePageSource.includes("showStripeSandboxNotice") &&
+    !upgradePageSource.includes("STRIPE") &&
+    !upgradePageSource.includes("Test checkout") &&
+    !upgradePageSource.includes("No real payment needed"),
+  "Upgrade page should present Apple purchase and restore controls instead of Stripe test checkout"
 );
 assert.ok(
   checkoutRouteSource.includes("cancelStripeSubscriptionAtPeriodEnd(currentSubscription.providerSubscriptionId)") &&

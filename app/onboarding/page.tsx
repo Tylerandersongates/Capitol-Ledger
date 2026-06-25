@@ -69,7 +69,7 @@ export default function OnboardingPage() {
                     </div>
                     <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Set up your civic profile.</h1>
                     <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">
-                      Add your district so Capitol Ledger can show the officials, bills, votes, and alerts that matter to you.
+                      Add your district so Capitol Ledger CE can show the officials, bills, votes, and alerts that matter to you.
                     </p>
                   </div>
                   <OnboardingProgressMeter />

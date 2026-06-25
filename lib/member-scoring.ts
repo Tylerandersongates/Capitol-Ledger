@@ -460,7 +460,7 @@ export function calculateMemberScore({
   return {
     constituentAlignment: alignment,
     factors,
-    methodologyLabel: "Capitol Ledger Accountability v0.2",
+    methodologyLabel: "Capitol Ledger CE Accountability v0.2",
     overallScore,
     rating: ratingForScore(overallScore),
     summary:

@@ -2,21 +2,25 @@
 
 ## Phase Roadmap
 
-Status: updated June 12, 2026. Capitol Ledger is waiting for Round 2 tester feedback.
+Status: updated June 25, 2026. Capitol Ledger is in TestFlight prep mode: finish App Store billing setup, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
 
 ### Phase Status Snapshot
 
 1. Phase 1: Web Beta Readiness - Complete for controlled beta. Round 1 ran, feedback intake/review works, Vercel and GitHub Actions are green, and the Round 2 guide/download package is live.
 2. Phase 2: Account and Auth Stability - Complete for web beta, monitor during Round 2. New testers use email verification; returning Round 1 testers sign back into already verified accounts and check profile/gamification persistence.
 3. Phase 3: Design QA and Beta Polish - Round 1 blocker pass complete. Remaining work is feedback-driven polish from Round 2.
-4. Phase 4: Subscription Demo Integration - Demo complete for beta. Live Stripe/App Store subscription setup remains on hold until price IDs and the App Store subscription path are chosen.
+4. Phase 4: Subscription Demo Integration - Demo complete for beta. Direct StoreKit and server-side App Store transaction validation are now in place; App Store Connect products, server credentials, and sandbox/TestFlight QA remain before paid launch.
 5. Phase 5: Core Civic Data Expansion - Partially complete. Live-first search, dashboard, and bill detail paths are connected; more civic surfaces and larger sync passes remain before App Store upload.
 6. Phase 6: External Production Services - Partially complete. Auth/email, billing, push, monitoring, and production rate limiting still need final provider decisions and production checks. Weekly Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Weekly Brief in app.
-7. Phase 7: App Store and TestFlight - Not started. Begin after Round 2 feedback is triaged and the beta-tested core flow is frozen.
+7. Phase 7: App Store and TestFlight - Active prep. Native shell, StoreKit bridge, and server validation are in place; remaining work is App Store Connect setup, production env configuration, final text-tone pass, and sandbox/TestFlight QA.
 
 ### Post-Launch Next Build
 
 1. Weekly Brief outbound delivery: after launch, evaluate email/push delivery for Weekly Briefs, choose the provider bridge, define unsubscribe/history behavior, configure the cron secret/provider settings, and run `pnpm weekly-brief:check` plus `pnpm weekly-brief:qa` before turning on real sends.
+
+### Current Working Rule
+
+Everything going forward should serve the TestFlight path. Defer broad product expansion unless it fixes a launch blocker, account/payment risk, App Store review risk, or final user-facing text issue.
 
 ### Current Waiting State
 
@@ -102,9 +106,10 @@ Remaining before App Store upload:
 
 1. Triage Round 2 reports into blocker, beta OK, later, duplicate, or resolved.
 2. Fix all launch blockers and high-severity account/data contradictions.
-3. Batch non-blocking copy/spacing polish after Round 2 feedback slows.
+3. Treat the launch-facing text-tone pass as mostly complete; only fix new copy issues found during App Store screenshot capture or TestFlight QA.
 4. Capture final App Store screenshot candidates from stable mobile pages.
-5. Keep Weekly Brief visual treatment focused on the in-app beta page; revisit outbound delivery treatment in the Post-Launch Next Build.
+5. Finish App Store Connect setup, Pro subscription products, final bundle ID/signing, and App Store Server API credentials.
+6. Keep Weekly Brief visual treatment focused on the in-app beta page; revisit outbound delivery treatment in the Post-Launch Next Build.
 
 ### Phase 4: Subscription Demo Integration - Demo Complete, Live Billing Pending
 
@@ -116,15 +121,17 @@ Completed for beta:
 2. Free, Pro Intelligence, and Civic Team demo states are visible and entitlement-gated.
 3. `Subscription Demo Guide.md` and `Billing Readiness Guide.md` document the demo and live-billing gates.
 4. Live Stripe setup is intentionally on hold until real price IDs exist.
+5. Direct StoreKit purchase, restore, and manage actions are wired through the native iOS shell.
+6. `/api/account/subscription/app-store` validates signed StoreKit transactions through App Store Server API before writing account subscription state.
 
 Remaining before App Store upload:
 
-1. Decide whether App Store subscriptions use direct StoreKit/App Store Server API, RevenueCat, or another bridge.
-2. Create final product names, plan copy, prices, and subscription groups.
-3. Configure Stripe only if web checkout remains part of the launch path.
-4. Add live billing secrets and price IDs through Vercel/App Store tooling, not git.
-5. Run `BILLING_REQUIRE_STRIPE=true pnpm billing:check` if Stripe is enabled.
-6. Run subscription purchase/restore/cancel QA in TestFlight or the chosen billing sandbox.
+1. Create final App Store Connect product names, plan copy, prices, and one subscription group for Pro.
+2. Confirm product IDs match `com.capitolledger.pro.monthly` and `com.capitolledger.pro.annual`.
+3. Add App Store Server API variables through Apple/Vercel tooling, not git: `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY`.
+4. Keep Stripe disabled for launch unless a web checkout path is deliberately reintroduced.
+5. Rerun `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`; both should pass after Apple setup.
+6. Run subscription purchase, restore, renewal, cancellation, and expiration QA in sandbox/TestFlight.
 
 ### Phase 5: Core Civic Data Expansion - Partial, App Store Data Hardening Remaining
 
@@ -157,10 +164,11 @@ Estimated time: 3 to 7 days, depending on provider approvals.
 
 Completed or prepared:
 
-1. `backend:check`, `billing:check`, `auth-email:check`, `weekly-brief:check`, `weekly-brief:qa`, and `congress:check` exist as readiness commands.
+1. `backend:check`, `billing:check`, `launch-copy:check`, `auth-email:check`, `weekly-brief:check`, `weekly-brief:qa`, and `congress:check` exist as readiness commands.
 2. Auth email delivery plumbing exists for verification and password reset.
 3. Weekly Brief task route and delivery-history table exist.
-4. Stripe-ready checkout/webhook routes exist in demo-safe mode.
+4. Legacy Stripe checkout/webhook routes still exist in demo-safe mode, but the current launch billing path is Apple in-app purchase through StoreKit and App Store Server API validation.
+5. `pnpm testflight:check` exists as the TestFlight readiness gate for native files, StoreKit products, account-token binding, required env names, and final text-tone tracking.
 
 Remaining before App Store upload:
 
@@ -175,29 +183,33 @@ Remaining before App Store upload:
 
 Goal: package the tested product for Apple review and pre-sale testing.
 
-Estimated time: 2 to 5 days after beta feedback is stable.
+Estimated time: 2 to 5 days after App Store Connect setup and final text-tone pass are stable.
 
 Prerequisites:
 
-1. Round 2 feedback is triaged.
-2. Zero launch blockers remain open.
-3. Account persistence, saved state, and days-logged-in behavior are acceptable for returning testers.
-4. Subscription/App Store purchase path is chosen.
-5. External production-service gates are either completed or clearly deferred from App Store v1.
+1. App Store Connect app record, final bundle ID, signing, and Pro subscription products are ready.
+2. App Store Server API environment variables are configured in the host.
+3. Final launch-facing text-tone pass is complete for auth/account/settings/upgrade/feedback/alerts/brief empty/error states.
+4. Zero launch blockers remain open.
+5. Account persistence, saved state, and days-logged-in behavior are acceptable for returning testers.
+6. Subscription/App Store purchase path is direct StoreKit, with server validation configured and verified in sandbox/TestFlight.
+7. External production-service gates are either completed or clearly deferred from App Store v1.
 
 Upload checklist:
 
-1. Freeze the beta-tested core flow.
-2. Prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, marketing URL if needed, privacy policy URL, and age/content declarations.
-3. Prepare App Store description, keywords, promotional text, release notes, category, and review notes.
-4. Prepare App Privacy nutrition labels based on actual account, analytics, civic activity, purchase, and notification data use.
-5. Capture final screenshots for required iPhone sizes from the stable mobile pages.
-6. Package the Apple build path and verify production environment settings.
-7. Upload the first build to App Store Connect.
-8. Run TestFlight on real devices.
-9. Fix TestFlight-only issues and re-upload as needed.
-10. Submit for App Review when TestFlight, billing, auth, privacy, and feedback triage are clean.
-11. Decide Android timing after Apple/core flow is solid.
+1. Run `pnpm testflight:check`.
+2. Run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` after Apple/env setup.
+3. Freeze the beta-tested core flow.
+4. Use `Capitol Ledger App/App Store Connect Setup Packet.md` to prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, privacy policy URL, subscription products, and review notes.
+5. Prepare App Store description, keywords, promotional text, release notes, category, and review notes.
+6. Prepare App Privacy nutrition labels based on actual account, analytics, civic activity, purchase, and notification data use.
+7. Capture final screenshots for required iPhone sizes from the stable mobile pages.
+8. Package the Apple build path and verify production environment settings.
+9. Upload the first build to App Store Connect.
+10. Run TestFlight on real devices.
+11. Fix TestFlight-only issues and re-upload as needed.
+12. Submit for App Review when TestFlight, billing, auth, privacy, and feedback triage are clean.
+13. Decide Android timing after Apple/core flow is solid.
 
 ## Completed Product Work
 
@@ -250,7 +262,7 @@ Upload checklist:
 44. Added a secure scheduled Weekly Brief delivery runner at `/api/tasks/weekly-brief` that finds eligible Pro/Team users, prepares briefs, records queued/sent/failed delivery history, and can hand off to a future webhook provider.
 45. Added a Weekly Brief task QA runner (`pnpm weekly-brief:qa`) that checks task-route secret protection, dry-run behavior, response shape, and optional live delivery-record writes.
 46. Added `Weekly Brief Delivery Guide.md` and `pnpm weekly-brief:check` so provider readiness, cron secrets, webhook settings, sender identity, and production delivery configuration can be checked before a paid provider is integrated.
-47. Added `Billing Readiness Guide.md` and `pnpm billing:check` so database, app URL, Stripe keys, webhook secret, and paid plan price IDs can be checked before live checkout testing.
+47. Added `Billing Readiness Guide.md` and `pnpm billing:check` so database, app URL, App Store Server API values, StoreKit product IDs, and account-sync readiness can be checked before sandbox/TestFlight purchase testing.
 48. Added a backend setup recommendations PDF and `pnpm backend:check` so outside-service setup can be tracked from one consolidated readiness command.
 49. Added `Auth Email Delivery Guide.md` and `pnpm auth-email:check` so verification and password-reset email provider readiness can be checked before production auth QA.
 50. Added `Congress Live Data Sync Guide.md`, `pnpm congress:check`, and configurable `pnpm sync:congress` settings so live Congress.gov setup can be checked before database upserts are built.

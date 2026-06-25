@@ -142,7 +142,7 @@ function InviteCard({
             <div className={premiumEyebrowClass}>Seat rules</div>
             <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Paid capacity applies</h2>
             <p className="mt-2 text-[13px] leading-snug text-white/54">
-              Capitol Ledger confirms the owner&apos;s Team billing before assigning this seat.
+              Capitol Ledger CE confirms the owner&apos;s Team billing before assigning this seat.
             </p>
           </div>
           <span className={premiumIconTileClass}>

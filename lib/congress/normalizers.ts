@@ -369,7 +369,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
     photoUrl: raw.depiction?.imageUrl,
     officialUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
-    description: `${chamber} member from ${state} normalized from Congress.gov for Capitol Ledger live data.`
+    description: `${chamber} member from ${state} normalized from Congress.gov for Capitol Ledger CE live data.`
   };
 }
 
@@ -401,7 +401,7 @@ export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Me
     active: raw.currentMember ?? Boolean(activeTerm && !activeTerm.endYear),
     bioguideId: raw.bioguideId,
     chamber,
-    description: `${chamber} member from ${state} normalized from Congress.gov member detail for Capitol Ledger live data.`,
+    description: `${chamber} member from ${state} normalized from Congress.gov member detail for Capitol Ledger CE live data.`,
     district: typeof activeTerm?.district === "number" ? String(activeTerm.district) : typeof raw.district === "number" ? String(raw.district) : undefined,
     firstElectedDate: service.firstElectedDate,
     firstName,
@@ -440,7 +440,7 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
     committeeName: raw.committees?.count ? `${raw.committees.count} committee record${raw.committees.count === 1 ? "" : "s"}` : undefined,
     latestActionText: raw.latestAction?.text ?? "Latest action pending from Congress.gov.",
     latestActionDate,
-    summary: raw.latestAction?.text ?? "Live Congress.gov bill record normalized for Capitol Ledger.",
+    summary: raw.latestAction?.text ?? "Live Congress.gov bill record normalized for Capitol Ledger CE.",
     sourceUrl
   };
 }

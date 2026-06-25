@@ -236,13 +236,13 @@ export function AuthFlowClient({
     if (mode === "reset") return "Choose a new password.";
     if (mode === "verify") return "Verify your email.";
     if (mode === "success") return "You are signed in.";
-    return "Sign in to Capitol Ledger.";
+    return "Sign in to Capitol Ledger CE.";
   }, [mode]);
 
   const body = useMemo(() => {
     if (mode === "create") return "Save your district, alerts, topics, and plan in one place.";
     if (mode === "forgot") return "Enter your email and we will send reset instructions if there is an account for it.";
-    if (mode === "reset") return "Choose a new password for your Capitol Ledger account.";
+    if (mode === "reset") return "Choose a new password for your Capitol Ledger CE account.";
     if (mode === "verify") return `Open the verification link sent to ${form.email || "your email"}, or paste the token below.`;
     if (mode === "success") return "Continue to setup or open your dashboard.";
     return "Open your dashboard, saved items, alerts, and profile settings.";
@@ -457,12 +457,12 @@ export function AuthFlowClient({
 
   async function startDemoAccount(href = postAuthReturnTo) {
     if (!allowDemoMode) {
-      setStatus("Demo mode is disabled for this deployment.");
+      setStatus("Preview access is not available in this build.");
       return;
     }
 
     setPending(true);
-    setStatus("Opening demo...");
+    setStatus("Opening preview account...");
 
     const response = await fetch("/api/auth/demo", {
       method: "POST"
@@ -471,7 +471,7 @@ export function AuthFlowClient({
     if (!response?.ok) {
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       setPending(false);
-      setStatus(data?.error ?? "Demo could not start. Restart the preview and try again.");
+      setStatus(data?.error ?? "Preview account could not open. Please try again.");
       return;
     }
 
@@ -506,7 +506,7 @@ export function AuthFlowClient({
       setPending(false);
 
       if (!result.ok) {
-        setStatus(result.data.error ?? "Sign-in is not configured yet.");
+        setStatus(result.data.error ?? "Sign-in is temporarily unavailable. Try again shortly.");
         return;
       }
 
@@ -569,7 +569,7 @@ export function AuthFlowClient({
       setPending(false);
 
       if (!result.ok) {
-        setStatus(result.data.error ?? "Account creation is not configured yet. Use demo mode for now.");
+        setStatus(result.data.error ?? "Account creation is temporarily unavailable. Try again shortly.");
         return;
       }
 
@@ -607,7 +607,7 @@ export function AuthFlowClient({
       setPending(false);
 
       const resetMessage = "message" in result.data ? result.data.message : undefined;
-      setStatus(result.ok ? resetMessage ?? "If that email has an account, reset instructions are on the way." : result.data.error ?? "Password reset is not available yet.");
+      setStatus(result.ok ? resetMessage ?? "If that email has an account, reset instructions are on the way." : result.data.error ?? "Password reset is temporarily unavailable. Try again shortly.");
       return;
     }
 
@@ -821,7 +821,7 @@ export function AuthFlowClient({
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded border ${form.consent ? "border-[#43ed74]/45 bg-[#43ed74]/12 text-[#43ed74]" : "border-white/15 bg-white/5"}`}>
                 {form.consent ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
               </span>
-              I agree to create my Capitol Ledger account and use my setup choices to personalize the app.
+              I agree to create my Capitol Ledger CE account and use my setup choices to personalize the app.
             </button>
           ) : null}
 
@@ -831,7 +831,7 @@ export function AuthFlowClient({
               <div className="mt-3 text-[18px] font-semibold text-white">Verification complete</div>
               <p className="mt-2 text-[14px] leading-snug text-white/58">
                 {allowDemoMode
-                  ? "Finish setup or open the demo dashboard."
+                  ? "Finish setup or open the preview dashboard."
                   : "Finish setup or open your dashboard."}
               </p>
             </div>
@@ -943,10 +943,10 @@ export function AuthFlowClient({
       {allowDemoMode ? (
         <div className="mt-6 flex flex-col items-center gap-3 text-center">
           <button type="button" onClick={() => void startDemoAccount(postAuthReturnTo)} disabled={pending} className="text-[15px] font-semibold text-[#ffb12b] disabled:opacity-60">
-            Continue in demo mode
+            Continue with preview access
           </button>
           <p className="max-w-xs text-[12px] leading-5 text-white/38">
-            Demo mode opens a preview account and keeps saved items from this browser.
+            Preview access keeps saved items on this device.
           </p>
         </div>
       ) : null}

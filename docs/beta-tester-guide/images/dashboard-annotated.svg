@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" role="img" aria-labelledby="title-dashboard desc-dashboard">
-  <title id="title-dashboard">Annotated Capitol Ledger dashboard snapshot</title>
+  <title id="title-dashboard">Annotated Capitol Ledger CE dashboard snapshot</title>
   <desc id="desc-dashboard">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
   
     <defs>

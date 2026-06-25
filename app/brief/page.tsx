@@ -208,11 +208,11 @@ function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[#ffb12b]">
                 <LockKeyhole className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                <span className="text-[13px] font-medium uppercase tracking-wide">Premium Brief</span>
+                <span className="text-[13px] font-medium uppercase tracking-wide">Pro Brief</span>
               </div>
-              <h2 className="mt-3 text-[25px] font-medium leading-tight text-white">Weekly Brief unlocks with Pro or Team</h2>
+              <h2 className="mt-3 text-[25px] font-medium leading-tight text-white">Weekly Brief unlocks with Pro</h2>
               <p className="mt-3 text-[16px] leading-snug text-white/62">
-                Free accounts keep the dashboard, saved ledger, and civic alerts. Upgrade to open district summaries, saved watchlist movement, and weekly action queues.
+                Free accounts keep the dashboard, saved ledger, and civic alerts. Upgrade to Pro for district summaries, saved watchlist movement, and weekly action queues.
               </p>
             </div>
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
@@ -221,10 +221,10 @@ function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
           </div>
           <div className="mt-5 grid gap-3">
             <Link href="/upgrade" className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
-              View Upgrade Options
+              View Pro options
             </Link>
             <Link href="/dashboard" className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white/70">
-              Back to Dashboard
+              Back to dashboard
             </Link>
           </div>
         </MobileCard>

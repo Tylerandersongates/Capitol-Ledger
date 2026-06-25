@@ -22,7 +22,7 @@ import {
   BillingCycleToggle,
   PlanActionButton,
   PlanPrice,
-  TeamSeatSelector,
+  RestorePurchasesButton,
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
@@ -38,10 +38,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const upgradeDefaultCycle: AccountSubscriptionSnapshot["cycle"] = "annual";
-
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
-const stripeLiveMode = process.env.STRIPE_LIVE_MODE === "true";
-const showStripeSandboxNotice = stripePublishableKey.startsWith("pk_test_") && !stripeLiveMode;
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
@@ -82,7 +78,7 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Choose Pro for personal tracking, or Team when several people need the same workspace."
+            description="Upgrade to Pro through Apple in-app purchase. Team stays visible for the later shared-work rollout."
             eyebrow="Plans"
             title="Choose a plan"
           />
@@ -101,10 +97,10 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Choose monthly or annual billing before picking a plan."
-              eyebrow="Billing"
+              description="Choose monthly or annual before starting the Apple in-app purchase."
+              eyebrow="App Store"
               icon={<Sparkles />}
-              title="Billing cycle"
+              title="Subscription cycle"
             />
             <div className="mt-5">
               <BillingCycleToggle initialSubscription={initialSubscription} defaultCycle={upgradeDefaultCycle} />
@@ -112,23 +108,22 @@ export default async function UpgradePage() {
           </MobileCard>
         </div>
 
-        {showStripeSandboxNotice ? (
-          <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-            <PremiumUpgradeHeader
-              description="Checkout is in test mode. Use card 4242 4242 4242 4242 with any future expiration, CVC, and ZIP code."
-              eyebrow="Test checkout"
-              icon={<ShieldCheck />}
-              title="No real payment needed"
-            />
-          </MobileCard>
-        ) : null}
+        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+          <PremiumUpgradeHeader
+            description="Already subscribed through Apple? Restore purchases to refresh this account."
+            eyebrow="Purchases"
+            icon={<ShieldCheck />}
+            title="Restore access"
+          />
+          <RestorePurchasesButton className="mt-5 flex h-11 w-full items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110 disabled:opacity-45" />
+        </MobileCard>
 
         <section className="space-y-3" aria-label="Subscription plans">
           <PlanTierCard
             badge="Best Value"
             featured
             icon={<Crown />}
-            inactiveLabel="Upgrade to Pro"
+            inactiveLabel="Upgrade with Apple"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="pro"
@@ -143,7 +138,7 @@ export default async function UpgradePage() {
           <PlanTierCard
             badge="Team plan"
             icon={<Sparkles />}
-            inactiveLabel="Start Team"
+            inactiveLabel="Team coming later"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="team"
@@ -328,7 +323,11 @@ function PlanTierCard({
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
-      {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
+      {plan === "team" ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-[13px] leading-snug text-white/54">
+          Team is planned for a later App Store-ready rollout after Pro subscriptions.
+        </div>
+      ) : null}
       <FeatureList items={planDetails.highlights} />
       <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} defaultCycle={defaultCycle} className={actionClassName} />
       </MobileCard>

@@ -386,7 +386,7 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
               </h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
                 {checkoutReturn
-                  ? "Checkout is complete. Capitol Ledger is confirming billing before opening the workspace."
+                  ? "Checkout is complete. Capitol Ledger CE is confirming billing before opening the workspace."
                   : "Choose a Team plan first, then invite teammates and manage shared watchlists here."}
               </p>
             </div>

@@ -6,6 +6,15 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Completed a legal-name branding pass so front-facing app copy, public support/privacy pages, native iOS display name, App Store setup copy, active tester docs, and launch-facing checks use `Capitol Ledger CE` instead of `Capitol Ledger`.
+- Added public `/privacy` and `/support` pages, linked them from Settings, and created `Capitol Ledger App/App Store Connect Setup Packet.md` with the exact bundle ID, product IDs, support/privacy URLs, reviewer notes, screenshot candidates, and Apple-side checklist needed for the next App Store Connect pass.
+- Expanded `pnpm testflight:check` so the App Store setup packet and support/privacy pages are part of the readiness gate.
+- Tightened the App Store billing gate for the app-only launch path: `.env.example` now includes the Apple in-app purchase variables, `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` now treats final bundle ID and stable account-token namespace as blockers, and strict TestFlight/billing checks currently fail only on Apple-side setup values that must come from App Store Connect/host configuration.
+- Added a native iOS StoreKit shell under `ios/CapitolLedgerNative` with a SwiftUI app, WKWebView bridge, Pro monthly/annual product IDs, purchase/restore/manage handling, and native entitlement publishing back into the web subscription state.
+- Added server-side App Store transaction validation at `/api/account/subscription/app-store`, so signed StoreKit transactions can sync validated Pro status into the account subscription record.
+- Added `Capitol Ledger App/TestFlight Readiness Checklist.md` and `pnpm testflight:check` so upcoming work is measured against the App Store/TestFlight path.
+- Continued the final launch-facing text-tone pass across auth/account, dashboard screenshot candidates, Settings, Weekly Brief, live reports, report review, search empty states, member source placeholders, and locked feature cards; expanded `pnpm launch-copy:check` to keep stale beta/demo/payment wording out of those surfaces.
+- Added `pnpm ios-native:check` to guard the native StoreKit bridge contract against the web `/upgrade` paywall.
 - Replaced the legacy `/beta` tester checklist with a redirect into `/feedback?source=live-testing`.
 - Simplified Settings and feedback entry points around live app issue reporting instead of beta tester intake.
 - Added `pnpm reports:check` and `pnpm reports:triage` as the forward-facing report readiness commands while preserving the old aliases for compatibility.
@@ -144,28 +153,36 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 Use:
 
-`http://127.0.0.1:3020`
+`http://127.0.0.1:3023`
 
 Useful pages:
 
-- `http://127.0.0.1:3020/onboarding`
-- `http://127.0.0.1:3020/dashboard`
-- `http://127.0.0.1:3020/search`
-- `http://127.0.0.1:3020/map`
-- `http://127.0.0.1:3020/alerts`
-- `http://127.0.0.1:3020/brief`
-- `http://127.0.0.1:3020/upgrade`
-- `http://127.0.0.1:3020/account`
-- `http://127.0.0.1:3020/beta`
-- `http://127.0.0.1:3020/feedback`
-- `http://127.0.0.1:3020/feedback/review`
+- `http://127.0.0.1:3023/onboarding`
+- `http://127.0.0.1:3023/dashboard`
+- `http://127.0.0.1:3023/search`
+- `http://127.0.0.1:3023/map`
+- `http://127.0.0.1:3023/alerts`
+- `http://127.0.0.1:3023/brief`
+- `http://127.0.0.1:3023/upgrade`
+- `http://127.0.0.1:3023/account`
+- `http://127.0.0.1:3023/beta`
+- `http://127.0.0.1:3023/feedback`
+- `http://127.0.0.1:3023/feedback/review`
 
 ## Build Status
 
 Last checked passes:
 
-- `pnpm run video-links:check`
+- `pnpm launch-copy:check`
+- `pnpm testflight:check`
+- `pnpm lint`
 - `pnpm exec tsc --noEmit --pretty false`
+- `pnpm ios-native:check`
+- `xcodebuild -project ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj -scheme CapitolLedgerNative -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/capitol-ledger-native-derived CODE_SIGNING_ALLOWED=NO build`
+- `pnpm billing:check`
+- `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` fails as expected until Apple bundle/account-token/API values are configured.
+- `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` fails as expected until Apple bundle/account-token/API values are configured.
+- `pnpm run video-links:check`
 - `NODE_OPTIONS='--require ./scripts/force-swc-wasm.cjs' next build`
 
 ## Product Notes
@@ -173,6 +190,9 @@ Last checked passes:
 - Speech/video links are demo-ready and subscription-gated on bill detail pages through the `speechVideo` entitlement. Vercel only needs the latest deployment for the current source-backed demo links. A future production layer should ingest or verify live committee hearing, floor video, and member statement feeds before this becomes fully automated.
 - The app has no polling loops in the current mobile flow. Shared hydration now avoids several duplicate profile/gamification/read-alert requests, which keeps the app lighter as we add more civic data.
 - Subscription demo mode can now be switched from `/account` or `/upgrade`, and those plan states visibly affect dashboard, bill details, alerts, search, and map. The switcher and locked previews have been polished for investor walkthroughs, the demo script lives in `Subscription Demo Guide.md`, and live billing readiness can be checked with `pnpm billing:check`.
+- The App Store subscription path now has a direct StoreKit native shell plus a server validation endpoint for account-wide Pro sync. The remaining production setup is App Store Connect products, App Store Server API credentials in the host, and sandbox/TestFlight purchase QA.
+- App Store-required local gates are intentionally strict now: before sandbox/TestFlight purchase QA, configure `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY` in the host environment.
+- TestFlight is now the active prep direction. The launch-facing text-tone pass now covers auth/account, dashboard, settings, upgrade, feedback, alerts, brief, search empty states, member source placeholders, locked feature cards, and bill/member detail sub-tabs. The next major step is App Store Connect setup and sandbox/TestFlight purchase QA.
 - Production auth routes now exist and are wired to `/sign-in`. Real accounts require `DATABASE_URL`; deployed HTTPS should set `AUTH_COOKIE_SECURE=true`; the checked-in migration can be applied with `pnpm prisma:migrate:deploy`; `pnpm production-auth:check` verifies the required tables; password reset completion is ready for `/sign-in?resetToken=...` links; verification is ready for `/sign-in?verifyToken=...` links; auth email delivery can use `AUTH_EMAIL_DELIVERY=webhook` once a provider bridge is chosen. Use `pnpm auth-email:check` before production email QA. See `Auth Integration Notes.md`.
 - Demo sign-in now avoids blocking on account sync. This keeps local/investor previews usable even when `DATABASE_URL` is present but the production database is not running.
 - Auth hardening currently uses same-origin guards plus in-memory rate limiting, which is enough for a first production pass and local QA. For a multi-instance hosted deployment, replace or supplement the rate limit store with an edge/provider-backed limiter.

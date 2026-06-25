@@ -77,7 +77,7 @@ export async function POST(
   const session = await getCurrentSession();
   const memberLabel = `${member.fullName} (${member.chamber === "House" ? "House" : "Senate"}, ${member.state}${member.district ? `-${member.district}` : ""})`;
   const senderEmail = parsed.data.fromEmail || session?.user?.email;
-  const senderName = parsed.data.fromName || session?.user?.name || "Capitol Ledger user";
+  const senderName = parsed.data.fromName || session?.user?.name || "Capitol Ledger CE user";
 
   if (!senderEmail) {
     return NextResponse.json({ error: "Add your email so the office can reply." }, { status: 400 });

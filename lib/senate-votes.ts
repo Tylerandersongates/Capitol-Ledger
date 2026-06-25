@@ -25,7 +25,7 @@ const senateXmlFetchHeaders: HeadersInit[] = [
   {
     Accept: "application/xml,text/xml,*/*",
     "Accept-Language": "en-US,en;q=0.9",
-    "User-Agent": "Mozilla/5.0 Capitol Ledger civic data reader"
+    "User-Agent": "Mozilla/5.0 Capitol Ledger CE civic data reader"
   },
   {
     Accept: "application/xml,text/xml,*/*"

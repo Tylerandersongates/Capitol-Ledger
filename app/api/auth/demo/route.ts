@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   if (!demoAuthEnabled()) {
     return NextResponse.json(
       {
-        error: "Demo mode is disabled for this deployment."
+        error: "Preview access is not available in this build."
       },
       { status: 403 }
     );

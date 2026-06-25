@@ -120,7 +120,7 @@ async function checkDatabase() {
 }
 
 async function main() {
-  console.log("Checking Capitol Ledger live app reporting readiness");
+  console.log("Checking Capitol Ledger CE live app reporting readiness");
 
   console.log("\nFeedback intake");
   fileExists("app/feedback/page.tsx", "Report form page is required.");

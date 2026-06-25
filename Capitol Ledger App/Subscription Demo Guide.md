@@ -145,7 +145,7 @@ Refresh persistence:
 - Use `/map` for Civic Team.
 - Use `/search` for Pro export/report value.
 - Use `/alerts` for priority reminders.
-- Use `Billing Readiness Guide.md` and `pnpm billing:check` before replacing demo plan switching with real Stripe checkout.
+- Use `Billing Readiness Guide.md` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on App Store account-wide Pro sync.
 
 ## Next Polish Items
 

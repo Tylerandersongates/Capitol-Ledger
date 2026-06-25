@@ -35,7 +35,7 @@ const premiumHeaderGreenIconClass =
 
 export default async function AccountPage() {
   const session = await requireAccountSession("/account");
-  const profileDisplayName = session?.user.name?.trim() || (session?.mode === "production" ? "Capitol Ledger Citizen" : "Demo Citizen");
+  const profileDisplayName = session?.user.name?.trim() || "Capitol Ledger CE Citizen";
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
   const [initialLedger, initialProfile, personalSubscription] = await Promise.all([
     readLedgerFromDatabase(accountUserId).catch(() => null),

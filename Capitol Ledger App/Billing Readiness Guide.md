@@ -2,15 +2,16 @@
 
 ## Purpose
 
-Capitol Ledger already has Stripe-ready checkout and webhook routes, plus demo fallback for plan switching. This guide is the readiness gate before we test real paid checkout.
+Capitol Ledger CE is now app-only for paid upgrades. Pro is purchased through Apple in-app purchase in the native iOS shell, and the server validates signed StoreKit transactions before syncing Pro to the user account.
 
 ## Current App Path
 
-1. `/upgrade` lets a user choose Free, Pro Intelligence, or Civic Team.
-2. `/api/account/subscription/checkout` creates a Stripe checkout session when Stripe config is present.
-3. Missing Stripe config falls back to demo subscription mode, so investor demos keep working.
-4. `/api/billing/stripe/webhook` receives Stripe subscription events and updates the account subscription.
-5. `/account` reads the current plan and shows plan-specific profile, preferences, Weekly Brief, and subscription controls.
+1. `/upgrade` lets a user choose Pro monthly or annual and starts Apple in-app purchase from the native shell.
+2. Native StoreKit handles purchase, restore, and App Store subscription management.
+3. The device unlocks Pro immediately after StoreKit returns an active entitlement.
+4. `/api/account/subscription/app-store` validates the signed transaction through App Store Server API before writing account subscription state.
+5. The server blocks an Apple original transaction from being linked to a second account when a database-backed owner already exists.
+6. Civic Team stays visible as a later product path, but it is not part of App Store v1 billing.
 
 ## Required Environment
 
@@ -18,14 +19,11 @@ Capitol Ledger already has Stripe-ready checkout and webhook routes, plus demo f
 DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 AUTH_COOKIE_SECURE="true"
-STRIPE_SECRET_KEY="sk_test_or_live_..."
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_or_live_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-STRIPE_LIVE_MODE="false"
-CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID="price_..."
-CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID="price_..."
-CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID="price_..."
-CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID="price_..."
+APP_STORE_BUNDLE_ID="com.capitolledger.app"
+APP_STORE_ACCOUNT_TOKEN_NAMESPACE="capitol-ledger-app-store-v1"
+APP_STORE_CONNECT_ISSUER_ID="..."
+APP_STORE_CONNECT_KEY_ID="..."
+APP_STORE_CONNECT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----..."
 ```
 
 Run:
@@ -34,53 +32,39 @@ Run:
 pnpm billing:check
 ```
 
-Use this when checking live Stripe readiness:
+Use this when checking App Store Server API readiness:
 
 ```bash
-BILLING_REQUIRE_STRIPE=true pnpm billing:check
+BILLING_REQUIRE_APP_STORE=true pnpm billing:check
 ```
 
-Set `STRIPE_LIVE_MODE=true` only when the configured key and price IDs are live production Stripe values.
+Do not commit App Store Connect keys or private-key material. Add them through Apple/Vercel tooling and keep the `.p8` key in a secure password manager.
 
-`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is optional for the current server-created Stripe Checkout flow, but keep it configured with the matching test/live mode if client-side Stripe components are added later.
+For the App Store launch path, `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` should fail until `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, and all App Store Server API credentials are explicitly configured.
 
-Do not commit Stripe API keys, webhook secrets, or the Stripe dashboard password. Add keys through Vercel environment variables after beta testing, and keep the dashboard password in a secure password manager.
+## Product Mapping
 
-## Stripe Price Mapping
+- Pro monthly: `com.capitolledger.pro.monthly`
+- Pro annual: `com.capitolledger.pro.annual`
 
-- Pro monthly: `CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID`
-- Pro annual: `CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID`
-- Civic Team monthly per seat: `CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID`
-- Civic Team annual per seat: `CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID`
-
-Civic Team uses one monthly and one annual per-seat Stripe price. The selected seat count is sent to Stripe Checkout as `line_items[0][quantity]`, with a minimum of 3 seats.
-
-The checkout route sends these metadata fields to Stripe:
-
-- `userId`
-- `plan`
-- `cycle`
-- `seatCount` for Civic Team checkouts
-
-The webhook expects that metadata back so it can update the correct account subscription.
+Create both products in one App Store Connect subscription group before sandbox or TestFlight purchase QA.
 
 ## QA Order
 
-1. Apply Prisma migrations.
-2. Run `pnpm production-auth:check`.
-3. Add Stripe test-mode keys and test price IDs.
-4. Run `BILLING_REQUIRE_STRIPE=true pnpm billing:check`.
-5. Start with Stripe test mode, complete checkout from `/upgrade`, and verify `/account` updates to the purchased plan.
-6. Trigger Stripe webhook test events and verify the account subscription updates for active, past due, and canceled states.
-7. Repeat with live-mode values only after test-mode checkout and webhooks are trusted.
+1. Apply Prisma migrations and run `pnpm production-auth:check`.
+2. Create the App Store Connect subscription group and both Pro products.
+3. Add App Store Server API credentials and a stable `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` to the host environment.
+4. Run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
+5. Build the native iOS shell and run purchase, restore, renewal, cancellation, and expiration in sandbox/TestFlight.
+6. Confirm `/account`, `/settings`, and gated Pro surfaces reflect account-synced Pro after validation.
+7. Keep Stripe checkout disabled unless a web checkout path is deliberately reintroduced later.
 
 ## Demo Safety
 
-When Stripe config is missing, the app intentionally keeps using demo plan switching. That lets Free, Pro Intelligence, and Civic Team still be shown in the product demo without payment credentials.
+Without App Store Server API credentials, local Xcode StoreKit testing can still unlock the device preview, but account-wide sync will warn or fail cleanly. Local `Xcode` StoreKit transactions are not server-validated by Apple; use sandbox/TestFlight for the real account-sync pass.
 
 ## Open Decisions
 
-- Whether App Store subscriptions will later mirror Stripe plans through RevenueCat or a direct App Store Server API bridge.
-- Whether Civic Team should bill per workspace, per seat, or both.
-- Whether Free users should receive a trial period before paid checkout.
-- Whether checkout should start from `/upgrade` only or also from locked feature cards across the app.
+- Whether Civic Team should become a separate Apple subscription product, a later non-v1 workflow, or both.
+- Whether Free users should receive a trial period before paid upgrade.
+- Whether locked feature cards should start the same native StoreKit purchase flow after TestFlight QA proves the main `/upgrade` path.

@@ -18,6 +18,7 @@ import {
   CreditCard,
   FileText,
   Home,
+  LifeBuoy,
   LockKeyhole,
   LogOut,
   MessageSquarePlus,
@@ -37,12 +38,18 @@ const settingRows = [
   {
     label: "Privacy",
     value: "Privacy and data",
-    href: "/settings#data-handling",
+    href: "/privacy",
     icon: <ShieldCheck />
   },
   {
+    label: "Support",
+    value: "Help and requests",
+    href: "/support",
+    icon: <LifeBuoy />
+  },
+  {
     label: "Plan",
-    value: "Manage billing",
+    value: "Plan & purchases",
     href: "/upgrade",
     icon: <CreditCard />
   },
@@ -77,7 +84,7 @@ export default async function SettingsPage() {
           <div className={premiumEyebrowClass}>Your account</div>
           <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Settings</h1>
           <p className="mt-3 max-w-[335px] text-[14px] leading-snug text-white/54">
-            Update your profile, alerts, plan, privacy, and sign-in.
+            Manage your profile, alerts, plan, privacy, and sign-in.
           </p>
         </div>
         <Link href="/profile" className={mobileProfileShortcutClass} aria-label="Open profile">
@@ -153,8 +160,12 @@ export default async function SettingsPage() {
               title="Your data"
             />
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/56">Export coming soon</div>
-              <div className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/82">Security controls coming soon</div>
+              <Link href="/privacy" className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/70 transition hover:bg-white/8">
+                Privacy policy
+              </Link>
+              <Link href="/support" className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/86 transition hover:bg-rust/15">
+                Support requests
+              </Link>
             </div>
           </MobileCard>
         </div>

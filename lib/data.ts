@@ -86,7 +86,7 @@ type DatabaseSourceLinkRow = {
 };
 
 const pendingOfficialSummaryText =
-  "Official CRS summary not yet published by Congress.gov. Capitol Ledger will display the official summary first when it becomes available.";
+  "Official CRS summary not yet published by Congress.gov. Capitol Ledger CE will display the official summary first when it becomes available.";
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
 const memberLegislationFetchTimeoutMs = resolveMemberLegislationFetchTimeoutMs();
@@ -663,7 +663,7 @@ function mapDatabaseBill(bill: PrismaBill): Bill {
     shortTitle: bill.shortTitle ?? bill.title,
     sourceUrl: bill.sourceUrl ?? "https://www.congress.gov/",
     sponsorBioguideId: bill.sponsorBioguideId ?? undefined,
-    summary: bill.summary ?? "Live Congress.gov bill record imported into Capitol Ledger.",
+    summary: bill.summary ?? "Live Congress.gov bill record imported into Capitol Ledger CE.",
     title: bill.title
   };
 }

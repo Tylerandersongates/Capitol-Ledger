@@ -105,7 +105,7 @@ async function runLiveDeliveryCheck() {
 }
 
 async function main() {
-  console.log(`Running Capitol Ledger Weekly Brief task QA against ${baseUrl}`);
+  console.log(`Running Capitol Ledger CE Weekly Brief task QA against ${baseUrl}`);
   await runSafeChecks();
 
   if (shouldRunLiveDelivery) {

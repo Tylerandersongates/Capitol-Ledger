@@ -93,7 +93,7 @@ export function DemoAccountButton({
     if (!response?.ok) {
       const payload = response ? ((await response.json().catch(() => ({}))) as { error?: string }) : {};
       setPending(false);
-      setError(payload.error ?? "Demo mode could not start. Restart the preview and try again.");
+      setError(payload.error ?? "Preview account could not open. Please try again.");
       return;
     }
 

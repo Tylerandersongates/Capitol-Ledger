@@ -1,6 +1,6 @@
 # Round 3 Beta Testing Checklist
 
-Status: active planning checklist for the next tester pass.
+Status: superseded planning checklist. As of June 25, 2026, the paid launch path is app-only Apple in-app purchase; use `Billing Readiness Guide.md` and `Next Steps.md` for current billing work.
 
 Last updated: June 17, 2026.
 

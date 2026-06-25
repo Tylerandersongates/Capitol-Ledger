@@ -188,7 +188,7 @@ function checkSender() {
 }
 
 function main() {
-  console.log("Checking Capitol Ledger auth email delivery configuration");
+  console.log("Checking Capitol Ledger CE auth email delivery configuration");
 
   checkDatabase();
   checkAppUrl();

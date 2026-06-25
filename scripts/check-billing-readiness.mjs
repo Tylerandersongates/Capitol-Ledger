@@ -2,12 +2,24 @@ import { existsSync, readFileSync } from "fs";
 
 loadLocalEnv();
 
-const paidPriceEnvNames = [
+const retiredStripeEnvNames = [
+  "STRIPE_SECRET_KEY",
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+  "STRIPE_WEBHOOK_SECRET",
   "CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID",
   "CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID"
 ];
+
+const requiredProductIds = [
+  "com.capitolledger.pro.monthly",
+  "com.capitolledger.pro.annual"
+];
+
+const requireAppStore = process.env.BILLING_REQUIRE_APP_STORE === "true";
+const productionMode = process.env.NODE_ENV === "production";
+const results = [];
 
 function loadLocalEnv() {
   if (!existsSync(".env.local")) return;
@@ -25,11 +37,6 @@ function loadLocalEnv() {
     process.env[key] = rawValue.replace(/^['"]|['"]$/g, "");
   }
 }
-
-const requireStripe = process.env.BILLING_REQUIRE_STRIPE === "true";
-const liveMode = process.env.STRIPE_LIVE_MODE === "true";
-const productionMode = process.env.NODE_ENV === "production";
-const results = [];
 
 function record(kind, name, ok, detail = "") {
   results.push({ detail, kind, name, ok });
@@ -60,20 +67,8 @@ function isValidUrl(value) {
   }
 }
 
-function looksLikeStripeSecret(value) {
-  return typeof value === "string" && (value.startsWith("sk_test_") || value.startsWith("sk_live_"));
-}
-
-function looksLikeStripePublishableKey(value) {
-  return typeof value === "string" && (value.startsWith("pk_test_") || value.startsWith("pk_live_"));
-}
-
-function looksLikeStripeWebhookSecret(value) {
-  return typeof value === "string" && value.startsWith("whsec_") && value.length >= 16;
-}
-
-function looksLikeStripePrice(value) {
-  return typeof value === "string" && value.startsWith("price_") && value.length >= 12;
+function readIfPresent(path) {
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
 function checkDatabase() {
@@ -82,10 +77,10 @@ function checkDatabase() {
     return;
   }
 
-  if (requireStripe || productionMode) {
-    fail("DATABASE_URL is configured", "Live billing needs database-backed users and subscriptions.");
+  if (requireAppStore || productionMode) {
+    fail("DATABASE_URL is configured", "App Store account sync needs database-backed users and subscriptions.");
   } else {
-    warn("DATABASE_URL is configured", "Demo billing can run without it, but live Stripe billing needs a database.");
+    warn("DATABASE_URL is configured", "Device-local demo billing can run without it, but account-wide Pro sync needs a database.");
   }
 }
 
@@ -100,104 +95,114 @@ function checkAppUrl() {
   if (productionMode) {
     fail("NEXT_PUBLIC_APP_URL is configured", "Use the deployed HTTPS app URL in production.");
   } else {
-    warn("NEXT_PUBLIC_APP_URL is configured", "Set this before deployed checkout, QA, and provider links.");
+    warn("NEXT_PUBLIC_APP_URL is configured", "Set this before deployed App Store purchase QA.");
   }
 }
 
-function checkStripeSecretKey() {
-  const key = process.env.STRIPE_SECRET_KEY;
+function checkAppStoreBundleId() {
+  const bundleId = process.env.APP_STORE_BUNDLE_ID || "com.capitolledger.app";
 
-  if (!key) {
-    if (requireStripe) {
-      fail("STRIPE_SECRET_KEY is configured", "Required when BILLING_REQUIRE_STRIPE=true.");
-    } else {
-      warn("STRIPE_SECRET_KEY is configured", "Missing key means paid checkout will fall back to demo mode.");
-    }
+  if (!bundleId.includes(".")) {
+    fail("APP_STORE_BUNDLE_ID is configured", "Expected a reverse-DNS bundle identifier.");
     return;
   }
 
-  if (!looksLikeStripeSecret(key)) {
-    fail("STRIPE_SECRET_KEY is configured", "Expected a Stripe secret key starting with sk_test_ or sk_live_.");
-    return;
-  }
-
-  if (liveMode && !key.startsWith("sk_live_")) {
-    fail("STRIPE_SECRET_KEY is live", "STRIPE_LIVE_MODE=true requires an sk_live_ key.");
-    return;
-  }
-
-  if (!liveMode && key.startsWith("sk_live_")) {
-    warn("STRIPE_SECRET_KEY mode", "Live key is present while STRIPE_LIVE_MODE is not true.");
-  }
-
-  pass("STRIPE_SECRET_KEY is configured", key.startsWith("sk_live_") ? "live key shape" : "test key shape");
-}
-
-function checkStripePublishableKey() {
-  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-  if (!key) {
-    warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", "Optional for the current server-created Checkout flow.");
-    return;
-  }
-
-  if (!looksLikeStripePublishableKey(key)) {
-    fail("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", "Expected a Stripe publishable key starting with pk_test_ or pk_live_.");
-    return;
-  }
-
-  if (liveMode && !key.startsWith("pk_live_")) {
-    fail("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is live", "STRIPE_LIVE_MODE=true requires a pk_live_ key when a publishable key is set.");
-    return;
-  }
-
-  if (!liveMode && key.startsWith("pk_live_")) {
-    warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY mode", "Live publishable key is present while STRIPE_LIVE_MODE is not true.");
-  }
-
-  pass("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is configured", key.startsWith("pk_live_") ? "live key shape" : "test key shape");
-}
-
-function checkStripeWebhookSecret() {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!secret) {
-    if (requireStripe) {
-      fail("STRIPE_WEBHOOK_SECRET is configured", "Required so Stripe subscription events can update accounts.");
-    } else {
-      warn("STRIPE_WEBHOOK_SECRET is configured", "Missing secret means the webhook route rejects live Stripe events.");
-    }
-    return;
-  }
-
-  if (!looksLikeStripeWebhookSecret(secret)) {
-    fail("STRIPE_WEBHOOK_SECRET is configured", "Expected a Stripe webhook secret starting with whsec_.");
-    return;
-  }
-
-  pass("STRIPE_WEBHOOK_SECRET is configured");
-}
-
-function checkStripePriceIds() {
-  paidPriceEnvNames.forEach((envName) => {
-    const priceId = process.env[envName];
-
-    if (!priceId) {
-      if (requireStripe) {
-        fail(`${envName} is configured`, "Required for paid checkout.");
-      } else {
-        warn(`${envName} is configured`, "Missing price ID means this paid plan/cycle falls back to demo mode.");
-      }
+  if (!process.env.APP_STORE_BUNDLE_ID) {
+    if (requireAppStore || productionMode) {
+      fail("APP_STORE_BUNDLE_ID is configured", "Set the final App Store bundle identifier before sandbox/TestFlight purchase QA.");
       return;
     }
 
-    if (!looksLikeStripePrice(priceId)) {
-      fail(`${envName} is configured`, "Expected a Stripe price ID starting with price_.");
-      return;
-    }
+    warn("APP_STORE_BUNDLE_ID is configured", `Using default ${bundleId}; set it explicitly before launch.`);
+    return;
+  }
 
-    pass(`${envName} is configured`, priceId);
-  });
+  pass("APP_STORE_BUNDLE_ID is configured");
+}
+
+function checkAppStoreAccountTokenNamespace() {
+  if (process.env.APP_STORE_ACCOUNT_TOKEN_NAMESPACE) {
+    pass("APP_STORE_ACCOUNT_TOKEN_NAMESPACE is configured");
+    return;
+  }
+
+  if (requireAppStore || productionMode) {
+    fail(
+      "APP_STORE_ACCOUNT_TOKEN_NAMESPACE is configured",
+      "Set a stable namespace before first TestFlight purchase so Apple account tokens remain consistent."
+    );
+    return;
+  }
+
+  warn(
+    "APP_STORE_ACCOUNT_TOKEN_NAMESPACE is configured",
+    "Optional, but set a stable value before first TestFlight purchase if the bundle ID may change."
+  );
+}
+
+function checkAppStoreCredential(name) {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    if (requireAppStore || productionMode) {
+      fail(`${name} is configured`, "Required for App Store Server API transaction validation.");
+    } else {
+      warn(`${name} is configured`, "Required before sandbox/TestFlight account-sync QA.");
+    }
+    return;
+  }
+
+  if (name === "APP_STORE_CONNECT_PRIVATE_KEY" && !value.includes("PRIVATE KEY")) {
+    fail(`${name} is configured`, "Expected the App Store Connect .p8 private key content.");
+    return;
+  }
+
+  pass(`${name} is configured`);
+}
+
+function checkStoreKitProductIds() {
+  const webControls = readIfPresent("components/subscription-controls.tsx");
+  const nativeModels = readIfPresent("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
+  const appStoreValidator = readIfPresent("lib/billing/app-store.ts");
+
+  for (const productId of requiredProductIds) {
+    const present = webControls.includes(productId) && nativeModels.includes(productId) && appStoreValidator.includes(productId);
+    if (present) {
+      pass(`${productId} is wired`);
+    } else {
+      fail(`${productId} is wired`, "Product ID must match web controls, native StoreKit models, and server validation.");
+    }
+  }
+}
+
+function checkAppStoreEndpoint() {
+  const route = readIfPresent("app/api/account/subscription/app-store/route.ts");
+  const accountTokenRoute = readIfPresent("app/api/account/subscription/app-store/account-token/route.ts");
+  const validator = readIfPresent("lib/billing/app-store.ts");
+
+  if (
+    route.includes("validateAppStoreTransaction") &&
+    route.includes("createAppStoreAccountToken") &&
+    route.includes("writeSubscriptionToDatabase") &&
+    accountTokenRoute.includes("createAppStoreAccountToken") &&
+    validator.includes("expectedAppAccountToken") &&
+    validator.includes("inApps/v1/transactions")
+  ) {
+    pass("App Store account-sync endpoint is wired");
+    return;
+  }
+
+  fail("App Store account-sync endpoint is wired", "Expected server-side App Store transaction validation before account subscription writes.");
+}
+
+function checkRetiredStripeConfig() {
+  const configured = retiredStripeEnvNames.filter((name) => process.env[name]);
+  if (!configured.length) {
+    pass("Stripe launch config is absent", "App-only launch path is Apple in-app purchase.");
+    return;
+  }
+
+  warn("Stripe launch config is present", "Keep Stripe disabled for App Store launch unless a web checkout path is deliberately reintroduced.");
 }
 
 function checkProductionCookie() {
@@ -209,19 +214,23 @@ function checkProductionCookie() {
   if (process.env.AUTH_COOKIE_SECURE === "true") {
     pass("AUTH_COOKIE_SECURE is enabled");
   } else {
-    warn("AUTH_COOKIE_SECURE is enabled", "Set AUTH_COOKIE_SECURE=true for deployed HTTPS billing/auth flows.");
+    warn("AUTH_COOKIE_SECURE is enabled", "Set AUTH_COOKIE_SECURE=true for deployed HTTPS auth and account sync.");
   }
 }
 
 function main() {
-  console.log("Checking Capitol Ledger billing readiness");
+  console.log("Checking Capitol Ledger CE App Store billing readiness");
 
   checkDatabase();
   checkAppUrl();
-  checkStripeSecretKey();
-  checkStripePublishableKey();
-  checkStripeWebhookSecret();
-  checkStripePriceIds();
+  checkAppStoreBundleId();
+  checkAppStoreAccountTokenNamespace();
+  checkAppStoreCredential("APP_STORE_CONNECT_ISSUER_ID");
+  checkAppStoreCredential("APP_STORE_CONNECT_KEY_ID");
+  checkAppStoreCredential("APP_STORE_CONNECT_PRIVATE_KEY");
+  checkStoreKitProductIds();
+  checkAppStoreEndpoint();
+  checkRetiredStripeConfig();
   checkProductionCookie();
 
   const failures = results.filter((result) => result.kind === "error" && !result.ok);
@@ -230,12 +239,12 @@ function main() {
     process.exit(1);
   }
 
-  if (!requireStripe) {
-    console.log("Billing readiness check passed for demo-safe mode. Use BILLING_REQUIRE_STRIPE=true for live Stripe readiness.");
+  if (!requireAppStore && !productionMode) {
+    console.log("Billing readiness check passed for app-only demo mode. Use BILLING_REQUIRE_APP_STORE=true for App Store Server API readiness.");
     return;
   }
 
-  console.log("Billing readiness check passed for live Stripe readiness.");
+  console.log("Billing readiness check passed for App Store billing readiness.");
 }
 
 main();

@@ -50,7 +50,7 @@ export type WeeklyBriefDeliveryRunResult = {
 };
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger";
+  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
 }
 
 function sender() {
@@ -82,7 +82,7 @@ function buildWeeklyBriefText(brief: WeeklyBriefSnapshot) {
     updates || "- No priority updates this week.",
     "",
     "Suggested actions:",
-    actions || "- Review your Capitol Ledger dashboard."
+    actions || "- Review your Capitol Ledger CE dashboard."
   ].join("\n");
 }
 

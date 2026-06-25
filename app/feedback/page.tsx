@@ -26,7 +26,7 @@ export default function FeedbackPage({ searchParams }: { searchParams?: { source
         <div className="text-[18px] uppercase tracking-wide text-white/54">Live app testing</div>
         <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Report an issue</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Send a quick report when something breaks, feels confusing, looks wrong, or needs clearer live app wording.
+          Send a quick report when something breaks, feels confusing, looks wrong, or needs clearer wording.
         </p>
       </section>
 
