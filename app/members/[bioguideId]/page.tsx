@@ -1093,7 +1093,7 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
         eyebrow="Roll-call activity"
         title="Votes"
       />
-      <div className="mt-5 space-y-3">
+      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member vote activity">
         {records.map((record) => {
           const vote = record.vote;
           if (!vote) return null;
@@ -1137,7 +1137,7 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
             </Link>
           );
         })}
-      </div>
+      </MobileGlassScrollFrame>
     </MobileCard>
   );
 }
