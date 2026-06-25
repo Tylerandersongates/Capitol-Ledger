@@ -173,6 +173,30 @@ export type CongressBillListResponse = {
 
 export type CongressBillListItem = NonNullable<CongressBillListResponse["bills"]>[number];
 
+export type CongressMemberLegislationResponse = {
+  cosponsoredLegislation?: CongressMemberLegislationItem[];
+  pagination?: CongressPagination;
+  sponsoredLegislation?: CongressMemberLegislationItem[];
+};
+
+export type CongressMemberLegislationItem = {
+  amendmentNumber?: string;
+  congress?: number;
+  introducedDate?: string;
+  latestAction?: {
+    actionDate?: string;
+    text?: string;
+  } | null;
+  number?: string;
+  policyArea?: {
+    name?: string | null;
+  };
+  title?: string;
+  type?: string | null;
+  updateDate?: string;
+  url?: string;
+};
+
 export type CongressBillDetailResponse = {
   bill?: CongressBillListItem;
 };
@@ -352,4 +376,12 @@ export async function fetchHouseVoteMembers(congress: number, session: number, v
 
 export async function fetchMember(bioguideId: string) {
   return congressFetch<CongressMemberDetailResponse>(`/member/${bioguideId}`);
+}
+
+export async function fetchMemberCosponsoredLegislation(bioguideId: string, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressMemberLegislationResponse>(`/member/${bioguideId}/cosponsored-legislation`, options);
+}
+
+export async function fetchMemberSponsoredLegislation(bioguideId: string, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressMemberLegislationResponse>(`/member/${bioguideId}/sponsored-legislation`, options);
 }

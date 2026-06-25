@@ -5,6 +5,7 @@ import type {
   CongressBillSummaryItem,
   CongressCommitteeListItem,
   CongressMemberDetailItem,
+  CongressMemberLegislationItem,
   CongressHouseVoteItem,
   CongressHouseVoteMemberItem,
   CongressMemberListItem
@@ -441,6 +442,34 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
     latestActionDate,
     summary: raw.latestAction?.text ?? "Live Congress.gov bill record normalized for Capitol Ledger.",
     sourceUrl
+  };
+}
+
+function committeeNameFromAction(text?: string) {
+  const match = text?.match(/(?:referred to|reported by|from)\s+(?:the\s+)?(Committee(?:s)? on [^.]+)/i);
+  return match?.[1]?.replace(/\s+/g, " ").trim();
+}
+
+export function normalizeCongressMemberLegislation(raw: CongressMemberLegislationItem, sponsorBioguideId?: string): Bill | null {
+  const bill = normalizeCongressBill({
+    congress: raw.congress,
+    introducedDate: raw.introducedDate,
+    latestAction: raw.latestAction ?? undefined,
+    number: raw.number,
+    policyArea: raw.policyArea ? { name: raw.policyArea.name ?? undefined } : undefined,
+    sponsors: sponsorBioguideId ? [{ bioguideId: sponsorBioguideId }] : undefined,
+    title: raw.title,
+    type: raw.type ?? undefined,
+    updateDate: raw.updateDate,
+    url: raw.url
+  });
+
+  if (!bill) return null;
+
+  return {
+    ...bill,
+    committeeName: committeeNameFromAction(raw.latestAction?.text) ?? bill.committeeName,
+    sponsorBioguideId: sponsorBioguideId ?? bill.sponsorBioguideId
   };
 }
 

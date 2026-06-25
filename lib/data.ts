@@ -1,6 +1,7 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { fetchBillSummaries } from "@/lib/congress/client";
+import { fetchBillSummaries, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
+import { normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -87,7 +88,9 @@ const pendingOfficialSummaryText =
   "Official CRS summary not yet published by Congress.gov. Capitol Ledger will display the official summary first when it becomes available.";
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
+const memberLegislationFetchTimeoutMs = resolveMemberLegislationFetchTimeoutMs();
 const dashboardLiveRecordsCacheMaxAgeMs = 10 * 60 * 1000;
+const memberLegislationCacheMaxAgeMs = 10 * 60 * 1000;
 
 type DashboardRecords = {
   bills: Bill[];
@@ -95,8 +98,95 @@ type DashboardRecords = {
 };
 
 let dashboardLiveRecordsCache: { cachedAt: number; records: DashboardRecords } | null = null;
+let memberLegislationCache = new Map<string, { cachedAt: number; records: Pick<MemberDetailData, "cosponsoredBills" | "sponsoredBills"> }>();
 
 const memberCaucusMemberships: Record<string, MemberCaucusMembership[]> = {
+  S001150: [
+    {
+      caucusName: "Senate Committee on the Judiciary",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Judiciary Subcommittee on Intellectual Property",
+      role: "Ranking Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Judiciary Subcommittee on The Constitution",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Judiciary Subcommittee on Privacy, Technology, and the Law",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Judiciary Subcommittee on Antitrust, Competition Policy and Consumer Rights",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Senate Committee on Environment and Public Works",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "EPW Subcommittee on Fisheries, Water, and Wildlife",
+      role: "Ranking Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "EPW Subcommittee on Transportation and Infrastructure",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Senate Committee on Agriculture, Nutrition, and Forestry",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Agriculture Subcommittee on Conservation, Forestry, Natural Resources, and Biotechnology",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Agriculture Subcommittee on Commodities, Derivatives, Risk Management, and Trade",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    },
+    {
+      caucusName: "Senate Committee on Small Business and Entrepreneurship",
+      role: "Member",
+      sourceLabel: "Official Senate committee assignments",
+      sourceUrl: "https://www.schiff.senate.gov/about/committee-assignments/",
+      verifiedAt: "2026-06-24"
+    }
+  ],
   B001302: [
     {
       caucusName: "House Freedom Caucus",
@@ -700,6 +790,16 @@ function resolveBillSummaryFetchTimeoutMs() {
   return process.env.NODE_ENV === "production" ? 3_500 : 6_000;
 }
 
+function resolveMemberLegislationFetchTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_MEMBER_LEGISLATION_FETCH_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(500, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? 4_000 : 7_000;
+}
+
 async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>, timeoutMs = optionalDatabaseReadTimeoutMs) {
   if (!shouldUseOptionalDatabaseReads()) return null;
 
@@ -906,8 +1006,79 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
   }
 }
 
+function getFreshMemberLegislationCache(bioguideId: string) {
+  const cached = memberLegislationCache.get(bioguideId);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > memberLegislationCacheMaxAgeMs) {
+    memberLegislationCache.delete(bioguideId);
+    return null;
+  }
+  return cached.records;
+}
+
+function orderMemberLegislationBills(records: Bill[]) {
+  return [...records].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
+}
+
+function selectMemberLegislationBills(liveBills: Bill[], existingBills: Bill[]) {
+  return orderMemberLegislationBills(mergeBillsByRecordKey(liveBills, existingBills)).slice(0, 12);
+}
+
+async function getLiveMemberLegislationData(bioguideId: string): Promise<Pick<MemberDetailData, "cosponsoredBills" | "sponsoredBills"> | null> {
+  const cached = getFreshMemberLegislationCache(bioguideId);
+  if (cached) return cached;
+
+  const [sponsoredResult, cosponsoredResult] = await Promise.allSettled([
+    fetchMemberSponsoredLegislation(bioguideId, { limit: 75, timeoutMs: memberLegislationFetchTimeoutMs }),
+    fetchMemberCosponsoredLegislation(bioguideId, { limit: 75, timeoutMs: memberLegislationFetchTimeoutMs })
+  ]);
+
+  if (sponsoredResult.status === "rejected" && cosponsoredResult.status === "rejected") return null;
+
+  const sponsoredBills =
+    sponsoredResult.status === "fulfilled"
+      ? selectMemberLegislationBills(
+          (sponsoredResult.value.sponsoredLegislation ?? [])
+            .map((record) => normalizeCongressMemberLegislation(record, bioguideId))
+            .filter((bill): bill is Bill => Boolean(bill)),
+          []
+        )
+      : [];
+  const cosponsoredBills =
+    cosponsoredResult.status === "fulfilled"
+      ? selectMemberLegislationBills(
+          (cosponsoredResult.value.cosponsoredLegislation ?? [])
+            .map((record) => normalizeCongressMemberLegislation(record))
+            .filter((bill): bill is Bill => Boolean(bill)),
+          []
+        )
+      : [];
+  const records = { cosponsoredBills, sponsoredBills };
+
+  memberLegislationCache.set(bioguideId, {
+    cachedAt: Date.now(),
+    records
+  });
+
+  return records;
+}
+
+async function hydrateMemberDetailWithLiveLegislation(detail: MemberDetailData): Promise<MemberDetailData> {
+  if (detail.sponsoredBills.length && detail.cosponsoredBills.length) return detail;
+
+  const liveLegislation = await getLiveMemberLegislationData(detail.member.bioguideId);
+  if (!liveLegislation) return detail;
+
+  return {
+    ...detail,
+    cosponsoredBills: selectMemberLegislationBills(liveLegislation.cosponsoredBills, detail.cosponsoredBills),
+    sponsoredBills: selectMemberLegislationBills(liveLegislation.sponsoredBills, detail.sponsoredBills)
+  };
+}
+
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
+  const detail = (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
+  return detail ? hydrateMemberDetailWithLiveLegislation(detail) : null;
 }
 
 async function getDatabaseActiveMembers(): Promise<Member[] | null> {

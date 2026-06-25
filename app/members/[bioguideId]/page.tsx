@@ -611,7 +611,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
                 />
               ) : null}
 
-              {activeTab === "votes" ? <VotesTab memberVotes={memberVotes} /> : null}
+              {activeTab === "votes" ? <VotesTab member={member} memberVotes={memberVotes} /> : null}
               {activeTab === "bills" ? <BillsTab cosponsoredBills={cosponsoredBills} sponsoredBills={sponsoredBills} /> : null}
               {activeTab === "committees" ? <CommitteesTab member={member} bills={[...sponsoredBills, ...cosponsoredBills]} caucusMemberships={caucusMemberships} /> : null}
               {activeTab === "finance" ? <FinanceTab member={member} /> : null}
@@ -1069,11 +1069,21 @@ function AccountabilityInfoPopover() {
   );
 }
 
-function VotesTab({ memberVotes }: { memberVotes: MemberVoteRecord[] }) {
+function VotesTab({ member, memberVotes }: { member: Member; memberVotes: MemberVoteRecord[] }) {
   const records = memberVotes.filter((record) => record.vote).slice(0, 12);
 
   if (!records.length) {
-    return <EmptyTab icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />} title="No votes linked yet" body="Roll-call votes will appear here after this official is connected to synced vote records." />;
+    return (
+      <EmptyTab
+        icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />}
+        title="Vote records not connected yet"
+        body={
+          member.chamber === "Senate"
+            ? "Senate roll-call positions are not connected to this profile yet. Bill activity and official roles still appear where source data is available."
+            : "Roll-call positions will appear here after this official is connected to synced vote records."
+        }
+      />
+    );
   }
 
   return (
@@ -1109,13 +1119,15 @@ function VotesTab({ memberVotes }: { memberVotes: MemberVoteRecord[] }) {
 }
 
 function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill[]; sponsoredBills: Bill[] }) {
-  const records = [
-    ...sponsoredBills.map((bill) => ({ bill, label: "Sponsored" })),
-    ...cosponsoredBills.map((bill) => ({ bill, label: "Cosponsored" }))
-  ];
+  const sponsoredRecords = sponsoredBills.map((bill) => ({ bill, label: "Sponsored" }));
+  const cosponsoredRecords = cosponsoredBills.map((bill) => ({ bill, label: "Cosponsored" }));
+  const records = [...sponsoredRecords, ...cosponsoredRecords];
+  const balancedRecords = [...sponsoredRecords.slice(0, 6), ...cosponsoredRecords.slice(0, 6)];
+  const balancedKeys = new Set(balancedRecords.map(({ bill, label }) => `${label}-${bill.id}`));
+  const visibleRecords = [...balancedRecords, ...records.filter(({ bill, label }) => !balancedKeys.has(`${label}-${bill.id}`))].slice(0, 12);
 
   if (!records.length) {
-    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="No bills linked yet" body="Sponsored and cosponsored bills will appear here after this official's legislative records are synced." />;
+    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="Bill records not connected yet" body="Sponsored and cosponsored bills will appear here after this official's legislative records are synced." />;
   }
 
   return (
@@ -1126,7 +1138,7 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
         title="Bills"
       />
       <div className="mt-5 space-y-3">
-        {records.slice(0, 12).map(({ bill, label }) => (
+        {visibleRecords.map(({ bill, label }) => (
           <BillActivityRow key={`${label}-${bill.id}`} bill={bill} label={label} />
         ))}
       </div>
@@ -1162,8 +1174,8 @@ function CommitteesTab({
     return (
       <EmptyTab
         icon={<Landmark className="h-6 w-6" strokeWidth={1.8} />}
-        title="Committee records pending"
-        body={`Committee assignments for this ${member.chamber.toLowerCase()} official will appear here when official committee records are connected.`}
+        title="Role records not connected yet"
+        body={`Official committee assignments for this ${member.chamber.toLowerCase()} official will appear here when those records are connected.`}
       />
     );
   }
@@ -1175,7 +1187,7 @@ function CommitteesTab({
           <PremiumCardHeader
             aside={<span className={premiumPillClass}>Linked bills</span>}
             eyebrow="Committee connections"
-            title="Committees"
+            title="Bill-linked committees"
           />
           <div className="mt-5 space-y-3">
             {committees.map((committee) => (
@@ -1197,8 +1209,8 @@ function CommitteesTab({
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumCardHeader
             aside={<span className={premiumPillClass}>{caucusMemberships.length} listed</span>}
-            eyebrow="Affiliations"
-            title="Caucuses & Roles"
+            eyebrow="Official roles"
+            title="Assignments & Roles"
           />
           <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
             {caucusMemberships.map((membership) => (
