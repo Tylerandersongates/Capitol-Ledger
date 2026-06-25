@@ -910,7 +910,6 @@ function AccountabilityInfoPopover() {
 function ScoreDetailsPopover({ factors }: { factors: MemberScoreFactor[] }) {
   return (
     <MemberInfoPopover align="center" ariaLabel="How the score is calculated" title="Inputs behind the score">
-      <p>Overall score = 25% votes, 15% public activity, 15% bill activity, 15% source status, and 30% issue match.</p>
       <div className="space-y-1.5">
         {factors.map((factor) => (
           <div key={`${factor.key}-popover`} className="flex items-center justify-between gap-3">
