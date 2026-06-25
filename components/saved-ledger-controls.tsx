@@ -493,16 +493,18 @@ function savedLedgerPlanDescription(plan: AccountSubscriptionSnapshot["plan"]) {
 }
 
 export function SavedLedgerSummary({
+  initialAccountBacked = false,
   initialAlertCount,
   initialLedger,
   initialSubscription
 }: {
+  initialAccountBacked?: boolean;
   initialAlertCount?: number;
   initialLedger?: AccountLedgerSnapshot | null;
   initialSubscription?: AccountSubscriptionSnapshot | null;
 }) {
   const [counts, setCounts] = useState<SavedCounts>(() => getSavedCounts(initialLedger, initialAlertCount));
-  const [accountSynced, setAccountSynced] = useState(false);
+  const [accountSynced, setAccountSynced] = useState(initialAccountBacked);
   const [subscription] = useSubscriptionState(initialSubscription, { scope: "effective" });
   const planName = subscriptionPlans[subscription.plan].name;
 

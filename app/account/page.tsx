@@ -104,7 +104,7 @@ export default async function AccountPage() {
                   title="Your watchlist"
                 />
                 <div className="mt-5">
-                  <SavedLedgerSummary initialAlertCount={initialAlertCount} initialLedger={accountLedger} initialSubscription={initialSubscription} />
+                  <SavedLedgerSummary initialAccountBacked initialAlertCount={initialAlertCount} initialLedger={accountLedger} initialSubscription={initialSubscription} />
                 </div>
               </MobileCard>
 

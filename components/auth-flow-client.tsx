@@ -79,9 +79,9 @@ const defaultForm: AuthFormState = {
 
 const trustItems = ["Private profile", "Nonpartisan records", "Source links included"];
 const authPathItems = [
-  { label: "Account", value: "Create or sign in" },
-  { label: "Settings", value: "Saved after sign-in" },
-  { label: "Privacy", value: "Used in this app" }
+  { label: "Account", value: "One secure login" },
+  { label: "Settings", value: "Saved to account" },
+  { label: "Privacy", value: "Used only here" }
 ];
 
 function readJson<T>(key: string, fallback: T): T {
@@ -241,7 +241,7 @@ export function AuthFlowClient({
 
   const body = useMemo(() => {
     if (mode === "create") return "Save your district, alerts, topics, and plan in one place.";
-    if (mode === "forgot") return "Enter your email and we will send reset instructions if the account exists.";
+    if (mode === "forgot") return "Enter your email and we will send reset instructions if there is an account for it.";
     if (mode === "reset") return "Choose a new password for your Capitol Ledger account.";
     if (mode === "verify") return `Open the verification link sent to ${form.email || "your email"}, or paste the token below.`;
     if (mode === "success") return "Continue to setup or open your dashboard.";
@@ -607,7 +607,7 @@ export function AuthFlowClient({
       setPending(false);
 
       const resetMessage = "message" in result.data ? result.data.message : undefined;
-      setStatus(result.ok ? resetMessage ?? "Password reset instructions are ready." : result.data.error ?? "Password reset is not configured yet.");
+      setStatus(result.ok ? resetMessage ?? "If that email has an account, reset instructions are on the way." : result.data.error ?? "Password reset is not available yet.");
       return;
     }
 
@@ -733,7 +733,7 @@ export function AuthFlowClient({
                   onClick={() => selectMode("create")}
                   className={`h-11 rounded-xl text-[16px] font-semibold transition ${mode === "create" ? "bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[#061126] shadow-[0_0_18px_rgba(255,177,43,0.2)]" : "text-white/58 hover:bg-white/[0.04]"}`}
                 >
-                  Create
+                  Create account
                 </button>
               </div>
 
@@ -887,7 +887,7 @@ export function AuthFlowClient({
           <>
             <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[12px] uppercase tracking-wide text-white/38">
               <span className="h-px bg-white/10" />
-              Account options
+              More options
               <span className="h-px bg-white/10" />
             </div>
 

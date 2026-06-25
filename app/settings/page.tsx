@@ -36,7 +36,7 @@ const settingRows = [
   },
   {
     label: "Privacy",
-    value: "Data export and privacy",
+    value: "Privacy and data",
     href: "/settings#data-handling",
     icon: <ShieldCheck />
   },
@@ -77,7 +77,7 @@ export default async function SettingsPage() {
           <div className={premiumEyebrowClass}>Your account</div>
           <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Settings</h1>
           <p className="mt-3 max-w-[335px] text-[14px] leading-snug text-white/54">
-            Manage your profile, alerts, plan, privacy, and sign-in.
+            Update your profile, alerts, plan, privacy, and sign-in.
           </p>
         </div>
         <Link href="/profile" className={mobileProfileShortcutClass} aria-label="Open profile">
@@ -124,7 +124,7 @@ export default async function SettingsPage() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[16px] font-semibold text-white">Sign out</span>
-                  <span className="mt-1 block truncate text-[13px] text-white/52">Return to login screen</span>
+                  <span className="mt-1 block truncate text-[13px] text-white/52">End this session</span>
                 </span>
                 <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
               </DemoSignOutButton>
@@ -135,7 +135,7 @@ export default async function SettingsPage() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[16px] font-semibold text-white">Sign in</span>
-                  <span className="mt-1 block truncate text-[13px] text-white/52">Save settings across sessions</span>
+                  <span className="mt-1 block truncate text-[13px] text-white/52">Save settings to your account</span>
                 </span>
                 <ChevronRight className="h-5 w-5 text-white/42" strokeWidth={1.8} aria-hidden="true" />
               </Link>
@@ -153,8 +153,8 @@ export default async function SettingsPage() {
               title="Your data"
             />
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/56">Export planned</div>
-              <div className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/82">Security settings planned</div>
+              <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-3 text-center text-[13px] font-medium text-white/56">Export coming soon</div>
+              <div className="rounded-xl border border-rust/30 bg-rust/10 px-3 py-3 text-center text-[13px] font-medium text-[#ffb12b]/82">Security controls coming soon</div>
             </div>
           </MobileCard>
         </div>
