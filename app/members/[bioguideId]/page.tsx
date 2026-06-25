@@ -613,7 +613,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
 
               {activeTab === "votes" ? <VotesTab member={member} memberVotes={memberVotes} /> : null}
               {activeTab === "bills" ? <BillsTab cosponsoredBills={cosponsoredBills} sponsoredBills={sponsoredBills} /> : null}
-              {activeTab === "committees" ? <CommitteesTab member={member} bills={[...sponsoredBills, ...cosponsoredBills]} caucusMemberships={caucusMemberships} /> : null}
+              {activeTab === "committees" ? <CommitteesTab member={member} caucusMemberships={caucusMemberships} /> : null}
               {activeTab === "finance" ? <FinanceTab member={member} /> : null}
             </main>
 
@@ -1153,6 +1153,12 @@ function BillActivityRow({ bill, label }: { bill: Bill; label: string }) {
         <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">{label}</div>
         <div className="mt-1 text-[18px] font-medium leading-tight text-white">{bill.displayNumber}</div>
         <div className="mt-1 text-[15px] leading-snug text-white/58">{bill.shortTitle || bill.title}</div>
+        {bill.committeeName ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] leading-snug text-white/56">
+            <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">Routed to</span>
+            <span>{bill.committeeName}</span>
+          </div>
+        ) : null}
       </div>
       <ChevronRight className="mt-7 h-5 w-5 text-white/38" strokeWidth={1.8} aria-hidden="true" />
     </Link>
@@ -1160,17 +1166,13 @@ function BillActivityRow({ bill, label }: { bill: Bill; label: string }) {
 }
 
 function CommitteesTab({
-  bills,
   caucusMemberships,
   member
 }: {
-  bills: Bill[];
   caucusMemberships: MemberCaucusMembership[];
   member: Member;
 }) {
-  const committees = Array.from(new Set(bills.map((bill) => bill.committeeName).filter((name): name is string => Boolean(name)))).slice(0, 8);
-
-  if (!committees.length && !caucusMemberships.length) {
+  if (!caucusMemberships.length) {
     return (
       <EmptyTab
         icon={<Landmark className="h-6 w-6" strokeWidth={1.8} />}
@@ -1181,62 +1183,35 @@ function CommitteesTab({
   }
 
   return (
-    <>
-      {committees.length ? (
-        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-          <PremiumCardHeader
-            aside={<span className={premiumPillClass}>Linked bills</span>}
-            eyebrow="Committee connections"
-            title="Bill-linked committees"
-          />
-          <div className="mt-5 space-y-3">
-            {committees.map((committee) => (
-              <div key={committee} className={`grid grid-cols-[44px_1fr] gap-4 px-4 py-4 ${premiumPanelClass}`}>
-                <div className="grid h-11 w-11 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
-                  <Landmark className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-[18px] font-medium leading-tight text-white">{committee}</div>
-                  <div className="mt-2 text-[14px] leading-snug text-white/54">Connected through sponsored or cosponsored bill activity.</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </MobileCard>
-      ) : null}
-
-      {caucusMemberships.length ? (
-        <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-          <PremiumCardHeader
-            aside={<span className={premiumPillClass}>{caucusMemberships.length} listed</span>}
-            eyebrow="Official roles"
-            title="Assignments & Roles"
-          />
-          <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
-            {caucusMemberships.map((membership) => (
-              <a
-                key={`${membership.caucusName}-${membership.role}`}
-                href={membership.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
-              >
-                <div className="min-w-0">
-                  <div className="text-[17px] font-medium leading-tight text-white">{membership.caucusName}</div>
-                  <div className="mt-1 text-[14px] text-white/50">{membership.sourceLabel}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-[#ffb12b]/25 bg-[#ffb12b]/10 px-3 py-1.5 text-[13px] font-medium text-[#ffb12b]">
-                    {membership.role}
-                  </span>
-                  <ExternalLink className="h-4 w-4 text-white/34" strokeWidth={1.8} aria-hidden="true" />
-                </div>
-              </a>
-            ))}
-          </MobileGlassScrollFrame>
-        </MobileCard>
-      ) : null}
-    </>
+    <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
+      <PremiumCardHeader
+        aside={<span className={premiumPillClass}>{caucusMemberships.length} listed</span>}
+        eyebrow="Official roles"
+        title="Assignments & Roles"
+      />
+      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
+        {caucusMemberships.map((membership) => (
+          <a
+            key={`${membership.caucusName}-${membership.role}`}
+            href={membership.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
+          >
+            <div className="min-w-0">
+              <div className="text-[17px] font-medium leading-tight text-white">{membership.caucusName}</div>
+              <div className="mt-1 text-[14px] text-white/50">{membership.sourceLabel}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-[#ffb12b]/25 bg-[#ffb12b]/10 px-3 py-1.5 text-[13px] font-medium text-[#ffb12b]">
+                {membership.role}
+              </span>
+              <ExternalLink className="h-4 w-4 text-white/34" strokeWidth={1.8} aria-hidden="true" />
+            </div>
+          </a>
+        ))}
+      </MobileGlassScrollFrame>
+    </MobileCard>
   );
 }
 
