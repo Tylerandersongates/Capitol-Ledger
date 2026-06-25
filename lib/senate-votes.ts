@@ -1,4 +1,6 @@
 import type { Member, Vote, VotePosition } from "@/types/capitol";
+import { memberStateCode } from "@/lib/member-display";
+import { senateVoteSnapshotGeneratedAt, senateVoteSnapshots } from "@/lib/senate-vote-snapshot";
 
 type SenateMenuVote = {
   congress: number;
@@ -58,6 +60,13 @@ function numericTagValue(xml: string, tag: string) {
 
 function tagBlocks(xml: string, tag: string) {
   return Array.from(xml.matchAll(new RegExp(`<${tag}(?:\\s[^>]*)?>[\\s\\S]*?</${tag}>`, "gi"))).map((match) => match[0]);
+}
+
+function normalizeMemberSnapshotKey(member: Pick<Member, "lastName" | "state">) {
+  const lastName = normalizeWhitespace(member.lastName)
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  return `${lastName}:${memberStateCode(member.state).toUpperCase()}`;
 }
 
 function readCongressFromTerm(term?: string) {
@@ -150,7 +159,7 @@ function parseSenateVoteMenu(xml: string) {
 function findMemberBlock(xml: string, member: Pick<Member, "lastName" | "state">) {
   const lastName = normalizeWhitespace(member.lastName).toLowerCase();
   const compactLastName = lastName.replace(/[^a-z]/g, "");
-  const state = member.state.toUpperCase();
+  const state = memberStateCode(member.state).toUpperCase();
 
   return tagBlocks(xml, "member").find((block) => {
     const blockLastName = tagValue(block, "last_name")?.toLowerCase();
@@ -197,6 +206,42 @@ function parseSenateVoteDetail(xml: string, sourceUrl: string, member: Member): 
   };
 }
 
+function getSnapshotMemberVotes(member: Member, limit: number): SenateMemberVoteRecord[] {
+  const memberKey = normalizeMemberSnapshotKey(member);
+
+  return senateVoteSnapshots
+    .map<SenateMemberVoteRecord | null>((snapshot) => {
+      const position = snapshot.positions[memberKey];
+      if (!position) return null;
+
+      const vote: Vote = {
+        chamber: "Senate",
+        congress: snapshot.congress,
+        explanation: `Official Senate roll-call vote from a source-backed fallback snapshot generated on ${senateVoteSnapshotGeneratedAt}.`,
+        id: `senate-live-${snapshot.congress}-${snapshot.session}-${snapshot.rollCall}`,
+        memberBioguideIds: [member.bioguideId],
+        noCount: snapshot.noCount,
+        notVotingCount: snapshot.notVotingCount,
+        presentCount: snapshot.presentCount,
+        question: snapshot.question,
+        result: snapshot.result,
+        rollCall: snapshot.rollCall,
+        sourceUrl: snapshot.sourceUrl,
+        voteDate: snapshot.voteDate,
+        yesCount: snapshot.yesCount
+      };
+
+      return {
+        memberBioguideId: member.bioguideId,
+        position,
+        vote,
+        voteId: vote.id
+      };
+    })
+    .filter((record): record is SenateMemberVoteRecord => Boolean(record))
+    .slice(0, limit);
+}
+
 function getFreshCachedMemberVotes(cacheKey: string) {
   const cached = senateMemberVoteCache.get(cacheKey);
   if (!cached) return null;
@@ -237,7 +282,9 @@ export async function fetchSenateMemberVotes(member: Member, limit = 12, timeout
     }
   }
 
-  const limitedRecords = records
+  const snapshotRecords = records.length < limit ? getSnapshotMemberVotes(member, limit) : [];
+  const mergedRecords = Array.from(new Map([...snapshotRecords, ...records].map((record) => [record.voteId, record])).values());
+  const limitedRecords = mergedRecords
     .sort((a, b) => Date.parse(b.vote?.voteDate ?? "0") - Date.parse(a.vote?.voteDate ?? "0"))
     .slice(0, limit);
 
