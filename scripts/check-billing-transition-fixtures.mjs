@@ -86,6 +86,14 @@ assert.ok(
   "plan switches should bypass the billing portal and use app-controlled checkout or cancellation"
 );
 assert.ok(
+  subscriptionControlsSource.includes('checkoutHandoffParam = "checkoutHandoff"') &&
+    subscriptionControlsSource.includes('checkoutHandoffVerifyValue = "verify"') &&
+    subscriptionControlsSource.includes("shouldHoldStripeCheckoutForVerification()") &&
+    subscriptionControlsSource.includes("setCheckoutHandoffUrl(data.checkoutUrl)") &&
+    subscriptionControlsSource.includes("Open Stripe Checkout"),
+  "Stripe checkout handoff verification should let live QA stop before the hosted payment page"
+);
+assert.ok(
   checkoutRouteSource.includes("cancelStripeSubscriptionAtPeriodEnd(currentSubscription.providerSubscriptionId)") &&
     checkoutRouteSource.includes("canceledPreviousSubscription") &&
     checkoutRouteSource.includes('plan === "free"'),

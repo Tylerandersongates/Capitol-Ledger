@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Crown, ExternalLink, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   getSubscriptionFeature,
   isPlanFeatureEnabled,
@@ -18,6 +18,8 @@ const subscriptionEvent = "capitol-ledger:subscription-changed";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const checkoutEndpoint = "/api/account/subscription/checkout";
 const billingPortalEndpoint = "/api/account/subscription/portal";
+const checkoutHandoffParam = "checkoutHandoff";
+const checkoutHandoffVerifyValue = "verify";
 type SubscriptionHydrationScope = "effective" | "personal";
 type SubscriptionDefaultCycle = AccountSubscriptionSnapshot["cycle"];
 let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise<AccountSubscriptionSnapshot | null>>> = {};
@@ -236,6 +238,12 @@ function applySubscriptionSnapshot(subscription: AccountSubscriptionSnapshot) {
   return normalized;
 }
 
+function shouldHoldStripeCheckoutForVerification() {
+  if (typeof window === "undefined") return false;
+
+  return new URLSearchParams(window.location.search).get(checkoutHandoffParam) === checkoutHandoffVerifyValue;
+}
+
 function shouldUseBillingPortal(subscription: AccountSubscriptionSnapshot, targetPlan: SubscriptionPlanId) {
   if (subscription.provider !== "stripe" || subscription.plan === "free") return false;
 
@@ -335,6 +343,7 @@ export function PlanActionButton({
 }) {
   const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
+  const [checkoutHandoffUrl, setCheckoutHandoffUrl] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const active = subscription.plan === plan;
   const billingPortalManaged = shouldUseBillingPortal(subscription, plan);
@@ -342,6 +351,7 @@ export function PlanActionButton({
   async function handlePlanAction() {
     if (pending || (active && !billingPortalManaged)) return;
     setPending(true);
+    setCheckoutHandoffUrl("");
     setStatusMessage("");
 
     const fallbackSubscription = normalizeSubscription({
@@ -384,6 +394,12 @@ export function PlanActionButton({
       }
 
       if (data?.checkoutMode === "stripe" && data.checkoutUrl) {
+        if (shouldHoldStripeCheckoutForVerification()) {
+          setCheckoutHandoffUrl(data.checkoutUrl);
+          setStatusMessage(`${subscriptionPlans[plan].name} checkout is ready.`);
+          return;
+        }
+
         window.location.assign(data.checkoutUrl);
         return;
       }
@@ -411,7 +427,17 @@ export function PlanActionButton({
       <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
         {pending ? "Opening..." : actionLabel}
       </button>
-      {statusMessage ? <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">{statusMessage}</div> : null}
+      {statusMessage ? (
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">
+          <span>{statusMessage}</span>
+          {checkoutHandoffUrl ? (
+            <a href={checkoutHandoffUrl} className="mt-2 inline-flex items-center gap-1 text-[#ffb12b]">
+              Open Stripe Checkout
+              <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            </a>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }
