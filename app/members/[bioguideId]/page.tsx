@@ -21,7 +21,7 @@ import {
   Vote as VoteIcon
 } from "lucide-react";
 import { getMemberDetailWithLiveData, type MemberCaucusMembership, type MemberVoteRecord } from "@/lib/data";
-import { calculateMemberScore, type AlignmentComponent, type MemberScoreFactor, type MemberScoreModel } from "@/lib/member-scoring";
+import { calculateMemberScore, type MemberScoreFactor, type MemberScoreModel } from "@/lib/member-scoring";
 import { getCurrentSession } from "@/lib/auth";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
@@ -62,13 +62,6 @@ const premiumHeaderIconClass =
   "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/18 bg-[#ffb12b]/8 text-[#ffb12b]";
 const premiumHeaderGreenIconClass =
   "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#43ed74]/22 bg-[#43ed74]/10 text-[#43ed74]";
-
-const alignmentTopicMetricWeights = [
-  { key: "pollAverage", label: "Polling", weight: 40 },
-  { key: "voteAlignment", label: "Votes", weight: 35 },
-  { key: "publicPositioning", label: "Activity", weight: 15 },
-  { key: "timeInOffice", label: "Tenure", weight: 10 }
-] as const;
 
 const stateNames: Record<string, string> = {
   AK: "Alaska",
@@ -715,12 +708,18 @@ function OverviewTab({
   const accountabilityTrend = buildAccountabilityTrend(scoreModel);
   const topScoreFactors = [...scoreModel.factors].sort((a, b) => b.value - a.value).slice(0, 3);
   const topScoreFactor = topScoreFactors[0];
+  const issueMatchValue = alignmentFactor?.value ?? accountabilityTrend.current;
+  const topIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.topicScore - a.topicScore).slice(0, 3);
+  const hiddenIssueTopicCount = Math.max(0, scoreModel.constituentAlignment.topics.length - topIssueTopics.length);
+  const comparedTopics = scoreModel.constituentAlignment.selectedTopics.length
+    ? formatTopicList(scoreModel.constituentAlignment.selectedTopics)
+    : "saved issue interests";
 
   return (
     <>
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="Public records, votes, bill activity, and issue match summarized in one view."
+          description="The quick read: score, standing, and the strongest public-record signals."
           eyebrow="Profile snapshot"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
@@ -745,160 +744,54 @@ function OverviewTab({
           </div>
         </div>
 
-        {topScoreFactor ? (
-          <div className={`mt-5 ${premiumPanelClass} px-4 py-3`}>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Highest scoring input</div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-[15px] font-medium text-white">{plainFactorLabel(topScoreFactor.label)}</span>
-              <span className="text-[16px] font-semibold text-[#ffb12b]">{topScoreFactor.value}%</span>
-            </div>
-          </div>
-        ) : null}
-
-        <div className={`mt-5 ${premiumPanelClass} p-4`}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[15px] font-medium text-white">Issue match</div>
-              <p className="mt-1 text-[12px] leading-snug text-white/46">Compares state issue polling with votes, bill activity, public roles, and time in office.</p>
-            </div>
-            <span className={`${premiumPillClass} shrink-0 text-[#ffcf54]`}>
-              {accountabilityTrend.delta >= 0 ? "+" : ""}
-              {accountabilityTrend.delta} pts
-            </span>
-          </div>
-          <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-            <div>
-              <div className="text-[25px] font-semibold leading-none text-[#ffb12b]">{accountabilityTrend.current}%</div>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.06em] text-white/42">current match</div>
-            </div>
-            <div className="text-right text-[12px] leading-snug text-white/50">
-              <span className="block text-white/68">{accountabilityTrend.driverLabel}</span>
-              <span>
-                {accountabilityTrend.driverDelta >= 0 ? "+" : ""}
-                {accountabilityTrend.driverDelta} vs polling
-              </span>
-            </div>
-          </div>
-          <AccountabilityTrendChart trend={accountabilityTrend} />
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <OverviewMetricTile label="Issue match" value={`${issueMatchValue}%`} detail={scoreModel.constituentAlignment.viewerState} />
+          <OverviewMetricTile
+            label="Top signal"
+            value={topScoreFactor ? `${topScoreFactor.value}%` : `${scoreModel.overallScore}%`}
+            detail={topScoreFactor ? plainFactorLabel(topScoreFactor.label) : "Public record"}
+          />
+          <OverviewMetricTile
+            label="Movement"
+            value={`${accountabilityTrend.delta >= 0 ? "+" : ""}${accountabilityTrend.delta} pts`}
+            detail={accountabilityTrend.driverLabel}
+            tone={accountabilityTrend.delta >= 0 ? "green" : "gold"}
+          />
         </div>
       </MobileCard>
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="The largest public-record inputs behind the snapshot."
-          eyebrow="Score breakdown"
+          description="A shorter read on the public-record signals behind the snapshot."
+          eyebrow="Key signals"
           icon={<FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
-          title="What shapes the score"
+          title="What matters now"
+          titleAccessory={<ScoreDetailsPopover factors={scoreModel.factors} />}
         />
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-5 space-y-3">
           {topScoreFactors.map((factor) => (
-            <div key={factor.key} className="rounded-xl border border-white/10 bg-[#071a38]/62 px-3 py-3">
-              <div className="truncate text-[11px] font-semibold uppercase tracking-[0.04em] text-white/44">{plainFactorLabel(factor.label)}</div>
-              <div className="mt-2 text-[18px] font-semibold leading-none text-white">{factor.value}%</div>
-              <div className="mt-1 text-[11px] leading-none text-white/36">{factor.weight}% of score</div>
-            </div>
+            <OverviewSignalRow key={factor.key} factor={factor} />
           ))}
         </div>
-        <div className="mt-4 rounded-xl border border-white/10 bg-[#071a38]/62 px-3 py-3">
-          <div className="flex items-center justify-between gap-3 text-[12px] font-medium text-white/50">
-            <span>Score blend</span>
-            <span>{scoreModel.overallScore}% overall</span>
-          </div>
-          <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-white/10">
-            {scoreModel.factors.map((factor) => (
-              <div
-                key={`${factor.key}-segment`}
-                className="h-full bg-gradient-to-r from-[#a96a09] via-[#ffb12b] to-[#ffcf54] opacity-90"
-                style={{ width: `${factor.weight}%` }}
-                title={`${plainFactorLabel(factor.label)}: ${factor.weight}% of score`}
-              />
-            ))}
-          </div>
-        </div>
-      </MobileCard>
 
-      <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-        <PremiumCardHeader
-          aside={
-            <div className="text-right">
-              <span className={premiumPillClass}>30% of score</span>
-              <div className="mt-2 text-[14px] font-semibold text-[#ffb12b]">
-                {alignmentFactor?.value ?? 0}% match
-              </div>
-            </div>
-          }
-          description={<>Topics compared: {formatTopicList(scoreModel.constituentAlignment.selectedTopics)}</>}
-          eyebrow="Issue match"
-          title={`${scoreModel.constituentAlignment.viewerState} issue match`}
-        />
-        <div className={`mb-5 ${premiumPanelClass} px-4 py-4`}>
-          <div className="text-[15px] font-medium text-white">About this estimate</div>
-          <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Saved interests are grouped into broad topics, then compared with state polling snapshots, votes, bill activity, public roles, and time in office.
-          </p>
-        </div>
-        <MobileGlassScrollFrame heightClassName="max-h-[260px]" className="snap-y snap-mandatory space-y-4">
-          {scoreModel.constituentAlignment.components.map((component) => (
-            <div key={component.label} className={`snap-start ${premiumPanelClass} px-4 py-4`}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-[16px] font-medium text-white">{plainAlignmentLabel(component.label)}</div>
-                <div className="text-right">
-                  <div className="text-[16px] font-semibold text-white">{component.value}%</div>
-                  <div className="text-[12px] text-white/46">{component.weight}% of match</div>
-                </div>
-              </div>
-              <p className="mt-2 text-[13px] leading-snug text-white/50">{component.detail}</p>
-            </div>
-          ))}
-        </MobileGlassScrollFrame>
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[16px] font-medium text-white">Issue categories</h3>
-            <span className={premiumPillClass}>{scoreModel.constituentAlignment.topics.length} categories</span>
+            <div className="min-w-0">
+              <h3 className="text-[16px] font-medium text-white">Issue topics</h3>
+              <p className="mt-1 text-[12px] leading-snug text-white/46">Compared against {comparedTopics}.</p>
+            </div>
+            <IssueMatchInfoPopover />
           </div>
-          <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[410px]" className="snap-y snap-mandatory space-y-3">
-            {scoreModel.constituentAlignment.topics.map((topic) => (
-              <TopicMathCard key={topic.topic} topic={topic} />
+          <div className="mt-3 grid gap-2">
+            {topIssueTopics.map((topic) => (
+              <OverviewTopicChip key={topic.topic} topic={topic} />
             ))}
-          </MobileGlassScrollFrame>
-        </div>
-        <p className="mt-4 text-[12px] leading-snug text-white/46">Early estimate using curated polling snapshots and synced public records while live polling ingestion is being prepared.</p>
-      </MobileCard>
-
-      <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
-        <PremiumCardHeader
-          description="A nonpartisan summary based on synced public records and issue-match estimates."
-          eyebrow="Methodology"
-          icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
-          iconTone="green"
-          title="How the score is calculated"
-        />
-        <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
-          <div className="text-[15px] font-medium text-white">Score formula</div>
-          <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Overall score = 25% votes + 15% public activity + 15% bill activity + 15% source status + 30% issue match.
-          </p>
-          <p className="mt-2 text-[13px] leading-snug text-white/50">
-            Issue match = 40% state issue polling + 35% vote record + 15% public activity + 10% time in office.
-          </p>
-        </div>
-        <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[15px] font-medium text-white">Public-record details</div>
-            <span className={premiumPillClass}>{scoreModel.factors.length} inputs</span>
-          </div>
-          <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[330px]" className="snap-y snap-mandatory space-y-3">
-            {scoreModel.factors.map((factor) => (
-              <div key={`${factor.key}-method`} className="snap-start rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-[16px] font-medium text-white">{plainFactorLabel(factor.label)}</div>
-                  <span className={premiumPillClass}>{plainStatusLabel(factor.status)}</span>
-                </div>
-                <p className="mt-2 text-[13px] leading-snug text-white/50">{factor.detail}</p>
-                <div className="mt-2 text-[12px] text-[#ffb12b]/82">{factor.evidence}</div>
+            {hiddenIssueTopicCount ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-medium text-white/48">
+                +{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} in the full issue model
               </div>
-            ))}
-          </MobileGlassScrollFrame>
+            ) : null}
+          </div>
         </div>
       </MobileCard>
     </>
@@ -916,14 +809,6 @@ function plainFactorLabel(label: string) {
   return label;
 }
 
-function plainAlignmentLabel(label: AlignmentComponent["label"]) {
-  if (label === "Poll Average") return "State issue polling";
-  if (label === "Vote Alignment") return "Vote record";
-  if (label === "Public Positioning") return "Public activity";
-  if (label === "Time in Office") return "Time in office";
-  return label;
-}
-
 function plainStatusLabel(status: MemberScoreFactor["status"]) {
   if (status === "source-linked") return "Source linked";
   if (status === "partial") return "Partial data";
@@ -935,137 +820,115 @@ function formatTopicList(topics: string[]) {
   return `${topics.slice(0, 4).join(", ")} and ${topics.length - 4} more`;
 }
 
-function TopicMathCard({ topic }: { topic: AlignmentTopic }) {
+function OverviewMetricTile({
+  detail,
+  label,
+  tone = "gold",
+  value
+}: {
+  detail: string;
+  label: string;
+  tone?: "gold" | "green";
+  value: string;
+}) {
   return (
-    <div className="snap-start rounded-xl border border-white/10 bg-[#071a38]/65 px-3.5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-      <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 rounded-xl border border-white/10 bg-[#071a38]/62 px-3 py-3">
+      <div className="truncate text-[10px] font-semibold uppercase tracking-[0.05em] text-white/42">{label}</div>
+      <div className={`mt-2 text-[18px] font-semibold leading-none ${tone === "green" ? "text-[#65ec68]" : "text-[#ffb12b]"}`}>{value}</div>
+      <div className="mt-1 truncate text-[11px] leading-none text-white/42">{detail}</div>
+    </div>
+  );
+}
+
+function OverviewSignalRow({ factor }: { factor: MemberScoreFactor }) {
+  return (
+    <div className={`${premiumPanelClass} px-4 py-3.5`}>
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-[15px] font-medium text-white">{topic.topic}</div>
-          <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched record{topic.signalCount === 1 ? "" : "s"}</div>
+          <div className="truncate text-[16px] font-medium text-white">{plainFactorLabel(factor.label)}</div>
+          <div className="mt-1 text-[12px] leading-none text-white/42">{plainStatusLabel(factor.status)}</div>
         </div>
-        <div className="shrink-0 text-right">
-          <div className="text-[17px] font-semibold text-[#ffb12b]">{topic.topicScore}%</div>
-          <div className="mt-1 text-[11px] leading-none text-white/42">topic match</div>
-        </div>
+        <div className="shrink-0 text-[18px] font-semibold text-[#ffb12b]">{factor.value}%</div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {alignmentTopicMetricWeights.map((metric) => {
-          const value = topic[metric.key];
-          return (
-            <div key={metric.key} className="rounded-lg border border-white/8 bg-white/[0.035] px-2.5 py-2">
-              <div className="flex items-center justify-between gap-2 text-[12px] leading-none">
-                <span className="text-white/50">{metric.label}</span>
-                <span className="font-semibold text-white">{value}%</span>
-              </div>
-              <div className="mt-1.5 text-[10px] leading-none text-white/35">
-                {metric.weight}% of match
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-3 rounded-lg border border-[#ffb12b]/12 bg-[#ffb12b]/6 px-3 py-2 text-[11px] font-medium leading-none text-[#ffcf54]/86">
-        Blended topic match: {topic.topicScore}%
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-[linear-gradient(90deg,#a96a09_0%,#ffb12b_68%,#ffcf54_100%)]" style={{ width: `${factor.value}%` }} />
       </div>
     </div>
   );
 }
 
-function AccountabilityTrendChart({ trend }: { trend: AccountabilityTrendModel }) {
-  const points = trend.points;
-  const width = 360;
-  const height = 108;
-  const topPadding = 14;
-  const bottomPadding = 24;
-  const sidePadding = 12;
-  const chartBottom = height - bottomPadding;
-  const plotHeight = chartBottom - topPadding;
-  const values = points.map((point) => point.value);
-  const valueMin = Math.max(0, Math.min(...values) - 8);
-  const valueMax = Math.min(100, Math.max(...values) + 8);
-  const valueRange = Math.max(12, valueMax - valueMin);
+function OverviewTopicChip({ topic }: { topic: AlignmentTopic }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/10 bg-[#071a38]/62 px-3.5 py-3">
+      <div className="min-w-0">
+        <div className="truncate text-[15px] font-medium text-white">{topic.topic}</div>
+        <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched record{topic.signalCount === 1 ? "" : "s"}</div>
+      </div>
+      <div className="text-[17px] font-semibold text-[#ffb12b]">{topic.topicScore}%</div>
+    </div>
+  );
+}
 
-  const mapX = (index: number) => sidePadding + ((width - sidePadding * 2) / Math.max(1, points.length - 1)) * index;
-  const mapY = (value: number) => topPadding + ((valueMax - value) / valueRange) * plotHeight;
-  const plotted = points.map((point, index) => ({
-    ...point,
-    x: mapX(index),
-    y: mapY(point.value)
-  }));
-
-  const linePath = plotted.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
-  const areaPath = `${linePath} L ${plotted[plotted.length - 1]?.x ?? sidePadding} ${chartBottom} L ${sidePadding} ${chartBottom} Z`;
-  const latestPoint = plotted[plotted.length - 1];
+function MemberInfoPopover({
+  align = "left",
+  ariaLabel,
+  children,
+  title
+}: {
+  align?: "left" | "right";
+  ariaLabel: string;
+  children: ReactNode;
+  title: string;
+}) {
+  const alignClass = align === "right" ? "right-0" : "left-0";
 
   return (
-    <div className="mt-3 rounded-xl border border-white/10 bg-[#071a38]/58 px-1.5 py-2">
-      <svg className="h-[108px] w-full" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Issue match trend chart">
-        <defs>
-          <linearGradient id="alignment-area-gradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ffb12b" stopOpacity="0.24" />
-            <stop offset="100%" stopColor="#ffb12b" stopOpacity="0.02" />
-          </linearGradient>
-          <linearGradient id="alignment-line-gradient" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="#ffb12b" />
-            <stop offset="70%" stopColor="#ffb12b" />
-            <stop offset="100%" stopColor="#ffd163" />
-          </linearGradient>
-          <filter id="alignment-line-glow" x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="blurred" />
-            <feMerge>
-              <feMergeNode in="blurred" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {[valueMax, valueMin].map((tick) => (
-          <g key={`tick-${tick}`}>
-            <line x1={sidePadding} x2={width - sidePadding} y1={mapY(tick)} y2={mapY(tick)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-            <text x={width - sidePadding - 10} y={mapY(tick) - 4} fill="rgba(255,255,255,0.42)" fontSize="10" textAnchor="end">
-              {tick}%
-            </text>
-          </g>
-        ))}
-
-        <path d={areaPath} fill="url(#alignment-area-gradient)" />
-        <path d={linePath} fill="none" stroke="url(#alignment-line-gradient)" strokeWidth="3" strokeLinecap="round" filter="url(#alignment-line-glow)" />
-
-        {plotted.map((point) => (
-          <g key={`point-${point.label}`}>
-            <circle cx={point.x} cy={point.y} r={point === latestPoint ? 6.5 : 4.5} fill={point === latestPoint ? "#ffb12b" : "#183c70"} stroke="#ffd976" strokeWidth="2" />
-            <text x={point.x} y={height - 6} fill="rgba(255,255,255,0.58)" fontSize="10.5" textAnchor="middle">
-              {point.label}
-            </text>
-          </g>
-        ))}
-
-        {latestPoint ? (
-          <text x={Math.max(sidePadding + 28, latestPoint.x - 8)} y={latestPoint.y - 10} fill="#ffcf54" fontSize="11" fontWeight="600" textAnchor="end">
-            {latestPoint.value}%
-          </text>
-        ) : null}
-      </svg>
-    </div>
+    <details className="group relative">
+      <summary
+        className="grid h-5 w-5 cursor-pointer list-none place-items-center rounded-full border border-white/55 text-xs text-white/70 transition hover:border-[#ffb12b]/75 hover:text-[#ffcf54] [&::-webkit-details-marker]:hidden"
+        aria-label={ariaLabel}
+      >
+        i
+      </summary>
+      <div className={`pointer-events-none absolute ${alignClass} top-7 z-30 w-[282px] rounded-2xl border border-white/12 bg-[#071c38]/96 p-3 text-[12px] leading-snug text-white/72 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.35)] transition group-open:pointer-events-auto group-open:opacity-100`}>
+        <div className="font-medium text-[#ffb12b]">{title}</div>
+        <div className="mt-1 space-y-2">{children}</div>
+      </div>
+    </details>
   );
 }
 
 function AccountabilityInfoPopover() {
   return (
-    <details className="group relative">
-      <summary
-        className="grid h-5 w-5 cursor-pointer list-none place-items-center rounded-full border border-white/55 text-xs text-white/70 transition hover:border-[#ffb12b]/75 hover:text-[#ffcf54] [&::-webkit-details-marker]:hidden"
-        aria-label="How accountability score is calculated"
-      >
-        i
-      </summary>
-      <div className="pointer-events-none absolute left-0 top-7 z-30 w-[270px] rounded-2xl border border-white/12 bg-[#071c38]/96 p-3 text-[12px] leading-snug text-white/72 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.35)] transition group-open:pointer-events-auto group-open:opacity-100">
-        <div className="font-medium text-[#ffb12b]">Score blend</div>
-        <p className="mt-1">
-          25% votes + 15% public activity + 15% bill activity + 15% source status + 30% issue match.
-        </p>
+    <MemberInfoPopover align="right" ariaLabel="What the accountability score means" title="Score blend">
+      <p>One public-record score combining votes, public activity, bill activity, source status, and issue match.</p>
+      <p>It is a directional snapshot, not a final grade.</p>
+    </MemberInfoPopover>
+  );
+}
+
+function ScoreDetailsPopover({ factors }: { factors: MemberScoreFactor[] }) {
+  return (
+    <MemberInfoPopover align="right" ariaLabel="How the score is calculated" title="Inputs behind the score">
+      <p>Overall score = 25% votes, 15% public activity, 15% bill activity, 15% source status, and 30% issue match.</p>
+      <div className="space-y-1.5">
+        {factors.map((factor) => (
+          <div key={`${factor.key}-popover`} className="flex items-center justify-between gap-3">
+            <span>{plainFactorLabel(factor.label)}</span>
+            <span className="font-semibold text-[#ffcf54]">{factor.weight}%</span>
+          </div>
+        ))}
       </div>
-    </details>
+    </MemberInfoPopover>
+  );
+}
+
+function IssueMatchInfoPopover() {
+  return (
+    <MemberInfoPopover align="right" ariaLabel="How issue match is estimated" title="Issue match estimate">
+      <p>Saved interests are grouped into broad topics, then compared with state polling snapshots and public records.</p>
+      <p>Issue match weighs polling, vote record, public activity, and time in office.</p>
+    </MemberInfoPopover>
   );
 }
 
