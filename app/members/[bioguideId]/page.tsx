@@ -1137,11 +1137,11 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
         eyebrow="Legislative activity"
         title="Bills"
       />
-      <div className="mt-5 space-y-3">
+      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member bill activity">
         {visibleRecords.map(({ bill, label }) => (
           <BillActivityRow key={`${label}-${bill.id}`} bill={bill} label={label} />
         ))}
-      </div>
+      </MobileGlassScrollFrame>
     </MobileCard>
   );
 }
