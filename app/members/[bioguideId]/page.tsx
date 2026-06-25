@@ -875,12 +875,12 @@ function MemberInfoPopover({
   children,
   title
 }: {
-  align?: "left" | "right";
+  align?: "center" | "left" | "right";
   ariaLabel: string;
   children: ReactNode;
   title: string;
 }) {
-  const alignClass = align === "right" ? "right-0" : "left-0";
+  const alignClass = align === "center" ? "left-1/2 -translate-x-1/2" : align === "right" ? "right-0" : "left-0";
 
   return (
     <details className="group relative">
@@ -890,7 +890,7 @@ function MemberInfoPopover({
       >
         i
       </summary>
-      <div className={`pointer-events-none absolute ${alignClass} top-7 z-30 w-[282px] rounded-2xl border border-white/18 bg-[#071c38] p-3 text-[12px] leading-snug text-white/82 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] transition group-open:pointer-events-auto group-open:opacity-100`}>
+      <div className={`pointer-events-none absolute ${alignClass} top-7 z-30 w-[282px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/18 bg-[#071c38] p-3 text-[12px] leading-snug text-white/82 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] transition group-open:pointer-events-auto group-open:opacity-100`}>
         <div className="font-medium text-[#ffb12b]">{title}</div>
         <div className="mt-1 space-y-2">{children}</div>
       </div>
@@ -909,7 +909,7 @@ function AccountabilityInfoPopover() {
 
 function ScoreDetailsPopover({ factors }: { factors: MemberScoreFactor[] }) {
   return (
-    <MemberInfoPopover align="right" ariaLabel="How the score is calculated" title="Inputs behind the score">
+    <MemberInfoPopover align="center" ariaLabel="How the score is calculated" title="Inputs behind the score">
       <p>Overall score = 25% votes, 15% public activity, 15% bill activity, 15% source status, and 30% issue match.</p>
       <div className="space-y-1.5">
         {factors.map((factor) => (
