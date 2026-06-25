@@ -24,19 +24,19 @@ let accountHydrationPromises: Partial<Record<SubscriptionHydrationScope, Promise
 
 const teamWorkspaceSignals = [
   {
-    detail: "Choose how many teammates can join.",
+    detail: "Choose how many teammates can join this workspace.",
     icon: <ListChecks />,
     label: "Team seats",
     value: `${minimumTeamSeatCount}-${maximumTeamSeatCount}`
   },
   {
-    detail: "The buyer manages billing and invites.",
+    detail: "The owner manages billing and invites.",
     icon: <Bell />,
     label: "Billing owner",
     value: "Included"
   },
   {
-    detail: "Pending invites hold a seat until accepted.",
+    detail: "Pending invites reserve a seat until accepted.",
     icon: <ShieldCheck />,
     label: "Invites",
     value: "Tracked"
@@ -354,7 +354,7 @@ export function PlanActionButton({
     try {
       if (billingPortalManaged) {
         const opened = await openBillingPortal();
-        if (!opened) setStatusMessage("Billing portal is not ready for this subscription yet.");
+        if (!opened) setStatusMessage("Billing management is not ready yet.");
         return;
       }
 
@@ -379,7 +379,7 @@ export function PlanActionButton({
 
       if (!response.ok) {
         if (plan === "free" && subscription.provider !== "stripe") updateSubscription({ plan });
-        setStatusMessage(response.status === 401 ? "Sign in before starting checkout." : data?.error ?? "Checkout could not start. Try again.");
+        setStatusMessage(response.status === 401 ? "Sign in to choose this plan." : data?.error ?? "Checkout could not open. Try again.");
         return;
       }
 
@@ -398,7 +398,7 @@ export function PlanActionButton({
       setStatusMessage(`${subscriptionPlans[plan].name} is active.`);
     } catch {
       if (plan === "free") updateSubscription({ plan });
-      setStatusMessage(plan === "free" ? "Free plan is active on this device." : "Checkout could not start. Try again.");
+      setStatusMessage(plan === "free" ? "Free plan is active." : "Checkout could not open. Try again.");
     } finally {
       setPending(false);
     }
@@ -409,7 +409,7 @@ export function PlanActionButton({
   return (
     <>
       <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
-        {pending ? "Preparing..." : actionLabel}
+        {pending ? "Opening..." : actionLabel}
       </button>
       {statusMessage ? <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">{statusMessage}</div> : null}
     </>
@@ -465,7 +465,7 @@ export function TeamSeatSelector({
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Team seats</div>
           <div className="mt-1 text-[13px] leading-snug text-white/56">
-            Choose how many teammates need access. Self-serve supports {minimumTeamSeatCount}-{maximumTeamSeatCount} seats.
+            Choose how many teammates need access. You can start with {minimumTeamSeatCount}-{maximumTeamSeatCount} seats here.
           </div>
         </div>
         <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
@@ -518,10 +518,10 @@ export function TeamSeatSelector({
             </span>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white">Need more than {maximumTeamSeatCount} seats?</div>
-              <div className="mt-1 text-[12px] leading-snug text-white/54">Request a custom Team plan for a larger organization.</div>
+              <div className="mt-1 text-[12px] leading-snug text-white/54">Request a custom Team plan for a larger group.</div>
             </div>
             <Link href="/feedback?source=team-custom-plan" className="shrink-0 rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/12 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b] transition hover:bg-[#ffb12b]/18">
-              Custom
+              Request
             </Link>
           </div>
         </div>
@@ -531,7 +531,7 @@ export function TeamSeatSelector({
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Estimated total</div>
           <div className="mt-1 text-[12px] leading-snug text-white/48">
-            {seatCount} seats x {formatCurrency(pricePerSeat)} / {seatUnit}
+            {seatCount} seats at {formatCurrency(pricePerSeat)} / {seatUnit}
           </div>
         </div>
         <div className="text-right">
@@ -579,7 +579,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          After checkout, invite teammates and manage shared watchlists from the Team page.
+          After checkout, open the Team page to invite teammates and manage shared watchlists.
         </span>
       </div>
 

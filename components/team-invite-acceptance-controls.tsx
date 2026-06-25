@@ -39,13 +39,13 @@ export function TeamInviteAcceptanceControls({
       const data = (await response.json().catch(() => null)) as AcceptResponse | null;
 
       if (!response.ok || !data?.workspace || !data.membership) {
-        setError(data?.error ?? "Unable to accept this Team invite.");
+        setError(data?.error ?? "This Team invite could not be accepted.");
         return;
       }
 
       setWorkspaceName(data.workspace.name);
     } catch {
-      setError("Unable to reach the Team invite service.");
+      setError("Team invite service could not be reached.");
     } finally {
       setPending(false);
     }
@@ -61,7 +61,7 @@ export function TeamInviteAcceptanceControls({
           href="/team"
           className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl border border-[#43ed74]/24 bg-[#43ed74]/10 text-[14px] font-semibold text-[#74f49a]"
         >
-          Open Workspace
+          Open workspace
           <ArrowRight className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
         </Link>
       </div>
@@ -77,7 +77,7 @@ export function TeamInviteAcceptanceControls({
         className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110 disabled:opacity-45"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.9} aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />}
-        {pending ? "Accepting..." : "Accept Seat"}
+        {pending ? "Accepting seat..." : "Accept seat"}
       </button>
 
       {!emailMatches ? (

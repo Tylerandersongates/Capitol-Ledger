@@ -62,7 +62,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       } | null;
 
       if (!response.ok || !data?.workspace) {
-        setError(data?.error ?? "Unable to create the invite.");
+        setError(data?.error ?? "Invite could not be created.");
         return;
       }
 
@@ -79,10 +79,10 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
             ? "Invite link ready. Share it with the invited email account."
             : data.inviteDelivery?.error
               ? "Invite saved, but email delivery needs attention."
-              : "Invite saved. Email delivery is not configured."
+              : "Invite saved. Check delivery settings before relying on email."
       );
     } catch {
-      setError("Unable to reach the invite service.");
+      setError("Invite service could not be reached.");
     } finally {
       setPending(false);
     }
@@ -121,7 +121,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       } | null;
 
       if (!response.ok || !data?.workspace) {
-        setError(data?.error ?? "Unable to remove this team seat.");
+        setError(data?.error ?? "This team seat could not be removed.");
         return;
       }
 
@@ -132,14 +132,14 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
       } else if (data.release?.personalSubscriptionRestored) {
         setMessage("Seat removed. Personal Pro billing resumed.");
       } else if (data.release?.personalSubscriptionCheckoutRequired) {
-        setMessage("Seat removed. Personal Pro needs checkout to restart.");
+        setMessage("Seat removed. Personal Pro can be restarted from Upgrade.");
       } else if (data.release?.accountConvertedToFree) {
         setMessage("Seat removed. Account returned to Free.");
       } else {
         setMessage("Seat removed. A team seat is open.");
       }
     } catch {
-      setError("Unable to reach seat controls.");
+      setError("Seat controls could not be reached.");
     } finally {
       setReleasePendingId("");
     }
@@ -173,7 +173,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
             {rosterRows.length ? (
               rosterRows.map((row) => <RosterRow key={rowKey(row)} releasePending={releasePendingId === rowKey(row)} row={row} onRelease={releaseSeat} />)
             ) : (
-              <div className="py-4 text-[12px] leading-snug text-white/46">No team seats are assigned yet. Invite Admins, Analysts, or Viewers.</div>
+              <div className="py-4 text-[12px] leading-snug text-white/46">No team seats are assigned yet. Invite an Admin, Analyst, or Viewer.</div>
             )}
           </div>
         </div>
@@ -187,7 +187,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-white">Invite a teammate</div>
             <div className="mt-1 text-[12px] leading-snug text-white/48">
-              {workspace.openSeats > 0 ? `${workspace.openSeats} open team seat${workspace.openSeats === 1 ? "" : "s"}.` : "All team seats are assigned or pending."}
+              {workspace.openSeats > 0 ? `${workspace.openSeats} team seat${workspace.openSeats === 1 ? "" : "s"} available.` : "All seats are assigned or reserved."}
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ export function TeamInviteControls({ initialWorkspace }: { initialWorkspace: Tea
           className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110 disabled:opacity-45"
         >
           <Mail className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-          {pending ? "Sending..." : "Send invite"}
+          {pending ? "Sending invite..." : "Send invite"}
         </button>
 
         {message ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">{message}</div> : null}

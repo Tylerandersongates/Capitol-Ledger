@@ -82,7 +82,7 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Pick Pro for personal tracking, or Team when several people need the same view."
+            description="Choose Pro for personal tracking, or Team when several people need the same workspace."
             eyebrow="Plans"
             title="Choose a plan"
           />
@@ -101,7 +101,7 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Choose monthly or annual billing before selecting a plan."
+              description="Choose monthly or annual billing before picking a plan."
               eyebrow="Billing"
               icon={<Sparkles />}
               title="Billing cycle"
@@ -115,7 +115,7 @@ export default async function UpgradePage() {
         {showStripeSandboxNotice ? (
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Stripe is in test mode. Use card 4242 4242 4242 4242 with any future expiration, CVC, and ZIP code."
+              description="Checkout is in test mode. Use card 4242 4242 4242 4242 with any future expiration, CVC, and ZIP code."
               eyebrow="Test checkout"
               icon={<ShieldCheck />}
               title="No real payment needed"
@@ -215,10 +215,10 @@ function TeamAccessStatusCard({
   const proPausedForTeam = subscription?.providerEntitlementId === teamPausedProEntitlementId;
   const personalPlanLabel = proPausedForTeam ? "Pro paused" : subscription ? subscriptionPlans[subscription.plan].name : "Personal";
   const description = access.isBillingOwner
-    ? `Your ${personalPlanLabel} billing owns this workspace and does not use a team seat.`
+    ? `Your ${personalPlanLabel} billing owns this workspace, and owner access does not use a team seat.`
     : proPausedForTeam
-      ? `Your personal Pro billing is paused while this owner-paid Team seat gives you ${roleLabel} access.`
-      : `Your personal billing plan remains ${personalPlanLabel}. Your Team seat gives you ${roleLabel} access to this workspace.`;
+      ? `Your personal Pro billing is paused while this Team seat gives you ${roleLabel} access.`
+      : `Your personal plan remains ${personalPlanLabel}. Your Team seat gives you ${roleLabel} access to this workspace.`;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">

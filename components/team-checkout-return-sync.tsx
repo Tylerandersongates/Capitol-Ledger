@@ -19,7 +19,7 @@ function writeBrowserSubscription(subscription: AccountSubscriptionSnapshot) {
 
 export function TeamCheckoutReturnSync() {
   const router = useRouter();
-  const [status, setStatus] = useState("Checking Stripe subscription...");
+  const [status, setStatus] = useState("Confirming Team billing...");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -45,11 +45,11 @@ export function TeamCheckoutReturnSync() {
       }
 
       if (attempts >= 12) {
-        setStatus("Stripe is still finalizing the Team subscription. Refresh this page in a few seconds.");
+        setStatus("Team billing is still finalizing. Refresh this page in a few seconds.");
         return;
       }
 
-      setStatus(attempts < 3 ? "Checking Stripe subscription..." : "Waiting for Stripe webhook...");
+      setStatus(attempts < 3 ? "Confirming Team billing..." : "Waiting for the billing update...");
       timeoutId = window.setTimeout(refreshSubscription, 1000);
     }
 

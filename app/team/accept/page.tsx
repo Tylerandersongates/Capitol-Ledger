@@ -33,8 +33,8 @@ export default async function TeamInviteAcceptPage({ searchParams }: { searchPar
             <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
           </Link>
           <div>
-            <div className={premiumEyebrowClass}>Team Invite</div>
-            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Accept Seat</h1>
+            <div className={premiumEyebrowClass}>Team invite</div>
+            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Accept seat</h1>
           </div>
         </div>
         <span className={premiumIconTileClass}>
@@ -86,7 +86,7 @@ function InviteCard({
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div className="min-w-0">
-            <div className={premiumEyebrowClass}>Workspace Access</div>
+            <div className={premiumEyebrowClass}>Workspace access</div>
             <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{preview.workspace.name}</h2>
             <p className="mt-3 text-[15px] leading-snug text-white/60">
               {preview.owner.name || preview.owner.email || "The workspace owner"} invited {preview.invite.email} to join this Team workspace.
@@ -119,7 +119,7 @@ function InviteCard({
                 email={preview.invite.email}
                 signInHref={signInHref}
                 title="Switch to the invited account"
-                description={`Create or sign in with ${preview.invite.email} to claim this paid Team seat.`}
+                description={`Create or sign in with ${preview.invite.email} to accept this Team seat.`}
               />
             ) : null}
           </>
@@ -129,7 +129,7 @@ function InviteCard({
             email={preview.invite.email}
             signInHref={signInHref}
             title="Create or sign in to accept"
-            description={`Create a new account or sign in with ${preview.invite.email} to claim this paid Team seat.`}
+            description={`Create a new account or sign in with ${preview.invite.email} to accept this Team seat.`}
           />
         )}
 
@@ -139,10 +139,10 @@ function InviteCard({
       <MobileCard variant="rust" className="px-5 py-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div className="min-w-0">
-            <div className={premiumEyebrowClass}>Seat Rules</div>
+            <div className={premiumEyebrowClass}>Seat rules</div>
             <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Paid capacity applies</h2>
             <p className="mt-2 text-[13px] leading-snug text-white/54">
-              Acceptance checks current Team billing for the workspace owner before assigning this seat.
+              Capitol Ledger confirms the owner&apos;s Team billing before assigning this seat.
             </p>
           </div>
           <span className={premiumIconTileClass}>
@@ -178,10 +178,10 @@ function InviteAuthActions({
       </p>
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Link href={createHref} className="flex h-11 items-center justify-center rounded-xl bg-[#ffb12b] text-[14px] font-semibold text-[#061126]">
-          Create Account
+          Create account
         </Link>
         <Link href={signInHref} className="flex h-11 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72">
-          Sign In
+          Sign in
         </Link>
       </div>
       <div className="mt-3 text-[12px] leading-snug text-white/48">
@@ -196,7 +196,7 @@ function InviteErrorCard({ error }: { error: string }) {
     <MobileCard variant="rust" className="px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="min-w-0">
-          <div className={premiumEyebrowClass}>Invite Unavailable</div>
+          <div className={premiumEyebrowClass}>Invite unavailable</div>
           <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">This link cannot be used</h2>
           <p className="mt-3 text-[15px] leading-snug text-white/60">{error}</p>
         </div>
@@ -208,7 +208,7 @@ function InviteErrorCard({ error }: { error: string }) {
         href="/team"
         className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b]"
       >
-        Back to Team
+        Back to team
       </Link>
     </MobileCard>
   );

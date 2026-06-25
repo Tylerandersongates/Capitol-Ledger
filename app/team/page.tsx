@@ -120,7 +120,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
   const setupSteps = [
     {
       description: canManageBilling
-        ? `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is connected to this workspace.`
+        ? `${formatProviderLabel(subscription.provider)} ${subscription.cycle} billing is active for this workspace.`
         : "The workspace owner has active Team billing for your seat.",
       label: "Billing active",
       value: canManageBilling ? formatStatusLabel(subscription.status) : "Active"
@@ -134,7 +134,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
     },
     {
       description: canManageTeam
-        ? `${openSeats} open team seat${openSeats === 1 ? "" : "s"} can be held by pending invites.`
+        ? `${openSeats} team seat${openSeats === 1 ? "" : "s"} can still be assigned.`
         : `${teamWorkspace.occupiedSeats} of ${teamWorkspace.seatCount} team seats are assigned or pending.`,
       label: canManageTeam ? "Open seats" : "Team seats",
       value: `${teamWorkspace.seatCount} seats`
@@ -167,9 +167,9 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">{teamWorkspace.name}</h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
                 {canManageBilling
-                  ? "Your Team plan is active. The buyer manages billing separately, so owner access does not use a team seat."
+                  ? "Your Team plan is active. Owner access manages billing and does not use a team seat."
                   : canManageTeam
-                    ? "Your Admin access is active. You can manage invites, seats, shared watchlists, and shared alerts while the owner keeps billing control."
+                    ? "Your Admin access is active. You can manage invites, seats, shared watchlists, and shared alerts while the owner keeps billing."
                   : "Your Team seat is active. Shared records, roles, and alerts are available in this workspace."}
               </p>
             </div>
@@ -206,7 +206,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             icon={<ShieldCheck />}
             eyebrow="Setup"
             title="Team is active"
-            description="Billing, roles, and pending invites are ready for this workspace."
+            description="Seats, roles, and invites are ready for this workspace."
           />
           <div className="mt-5 grid gap-3">
             {setupSteps.map((step) => (
@@ -266,7 +266,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               icon={<Bell />}
               eyebrow="Shared alerts"
               title="Team alert queue"
-              description="Recent updates tied to Team saved items appear here before shared alert routing is added."
+              description="Recent updates tied to Team saved items appear here for review."
             />
             <Link href="/alerts" className={mobileViewAllClass}>Alerts</Link>
           </div>
@@ -287,7 +287,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             <EmptyPanel
               actionHref="/alerts"
               actionLabel="Open alerts"
-              description="Save bills or officials first, then related updates can feed this Team queue."
+              description="Save bills or officials first, then related updates will appear here."
               title="No Team alerts yet"
             />
           )}
@@ -298,7 +298,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
             icon={<UsersRound />}
             eyebrow="Roles"
             title="Seats and roles"
-            description="The billing owner is separate from team seats. Active members and pending invites count against seats."
+            description="The owner does not use a seat. Active members and pending invites count against seats."
           />
           <div className="mt-5 grid gap-3">
             {teamRoles.map((role) => (
@@ -322,7 +322,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
               icon={<UserPlus />}
               eyebrow="Invite teammates"
               title="Invite teammates"
-              description={`Pending invites hold open seats from the ${teamWorkspace.seatCount}-seat Team plan.`}
+              description={`Pending invites reserve seats from the ${teamWorkspace.seatCount}-seat Team plan.`}
             />
             <TeamInviteControls initialWorkspace={teamWorkspace} />
           </MobileCard>
@@ -356,7 +356,7 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
   const metrics: Metric[] = [
     { label: "Current plan", value: currentPlan },
     { label: "Team seats", value: teamPlanSelected ? String(normalizeTeamSeatCount(subscription.seatCount)) : "3+" },
-    { label: "Status", value: checkoutReturn ? "Syncing" : teamPlanSelected ? formatStatusLabel(subscription.status) : "Upgrade" }
+    { label: "Status", value: checkoutReturn ? "Finalizing" : teamPlanSelected ? formatStatusLabel(subscription.status) : "Upgrade" }
   ];
 
   return (
@@ -382,12 +382,12 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
             <div className="min-w-0">
               <div className={premiumEyebrowClass}>{checkoutReturn ? "Checkout return" : "Team access"}</div>
               <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">
-                {checkoutReturn ? "Finishing Team setup" : "Start Team to use this page"}
+                {checkoutReturn ? "Finishing Team setup" : "Start Team to open this workspace"}
               </h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
                 {checkoutReturn
-                  ? "Stripe checkout is complete. Capitol Ledger is waiting for the billing update before opening the workspace."
-                  : "Start a Team plan first. Choose seats during checkout, then invite teammates and manage shared watchlists here."}
+                  ? "Checkout is complete. Capitol Ledger is confirming billing before opening the workspace."
+                  : "Choose a Team plan first, then invite teammates and manage shared watchlists here."}
               </p>
             </div>
             <span className={premiumIconTileClass}>
@@ -405,7 +405,7 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
             <TeamCheckoutReturnSync />
           ) : (
             <Link href="/upgrade#team-plan" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
-              Choose Civic Team plan
+              Choose Team plan
             </Link>
           )}
         </MobileCard>
@@ -419,12 +419,12 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
           />
           <div className="mt-5 grid gap-3">
             <SetupStep
-              description="Team starts at 3 seats. You can choose more during checkout."
+              description="Team starts at 3 seats. You can add more before checkout."
               label="Team seats"
               value="Required"
             />
             <SetupStep
-              description="The buyer manages billing and can make someone an Admin."
+              description="The owner manages billing and can make someone an Admin."
               label="Billing owner"
               value="Included"
             />
