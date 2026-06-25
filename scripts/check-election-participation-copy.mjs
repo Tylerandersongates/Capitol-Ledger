@@ -7,7 +7,7 @@ const component = fs.readFileSync("components/election-participation-card.tsx", 
 
 assert.ok(component.includes("remainingElections"), "Election participation helper should explain remaining elections");
 assert.ok(component.includes("more unique election"), "Election participation helper should use remaining-count wording");
-assert.ok(component.includes('label: "Voter Badge"'), "Election participation helper should identify Voter as a badge");
+assert.ok(/label: "Voter badge"/i.test(component), "Election participation helper should identify Voter as a badge");
 assert.ok(!component.includes("Log ${voterElectionGoal} of ${totalElectionCount}"), "Election participation helper should not use confusing goal-of-total wording");
 assert.ok(component.includes("electionBadgeMilestones"), "Election participation helper should share milestone copy across badge thresholds");
 assert.ok(component.includes("<span className=\"block\">{nextElectionBadgeMessage(electionCount)}</span>"), "Election participation helper should always show the countdown");

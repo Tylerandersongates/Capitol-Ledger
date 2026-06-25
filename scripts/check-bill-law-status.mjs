@@ -24,7 +24,8 @@ assert.ok(status.includes('return "Enacted"'), "Law actions should resolve to En
 assert.ok(data.includes("resolveBillStatus(bill)"), "Data-layer status should delegate to shared status logic");
 assert.ok(billDetail.includes("isBillLawActionText(action)"), "Bill detail timeline should use shared law detection");
 assert.ok(billDetail.includes("status={status}"), "Bill detail key details should receive computed status");
-assert.ok(billDetail.includes("Law Status") && billDetail.includes("Enacted into law"), "Enacted bills should not render as committee pending");
+assert.ok(billDetail.includes("resolveCommitteeDetail"), "Bill detail should resolve committee/status display through a helper");
+assert.ok(billDetail.includes('if (status === "Enacted") return { label: "Status", value: "Enacted into law" };'), "Enacted bills should not render as committee pending");
 assert.ok(!billDetail.includes('label="Committee" value={bill.committeeName ?? "Committee pending"}'), "Committee pending should not be hard-coded for all bills");
 
 assert.ok(policyEdgeFeed.includes('from "@/lib/bill-status"'), "Policy Edge feed should use shared status logic");

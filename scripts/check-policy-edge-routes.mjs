@@ -17,10 +17,10 @@ const ranking = read("lib/policy-edge-ranking.ts");
 
 assert.ok(dashboard.includes('href="/priority-feed"'), "Open Priority Feed should route to the dedicated Priority Feed page");
 assert.ok(dashboard.includes('href="/risk-watch"'), "Open Risk Watch should route to the dedicated Risk Watch page");
-assert.ok(/href="\/priority-feed"[\s\S]*?Open Priority Feed/.test(dashboard), "Open Priority Feed CTA should use the dedicated route");
-assert.ok(/href="\/risk-watch"[\s\S]*?Open Risk Watch/.test(dashboard), "Open Risk Watch CTA should use the dedicated route");
-assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}Open Priority Feed/.test(dashboard), "Open Priority Feed should not open Search Discovery");
-assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}Open Risk Watch/.test(dashboard), "Open Risk Watch should not open Search Discovery");
+assert.ok(/href="\/priority-feed"[\s\S]*?View Priority Bills/.test(dashboard), "Priority Feed CTA should use the dedicated route");
+assert.ok(/href="\/risk-watch"[\s\S]*?View Bills to Watch/.test(dashboard), "Risk Watch CTA should use the dedicated route");
+assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}View Priority Bills/.test(dashboard), "Priority Feed should not open Search Discovery");
+assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}View Bills to Watch/.test(dashboard), "Risk Watch should not open Search Discovery");
 
 assert.ok(priorityPage.includes('mode="priority"'), "Priority Feed page should render the priority mode");
 assert.ok(priorityPage.includes("personalPriorityOnly"), "Priority Feed should filter to personal positive/actionable bills");

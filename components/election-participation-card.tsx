@@ -71,7 +71,7 @@ function nextElectionBadgeMessage(electionCount: number) {
 
   if (nextMilestone) {
     const remainingElections = nextMilestone.threshold - electionCount;
-    return `${remainingElections} more election${remainingElections === 1 ? "" : "s"} to earn ${nextMilestone.label}.`;
+    return `${remainingElections} more unique election${remainingElections === 1 ? "" : "s"} to earn ${nextMilestone.label}.`;
   }
 
   return "All election badges earned.";

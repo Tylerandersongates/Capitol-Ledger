@@ -25,7 +25,9 @@ assert.ok(congressNormalizers.includes("rollCallFromText"), "Congress action nor
 
 assert.ok(data.includes("billActions: BillAction[]"), "Bill detail data should carry bill actions");
 assert.ok(data.includes("buildBillActionsForDetail"), "Bill detail data should build an action ledger");
-assert.ok(!data.includes("await fetchBillActions"), "Bill detail render should not block on Congress.gov action fetching");
+assert.ok(data.includes("const actionsResponse = await fetchBillActions"), "Live bill detail should request official action rows");
+assert.ok(data.includes("timeoutMs: memberLegislationFetchTimeoutMs"), "Live bill action fetching should be bounded");
+assert.ok(data.includes("}).catch(() => null)"), "Live bill action fetching should be nonfatal when Congress.gov is slow");
 assert.ok(data.includes("hydrateBillActionVoteLinks"), "Bill actions should link to vote detail records when possible");
 assert.ok(data.includes("getDemoBillActionsForBill"), "Live beta records should be able to reuse matching demo action rows");
 assert.ok(data.includes("resolveBillSummaryFetchTimeoutMs"), "Bill details should bound official summary fetching");
