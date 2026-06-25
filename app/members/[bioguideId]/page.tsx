@@ -41,11 +41,11 @@ type MemberPageProps = {
 
 type MemberTab = "overview" | "votes" | "bills" | "committees" | "finance";
 
-const memberTabs: Array<{ label: string; value: MemberTab }> = [
+const memberTabs: Array<{ ariaLabel?: string; label: string; value: MemberTab }> = [
   { label: "Overview", value: "overview" },
   { label: "Votes", value: "votes" },
   { label: "Bills", value: "bills" },
-  { label: "Committees", value: "committees" },
+  { ariaLabel: "Committees and roles", label: "Roles", value: "committees" },
   { label: "Records", value: "finance" }
 ];
 
@@ -586,14 +586,15 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
               </div>
             </MobileCard>
 
-            <nav className="mt-7 grid grid-cols-5 rounded-[1.25rem] border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.22)_0%,rgba(6,25,55,0.74)_100%)] p-1 text-center text-[14px] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_28px_rgba(1,8,24,0.32)]">
+            <nav className="mt-7 grid grid-cols-5 rounded-[1.25rem] border border-white/12 bg-[linear-gradient(180deg,rgba(26,73,127,0.22)_0%,rgba(6,25,55,0.74)_100%)] p-1 text-center text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_28px_rgba(1,8,24,0.32)]">
               {memberTabs.map((tab) => {
                 const active = activeTab === tab.value;
                 return (
                   <Link
                     key={tab.value}
+                    aria-label={tab.ariaLabel}
                     href={tabHref(member.bioguideId, tab.value)}
-                    className={`min-w-0 rounded-[1rem] px-2 py-3 transition ${active ? "bg-white/8 font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" : "text-white/58 hover:bg-white/[0.035] hover:text-white/78"}`}
+                    className={`min-w-0 rounded-[1rem] px-1 py-3 transition ${active ? "bg-white/8 font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" : "text-white/58 hover:bg-white/[0.035] hover:text-white/78"}`}
                   >
                     {tab.label}
                   </Link>
