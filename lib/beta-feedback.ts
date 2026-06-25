@@ -174,7 +174,7 @@ export async function saveBetaFeedback(input: BetaFeedbackInput, user?: AuthUser
   const feedback = normalizeBetaFeedbackInput(input);
   if (!feedback.title || !feedback.message) {
     return {
-      error: "A short title and feedback details are required.",
+      error: "A short title and report details are required.",
       status: 400 as const
     };
   }
@@ -371,14 +371,14 @@ export async function updateBetaFeedbackStatus({
   const nextReleaseDecision = normalizeReleaseDecision(releaseDecision);
   if (!nextStatus && !nextReleaseDecision) {
     return {
-      error: "Choose a valid feedback review update.",
+      error: "Choose a valid report review update.",
       status: 400 as const
     };
   }
 
   if (!canReviewAllBetaFeedback(user)) {
     return {
-      error: "Feedback review access is required.",
+      error: "Report review access is required.",
       status: 403 as const
     };
   }
@@ -422,7 +422,7 @@ export async function updateBetaFeedbackStatus({
   const index = betaFeedbackStore.findIndex((record) => record.id === id);
   if (index === -1) {
     return {
-      error: "Feedback report was not found.",
+      error: "Report was not found.",
       status: 404 as const
     };
   }

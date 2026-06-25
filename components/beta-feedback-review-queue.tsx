@@ -15,7 +15,7 @@ const statuses: Array<{ label: string; value: BetaFeedbackStatus }> = [
 
 const releaseDecisions: Array<{ label: string; value: BetaFeedbackReleaseDecision }> = [
   { label: "Blocker", value: "launch_blocker" },
-  { label: "Beta OK", value: "beta_acceptable" },
+  { label: "Acceptable", value: "beta_acceptable" },
   { label: "Later", value: "later" },
   { label: "Known", value: "known_issue" },
   { label: "Duplicate", value: "duplicate" }
@@ -35,7 +35,7 @@ const feedbackFilters: Array<{ label: string; value: FeedbackFilter }> = [
   { label: "New", value: "new" },
   { label: "Reviewing", value: "reviewing" },
   { label: "Planned", value: "planned" },
-  { label: "Beta OK", value: "beta_ok" },
+  { label: "Acceptable", value: "beta_ok" },
   { label: "Later", value: "later" },
   { label: "Known", value: "known_issue" },
   { label: "Duplicate", value: "duplicate" },
@@ -60,8 +60,8 @@ export function BetaFeedbackReviewQueue({
   const [lastChecked, setLastChecked] = useState("");
   const metrics = useMemo(() => getFeedbackMetrics(records), [records]);
   const filteredRecords = useMemo(() => searchRecords(filterRecords(records, activeFilter), searchQuery), [activeFilter, records, searchQuery]);
-  const reportsLabel = canManageFeedback ? "tester reports" : "submitted reports";
-  const listTitle = canManageFeedback ? "Latest Reports" : "My Reports";
+  const reportsLabel = canManageFeedback ? "live reports" : "submitted reports";
+  const listTitle = canManageFeedback ? "Latest reports" : "My reports";
 
   useEffect(() => {
     setLastChecked(formatCheckTime(new Date()));
@@ -83,12 +83,12 @@ export function BetaFeedbackReviewQueue({
     setPendingId("");
 
     if (!response?.ok || !data?.record) {
-      setStatusText(data?.error ?? "Feedback status could not be updated.");
+      setStatusText(data?.error ?? "Report status could not be updated.");
       return;
     }
 
     setRecords((current) => current.map((record) => (record.id === data.record?.id ? data.record : record)));
-    setStatusText("Feedback review updated.");
+    setStatusText("Report review updated.");
   }
 
   async function refreshQueue() {
@@ -101,7 +101,7 @@ export function BetaFeedbackReviewQueue({
     setRefreshing(false);
 
     if (!response?.ok || !Array.isArray(data?.records)) {
-      setStatusText(data?.error ?? "Feedback queue could not be refreshed.");
+      setStatusText(data?.error ?? "Report queue could not be refreshed.");
       return;
     }
 
@@ -136,7 +136,7 @@ export function BetaFeedbackReviewQueue({
 
     await navigator.clipboard
       .writeText(buildSingleReportSummary(record))
-      .then(() => setStatusText("Feedback report copied."))
+      .then(() => setStatusText("Report copied."))
       .catch(() => setStatusText("Report copy is not available in this browser."));
   }
 
@@ -166,7 +166,7 @@ export function BetaFeedbackReviewQueue({
           <div>
             <div className="flex items-center gap-2 text-[#ffb12b]">
               <MessageSquarePlus className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-              <span className="text-[13px] font-medium uppercase tracking-wide">{canManageFeedback ? "Feedback Intake" : "Feedback History"}</span>
+              <span className="text-[13px] font-medium uppercase tracking-wide">{canManageFeedback ? "Report intake" : "Report history"}</span>
             </div>
             <h2 className="mt-3 text-[22px] font-medium leading-tight text-white">
               {metrics.total} {reportsLabel}
@@ -174,13 +174,13 @@ export function BetaFeedbackReviewQueue({
             <p className="mt-2 text-[14px] leading-snug text-white/56">
               {canManageFeedback
                 ? initialMode === "database"
-                  ? "Reading from the beta feedback database queue."
+                  ? "Reading from the live app report queue."
                   : "Demo-mode reports are stored in this preview session."
                 : "Showing reports submitted from this account. Reviewer-only triage controls are hidden."}
             </p>
             {canManageFeedback && initialMode === "database" && metrics.total === 0 ? (
               <p className="mt-2 text-[13px] leading-snug text-white/42">
-                If a submitted report is missing, confirm this signed-in email is listed in `BETA_REVIEWER_EMAILS` and that the report was sent from this deployed app.
+                If a submitted report is missing, confirm this signed-in email has reviewer access and that the report was sent from this deployed app.
               </p>
             ) : null}
           </div>
@@ -205,13 +205,13 @@ export function BetaFeedbackReviewQueue({
           {metrics.blockers || metrics.needsDecision
             ? `${metrics.blockers} blocker${metrics.blockers === 1 ? "" : "s"} and ${metrics.needsDecision} untriaged report${
                 metrics.needsDecision === 1 ? "" : "s"
-              } need a launch decision.`
+              } need a triage decision.`
             : "No active blockers or untriaged reports."}
         </div>
       </MobileCard>
 
       <MobileCard variant="dashboard" className="px-5 py-5">
-        <h2 className="text-[21px] font-medium leading-none text-white">Active Report Mix</h2>
+        <h2 className="text-[21px] font-medium leading-none text-white">Active report mix</h2>
         <div className="mt-5 grid grid-cols-2 gap-2">
           {Object.entries(metrics.byCategory).map(([category, count]) => (
             <div key={category} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3">
@@ -223,10 +223,10 @@ export function BetaFeedbackReviewQueue({
       </MobileCard>
 
       <MobileCard variant="dashboard" className="px-5 py-5">
-        <h2 className="text-[21px] font-medium leading-none text-white">Triage Decisions</h2>
+        <h2 className="text-[21px] font-medium leading-none text-white">Triage decisions</h2>
         <div className="mt-5 grid grid-cols-3 gap-2">
           <Metric label="Blocker" value={metrics.byReleaseDecision.launch_blocker} tone="text-[#ff7567]" />
-          <Metric label="Beta OK" value={metrics.byReleaseDecision.beta_acceptable} tone="text-[#43ed74]" />
+          <Metric label="Acceptable" value={metrics.byReleaseDecision.beta_acceptable} tone="text-[#43ed74]" />
           <Metric label="Later" value={metrics.byReleaseDecision.later} tone="text-[#8fb5ff]" />
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -261,7 +261,7 @@ export function BetaFeedbackReviewQueue({
           </div>
         </div>
 
-        <MobileGlassScrollFrame axis="horizontal" ariaLabel="Feedback filters" frameClassName="">
+        <MobileGlassScrollFrame axis="horizontal" ariaLabel="Report filters" frameClassName="">
           <div className="flex min-w-max gap-2">
             {feedbackFilters.map((filter) => (
               <button
@@ -279,7 +279,7 @@ export function BetaFeedbackReviewQueue({
         </MobileGlassScrollFrame>
 
         <label className="relative block">
-          <span className="sr-only">Search feedback reports</span>
+          <span className="sr-only">Search live app reports</span>
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/34" strokeWidth={1.8} aria-hidden="true" />
           <input
             value={searchQuery}
@@ -327,10 +327,10 @@ export function BetaFeedbackReviewQueue({
             <h3 className="mt-4 text-[20px] font-medium text-white">{records.length ? "No matching reports" : canManageFeedback ? "No reports yet" : "No submitted reports yet"}</h3>
             <p className="mt-2 text-[14px] leading-snug text-white/54">
               {records.length
-                ? "Change the filter to see more beta feedback."
+                ? "Change the filter to see more reports."
                 : canManageFeedback
-                  ? "Tester feedback will appear here after the first report is submitted."
-                  : "Feedback submitted from this account will appear here."}
+                  ? "Live app reports will appear here after the first submission."
+                  : "Reports submitted from this account will appear here."}
             </p>
           </MobileCard>
         )}
@@ -422,7 +422,7 @@ function FeedbackRecordCard({
         </>
       ) : (
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-[12px] leading-snug text-white/46">
-          Reviewer access required for status and launch-decision updates.
+          Reviewer access required for status and triage updates.
         </div>
       )}
 
@@ -527,7 +527,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
     .join(", ");
 
   return [
-    `Capitol Ledger beta feedback - ${formatFilterLabel(filter)}`,
+    `Capitol Ledger live app reports - ${formatFilterLabel(filter)}`,
     `${records.length} reports in this view`,
     `Active severity: ${severityCounts}`,
     `Decision triage: ${releaseCounts}`,
@@ -639,11 +639,11 @@ function formatFilterLabel(filter: FeedbackFilter) {
   if (filter === "all") return "All reports";
   if (filter === "open") return "Open reports";
   if (filter === "account") return "Account/auth reports";
-  if (filter === "blockers") return "Launch blockers";
+  if (filter === "blockers") return "Blocking reports";
   if (filter === "high") return "High severity reports";
   if (filter === "medium") return "Medium severity reports";
   if (filter === "low") return "Low severity reports";
-  if (filter === "beta_ok") return "Beta acceptable reports";
+  if (filter === "beta_ok") return "Acceptable reports";
   if (filter === "later") return "Later reports";
   if (filter === "known_issue") return "Known issue reports";
   if (filter === "duplicate") return "Duplicate reports";
@@ -652,8 +652,8 @@ function formatFilterLabel(filter: FeedbackFilter) {
 }
 
 function formatReleaseDecision(value: BetaFeedbackReleaseDecision) {
-  if (value === "launch_blocker") return "Launch blocker";
-  if (value === "beta_acceptable") return "Beta acceptable";
+  if (value === "launch_blocker") return "Blocker";
+  if (value === "beta_acceptable") return "Acceptable for live";
   if (value === "known_issue") return "Known issue";
   if (value === "duplicate") return "Duplicate";
   return "Later";

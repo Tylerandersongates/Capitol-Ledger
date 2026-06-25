@@ -29,9 +29,9 @@ import {
 
 const settingRows = [
   {
-    label: "Beta feedback",
-    value: "Testing checklist",
-    href: "/beta",
+    label: "Report an issue",
+    value: "Live app testing",
+    href: "/feedback?source=live-testing",
     icon: <MessageSquarePlus />
   },
   {

@@ -3,8 +3,8 @@ import { PrismaClient } from "@prisma/client";
 
 loadLocalEnv();
 
-const failOnBlockers = process.env.BETA_TRIAGE_FAIL_ON_BLOCKERS === "true";
-const failOnUntriaged = process.env.BETA_TRIAGE_FAIL_ON_UNTRIAGED === "true";
+const failOnBlockers = process.env.REPORTS_TRIAGE_FAIL_ON_BLOCKERS === "true" || process.env.BETA_TRIAGE_FAIL_ON_BLOCKERS === "true";
+const failOnUntriaged = process.env.REPORTS_TRIAGE_FAIL_ON_UNTRIAGED === "true" || process.env.BETA_TRIAGE_FAIL_ON_UNTRIAGED === "true";
 
 function loadLocalEnv() {
   if (!existsSync(".env.local")) return;
@@ -32,10 +32,10 @@ function formatCount(label, count) {
 }
 
 async function main() {
-  console.log("Checking Capitol Ledger beta triage");
+  console.log("Checking Capitol Ledger live app report triage");
 
   if (!isSet(process.env.DATABASE_URL)) {
-    console.log("WARN DATABASE_URL is not configured, so no beta feedback queue can be checked.");
+    console.log("WARN DATABASE_URL is not configured, so no live app report queue can be checked.");
     return;
   }
 
@@ -44,7 +44,7 @@ async function main() {
   try {
     const table = await prisma.$queryRawUnsafe(`SELECT to_regclass('"BetaFeedback"')::text AS table_name`);
     if (!table?.[0]?.table_name) {
-      console.log("WARN BetaFeedback table was not found. Run migrations before beta review.");
+      console.log("WARN Feedback table was not found. Run migrations before report review.");
       return;
     }
 
@@ -107,7 +107,7 @@ async function main() {
 
     console.log("\nDecision triage");
     console.log(formatCount("Launch blockers", totals.blockers));
-    console.log(formatCount("Beta OK", totals.betaAcceptable));
+    console.log(formatCount("Acceptable", totals.betaAcceptable));
     console.log(formatCount("Later", totals.later));
     console.log(formatCount("Known issues", totals.knownIssues));
     console.log(formatCount("Duplicates", totals.duplicates));
@@ -123,17 +123,17 @@ async function main() {
     for (const [category, count] of Object.entries(byCategory)) console.log(formatCount(category, count));
 
     const failures = [];
-    if (failOnBlockers && totals.blockers > 0) failures.push(`${totals.blockers} launch blocker(s) remain.`);
+    if (failOnBlockers && totals.blockers > 0) failures.push(`${totals.blockers} blocker(s) remain.`);
     if (failOnUntriaged && totals.untriaged > 0) failures.push(`${totals.untriaged} active report(s) are untriaged.`);
 
     if (failures.length) {
-      console.error(`\nBeta triage check failed: ${failures.join(" ")}`);
+      console.error(`\nLive app report triage check failed: ${failures.join(" ")}`);
       process.exit(1);
     }
 
-    console.log("\nBeta triage snapshot completed.");
+    console.log("\nLive app report triage snapshot completed.");
   } catch (error) {
-    console.log(`WARN Beta triage check could not read the database. ${error instanceof Error ? error.message : "Unknown database error"}`);
+    console.log(`WARN Live app report triage check could not read the database. ${error instanceof Error ? error.message : "Unknown database error"}`);
   } finally {
     await prisma.$disconnect().catch(() => undefined);
   }

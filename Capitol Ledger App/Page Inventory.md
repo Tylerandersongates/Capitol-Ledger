@@ -16,9 +16,9 @@
 - `/upgrade` - Subscription upgrade
 - `/search` - Search / discovery
 - `/account` - Account / user profile settings
-- `/beta` - Beta tester checklist and feedback handoff
-- `/feedback` - Beta tester feedback and bug-report capture
-- `/feedback/review` - Beta feedback review queue
+- `/beta` - Legacy redirect to live app reporting
+- `/feedback` - Live app report capture
+- `/feedback/review` - Live app report review queue
 - `/onboarding` - Onboarding / district setup
 - `/sign-in` - Interactive sign-in / create-account flow with forgot-password, verification, success, and demo-session handoff states
 

@@ -6,6 +6,9 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 
 ## Most Recent Work
 
+- Replaced the legacy `/beta` tester checklist with a redirect into `/feedback?source=live-testing`.
+- Simplified Settings and feedback entry points around live app issue reporting instead of beta tester intake.
+- Added `pnpm reports:check` and `pnpm reports:triage` as the forward-facing report readiness commands while preserving the old aliases for compatibility.
 - Pushed latest beta tester polish and guide package to `origin/main` at commit `b5106dd Prepare beta tester polish and guide`.
 - First trusted beta tester intake is planned for June 6, 2026.
 - Added first-round beta tester guide deliverables under `docs/beta-tester-guide`: Markdown source, generated PDF, editable DOCX, annotated snapshots, and generator scripts.
@@ -37,17 +40,17 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 - Reorganized the remaining work into a phased roadmap and started Phase 1: Web Beta Readiness.
 - Added `Phase 1 Web Beta Launch Checklist.md` so the Vercel/Neon beta setup, terminal checks, tester invite route, and Phase 1 exit criteria are in one place.
 - Local `beta:check` passes the Phase 1 file/core environment checks; the remaining beta setup is setting `BETA_REVIEWER_EMAILS`, using the deployed Vercel URL for `NEXT_PUBLIC_APP_URL`, and running the database-backed production beta checks from the normal Terminal.
-- Added a beta tester feedback flow at `/feedback`, linked from `/account`, with `/api/feedback`, demo fallback storage, database-ready `BetaFeedback` persistence, and a checked-in Prisma migration.
-- Added `/feedback/review` as a beta review queue so reports can be grouped by severity and category before each fix pass.
+- Added a live app reporting flow at `/feedback`, linked from Settings, with `/api/feedback`, demo fallback storage, database-ready report persistence, and a checked-in Prisma migration.
+- Added `/feedback/review` as a report review queue so reports can be grouped by severity and category before each fix pass.
 - Made `/feedback/review` actionable: reviewer accounts can move reports through New, Reviewing, Planned, and Resolved states from the mobile review queue.
-- Added status filters to `/feedback/review` so beta reviewers can separate All, Open, New, Reviewing, Planned, and Resolved reports as tester volume grows.
+- Added status filters to `/feedback/review` so reviewers can separate All, Open, New, Reviewing, Planned, and Resolved reports as usage grows.
 - Fixed `/feedback/review` intake counters so High, Medium, Low, and Open now reflect active unresolved reports and reset after reports are resolved.
-- Added reviewer workflow actions to `/feedback/review`: copy a triage summary and export the current filtered report view as CSV for beta fix passes.
-- Added persistent launch-triage decisions to beta feedback: reviewers can mark reports as Launch blocker, Beta OK, or Later, with database and demo-mode support.
-- Added launch-triage filters to `/feedback/review` for Blockers, Untriaged, Beta OK, and Later so beta fix passes can focus on the right report set.
-- Added `pnpm beta:triage` to summarize database-backed beta feedback counts before each fix pass, with optional failure flags for blockers and untriaged reports.
-- Hardened the beta readiness check for external tester setup: production beta checks now require reviewer emails and reject local preview URLs as the public app URL.
-- Added `pnpm beta:check` so beta readiness can be checked before inviting testers, including feedback pages, API route, migration, `.env.local` values, and optional database table presence with `BETA_CHECK_DATABASE=true`.
+- Added reviewer workflow actions to `/feedback/review`: copy a triage summary and export the current filtered report view as CSV for fix passes.
+- Added persistent triage decisions to reports: reviewers can mark reports as Blocker, Acceptable, or Later, with database and demo-mode support.
+- Added triage filters to `/feedback/review` for Blockers, Untriaged, Acceptable, and Later so fix passes can focus on the right report set.
+- Added `pnpm reports:triage` to summarize database-backed report counts before each fix pass, with optional failure flags for blockers and untriaged reports.
+- Hardened the reporting readiness check: production checks now require reviewer emails and reject local preview URLs as the public app URL.
+- Added `pnpm reports:check` so live app reporting readiness can be checked, including feedback pages, API route, migration, `.env.local` values, and optional database table presence with `REPORTS_CHECK_DATABASE=true`.
 - Added `/beta` as an in-app tester checklist that walks early users through the safest beta test route and hands them off to `/feedback`.
 - Added the next Congress.gov live-data layer: `pnpm sync:congress` can now fetch bill cosponsors, normalize cosponsor member records, upsert `Cosponsor` links, and include those members in official source-link records when `CONGRESS_SYNC_COSPONSORS=true`.
 - Added a conservative House roll-call vote sync layer behind explicit flags: `pnpm sync:congress` can now fetch House votes, normalize House member vote positions, upsert `Vote` and `MemberVote` records, and create member records needed by vote positions when `CONGRESS_SYNC_HOUSE_VOTES=true`.

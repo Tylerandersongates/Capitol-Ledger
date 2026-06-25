@@ -3,8 +3,8 @@ import { PrismaClient } from "@prisma/client";
 
 loadLocalEnv();
 
-const requireProduction = process.env.BETA_REQUIRE_PRODUCTION === "true" || process.env.NODE_ENV === "production";
-const checkDatabaseTable = process.env.BETA_CHECK_DATABASE === "true" || requireProduction;
+const requireProduction = process.env.REPORTS_REQUIRE_PRODUCTION === "true" || process.env.BETA_REQUIRE_PRODUCTION === "true" || process.env.NODE_ENV === "production";
+const checkDatabaseTable = process.env.REPORTS_CHECK_DATABASE === "true" || process.env.BETA_CHECK_DATABASE === "true" || requireProduction;
 const checks = [];
 
 function loadLocalEnv() {
@@ -81,7 +81,7 @@ function fileExists(path, detail) {
 async function checkDatabase() {
   if (!isSet(process.env.DATABASE_URL)) return;
   if (!checkDatabaseTable) {
-    warn("BetaFeedback table check", "Skipped locally. Use BETA_CHECK_DATABASE=true pnpm beta:check to verify the database table.");
+    warn("Feedback table check", "Skipped locally. Use REPORTS_CHECK_DATABASE=true pnpm reports:check to verify the database table.");
     return;
   }
 
@@ -89,11 +89,11 @@ async function checkDatabase() {
   try {
     const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('"BetaFeedback"')::text AS table_name`);
     if (rows?.[0]?.table_name) {
-      pass("BetaFeedback table is present");
+      pass("Feedback table is present");
     } else if (requireProduction) {
-      fail("BetaFeedback table is present", "Run pnpm prisma:migrate:deploy against the target database.");
+      fail("Feedback table is present", "Run pnpm prisma:migrate:deploy against the target database.");
     } else {
-      warn("BetaFeedback table is present", "Run migrations before inviting beta testers.");
+      warn("Feedback table is present", "Run migrations before relying on live app reports.");
     }
 
     const columns = await prisma.$queryRawUnsafe(`
@@ -102,17 +102,17 @@ async function checkDatabase() {
       WHERE table_name = 'BetaFeedback' AND column_name = 'releaseDecision'
     `);
     if (columns?.[0]?.column_name) {
-      pass("BetaFeedback release triage column is present");
+      pass("Feedback release triage column is present");
     } else if (requireProduction) {
-      fail("BetaFeedback release triage column is present", "Run the latest beta feedback migration before inviting testers.");
+      fail("Feedback release triage column is present", "Run the latest feedback migration before relying on live app reports.");
     } else {
-      warn("BetaFeedback release triage column is present", "Run the latest beta feedback migration before inviting testers.");
+      warn("Feedback release triage column is present", "Run the latest feedback migration before relying on live app reports.");
     }
   } catch (error) {
     if (requireProduction) {
-      fail("Database beta feedback check can connect", error instanceof Error ? error.message : "Unknown database error");
+      fail("Database report check can connect", error instanceof Error ? error.message : "Unknown database error");
     } else {
-      warn("Database beta feedback check can connect", error instanceof Error ? error.message : "Unknown database error");
+      warn("Database report check can connect", error instanceof Error ? error.message : "Unknown database error");
     }
   } finally {
     await prisma.$disconnect().catch(() => undefined);
@@ -120,27 +120,27 @@ async function checkDatabase() {
 }
 
 async function main() {
-  console.log("Checking Capitol Ledger beta readiness");
+  console.log("Checking Capitol Ledger live app reporting readiness");
 
   console.log("\nFeedback intake");
-  fileExists("app/feedback/page.tsx", "Tester feedback form page is required.");
+  fileExists("app/feedback/page.tsx", "Report form page is required.");
   fileExists("app/feedback/review/page.tsx", "Review queue page is required.");
   fileExists("app/api/feedback/route.ts", "Feedback API route is required.");
   fileExists("prisma/migrations/20260527103000_beta_feedback/migration.sql", "Feedback database migration is required.");
   fileExists("prisma/migrations/20260527104500_beta_feedback_release_decision/migration.sql", "Feedback release-triage migration is required.");
 
   console.log("\nEnvironment");
-  required("DATABASE_URL", process.env.DATABASE_URL, "Needed to store tester feedback outside the preview session.");
-  required("NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL, "Set the deployed beta URL before sharing with testers.");
+  required("DATABASE_URL", process.env.DATABASE_URL, "Needed to store live app reports outside the preview session.");
+  required("NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL, "Set the deployed app URL before using live app reporting.");
   if (requireProduction && isLocalUrl(process.env.NEXT_PUBLIC_APP_URL)) {
-    fail("NEXT_PUBLIC_APP_URL points to deployed beta URL", "Replace the local preview URL with the Vercel beta URL before inviting testers.");
+    fail("NEXT_PUBLIC_APP_URL points to deployed app URL", "Replace the local preview URL with the deployed app URL before relying on live app reports.");
   }
   if (isSet(process.env.BETA_REVIEWER_EMAILS) || isSet(process.env.BETA_REVIEWER_EMAIL)) {
-    pass("Beta reviewer email is configured");
+    pass("Reviewer email is configured");
   } else if (requireProduction) {
-    fail("Beta reviewer email is configured", "Set BETA_REVIEWER_EMAILS so reviewer accounts can see and triage the full feedback queue.");
+    fail("Reviewer email is configured", "Set BETA_REVIEWER_EMAILS so reviewer accounts can see and triage the full report queue.");
   } else {
-    warn("Beta reviewer email is configured", "Set BETA_REVIEWER_EMAILS so only reviewer accounts can see the full queue.");
+    warn("Reviewer email is configured", "Set BETA_REVIEWER_EMAILS so only reviewer accounts can see the full queue.");
   }
 
   console.log("\nDatabase");
@@ -148,13 +148,13 @@ async function main() {
 
   const failures = checks.filter((check) => check.kind === "fail");
   if (failures.length) {
-    console.error(`Beta readiness has ${failures.length} blocking issue(s).`);
+    console.error(`Live app reporting readiness has ${failures.length} blocking issue(s).`);
     process.exit(1);
   }
 
-  console.log("\nBeta readiness check completed.");
+  console.log("\nLive app reporting readiness check completed.");
   if (!requireProduction) {
-    console.log("Use BETA_REQUIRE_PRODUCTION=true pnpm beta:check before inviting external testers.");
+    console.log("Use REPORTS_REQUIRE_PRODUCTION=true pnpm reports:check before relying on deployed live app reporting.");
   }
 }
 

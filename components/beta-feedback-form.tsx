@@ -57,9 +57,8 @@ const feedbackAreas: FeedbackArea[] = [
   { label: "Team roles / permissions", value: "/team/roles" },
   { label: "Team seats / removal", value: "/team/seats" },
   { label: "Team billing / downgrade", value: "/team/billing" },
-  { label: "Beta checklist", value: "/beta" },
-  { label: "Beta feedback", value: "/feedback" },
-  { label: "Round 3 guide", value: "/round-3" },
+  { label: "Settings / profile", value: "/settings" },
+  { label: "Live app testing", value: "/feedback" },
   { label: "Other", value: "/other" }
 ];
 
@@ -68,16 +67,18 @@ const sourceAreaMap: Record<string, string> = {
   alerts: "/alerts",
   "ai-policy-lens": "/bills/ai-policy-lens",
   badges: "/badges",
-  beta: "/beta",
+  beta: "/feedback",
   bills: "/bills",
   data: "/data",
   dashboard: "/dashboard",
   "day-streak": "/saved-state",
+  "live-testing": "/feedback",
   "live-data": "/data",
   members: "/members",
   "official-statements": "/bills/official-statements",
   search: "/search",
   "service-history": "/members",
+  settings: "/settings",
   team: "/team",
   "team-admin": "/team/roles",
   "team-invite": "/team/accept",
@@ -87,12 +88,12 @@ const sourceAreaMap: Record<string, string> = {
   "team-viewer": "/team/roles",
   upgrade: "/upgrade",
   video: "/bills/official-statements",
-  "round-3": "/round-3"
+  "round-3": "/feedback"
 };
 
 type SubmissionState = "idle" | "submitting" | "sent" | "error";
 
-export function BetaFeedbackForm() {
+export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: string }) {
   const [category, setCategory] = useState<FeedbackCategoryChoice>("");
   const [severity, setSeverity] = useState<FeedbackSeverityChoice>("");
   const [pageUrl, setPageUrl] = useState("");
@@ -105,13 +106,12 @@ export function BetaFeedbackForm() {
   const [statusText, setStatusText] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const source = params.get("source") ?? "";
+    const source = normalizeSourceParam(initialSource);
     const nextPage = sourceAreaMap[source] ?? (source ? `/${source}` : "");
     const matchedArea = findFeedbackArea(nextPage);
     setSourceParam(source);
     setPageUrl(matchedArea?.value ?? "");
-  }, []);
+  }, [initialSource]);
 
   const selectedArea = useMemo(() => feedbackAreas.find((area) => area.value === pageUrl), [pageUrl]);
   const selectedAreaIsAccount = selectedArea?.value === "/account";
@@ -158,12 +158,12 @@ export function BetaFeedbackForm() {
 
     if (!response?.ok) {
       setState("error");
-      setStatusText(data?.error ?? "Feedback could not be submitted. Please try again.");
+      setStatusText(data?.error ?? "Report could not be submitted. Please try again.");
       return;
     }
 
     setState("sent");
-    setStatusText(data?.mode === "database" ? "Feedback saved to the beta review queue." : "Feedback captured in demo mode.");
+    setStatusText(data?.mode === "database" ? "Report sent to the review queue." : "Report captured in demo mode.");
     setCategory("");
     setSeverity("");
     setPageUrl("");
@@ -190,7 +190,7 @@ export function BetaFeedbackForm() {
           userAgent: window.navigator.userAgent
         },
         message:
-          "Tester used the tap-only fallback because text fields would not accept typing. Buttons could still be tapped. Please follow up on sign-out/sign-in text field focus.",
+          "The tap-only fallback was used because text fields would not accept typing. Buttons could still be tapped. Please follow up on text field focus.",
         pageUrl: `${window.location.pathname}${window.location.search}`,
         severity: "high",
         title: "Cannot type in text fields"
@@ -209,7 +209,7 @@ export function BetaFeedbackForm() {
     }
 
     setState("sent");
-    setStatusText(data?.mode === "database" ? "Tap-only input issue sent to the beta review queue." : "Tap-only input issue captured in demo mode.");
+    setStatusText(data?.mode === "database" ? "Tap-only input issue sent to the review queue." : "Tap-only input issue captured in demo mode.");
   }
 
   return (
@@ -220,7 +220,7 @@ export function BetaFeedbackForm() {
             <MessageSquarePlus className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-[22px] font-medium leading-tight">Send beta feedback</h2>
+            <h2 className="text-[22px] font-medium leading-tight">Report a live app issue</h2>
             <p className="mt-2 text-[14px] leading-5 text-white/56">
               Report anything that breaks, feels confusing, looks off, or would make Capitol Ledger more useful.
             </p>
@@ -229,7 +229,7 @@ export function BetaFeedbackForm() {
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/42">Report target</span>
-            {sourceParam ? <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">From beta</span> : null}
+            {sourceParam ? <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">Live app</span> : null}
           </div>
           <div className="mt-2 text-[17px] font-semibold leading-tight text-white">{selectedArea?.label ?? "Choose app area"}</div>
           <p className="mt-1 text-[13px] leading-snug text-white/50">
@@ -269,13 +269,13 @@ export function BetaFeedbackForm() {
           <div className="mt-3 grid grid-cols-3 gap-2">
             {severities.map((item) => (
               <button
-              key={item.value}
-              type="button"
-              aria-pressed={severity === item.value}
-              onClick={() => setSeverity((current) => (current === item.value ? "" : item.value))}
-              className={`h-11 rounded-xl border text-[14px] font-semibold transition ${
-                severity === item.value ? "border-[#ffb12b] bg-[#ffb12b] text-[#061126]" : "border-white/12 bg-white/5 text-white/68"
-              }`}
+                key={item.value}
+                type="button"
+                aria-pressed={severity === item.value}
+                onClick={() => setSeverity((current) => (current === item.value ? "" : item.value))}
+                className={`h-11 rounded-xl border text-[14px] font-semibold transition ${
+                  severity === item.value ? "border-[#ffb12b] bg-[#ffb12b] text-[#061126]" : "border-white/12 bg-white/5 text-white/68"
+                }`}
               >
                 {item.label}
               </button>
@@ -300,7 +300,7 @@ export function BetaFeedbackForm() {
             ))}
           </select>
           <p className="mt-2 text-[13px] leading-5 text-white/42">
-            {selectedArea?.helper ?? "Choose the closest app area so reports are easier to sort during beta review."}
+            {selectedArea?.helper ?? "Choose the closest app area so the report is easier to triage."}
           </p>
           {selectedAreaIsAccount ? (
             <div className="mt-3 rounded-2xl border border-[#74dbff]/20 bg-[#74dbff]/10 px-4 py-3 text-[13px] leading-snug text-[#a7ebff]">
@@ -379,7 +379,7 @@ export function BetaFeedbackForm() {
           disabled={!canSubmit}
           className="mt-6 flex h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#061126] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition disabled:opacity-45"
         >
-          {state === "submitting" ? "Sending..." : "Send Feedback"}
+          {state === "submitting" ? "Sending..." : "Send report"}
           {state !== "submitting" ? <ArrowRight className="ml-2 h-5 w-5" strokeWidth={2} aria-hidden="true" /> : null}
         </button>
 
@@ -405,6 +405,10 @@ function findFeedbackArea(value: string) {
   return feedbackAreas
     .filter((area) => value.startsWith(area.value))
     .sort((first, second) => second.value.length - first.value.length)[0];
+}
+
+function normalizeSourceParam(value: string) {
+  return value === "beta" || value === "round-3" ? "live-testing" : value;
 }
 
 function formatReproducibility(value: ReproducibilityChoice) {

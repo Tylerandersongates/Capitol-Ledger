@@ -4,7 +4,9 @@ import { MobileBottomNav, mobileIconButtonClass, mobileViewAllClass } from "@/co
 import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, Search, Settings } from "lucide-react";
 
-export default function FeedbackPage() {
+export default function FeedbackPage({ searchParams }: { searchParams?: { source?: string | string[] } }) {
+  const source = Array.isArray(searchParams?.source) ? searchParams.source[0] : searchParams?.source;
+
   return (
     <MobileShell
       minHeight="min-h-[1080px]"
@@ -21,15 +23,15 @@ export default function FeedbackPage() {
       </header>
 
       <section className="mt-10">
-        <div className="text-[18px] uppercase tracking-wide text-white/54">Beta Testing</div>
-        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Feedback</h1>
+        <div className="text-[18px] uppercase tracking-wide text-white/54">Live app testing</div>
+        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Report an issue</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Help us catch broken flows, missing details, confusing language, and polish issues before Capitol Ledger moves toward store testing.
+          Send a quick report when something breaks, feels confusing, looks wrong, or needs clearer live app wording.
         </p>
       </section>
 
       <main className="mt-7 pb-8">
-        <BetaFeedbackForm />
+        <BetaFeedbackForm initialSource={source} />
       </main>
 
       <MobileBottomNav

@@ -36,6 +36,8 @@
     "video-links:check": "node scripts/check-video-links.mjs",
     "youtube-statements:sync": "tsx scripts/sync-youtube-bill-statements.ts",
     "youtube-statements:check": "node scripts/check-youtube-bill-statements.mjs",
+    "reports:check": "node scripts/check-beta-readiness.mjs",
+    "reports:triage": "node scripts/check-beta-triage.mjs",
     "beta:check": "node scripts/check-beta-readiness.mjs",
     "beta:triage": "node scripts/check-beta-triage.mjs",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",

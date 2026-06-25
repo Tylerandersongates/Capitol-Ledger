@@ -8,7 +8,7 @@ Generated at EOD on June 25, 2026 for the next continuation.
 - Keep the in-app browser open and visible during app testing so the user can watch progress.
 - Routine fixes, commits, and pushes are pre-approved. Check with the user before major build, architecture, dependency, schema, destructive, or secret-related changes.
 - A diagnostic means checking the whole app for stale code, duplicate code, unreachable code, disconnected routes/APIs, and obvious performance drag. Tighten safe issues; do not leave useless code around.
-- Do not mark beta feedback resolved until the issue is actually fixed and verified.
+- Do not mark live app reports resolved until the issue is actually fixed and verified.
 - Use narrow sandbox escalations only when needed. Do not commit secrets.
 
 ## Baseline
@@ -37,9 +37,9 @@ Generated at EOD on June 25, 2026 for the next continuation.
 - Duplicate/helper scan: repeated small UI helpers and class constants exist in premium/member surfaces, but nothing was risky enough to refactor during EOD.
 - Timer/performance scan: found bounded request timeouts, UI feedback timers, autocomplete debounce, and standard `useEffect` usage; no obvious unbounded polling loop.
 - Checks run: targeted guard suite passed, including weekly brief, search filter collapse, search result scroll, policy edge routes/feed, live docket, bill detail summary/action log/law status/timeline/votes, vote position scroll, election copy, billing transition fixtures, video links, YouTube bill statements, and gamification streak.
-- Readiness checks: backend, billing, Congress, auth email delivery, beta readiness, beta triage, production auth schema, and AI Policy Lens fixtures all passed.
+- Readiness checks: backend, billing, Congress, auth email delivery, live app reporting readiness, live app report triage, production auth schema, and AI Policy Lens fixtures all passed.
 - Production auth note: `check-production-auth` passed after database access with a warning that `AUTH_COOKIE_SECURE` is not true; set it true for deployed HTTPS production if it is not already configured in Vercel.
-- Beta triage snapshot: 36 total reports, 3 active, 33 resolved, 0 launch blockers, 1 known issue, 2 untriaged; active severity count was 0 high, 2 medium, 1 low.
+- Live app report snapshot: 36 total reports, 3 active, 33 resolved, 0 blockers, 1 known issue, 2 untriaged; active severity count was 0 high, 2 medium, 1 low.
 - Blocked checks: none. A few diagnostics required narrow escalation because sandboxed runs could not reach the database or create the fixture runner IPC pipe.
 - Cleanup applied: updated five guard scripts for current copy/data behavior and clarified election badge countdown copy.
 
@@ -63,6 +63,6 @@ Generated at EOD on June 25, 2026 for the next continuation.
 ## Next Best Steps
 1. Confirm Vercel has deployed current `main`; specifically re-check `/members/S001150` for the issue-topic show/fewer control replacing `+5 more topics included`.
 2. Decide whether to soften the remaining older "synced" / "not connected" wording in placeholders and data descriptions.
-3. Triage the 3 active beta reports, especially the 2 untriaged reports, while keeping 0 launch blockers as the bar.
+3. Triage the 3 active live app reports, especially the 2 untriaged reports, while keeping 0 blockers as the bar.
 4. Set or verify `AUTH_COOKIE_SECURE=true` for deployed HTTPS production.
 5. Continue the tone pass on any deeper flows not yet reviewed, especially modals, empty states, and error states.

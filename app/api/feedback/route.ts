@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
 
   const session = await getCurrentSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Sign in is required to review feedback." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in is required to review reports." }, { status: 401 });
   }
 
   const result = await updateBetaFeedbackStatus({
