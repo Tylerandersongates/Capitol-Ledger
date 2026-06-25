@@ -46,7 +46,7 @@ const memberTabs: Array<{ ariaLabel?: string; label: string; value: MemberTab }>
   { label: "Votes", value: "votes" },
   { label: "Bills", value: "bills" },
   { ariaLabel: "Committees and roles", label: "Roles", value: "committees" },
-  { label: "Records", value: "finance" }
+  { ariaLabel: "Sources and disclosures", label: "Sources", value: "finance" }
 ];
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48";
@@ -574,7 +574,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
             <MobileCard variant="dashboard" className="mt-8 overflow-hidden px-5 py-5">
               <div className="grid grid-cols-2 gap-3">
                 <ProfileStat label="Represents" value={state} />
-                <ProfileStat label="Time in office" value={termsInOfficeLabel} subvalue={seniority} />
+                <ProfileStat label="Tenure" value={termsInOfficeLabel} subvalue={seniority} />
                 <ElectionProfileStat firstElected={firstElected} nextElection={nextElection} />
               </div>
             </MobileCard>
@@ -647,11 +647,11 @@ function ElectionProfileStat({ firstElected, nextElection }: { firstElected: str
     <div className={`col-span-2 ${premiumPanelClass} px-4 py-4`}>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">First Elected</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">First elected</div>
           <div className="mt-2 text-[17px] font-semibold leading-tight text-white">{firstElected}</div>
         </div>
         <div className="border-l border-white/10 pl-4">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Next Election</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46">Next election</div>
           <div className="mt-2 text-[17px] font-semibold leading-tight text-white">{nextElection}</div>
         </div>
       </div>
@@ -719,8 +719,8 @@ function OverviewTab({
     <>
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="The quick read: score, standing, and the strongest public-record signals."
-          eyebrow="Profile snapshot"
+          description="Quick read on standing, issue fit, and the strongest public-record signals."
+          eyebrow="At a glance"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
           title="Accountability snapshot"
@@ -734,12 +734,12 @@ function OverviewTab({
             <div className="mt-3 text-[22px] font-medium text-[#65ec68]">{scoreModel.rating}</div>
           </div>
           <div className="text-right">
-            <div className="text-[14px] uppercase tracking-[0.06em] text-white/52">Chamber standing</div>
+            <div className="text-[14px] uppercase tracking-[0.06em] text-white/52">Standing in chamber</div>
             <div className="mt-1 text-[24px] font-medium text-white">
               <span className="text-[#ffb12b]">{chamberRank.rank}</span> / {chamberRank.seatTotal}
             </div>
             <div className="mt-2 max-w-[178px] text-[13px] leading-snug text-white/54">
-              {chamberRank.label} among {chamberRank.trackedCount} synced {member.chamber === "Senate" ? "senators" : "House members"}
+              {chamberRank.label} among {chamberRank.trackedCount} tracked {member.chamber === "Senate" ? "senators" : "House members"}
             </div>
           </div>
         </div>
@@ -762,7 +762,7 @@ function OverviewTab({
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="A shorter read on the public-record signals behind the snapshot."
+          description="The strongest public-record signals behind the snapshot."
           eyebrow="Key signals"
           icon={<FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           title="What matters now"
@@ -788,7 +788,7 @@ function OverviewTab({
             ))}
             {hiddenIssueTopicCount ? (
               <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-medium text-white/48">
-                +{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} in the full issue model
+                +{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} included
               </div>
             ) : null}
           </div>
@@ -804,15 +804,15 @@ function plainFactorLabel(label: string) {
   if (label === "Voting Record") return "Votes";
   if (label === "Public Engagement") return "Public activity";
   if (label === "Sponsored Bills") return "Bill activity";
-  if (label === "Ethics & Compliance") return "Source status";
+  if (label === "Ethics & Compliance") return "Public sources";
   if (label === "Constituent Alignment") return "Issue match";
   return label;
 }
 
 function plainStatusLabel(status: MemberScoreFactor["status"]) {
-  if (status === "source-linked") return "Source linked";
-  if (status === "partial") return "Partial data";
-  return "Planned source";
+  if (status === "source-linked") return "Records available";
+  if (status === "partial") return "Some records available";
+  return "Coming soon";
 }
 
 function formatTopicList(topics: string[]) {
@@ -900,16 +900,16 @@ function MemberInfoPopover({
 
 function AccountabilityInfoPopover() {
   return (
-    <MemberInfoPopover align="right" ariaLabel="What the accountability score means" title="Score blend">
-      <p>One public-record score combining votes, public activity, bill activity, source status, and issue match.</p>
-      <p>It is a directional snapshot, not a final grade.</p>
+    <MemberInfoPopover align="right" ariaLabel="What the accountability score means" title="What this score means">
+      <p>One public-record score combining votes, public activity, bill activity, public sources, and issue match.</p>
+      <p>Use it as a starting point, not a final grade.</p>
     </MemberInfoPopover>
   );
 }
 
 function ScoreDetailsPopover({ factors }: { factors: MemberScoreFactor[] }) {
   return (
-    <MemberInfoPopover align="center" ariaLabel="How the score is calculated" title="Inputs behind the score">
+    <MemberInfoPopover align="center" ariaLabel="How the score is calculated" title="Score inputs">
       <div className="space-y-1.5">
         {factors.map((factor) => (
           <div key={`${factor.key}-popover`} className="flex items-center justify-between gap-3">
@@ -938,11 +938,11 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
     return (
       <EmptyTab
         icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />}
-        title="Vote records not connected yet"
+        title="No vote records yet"
         body={
           member.chamber === "Senate"
-            ? "Senate roll-call positions are not connected to this profile yet. Bill activity and official roles still appear where source data is available."
-            : "Roll-call positions will appear here after this official is connected to synced vote records."
+            ? "Recent Senate roll-call positions are not available for this profile yet. Bills and roles may still have records to review."
+            : "Roll-call positions will appear here when vote records are available for this official."
         }
       />
     );
@@ -951,9 +951,9 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
-        aside={<span className={premiumPillClass}>{records.length} records</span>}
-        eyebrow="Roll-call activity"
-        title="Votes"
+        aside={<span className={premiumPillClass}>{records.length} shown</span>}
+        eyebrow="Recent roll calls"
+        title="Vote record"
       />
       <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member vote activity">
         {records.map((record) => {
@@ -965,7 +965,7 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
               <div className="min-w-0">
                 <div className="text-[18px] font-medium leading-tight text-white">{vote.question}</div>
                 <div className="mt-2 text-[14px] text-white/50">
-                  {vote.chamber} roll call {vote.rollCall} - {formatDate(vote.voteDate)}
+                  {vote.chamber} roll call {vote.rollCall} | {formatDate(vote.voteDate)}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1013,15 +1013,15 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
   const visibleRecords = [...balancedRecords, ...records.filter(({ bill, label }) => !balancedKeys.has(`${label}-${bill.id}`))].slice(0, 12);
 
   if (!records.length) {
-    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="Bill records not connected yet" body="Sponsored and cosponsored bills will appear here after this official's legislative records are synced." />;
+    return <EmptyTab icon={<FileText className="h-6 w-6" strokeWidth={1.8} />} title="No bill activity yet" body="Sponsored and cosponsored bills will appear here when legislative records are available for this official." />;
   }
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
-        aside={<span className={premiumPillClass}>{records.length} bills</span>}
+        aside={<span className={premiumPillClass}>{visibleRecords.length} shown</span>}
         eyebrow="Legislative activity"
-        title="Bills"
+        title="Bill activity"
       />
       <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member bill activity">
         {visibleRecords.map(({ bill, label }) => (
@@ -1041,7 +1041,7 @@ function BillActivityRow({ bill, label }: { bill: Bill; label: string }) {
         <div className="mt-1 text-[15px] leading-snug text-white/58">{bill.shortTitle || bill.title}</div>
         {bill.committeeName ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] leading-snug text-white/56">
-            <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">Routed to</span>
+            <span className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">Committee</span>
             <span>{bill.committeeName}</span>
           </div>
         ) : null}
@@ -1062,8 +1062,8 @@ function CommitteesTab({
     return (
       <EmptyTab
         icon={<Landmark className="h-6 w-6" strokeWidth={1.8} />}
-        title="Role records not connected yet"
-        body={`Official committee assignments for this ${member.chamber.toLowerCase()} official will appear here when those records are connected.`}
+        title="No roles listed yet"
+        body={`Committee and caucus assignments will appear here when they are available for this ${member.chamber.toLowerCase()} official.`}
       />
     );
   }
@@ -1072,8 +1072,8 @@ function CommitteesTab({
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
         aside={<span className={premiumPillClass}>{caucusMemberships.length} listed</span>}
-        eyebrow="Official roles"
-        title="Assignments & Roles"
+        eyebrow="Current roles"
+        title="Roles and assignments"
       />
       <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
         {caucusMemberships.map((membership) => (
@@ -1086,7 +1086,7 @@ function CommitteesTab({
           >
             <div className="min-w-0">
               <div className="text-[17px] font-medium leading-tight text-white">{membership.caucusName}</div>
-              <div className="mt-1 text-[14px] text-white/50">{membership.sourceLabel}</div>
+              <div className="mt-1 text-[14px] text-white/50">Official source</div>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-[#ffb12b]/25 bg-[#ffb12b]/10 px-3 py-1.5 text-[13px] font-medium text-[#ffb12b]">
@@ -1105,21 +1105,22 @@ function FinanceTab({ member }: { member: Member }) {
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
-        eyebrow="Public records"
+        description="Official profile links and disclosure sources for deeper checking."
+        eyebrow="Official sources"
         icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
         iconTone="green"
-        title="Records"
+        title="Sources"
       />
       <div className="mt-5 space-y-4">
         <FinanceRow
           icon={<BriefcaseBusiness className="h-5 w-5" strokeWidth={1.8} />}
           label="Financial disclosure"
-          value="Feed planned"
+          value="Coming soon"
         />
         <FinanceRow
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} />}
-          label="Ethics sources"
-          value="Source review ready"
+          label="Ethics records"
+          value="Coming soon"
         />
         <a
           href={member.sourceUrl}
@@ -1127,7 +1128,7 @@ function FinanceTab({ member }: { member: Member }) {
           rel="noreferrer"
           className={`mt-2 flex items-center justify-between px-4 py-4 text-[15px] font-semibold text-[#ffb12b] transition hover:brightness-110 ${premiumPanelClass}`}
         >
-          Open official source
+          Open official profile
           <ExternalLink className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
         </a>
       </div>
