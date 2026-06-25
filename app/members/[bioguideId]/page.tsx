@@ -709,8 +709,10 @@ function OverviewTab({
   const topScoreFactors = [...scoreModel.factors].sort((a, b) => b.value - a.value).slice(0, 3);
   const topScoreFactor = topScoreFactors[0];
   const issueMatchValue = alignmentFactor?.value ?? accountabilityTrend.current;
-  const topIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.topicScore - a.topicScore).slice(0, 3);
-  const hiddenIssueTopicCount = Math.max(0, scoreModel.constituentAlignment.topics.length - topIssueTopics.length);
+  const sortedIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.topicScore - a.topicScore);
+  const topIssueTopics = sortedIssueTopics.slice(0, 3);
+  const hiddenIssueTopics = sortedIssueTopics.slice(topIssueTopics.length);
+  const hiddenIssueTopicCount = hiddenIssueTopics.length;
   const comparedTopics = scoreModel.constituentAlignment.selectedTopics.length
     ? formatTopicList(scoreModel.constituentAlignment.selectedTopics)
     : "saved issue interests";
@@ -787,9 +789,17 @@ function OverviewTab({
               <OverviewTopicChip key={topic.topic} topic={topic} />
             ))}
             {hiddenIssueTopicCount ? (
-              <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-medium text-white/48">
-                +{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} included
-              </div>
+              <details className="group">
+                <summary className="cursor-pointer list-none rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-medium text-white/58 transition hover:border-[#ffb12b]/28 hover:text-white/74 [&::-webkit-details-marker]:hidden">
+                  <span className="group-open:hidden">+{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} included</span>
+                  <span className="hidden group-open:inline">Show fewer topics</span>
+                </summary>
+                <div className="mt-2 hidden gap-2 group-open:grid">
+                  {hiddenIssueTopics.map((topic) => (
+                    <OverviewTopicChip key={topic.topic} topic={topic} />
+                  ))}
+                </div>
+              </details>
             ) : null}
           </div>
         </div>
