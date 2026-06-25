@@ -890,7 +890,7 @@ function MemberInfoPopover({
       >
         i
       </summary>
-      <div className={`pointer-events-none absolute ${alignClass} top-7 z-30 w-[282px] rounded-2xl border border-white/12 bg-[#071c38]/96 p-3 text-[12px] leading-snug text-white/72 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.35)] transition group-open:pointer-events-auto group-open:opacity-100`}>
+      <div className={`pointer-events-none absolute ${alignClass} top-7 z-30 w-[282px] rounded-2xl border border-white/18 bg-[#071c38] p-3 text-[12px] leading-snug text-white/82 opacity-0 shadow-[0_18px_36px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] transition group-open:pointer-events-auto group-open:opacity-100`}>
         <div className="font-medium text-[#ffb12b]">{title}</div>
         <div className="mt-1 space-y-2">{children}</div>
       </div>
