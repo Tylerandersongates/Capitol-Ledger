@@ -304,7 +304,7 @@ export function BetaFeedbackForm() {
           </p>
           {selectedAreaIsAccount ? (
             <div className="mt-3 rounded-2xl border border-[#74dbff]/20 bg-[#74dbff]/10 px-4 py-3 text-[13px] leading-snug text-[#a7ebff]">
-              Account reports are tagged for auth triage and should call out whether setup choices, saved records, or session return felt disconnected.
+              Account reports are tagged for auth triage. Mention whether setup choices, saved records, or session return did not carry through as expected.
             </div>
           ) : null}
         </div>

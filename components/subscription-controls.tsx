@@ -335,12 +335,14 @@ export function PlanActionButton({
 }) {
   const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const active = subscription.plan === plan;
   const billingPortalManaged = shouldUseBillingPortal(subscription, plan);
 
   async function handlePlanAction() {
     if (pending || (active && !billingPortalManaged)) return;
     setPending(true);
+    setStatusMessage("");
 
     const fallbackSubscription = normalizeSubscription({
       ...subscription,
@@ -351,7 +353,8 @@ export function PlanActionButton({
 
     try {
       if (billingPortalManaged) {
-        await openBillingPortal();
+        const opened = await openBillingPortal();
+        if (!opened) setStatusMessage("Billing portal is not ready for this subscription yet.");
         return;
       }
 
@@ -366,31 +369,36 @@ export function PlanActionButton({
           seatCount: plan === "team" ? normalizeTeamSeatCount(subscription.seatCount) : undefined
         })
       });
+      const data = (await response.json().catch(() => null)) as {
+        checkoutMode?: "demo" | "stripe";
+        checkoutUrl?: string;
+        customPlanRequired?: boolean;
+        error?: string;
+        subscription?: AccountSubscriptionSnapshot;
+      } | null;
 
       if (!response.ok) {
         if (plan === "free" && subscription.provider !== "stripe") updateSubscription({ plan });
+        setStatusMessage(response.status === 401 ? "Sign in before starting checkout." : data?.error ?? "Checkout could not start. Try again.");
         return;
       }
 
-      const data = (await response.json()) as {
-        checkoutMode?: "demo" | "stripe";
-        checkoutUrl?: string;
-        subscription?: AccountSubscriptionSnapshot;
-      };
-
-      if (data.checkoutMode === "stripe" && data.checkoutUrl) {
+      if (data?.checkoutMode === "stripe" && data.checkoutUrl) {
         window.location.assign(data.checkoutUrl);
         return;
       }
 
-      if (data.subscription) {
+      if (data?.subscription) {
         applySubscriptionSnapshot(data.subscription);
+        setStatusMessage(`${subscriptionPlans[plan].name} is active.`);
         return;
       }
 
       applySubscriptionSnapshot(fallbackSubscription);
+      setStatusMessage(`${subscriptionPlans[plan].name} is active.`);
     } catch {
       if (plan === "free") updateSubscription({ plan });
+      setStatusMessage(plan === "free" ? "Free plan is active on this device." : "Checkout could not start. Try again.");
     } finally {
       setPending(false);
     }
@@ -399,9 +407,12 @@ export function PlanActionButton({
   const actionLabel = billingPortalManaged ? "Manage billing" : active ? "Current plan" : inactiveLabel;
 
   return (
-    <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
-      {pending ? "Preparing..." : actionLabel}
-    </button>
+    <>
+      <button type="button" onClick={handlePlanAction} className={className} aria-pressed={active} disabled={pending}>
+        {pending ? "Preparing..." : actionLabel}
+      </button>
+      {statusMessage ? <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-[12px] font-semibold leading-snug text-white/62">{statusMessage}</div> : null}
+    </>
   );
 }
 

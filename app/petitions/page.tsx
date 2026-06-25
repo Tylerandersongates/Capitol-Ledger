@@ -155,7 +155,7 @@ export default function PetitionsPage() {
 
           {regulationsStatus === "not-configured" ? (
             <MobileCard variant="dashboard" className="px-4 py-5">
-              <div className="text-[16px] font-medium text-white">Official feed not connected</div>
+              <div className="text-[16px] font-medium text-white">Official feed setup needed</div>
               <p className="mt-2 text-[13px] leading-snug text-white/54">Add a Regulations.gov API key to show current federal comment windows here.</p>
             </MobileCard>
           ) : null}
@@ -196,7 +196,7 @@ export default function PetitionsPage() {
             <div className="min-w-0">
               <div className="text-[17px] font-medium leading-tight text-white">Live petitions coming soon</div>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
-                Third-party petition APIs are not connected yet. We will add partner-backed petitions when there is a reliable source that fits the budget.
+                Partner-backed petitions are paused until there is a reliable source that fits the budget.
               </p>
             </div>
           </div>

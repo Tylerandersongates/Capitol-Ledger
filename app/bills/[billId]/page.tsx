@@ -879,7 +879,7 @@ function VotesTab({
                   <BillVoteMemberBreakdown chamber={event.vote.chamber} positions={positions} />
                 ) : (
                   <div className="mt-5 rounded-xl border border-dashed border-white/12 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/56">
-                    Member votes will appear once this roll call is synced as a full vote record.
+                    Member votes will appear once this roll call is available as a full vote record.
                   </div>
                 )}
               </>

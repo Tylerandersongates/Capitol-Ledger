@@ -377,6 +377,18 @@ export function AlertsInboxClient({
       </nav>
 
       <main className="mt-7 space-y-4 pb-8">
+        {activeFilter === "action" ? (
+          <MobileCard variant="dashboard" className="px-5 py-5">
+            <div className="inline-flex rounded-full border border-[#43ed74]/30 bg-[#43ed74]/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#43ed74]">
+              Needs action
+            </div>
+            <h2 className="mt-3 text-[21px] font-medium leading-tight text-white">Alerts with a next step</h2>
+            <p className="mt-3 text-[15px] leading-snug text-white/58">
+              Vote reminders, team invites, deadlines, and tracked updates that need a response appear here.
+            </p>
+          </MobileCard>
+        ) : null}
+
         {activeFilter === "all" ? (
           <PlanFeatureGate feature="priorityAlerts" initialSubscription={initialSubscription}>
             <MobileCard variant="dashboard" className="px-5 py-5">

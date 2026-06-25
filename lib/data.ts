@@ -631,7 +631,7 @@ function mapDatabaseMember(member: PrismaMember): Member {
     active: member.active,
     bioguideId: member.bioguideId,
     chamber,
-    description: `${chamber} member from ${member.state} synced from Congress.gov.`,
+    description: `${chamber} member from ${member.state} imported from Congress.gov.`,
     district: member.district ?? undefined,
     firstElectedDate,
     firstName: member.firstName,
@@ -663,7 +663,7 @@ function mapDatabaseBill(bill: PrismaBill): Bill {
     shortTitle: bill.shortTitle ?? bill.title,
     sourceUrl: bill.sourceUrl ?? "https://www.congress.gov/",
     sponsorBioguideId: bill.sponsorBioguideId ?? undefined,
-    summary: bill.summary ?? "Live Congress.gov bill record synced into Capitol Ledger.",
+    summary: bill.summary ?? "Live Congress.gov bill record imported into Capitol Ledger.",
     title: bill.title
   };
 }
@@ -685,7 +685,7 @@ function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVot
     billId: vote.billId ?? undefined,
     chamber: dbChamberMap[vote.chamber],
     congress: vote.congress,
-    explanation: "Live roll-call vote synced from Congress.gov.",
+    explanation: "Live roll-call vote imported from Congress.gov.",
     id: vote.id,
     memberBioguideIds: uniqueStrings((vote.memberVotes ?? []).map((memberVote) => memberVote.memberBioguideId)),
     noCount: positionCounts.no,
