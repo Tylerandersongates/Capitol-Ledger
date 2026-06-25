@@ -1,7 +1,7 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { fetchBillSummaries, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
-import { normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { fetchBill, fetchBillActions, fetchBillSummaries, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
+import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -1443,6 +1443,48 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
   }
 }
 
+async function getLiveBillDetailData(billId: string): Promise<BillDetailData | null> {
+  const parsedLiveId = parseStableLiveBillId(billId);
+  if (!parsedLiveId) return null;
+
+  try {
+    const response = await fetchBill(parsedLiveId.congress, parsedLiveId.billType, parsedLiveId.billNumber, {
+      timeoutMs: memberLegislationFetchTimeoutMs
+    });
+    const bill = response.bill ? normalizeCongressBill(response.bill) : null;
+    if (!bill) return null;
+
+    const actionsResponse = await fetchBillActions(bill.congress, bill.billType, bill.billNumber, {
+      limit: 50,
+      timeoutMs: memberLegislationFetchTimeoutMs
+    }).catch(() => null);
+    const officialActions = (actionsResponse?.actions ?? [])
+      .map((action, index) => normalizeCongressBillAction(action, bill, index))
+      .filter((action): action is BillAction => Boolean(action));
+    const billVotes = getBillVotes(bill.id);
+    const billVideos = getBillVideos(bill.id);
+    const sponsor = getBillSponsor(bill);
+
+    return {
+      bill,
+      billActions: buildBillActionsForDetail(bill, billVotes, officialActions),
+      billVideos,
+      billVotes,
+      cosponsors: getBillCosponsors(bill.id),
+      sourceMatches: matchBillSources({
+        bill,
+        sponsor,
+        videos: billVideos,
+        votes: billVotes
+      }),
+      sponsor,
+      voteMemberPositionsByVoteId: getDemoVoteMemberPositionsByVoteId(billVotes)
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getBillDetailWithLiveData(billId: string): Promise<BillDetailData | null> {
   const demoDetail = getDemoBillDetailData(billId);
 
@@ -1450,7 +1492,7 @@ export async function getBillDetailWithLiveData(billId: string): Promise<BillDet
     return demoDetail;
   }
 
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? demoDetail;
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? (await getLiveBillDetailData(billId)) ?? demoDetail;
 }
 
 export function getBillStatus(bill: Bill) {

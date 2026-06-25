@@ -346,8 +346,8 @@ export async function fetchCommittees(chamber?: "house" | "senate", options: Con
   return congressFetch<CongressCommitteeListResponse>(chamber ? `/committee/${chamber}` : "/committee", options);
 }
 
-export async function fetchBill(congress: number, billType: string, billNumber: string) {
-  return congressFetch<CongressBillDetailResponse>(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}`);
+export async function fetchBill(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressBillDetailResponse>(`/bill/${congress}/${billType.toLowerCase()}/${billNumber}`, options);
 }
 
 export async function fetchBillSummaries(congress: number, billType: string, billNumber: string, options: CongressFetchOptions = {}) {
