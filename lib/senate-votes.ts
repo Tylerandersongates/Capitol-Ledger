@@ -18,6 +18,17 @@ export type SenateMemberVoteRecord = {
 const SENATE_ROLL_CALL_BASE_URL = "https://www.senate.gov/legislative/LIS";
 const senateMemberVoteCache = new Map<string, { cachedAt: number; records: SenateMemberVoteRecord[] }>();
 const senateMemberVoteCacheMaxAgeMs = 10 * 60 * 1000;
+const senateVoteDetailBatchSize = 4;
+const senateXmlFetchHeaders: HeadersInit[] = [
+  {
+    Accept: "application/xml,text/xml,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent": "Mozilla/5.0 Capitol Ledger civic data reader"
+  },
+  {
+    Accept: "application/xml,text/xml,*/*"
+  }
+];
 
 function decodeXml(value: string) {
   return value
@@ -71,26 +82,29 @@ function senateVoteMenuUrl(congress: number, session: number) {
 }
 
 async function fetchXml(url: string, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  for (const headers of senateXmlFetchHeaders) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers: {
-        Accept: "application/xml,text/xml,*/*",
-        "User-Agent": "Capitol Ledger"
-      },
-      signal: controller.signal
-    });
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        headers,
+        signal: controller.signal
+      });
 
-    if (!response.ok) return null;
-    return await response.text();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
+      if (!response.ok) continue;
+
+      const text = await response.text();
+      if (/<(?:vote_summary|roll_call_vote)\b/i.test(text)) return text;
+    } catch {
+      // Try the next header set before giving up.
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+
+  return null;
 }
 
 function normalizeVotePosition(value?: string): VotePosition | undefined {
@@ -134,13 +148,15 @@ function parseSenateVoteMenu(xml: string) {
 }
 
 function findMemberBlock(xml: string, member: Pick<Member, "lastName" | "state">) {
-  const lastName = member.lastName.toLowerCase();
+  const lastName = normalizeWhitespace(member.lastName).toLowerCase();
+  const compactLastName = lastName.replace(/[^a-z]/g, "");
   const state = member.state.toUpperCase();
 
   return tagBlocks(xml, "member").find((block) => {
     const blockLastName = tagValue(block, "last_name")?.toLowerCase();
+    const blockCompactLastName = blockLastName?.replace(/[^a-z]/g, "");
     const blockState = tagValue(block, "state")?.toUpperCase();
-    return blockLastName === lastName && blockState === state;
+    return blockState === state && (blockLastName === lastName || blockCompactLastName === compactLastName);
   });
 }
 
@@ -207,15 +223,18 @@ export async function fetchSenateMemberVotes(member: Member, limit = 12, timeout
     if (records.length >= limit) break;
 
     const menuXml = await fetchXml(senateVoteMenuUrl(congress, session), timeoutMs);
-    const menuVotes = menuXml ? parseSenateVoteMenu(menuXml).slice(0, limit + 4) : [];
-    const detailRecords = await Promise.all(
-      menuVotes.map(async (menuVote) => {
-        const detailXml = await fetchXml(menuVote.sourceUrl, timeoutMs);
-        return detailXml ? parseSenateVoteDetail(detailXml, menuVote.sourceUrl, member) : null;
-      })
-    );
+    const menuVotes = menuXml ? parseSenateVoteMenu(menuXml).slice(0, limit + 12) : [];
 
-    records.push(...detailRecords.filter((record): record is SenateMemberVoteRecord => Boolean(record)));
+    for (let index = 0; index < menuVotes.length && records.length < limit; index += senateVoteDetailBatchSize) {
+      const detailRecords = await Promise.all(
+        menuVotes.slice(index, index + senateVoteDetailBatchSize).map(async (menuVote) => {
+          const detailXml = await fetchXml(menuVote.sourceUrl, timeoutMs);
+          return detailXml ? parseSenateVoteDetail(detailXml, menuVote.sourceUrl, member) : null;
+        })
+      );
+
+      records.push(...detailRecords.filter((record): record is SenateMemberVoteRecord => Boolean(record)));
+    }
   }
 
   const limitedRecords = records

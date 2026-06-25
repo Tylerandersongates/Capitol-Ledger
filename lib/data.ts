@@ -90,6 +90,7 @@ const pendingOfficialSummaryText =
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
 const memberLegislationFetchTimeoutMs = resolveMemberLegislationFetchTimeoutMs();
+const senateVotesFetchTimeoutMs = resolveSenateVotesFetchTimeoutMs();
 const dashboardLiveRecordsCacheMaxAgeMs = 10 * 60 * 1000;
 const memberLegislationCacheMaxAgeMs = 10 * 60 * 1000;
 
@@ -801,6 +802,16 @@ function resolveMemberLegislationFetchTimeoutMs() {
   return process.env.NODE_ENV === "production" ? 4_000 : 7_000;
 }
 
+function resolveSenateVotesFetchTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_SENATE_VOTES_FETCH_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(1_000, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? 10_000 : 8_000;
+}
+
 async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>, timeoutMs = optionalDatabaseReadTimeoutMs) {
   if (!shouldUseOptionalDatabaseReads()) return null;
 
@@ -1084,7 +1095,7 @@ function orderMemberVoteRecords(records: MemberVoteRecord[]) {
 async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData): Promise<MemberDetailData> {
   if (detail.member.chamber !== "Senate") return detail;
 
-  const liveVotes = await fetchSenateMemberVotes(detail.member, 12, memberLegislationFetchTimeoutMs);
+  const liveVotes = await fetchSenateMemberVotes(detail.member, 12, senateVotesFetchTimeoutMs);
   if (!liveVotes.length) return detail;
 
   return {
