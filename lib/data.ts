@@ -8,6 +8,7 @@ import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
+import { fetchSenateMemberVotes } from "@/lib/senate-votes";
 import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
@@ -1076,9 +1077,28 @@ async function hydrateMemberDetailWithLiveLegislation(detail: MemberDetailData):
   };
 }
 
+function orderMemberVoteRecords(records: MemberVoteRecord[]) {
+  return [...records].sort((a, b) => Date.parse(b.vote?.voteDate ?? "0") - Date.parse(a.vote?.voteDate ?? "0"));
+}
+
+async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData): Promise<MemberDetailData> {
+  if (detail.member.chamber !== "Senate") return detail;
+
+  const liveVotes = await fetchSenateMemberVotes(detail.member, 12, memberLegislationFetchTimeoutMs);
+  if (!liveVotes.length) return detail;
+
+  return {
+    ...detail,
+    memberVotes: orderMemberVoteRecords(mergeBy(liveVotes, detail.memberVotes, (record) => record.voteId)).slice(0, 20)
+  };
+}
+
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
   const detail = (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
-  return detail ? hydrateMemberDetailWithLiveLegislation(detail) : null;
+  if (!detail) return null;
+
+  const detailWithLegislation = await hydrateMemberDetailWithLiveLegislation(detail);
+  return hydrateMemberDetailWithLiveSenateVotes(detailWithLegislation);
 }
 
 async function getDatabaseActiveMembers(): Promise<Member[] | null> {

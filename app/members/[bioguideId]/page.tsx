@@ -1097,9 +1097,9 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
         {records.map((record) => {
           const vote = record.vote;
           if (!vote) return null;
-
-          return (
-            <Link key={`${record.voteId}-${record.position}`} href={`/votes/${vote.id}`} className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+          const isLiveSenateVote = vote.id.startsWith("senate-live-");
+          const rowContent = (
+            <>
               <div className="min-w-0">
                 <div className="text-[18px] font-medium leading-tight text-white">{vote.question}</div>
                 <div className="mt-2 text-[14px] text-white/50">
@@ -1108,8 +1108,32 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
               </div>
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-3 py-1.5 text-[13px] font-medium ${positionTone(record.position)}`}>{record.position}</span>
-                <ChevronRight className="h-5 w-5 text-white/38" strokeWidth={1.8} aria-hidden="true" />
+                {isLiveSenateVote ? (
+                  <ExternalLink className="h-4 w-4 text-white/38" strokeWidth={1.8} aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-white/38" strokeWidth={1.8} aria-hidden="true" />
+                )}
               </div>
+            </>
+          );
+
+          if (isLiveSenateVote) {
+            return (
+              <a
+                key={`${record.voteId}-${record.position}`}
+                href={vote.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
+              >
+                {rowContent}
+              </a>
+            );
+          }
+
+          return (
+            <Link key={`${record.voteId}-${record.position}`} href={`/votes/${vote.id}`} className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+              {rowContent}
             </Link>
           );
         })}
