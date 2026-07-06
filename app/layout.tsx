@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { publicBrandName } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Capitol Ledger CE",
+  title: publicBrandName,
   description: "Track federal lawmakers, bills, votes, and saved legislative updates."
 };
 

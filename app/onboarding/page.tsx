@@ -9,6 +9,7 @@ import {
   OnboardingSetupFlow
 } from "@/components/account-profile-controls";
 import { MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { OnboardingPartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { IssueInterestChips } from "@/components/saved-ledger-controls";
 import Image from "next/image";
@@ -21,6 +22,7 @@ import {
   MapPin,
   Vote
 } from "lucide-react";
+import { publicBrandName } from "@/lib/brand";
 import { getAllMembers } from "@/lib/data";
 import { issueSignals } from "@/lib/issue-signals";
 import type { ReactNode } from "react";
@@ -50,9 +52,7 @@ export default function OnboardingPage() {
                   <span className="absolute inset-[-6px] rounded-full border border-[#ffb12b]/42" />
                   <Image src="/capitol-ledger-logo.png" alt="" width={92} height={92} className="h-[90px] w-[90px] rounded-full object-cover" />
                 </div>
-                <div className="min-w-0 whitespace-nowrap text-[16px] font-semibold uppercase tracking-normal text-white/86">
-                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
-                </div>
+                <BrandWordmark className="liquid-glass-wordmark min-w-0 rounded-full px-3.5 py-1.5 text-[16px] font-semibold uppercase tracking-normal" />
               </div>
               <Link href="/dashboard" className={`${mobileViewAllClass} shrink-0 px-4 py-2 text-[14px] text-white/72`}>
                 Skip
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
                     </div>
                     <h1 className="mt-5 max-w-[22rem] text-[28px] font-medium leading-tight text-white">Set up your civic profile.</h1>
                     <p className="mt-3 max-w-[24rem] text-[17px] leading-snug text-white/64">
-                      Add your district so Capitol Ledger CE can show the officials, bills, votes, and alerts that matter to you.
+                      Add your district so {publicBrandName} can show the officials, bills, votes, and alerts that matter to you.
                     </p>
                   </div>
                   <OnboardingProgressMeter />

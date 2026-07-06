@@ -1,5 +1,6 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Image from "next/image";
 import Link from "next/link";
@@ -78,9 +79,7 @@ export default async function MapPage({ searchParams }: { searchParams?: { level
             <header className="mt-10 flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <Image src="/capitol-ledger-logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
-                <div className="whitespace-nowrap text-[17px] font-semibold uppercase tracking-normal text-white">
-                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
-                </div>
+                <BrandWordmark className="text-[17px] font-semibold uppercase tracking-normal" />
               </Link>
               <Link href="/alerts" className={`relative ${mobileIconButtonClass}`} aria-label="Alerts">
                 <Bell className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
@@ -179,7 +178,7 @@ export default async function MapPage({ searchParams }: { searchParams?: { level
               <MobileCard className="px-5 py-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-[22px] font-medium leading-none">Legislation Tracker</h2>
-                  <Link href="/search?type=bills" className={mobileViewAllClass}>View All</Link>
+                  <Link href="/search?type=bills" className={mobileViewAllClass}>View all</Link>
                 </div>
                 <div className="mt-5 divide-y divide-white/8">
                   {trackedBills.map((bill) => (

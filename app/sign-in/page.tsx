@@ -2,6 +2,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { mobileViewAllClass } from "@/components/mobile-ui";
 import { DemoAccountButton } from "@/components/demo-auth-controls";
 import { AuthFlowClient } from "@/components/auth-flow-client";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { getCurrentSession } from "@/lib/auth";
 import { safeReturnPath } from "@/lib/route-guards";
 import Image from "next/image";
@@ -41,9 +42,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: { em
                   <span className="absolute inset-[-5px] rounded-full border border-[#ffb12b]/42" />
                   <Image src="/capitol-ledger-logo.png" alt="" width={78} height={78} className="h-[76px] w-[76px] rounded-full object-cover" />
                 </div>
-                <div className="min-w-0 whitespace-nowrap text-[15px] font-semibold uppercase tracking-normal text-white/86">
-                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
-                </div>
+                <BrandWordmark className="liquid-glass-wordmark min-w-0 rounded-full px-3 py-1.5 text-[15px] font-semibold uppercase tracking-normal" />
               </div>
               {allowDemoMode ? (
                 <div className="flex shrink-0 items-center gap-2">

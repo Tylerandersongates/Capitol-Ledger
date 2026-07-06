@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Crown, LayoutDashboard, Map, Search, UserRound } from "lucide-react";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -57,7 +58,7 @@ export function SiteHeader() {
             height={40}
             className="h-10 w-10 rounded-md border border-brass/40 bg-ink object-cover shadow-glow"
           />
-          <span className="hidden text-sm tracking-normal sm:inline sm:text-base">Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span></span>
+          <BrandWordmark className="hidden text-sm font-semibold uppercase tracking-normal sm:inline-flex sm:text-base" />
         </Link>
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {

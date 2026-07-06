@@ -3,6 +3,7 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import {
@@ -378,9 +379,7 @@ export function DashboardClient({
                     className="h-[90px] w-[90px] rounded-full object-cover"
                   />
                 </div>
-                <div className="whitespace-nowrap text-[16px] font-semibold uppercase tracking-normal text-white/86">
-                  Capitol <span className="text-brass">Ledger</span> <span className="text-brass/85">CE</span>
-                </div>
+                <BrandWordmark className="liquid-glass-wordmark rounded-full px-3.5 py-1.5 text-[16px] font-semibold uppercase tracking-normal" />
               </div>
               <Link
                 href="/profile"
@@ -578,23 +577,23 @@ export function DashboardClient({
                       <ProInsightRow
                         value={priorityQueueCount}
                         label="Priority bills"
-                        subtitle="Supported bills and bills from saved officials"
+                        subtitle="Supported bills and bills from saved officials."
                       />
-                      <ProInsightRow value={riskWatchCount} label="Bills to watch" subtitle="Bills you oppose or want to monitor closely" />
-                      <ProInsightRow value={data.updateCount} label="District alerts" subtitle="New hearings, referrals, and policy updates" />
+                      <ProInsightRow value={riskWatchCount} label="Bills to watch" subtitle="Bills you oppose or want to monitor closely." />
+                      <ProInsightRow value={data.updateCount} label="District alerts" subtitle="New hearings, referrals, and policy updates." />
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <Link
                         href="/priority-feed"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
-                        View Priority Bills
+                        View priority bills
                       </Link>
                       <Link
                         href="/risk-watch"
                         className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                       >
-                        View Bills to Watch
+                        View bills to watch
                       </Link>
                     </div>
                   </div>
@@ -615,9 +614,9 @@ export function DashboardClient({
                           <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
                             <LockKeyhole className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                           </span>
-                          Weekly Brief
+                          Daily Brief
                         </div>
-                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Weekly Brief requires Pro</h2>
+                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Daily Brief requires Pro</h2>
                         <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro to open district summaries, saved bill and official updates, and suggested actions.</p>
                       </div>
                       <Link href="/upgrade" className={mobileViewAllClass}>
@@ -626,12 +625,12 @@ export function DashboardClient({
                     </div>
                     <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                       <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Status</div>
+                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery status</div>
                         <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white/52">
                           Locked
                         </span>
                       </div>
-                  <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Weekly Brief unlocks with Pro.</div>
+                  <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Daily Brief unlocks with Pro.</div>
                     </div>
                   </div>
                 </MobileCard>
@@ -646,10 +645,10 @@ export function DashboardClient({
                       <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
                         <CalendarClock className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                       </span>
-                      Weekly Brief
+                      Daily Brief
                     </div>
-                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Monday summary</h2>
-                    <p className="mt-2 text-[14px] leading-snug text-white/58">Your weekly district summary and saved bill updates.</p>
+                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Daily summary</h2>
+                    <p className="mt-2 text-[14px] leading-snug text-white/58">Your daily district summary, major stories, and saved bill updates.</p>
                   </div>
                   <Link href="/brief" className={mobileViewAllClass}>
                     Open
@@ -657,7 +656,7 @@ export function DashboardClient({
                 </div>
                 <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
                   <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery Status</div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery status</div>
                     <span className="rounded-full border border-[#2be68d]/35 bg-[#2be68d]/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#2be68d]">
                       Active
                     </span>
@@ -676,7 +675,7 @@ export function DashboardClient({
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[18px] font-medium leading-none">Latest votes</h2>
               <Link href="/search?type=votes&focus=results" className={mobileViewAllClass}>
-                View All
+                View all
               </Link>
             </div>
 
@@ -713,7 +712,7 @@ export function DashboardClient({
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[18px] font-medium leading-none">Saved bill tracker</h2>
               <Link href="/search?type=bills&focus=results" className={mobileViewAllClass}>
-                View All
+                View all
               </Link>
             </div>
 

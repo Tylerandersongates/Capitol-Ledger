@@ -78,6 +78,36 @@ textarea {
   @apply focus:outline-none focus:ring-2 focus:ring-brass focus:ring-offset-2 focus:ring-offset-ink;
 }
 
+.brand-wordmark {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.14), 0 0 10px rgba(255, 255, 255, 0.04);
+}
+
+.brand-wordmark-foil {
+  margin-left: 0;
+  background:
+    linear-gradient(115deg, #6f470b 0%, #d19322 18%, #ffd463 32%, #a6680f 48%, #d98d18 62%, #f0c759 78%, #7c4d0b 100%),
+    repeating-linear-gradient(95deg, rgba(255, 244, 191, 0.16) 0 1px, rgba(87, 52, 8, 0.24) 1px 3px);
+  background-blend-mode: overlay;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 7px rgba(157, 98, 12, 0.16), 0 1px 0 rgba(255, 239, 188, 0.08);
+}
+
+.liquid-glass-wordmark {
+  border: 1px solid rgba(255, 217, 124, 0.18);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03)),
+    radial-gradient(circle at 78% 12%, rgba(214, 151, 35, 0.12), transparent 44%),
+    rgba(4, 17, 39, 0.46);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -18px 34px rgba(255, 255, 255, 0.035),
+    0 12px 28px rgba(1, 8, 24, 0.32),
+    0 0 14px rgba(187, 117, 18, 0.07);
+  backdrop-filter: blur(18px) saturate(142%);
+}
+
 .surface {
   border: 1px solid rgba(212, 175, 55, 0.18);
   background:
