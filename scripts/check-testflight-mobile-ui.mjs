@@ -8,6 +8,7 @@ function read(path) {
 }
 
 const auth = read("components/auth-flow-client.tsx");
+const accountProfile = read("components/account-profile-controls.tsx");
 const globals = read("app/globals.css");
 const ledger = read("components/saved-ledger-controls.tsx");
 const scrollFrame = read("components/mobile-glass-scroll-frame.tsx");
@@ -26,6 +27,12 @@ assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll fr
 assert.ok(auth.includes('htmlFor={id}') && auth.includes('name={name}'), "Auth inputs should have stable label and form identities");
 assert.ok(auth.includes('autoComplete="given-name"') && auth.includes('autoComplete="family-name"'), "Name fields should expose iOS autofill semantics");
 assert.ok(!auth.includes("onPointerDown={() => inputRef.current?.focus()}"), "Auth field wrappers should not redirect pointer focus");
+
+assert.ok(
+  accountProfile.includes('matchedDistrict.districtCode ? "Search another city, ZIP, or district" : "Enter a city, ZIP, or district code"'),
+  "District lookup should distinguish changing a saved district from the initial search"
+);
+assert.ok(!accountProfile.includes("Austin, 78701, or TX-10"), "District lookup should not imply a specific location");
 
 assert.ok(ledger.includes("accountSyncQueue"), "Account ledger writes should be serialized");
 assert.ok(ledger.includes("latestLedgerRevisionByKey.get(key) !== revision"), "Stale account responses should be ignored");

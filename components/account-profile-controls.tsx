@@ -490,7 +490,7 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
             value={districtInput}
             onChange={(event) => setDistrictInput(event.target.value)}
             className="h-12 min-w-0 bg-transparent text-[16px] font-medium text-white outline-none placeholder:text-white/36"
-            placeholder="Austin, 78701, or TX-10"
+            placeholder={matchedDistrict.districtCode ? "Search another city, ZIP, or district" : "Enter a city, ZIP, or district code"}
           />
           <button type="submit" className="h-10 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)]">
             Find
