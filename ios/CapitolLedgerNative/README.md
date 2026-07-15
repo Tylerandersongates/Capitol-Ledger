@@ -1,6 +1,6 @@
-# Capitol Ledger CE Native iOS Shell
+# Native iOS Shell
 
-This is the first native iOS shell for the app-only path. It wraps the deployed Capitol Ledger CE app in a `WKWebView` and handles Apple in-app purchases with StoreKit 2.
+This is the first native iOS shell for the app-only path. It wraps the deployed app in a `WKWebView` and handles Apple in-app purchases with StoreKit 2.
 
 ## Bridge Contract
 
@@ -12,8 +12,10 @@ window.webkit.messageHandlers.capitolLedgerPurchase.postMessage(message)
 
 Supported messages:
 
-- `{ action: "purchase", plan: "pro", cycle: "monthly", productId: "com.capitolledger.pro.monthly" }`
-- `{ action: "purchase", plan: "pro", cycle: "annual", productId: "com.capitolledger.pro.annual" }`
+- `{ action: "purchase", plan: "pro", cycle: "monthly", productId: "com.capitolwonk.pro.monthly" }`
+- `{ action: "purchase", plan: "pro", cycle: "annual", productId: "com.capitolwonk.pro.annual" }`
+- `{ action: "purchase", plan: "team", cycle: "monthly", productId: "com.capitolwonk.team.monthly" }`
+- `{ action: "purchase", plan: "team", cycle: "annual", productId: "com.capitolwonk.team.annual" }`
 - `{ action: "restore" }`
 - `{ action: "manage" }`
 
@@ -23,20 +25,22 @@ When StoreKit returns a signed transaction JWS, the WebView also posts it to `/a
 
 ## Product IDs
 
-- Pro monthly: `com.capitolledger.pro.monthly`
-- Pro annual: `com.capitolledger.pro.annual`
+- Pro monthly: `com.capitolwonk.pro.monthly` with the App Store Connect 7-day free trial introductory offer, then $2.99/month
+- Pro annual: `com.capitolwonk.pro.annual`
+- Team monthly: `com.capitolwonk.team.monthly`
+- Team annual: `com.capitolwonk.team.annual`
 
 Create these products in App Store Connect in one subscription group before TestFlight purchase QA.
 
 ## Build Notes
 
-Open `CapitolLedgerNative.xcodeproj` in Xcode, set the signing team and final bundle identifier, then run on a device or StoreKit-enabled simulator.
+Open `CapitolLedgerNative.xcodeproj` in Xcode, set the signing team, final bundle identifier, and `APP_DISPLAY_NAME`, then run on a device or StoreKit-enabled simulator.
 
 The default app URL is configured in `CapitolLedgerNative/Info.plist` as `CapitolLedgerAppURL`.
 
 ## Server Account Sync
 
-Account-wide Pro sync requires these deployment variables:
+Account-wide paid subscription sync requires these deployment variables:
 
 - `APP_STORE_BUNDLE_ID`
 - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`

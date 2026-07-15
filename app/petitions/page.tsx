@@ -185,7 +185,7 @@ export default function PetitionsPage() {
 
         <div className="mt-5 mb-3 flex items-center justify-between px-1">
           <h2 className="text-[21px] font-medium leading-none text-white">Petitions</h2>
-          <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-white/42">Coming soon</span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-white/42">Queued</span>
         </div>
 
         <MobileCard variant="dashboard" className="px-4 py-5">
@@ -194,7 +194,7 @@ export default function PetitionsPage() {
               <Megaphone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <div className="text-[17px] font-medium leading-tight text-white">Live petitions coming soon</div>
+              <div className="text-[17px] font-medium leading-tight text-white">Live petitions are paused</div>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
                 Partner-backed petitions are paused until there is a reliable source that fits the budget.
               </p>

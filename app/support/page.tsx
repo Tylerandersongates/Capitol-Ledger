@@ -2,10 +2,11 @@ import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, LifeBuoy, Search, Settings, ShieldCheck } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { publicBrand } from "@/lib/brand";
 
 export const metadata = {
-  title: "Capitol Ledger CE Support",
-  description: "Get Capitol Ledger CE help, report an issue, or request account and privacy support."
+  title: publicBrand.supportTitle,
+  description: `Get ${publicBrand.name} help, report an issue, or request account and privacy support.`
 };
 
 const supportOptions = [
@@ -17,13 +18,13 @@ const supportOptions = [
   },
   {
     title: "Purchases",
-    body: "Restore Apple purchases or review the Pro upgrade path from the plan screen.",
+    body: "Review the 7-day Pro trial, restore purchases, or manage renewal from the plan screen.",
     href: "/upgrade",
     cta: "Open plans"
   },
   {
     title: "Privacy requests",
-    body: "For account deletion, data correction, or saved-data questions, submit a report with Privacy request in the title.",
+    body: "For account deletion, data correction, or saved-data questions, submit a report with \"Privacy request\" in the title.",
     href: "/feedback?source=privacy-request",
     cta: "Start request"
   }
@@ -47,7 +48,7 @@ export default function SupportPage() {
 
       <section className="mt-10">
         <div className="text-[18px] uppercase tracking-wide text-white/54">Support</div>
-        <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">Capitol Ledger CE Support</h1>
+        <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">{publicBrand.supportTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
           Use these paths for live app testing, App Store review support, account questions, privacy requests, and purchase help.
         </p>
@@ -60,7 +61,7 @@ export default function SupportPage() {
               <LifeBuoy strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-[22px] font-medium leading-tight text-white">Capitol Ledger CE support</h2>
+              <h2 className="text-[22px] font-medium leading-tight text-white">{publicBrand.name} support</h2>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
                 Reports go into the review queue used for TestFlight and launch triage.
               </p>
@@ -90,7 +91,7 @@ export default function SupportPage() {
             <div className="min-w-0">
               <h2 className="text-[20px] font-medium leading-tight text-white">For App Store review</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
-                Paid upgrades use Apple in-app purchase only. Team features are visible as a later rollout and are not purchasable in App Store v1.
+                Monthly Pro starts with 7 days free, then renews at $2.99/month. Cancel anytime. Team starts a three-seat shared workspace.
               </p>
             </div>
           </div>

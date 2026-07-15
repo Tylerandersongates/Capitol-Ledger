@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: "Paid subscriptions must be changed through checkout or billing management.",
+        error: "Paid subscriptions must be changed through App Store purchase or billing management.",
         mode: databaseSubscription ? "database" : "account",
         user,
         subscription

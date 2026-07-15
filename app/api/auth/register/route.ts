@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCredentialAccount } from "@/lib/auth-database";
 import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
-import { deliverAuthEmail } from "@/lib/auth-email";
+import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
 
   const emailDelivery = await deliverAuthEmail({
     kind: "verify_email",
+    requestBaseUrl: authEmailRequestBaseUrl(request),
     returnTo: safeAuthReturnPath(body.returnTo),
     token: result.verificationToken,
     user: result.user

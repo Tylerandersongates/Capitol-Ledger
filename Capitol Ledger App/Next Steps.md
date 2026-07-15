@@ -2,7 +2,7 @@
 
 ## Phase Roadmap
 
-Status: updated June 25, 2026. Capitol Ledger is in TestFlight prep mode: finish App Store billing setup, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
+Status: updated June 25, 2026. CapitolWonk CE is in TestFlight prep mode: finish App Store billing setup, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
 
 ### Phase Status Snapshot
 
@@ -11,16 +11,20 @@ Status: updated June 25, 2026. Capitol Ledger is in TestFlight prep mode: finish
 3. Phase 3: Design QA and Beta Polish - Round 1 blocker pass complete. Remaining work is feedback-driven polish from Round 2.
 4. Phase 4: Subscription Demo Integration - Demo complete for beta. Direct StoreKit and server-side App Store transaction validation are now in place; App Store Connect products, server credentials, and sandbox/TestFlight QA remain before paid launch.
 5. Phase 5: Core Civic Data Expansion - Partially complete. Live-first search, dashboard, and bill detail paths are connected; more civic surfaces and larger sync passes remain before App Store upload.
-6. Phase 6: External Production Services - Partially complete. Auth/email, billing, push, monitoring, and production rate limiting still need final provider decisions and production checks. Weekly Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Weekly Brief in app.
+6. Phase 6: External Production Services - Partially complete. Auth/email, billing, push, monitoring, and production rate limiting still need final provider decisions and production checks. Daily Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Daily Brief in app.
 7. Phase 7: App Store and TestFlight - Active prep. Native shell, StoreKit bridge, and server validation are in place; remaining work is App Store Connect setup, production env configuration, final text-tone pass, and sandbox/TestFlight QA.
 
 ### Post-Launch Next Build
 
-1. Weekly Brief outbound delivery: after launch, evaluate email/push delivery for Weekly Briefs, choose the provider bridge, define unsubscribe/history behavior, configure the cron secret/provider settings, and run `pnpm weekly-brief:check` plus `pnpm weekly-brief:qa` before turning on real sends.
+1. Daily Brief outbound delivery: after launch, evaluate email/push delivery for Daily Briefs, choose the provider bridge, define unsubscribe/history behavior, configure the cron secret/provider settings, and run `pnpm weekly-brief:check` plus `pnpm weekly-brief:qa` before turning on real sends.
+2. Sister Supreme Court app: after the main app reaches TestFlight, begin product/data planning for a standalone Supreme Court app focused on docket tracking, oral argument audio, opinions, decision explainers, and saved case alerts.
+3. State legislation expansion: keep state legislation inside the main app, but defer the first state pilot to a future update, likely the beginning of next year, after the TestFlight path and Supreme Court sister app are underway.
 
 ### Current Working Rule
 
 Everything going forward should serve the TestFlight path. Defer broad product expansion unless it fixes a launch blocker, account/payment risk, App Store review risk, or final user-facing text issue.
+
+Roadmap sequencing rule: do not pull Supreme Court or state-legislation expansion into the current TestFlight scope. Supreme Court work starts as a sister-app track after TestFlight. State legislation remains a main-app future update.
 
 ### Current Waiting State
 
@@ -31,8 +35,8 @@ Round 2 tester materials:
 - Tester guide source: `docs/round-2-beta-tester-guide/README.md`
 - Downloadable tester guide: `https://project-qosv1.vercel.app/downloads/capitol-ledger-round-2-beta-tester-guide.docx`
 - Feedback review queue: `https://project-qosv1.vercel.app/feedback/review`
-- Internal returning-user QA: `Capitol Ledger App/Returning User QA Script.md`
-- Internal Round 2 readiness: `Capitol Ledger App/Round 2 Beta Readiness Checklist.md`
+- Internal returning-user QA: Returning User QA Script
+- Internal Round 2 readiness: Round 2 Beta Readiness Checklist
 
 Round 2 asks:
 
@@ -43,7 +47,7 @@ Round 2 asks:
 
 ### Phase 1: Web Beta Readiness - Complete
 
-Goal: get Capitol Ledger deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
+Goal: get CapitolWonk CE deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
 
 Completed:
 
@@ -109,7 +113,7 @@ Remaining before App Store upload:
 3. Treat the launch-facing text-tone pass as mostly complete; only fix new copy issues found during App Store screenshot capture or TestFlight QA.
 4. Capture final App Store screenshot candidates from stable mobile pages.
 5. Finish App Store Connect setup, Pro subscription products, final bundle ID/signing, and App Store Server API credentials.
-6. Keep Weekly Brief visual treatment focused on the in-app beta page; revisit outbound delivery treatment in the Post-Launch Next Build.
+6. Keep Daily Brief visual treatment focused on the in-app beta page; revisit outbound delivery treatment in the Post-Launch Next Build.
 
 ### Phase 4: Subscription Demo Integration - Demo Complete, Live Billing Pending
 
@@ -127,7 +131,7 @@ Completed for beta:
 Remaining before App Store upload:
 
 1. Create final App Store Connect product names, plan copy, prices, and one subscription group for Pro.
-2. Confirm product IDs match `com.capitolledger.pro.monthly` and `com.capitolledger.pro.annual`.
+2. Confirm product IDs match `com.capitolwonk.pro.monthly`, `com.capitolwonk.pro.annual`, `com.capitolwonk.team.monthly`, and `com.capitolwonk.team.annual`.
 3. Add App Store Server API variables through Apple/Vercel tooling, not git: `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY`.
 4. Keep Stripe disabled for launch unless a web checkout path is deliberately reintroduced.
 5. Rerun `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`; both should pass after Apple setup.
@@ -200,7 +204,7 @@ Upload checklist:
 1. Run `pnpm testflight:check`.
 2. Run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` after Apple/env setup.
 3. Freeze the beta-tested core flow.
-4. Use `Capitol Ledger App/App Store Connect Setup Packet.md` to prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, privacy policy URL, subscription products, and review notes.
+4. Use the App Store Connect setup packet to prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, privacy policy URL, subscription products, and review notes.
 5. Prepare App Store description, keywords, promotional text, release notes, category, and review notes.
 6. Prepare App Privacy nutrition labels based on actual account, analytics, civic activity, purchase, and notification data use.
 7. Capture final screenshots for required iPhone sizes from the stable mobile pages.
@@ -249,18 +253,18 @@ Upload checklist:
 31. Moved notification read/unread state into the account ledger path, including local demo fallback, sign-in/demo migration, database-ready `ReadAlert` records, and `/alerts` hydration so read status can follow signed-in users across devices.
 32. Added protected-route behavior for `/account`: signed-out users are redirected to `/sign-in` with a return path, while production and demo account sessions are allowed through for real use and investor walkthroughs.
 33. Updated sign-in success handoff so production account verification keeps the production session active, while demo mode remains a separate explicit path.
-34. Activated Weekly Brief generation with `/brief`, `/api/account/weekly-brief`, and an `/account` delivery card that combines district, saved ledger, policy interests, unread alerts, and subscription level into a personalized civic summary.
+34. Activated Daily Brief generation with `/brief`, `/api/account/weekly-brief`, and an `/account` delivery card that combines district, saved ledger, policy interests, unread alerts, and subscription level into a personalized civic summary.
 35. Connected the dashboard alert badge to the same read/unread alert ledger used by `/alerts`, so the header indicator resets to blank after all active new alerts are read.
-36. Gated Weekly Brief controls behind Pro Intelligence so Free users see the feature as locked/inactive and are routed to upgrade before preparing delivery.
-37. Updated `/sign-in` so account creation is available for first-time visitors, then the Create tab and New account button are hidden for returning users with existing Capitol Ledger browser/account state.
+36. Gated Daily Brief controls behind Pro Intelligence so Free users see the feature as locked/inactive and are routed to upgrade before preparing delivery.
+37. Updated `/sign-in` so account creation is available for first-time visitors, then the Create tab and New account button are hidden for returning users with existing CapitolWonk CE browser/account state.
 38. Added password reset completion for production auth: reset tokens can now update the stored password, clear old sessions, create a fresh production session, and return the user through the `/sign-in?resetToken=...` mobile flow.
 39. Added the first Prisma production migration plus deploy/check scripts so the auth, account ledger, subscription, gamification, and civic-data tables can be applied and verified against a real hosted Postgres database.
 40. Added auth email delivery plumbing for verification and password-reset links, including a provider-ready webhook payload, optional webhook secret header, `/sign-in?verifyToken=...` handling, and environment setup notes.
 41. Added auth hardening with same-origin mutation guards and rate limits across sign-in, account creation, password reset, email verification, demo session start, checkout, weekly brief preparation, and account-changing APIs.
 42. Added a production-auth QA runner so deployed auth behavior can be checked safely, with optional live account creation and rate-limit stress modes.
-43. Added Weekly Brief delivery history with a database-backed delivery table, in-app demo fallback, API history responses, and a compact account-page history view for queued/prepared/sent/failed/paused briefs.
-44. Added a secure scheduled Weekly Brief delivery runner at `/api/tasks/weekly-brief` that finds eligible Pro/Team users, prepares briefs, records queued/sent/failed delivery history, and can hand off to a future webhook provider.
-45. Added a Weekly Brief task QA runner (`pnpm weekly-brief:qa`) that checks task-route secret protection, dry-run behavior, response shape, and optional live delivery-record writes.
+43. Added Daily Brief delivery history with a database-backed delivery table, in-app demo fallback, API history responses, and a compact account-page history view for queued/prepared/sent/failed/paused briefs.
+44. Added a secure scheduled Daily Brief delivery runner at `/api/tasks/weekly-brief` that finds eligible Pro/Team users, prepares briefs, records queued/sent/failed delivery history, and can hand off to a future webhook provider.
+45. Added a Daily Brief task QA runner (`pnpm weekly-brief:qa`) that checks task-route secret protection, dry-run behavior, response shape, and optional live delivery-record writes.
 46. Added `Weekly Brief Delivery Guide.md` and `pnpm weekly-brief:check` so provider readiness, cron secrets, webhook settings, sender identity, and production delivery configuration can be checked before a paid provider is integrated.
 47. Added `Billing Readiness Guide.md` and `pnpm billing:check` so database, app URL, App Store Server API values, StoreKit product IDs, and account-sync readiness can be checked before sandbox/TestFlight purchase testing.
 48. Added a backend setup recommendations PDF and `pnpm backend:check` so outside-service setup can be tracked from one consolidated readiness command.
@@ -289,7 +293,8 @@ Upload checklist:
 71. Added `pnpm beta:triage` so database-backed beta feedback can be summarized before each fix pass, with optional blocker/untriaged failure gates.
 72. Tightened duplicate browser/account hydration for profile, party affiliation, gamification, and read-alert state so pages avoid unnecessary repeated background requests.
 73. Added `pnpm video-links:check` to verify the current speech/video demo layer before investor or beta walkthroughs.
-74. Added a visible Capitol Ledger Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
+74. Added a visible CapitolWonk CE Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
+75. Added the GDELT Daily Brief media-signal layer so `/brief` can pull US-politics news signals by followed issue while keeping official bill/vote records as the source of record.
 
 ## Open Product Todos
 
@@ -303,7 +308,7 @@ Upload checklist:
 4. Standardized the mobile design system across pages with lighter page/card title weights, softer shared glass cards, consistent phone gutters, frosted icon buttons, and matching oval View All/action pills.
 5. Redesigned notifications from overlapping category tabs into a cleaner action-first inbox with `All`, `Action Needed`, and `Unread` filters, time-grouped sections, category pills, and unread/action indicators.
 6. Refined `/impact` and `/badges` to match the current lighter mobile card system while preserving the trophy/badge and civic score visual language from the mockups.
-7. Redesigned `/sign-in` into a complete mobile account entry flow that matches the lighter Capitol Ledger mobile system across sign-in, create-account, forgot-password, verification, and success states.
+7. Redesigned `/sign-in` into a complete mobile account entry flow that matches the lighter CapitolWonk CE mobile system across sign-in, create-account, forgot-password, verification, and success states.
 8. Removed the inactive `/search` header filter icon and refined `/badges?filter=locked` tile spacing so locked badge names and requirements read cleanly.
 9. Rebuilt `/search` Smart Filters into combinable Pro official-record filters with active states, reset behavior, preserved search text, and live match counts.
 10. Matched `/badges?filter=earned` name and description spacing to the locked badge layout so earned and locked badge grids read consistently.
@@ -317,7 +322,7 @@ Upload checklist:
 18. Added a safe `/bills` route that sends users to the bills discovery list.
 19. Removed bright page-level gradients in favor of a darker shared navy mobile shell so the existing glass cards and gold/white controls read more like the desired iPhone Liquid Glass direction.
 20. Combined `/search` search, result type tabs, quick discovery chips, and Pro refine controls into one cohesive discovery panel, with advanced filters collapsed by default.
-21. Condensed `/account` by moving subscription management to `/upgrade`, moving Weekly Brief delivery/history to `/brief`, adding a compact dashboard entry point, and making Account Settings collapsible.
+21. Condensed `/account` by moving subscription management to `/upgrade`, moving Daily Brief delivery/history to `/brief`, adding a compact dashboard entry point, and making Account Settings collapsible.
 22. Added neutral member vote lists to standalone vote detail pages and bill vote-history rows, with optional filters for party plus Yes, No, Present, and Not Voting positions.
 
 ## Notes For Continuing

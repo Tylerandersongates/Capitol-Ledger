@@ -38,6 +38,33 @@ textarea {
   user-select: text;
 }
 
+@media (max-width: 639px) {
+  .mobile-shell-root {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .mobile-shell-content {
+    min-height: 100dvh !important;
+    padding-left: max(1.25rem, env(safe-area-inset-left)) !important;
+    padding-right: max(1.25rem, env(safe-area-inset-right)) !important;
+    padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-glass-scroll-panel--vertical {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overscroll-behavior-y: auto;
+    padding-right: 0.75rem !important;
+  }
+
+  .mobile-glass-scroll-rail--vertical {
+    display: none;
+  }
+}
+
 .auth-field-input {
   appearance: none;
   background: transparent !important;

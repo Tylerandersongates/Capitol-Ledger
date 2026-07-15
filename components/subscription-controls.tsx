@@ -9,6 +9,7 @@ import {
   subscriptionPlans,
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
+import { publicBrand } from "@/lib/brand";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { maximumTeamSeatCount, minimumTeamSeatCount, normalizeOptionalTeamSeatCount, normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
@@ -26,7 +27,7 @@ type NativePurchaseMessage =
   | {
       action: "purchase";
       cycle: SubscriptionDefaultCycle;
-      plan: "pro";
+      plan: Exclude<SubscriptionPlanId, "free">;
       productId: string;
       appAccountToken?: string;
     }
@@ -49,19 +50,23 @@ declare global {
   }
 }
 
-const appStoreProductIds: Record<"pro", Record<SubscriptionDefaultCycle, string>> = {
+const appStoreProductIds: Record<Exclude<SubscriptionPlanId, "free">, Record<SubscriptionDefaultCycle, string>> = {
   pro: {
-    annual: "com.capitolledger.pro.annual",
-    monthly: "com.capitolledger.pro.monthly"
+    annual: "com.capitolwonk.pro.annual",
+    monthly: "com.capitolwonk.pro.monthly"
+  },
+  team: {
+    annual: "com.capitolwonk.team.annual",
+    monthly: "com.capitolwonk.team.monthly"
   }
 };
 
 const teamWorkspaceSignals = [
   {
-    detail: "Choose how many teammates can join this workspace.",
+    detail: "Start with a shared workspace for three teammates.",
     icon: <ListChecks />,
     label: "Team seats",
-    value: `${minimumTeamSeatCount}-${maximumTeamSeatCount}`
+    value: String(minimumTeamSeatCount)
   },
   {
     detail: "The owner manages subscription access and invites.",
@@ -368,7 +373,8 @@ export function PlanPrice({
   const [subscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const planDetails = subscriptionPlans[plan];
   const price = subscription.cycle === "annual" ? planDetails.pricing.annual : planDetails.pricing.monthly;
-  const unit = plan === "free" ? "" : subscription.cycle === "annual" ? (plan === "team" ? "/ seat / year" : "/ year") : planDetails.pricing.unit;
+  const unit =
+    plan === "free" ? "" : subscription.cycle === "annual" ? (plan === "team" ? "/ seat / year min 3" : "/ year") : plan === "team" ? "/ seat min 3" : planDetails.pricing.unit;
 
   return (
     <div className={className}>
@@ -376,6 +382,29 @@ export function PlanPrice({
         {price}
       </span>
       {unit ? <span className={unitClassName}>{unit}</span> : null}
+    </div>
+  );
+}
+
+export function PlanTrialDisclosure({
+  defaultCycle,
+  initialSubscription = null,
+  plan
+}: {
+  defaultCycle?: SubscriptionDefaultCycle;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+  plan: SubscriptionPlanId;
+}) {
+  const [subscription] = useSubscriptionState(initialSubscription, { defaultCycle });
+  const trial = subscriptionPlans[plan].trial;
+  if (!trial) return null;
+
+  const trialSelected = subscription.cycle === trial.cycle;
+  const annualPrice = subscriptionPlans[plan].pricing.annual;
+
+  return (
+    <div className="mt-4 whitespace-nowrap rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-3 text-[11px] leading-none text-[#ffe0a1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+      {trialSelected ? trial.disclosure : `${trial.label} is available on monthly Pro. Annual Pro is ${annualPrice}/year.`}
     </div>
   );
 }
@@ -398,9 +427,11 @@ export function PlanActionButton({
   const [statusMessage, setStatusMessage] = useState("");
   const active = subscription.plan === plan;
   const activePaidSubscription = subscription.plan !== "free";
+  const paidPlan = plan === "pro" || plan === "team";
   const managesCurrentSubscription = activePaidSubscription && (active || plan === "free");
-  const teamComingLater = plan === "team" && !active;
-  const disabled = pending || teamComingLater || (active && plan !== "pro") || (active && !managesCurrentSubscription);
+  const disabled = pending || (active && !managesCurrentSubscription);
+  const trial = subscriptionPlans[plan].trial;
+  const trialSelected = Boolean(trial && subscription.cycle === trial.cycle);
 
   async function handlePlanAction() {
     if (disabled) return;
@@ -413,15 +444,15 @@ export function PlanActionButton({
         setStatusMessage(
           opened
             ? "Opening App Store subscription management."
-            : "Open Capitol Ledger CE in the iOS app or TestFlight to manage App Store purchases."
+            : `Open ${publicBrand.name} in the iOS app or TestFlight to manage App Store purchases.`
         );
         return;
       }
 
-      if (plan === "pro") {
+      if (paidPlan) {
         const appAccountToken = window.__capitolLedgerNativeStoreKit ? await readAppStoreAccountToken() : null;
         if (window.__capitolLedgerNativeStoreKit && !appAccountToken) {
-          setStatusMessage("Sign in before upgrading so Apple can link Pro to this account.");
+          setStatusMessage(`Sign in before upgrading so Apple can link ${subscriptionPlans[plan].name} to this account.`);
           return;
         }
 
@@ -430,12 +461,16 @@ export function PlanActionButton({
           appAccountToken: appAccountToken ?? undefined,
           cycle: subscription.cycle,
           plan,
-          productId: appStoreProductIds.pro[subscription.cycle]
+          productId: appStoreProductIds[plan][subscription.cycle]
         });
         setStatusMessage(
           opened
-            ? "Opening Apple in-app purchase."
-            : "Open Capitol Ledger CE in the iOS app or TestFlight to complete this purchase."
+            ? trialSelected && trial
+              ? `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}. Apple will show the ${trial.label} terms before you confirm.`
+              : `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}.`
+            : trialSelected && trial
+              ? `Open ${publicBrand.name} in the iOS app or TestFlight to start the ${trial.label}.`
+              : `Open ${publicBrand.name} in the iOS app or TestFlight to complete this purchase.`
         );
         return;
       }
@@ -445,8 +480,6 @@ export function PlanActionButton({
         setStatusMessage("Free plan is active.");
         return;
       }
-
-      setStatusMessage(`${subscriptionPlans[plan].name} is not available for in-app purchase yet.`);
     } catch {
       if (plan === "free") updateSubscription({ plan });
       setStatusMessage(plan === "free" ? "Free plan is active." : "Purchase could not open. Try again.");
@@ -455,13 +488,7 @@ export function PlanActionButton({
     }
   }
 
-  const actionLabel = teamComingLater
-    ? "Team coming later"
-    : managesCurrentSubscription
-      ? "Manage subscription"
-      : active
-        ? "Current plan"
-        : inactiveLabel;
+  const actionLabel = managesCurrentSubscription ? "Manage subscription" : active ? "Current plan" : trialSelected && trial ? trial.ctaLabel : inactiveLabel;
 
   return (
     <>
@@ -490,7 +517,7 @@ export function RestorePurchasesButton({ className }: { className: string }) {
     setStatusMessage(
       opened
         ? "Checking App Store purchases."
-        : "Open Capitol Ledger CE in the iOS app or TestFlight to restore App Store purchases."
+        : `Open ${publicBrand.name} in the iOS app or TestFlight to restore App Store purchases.`
     );
     setPending(false);
   }
@@ -516,7 +543,7 @@ export function SubscriptionBadge({ initialSubscription = null }: { initialSubsc
   return (
     <Link
       href="/upgrade"
-      aria-label={`Manage Capitol Ledger CE ${planName}`}
+      aria-label={`Manage ${publicBrand.name} ${planName}`}
       className="mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-rust/35 bg-rust/10 px-3 py-1 text-[12px] font-medium text-[#ffb12b]"
     >
       <Crown className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
@@ -672,7 +699,7 @@ export function TeamWorkspacePreview() {
           <UserPlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>
-          When Team opens, use the Team page to invite teammates and manage shared watchlists.
+          After Team is active, use the Team page to invite teammates and manage shared watchlists.
         </span>
       </div>
 
@@ -725,7 +752,7 @@ function LockedPlanPreview({ feature }: { feature: SubscriptionFeatureId }) {
           <div className="text-[12px] font-medium uppercase tracking-wide text-white/45">Upgrade required</div>
           <h3 className="mt-1 text-[18px] font-medium leading-tight text-white">{featureEntitlement?.label ?? "Pro feature"}</h3>
           <p className="mt-2 text-[14px] leading-snug text-white/56">
-            {featureEntitlement?.description ?? "This feature is available on an upgraded Capitol Ledger CE plan."}
+            {featureEntitlement?.description ?? `This feature is available on an upgraded ${publicBrand.name} plan.`}
           </p>
         </div>
       </div>

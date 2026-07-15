@@ -4,6 +4,9 @@ import { readFileSync } from "node:fs";
 const billPage = readFileSync("app/bills/[billId]/page.tsx", "utf8");
 
 assert.ok(billPage.includes("function hasCrossChamberAction"), "Bill page should keep timeline cross-chamber detection explicit");
+assert.ok(billPage.includes("function isFloorActionText"), "Bill page should keep floor-action detection explicit");
+assert.ok(billPage.includes("isFloorActionText(action)"), "Progress steps should use bounded floor-action detection");
+assert.ok(!billPage.includes('action.includes("consideration") ||'), "Referral text that says 'for consideration' should not be treated as floor action");
 assert.ok(billPage.includes("receivedByOtherChamber"), "Timeline should detect bills received by the other chamber");
 assert.ok(billPage.includes('action.includes("read twice") && action.includes("referred")'), "Timeline should treat Senate read-twice referrals as cross-chamber movement");
 assert.ok(billPage.includes("originPassageSignal || receivedByOtherChamber || referredInOtherChamber"), "Cross-chamber timeline should not require a linked roll-call vote");

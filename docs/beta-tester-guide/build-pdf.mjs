@@ -183,7 +183,7 @@ class PdfLayout {
     if (!this.ops.length) return;
     const pageNumber = this.pages.length + 1;
     this.drawLine(page.margin, 34, page.width - page.margin, 34, colors.panel, 0.8);
-    this.drawText(`Capitol Ledger CE Beta Tester Guide  |  ${pageNumber}`, page.margin, 22, "F1", 8.5, colors.muted);
+    this.drawText(`CapitolWonk CE Beta Tester Guide  |  ${pageNumber}`, page.margin, 22, "F1", 8.5, colors.muted);
     this.pages.push({ ops: this.ops });
     this.ops = [];
     this.y = page.height - page.margin;

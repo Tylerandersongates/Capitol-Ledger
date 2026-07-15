@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     },
     history,
     message: result.brief.delivery.enabled
-      ? "Weekly Brief demo delivery prepared."
-      : "Weekly Brief is paused. Enable it in Alert Preferences to schedule delivery."
+      ? "Daily Brief demo delivery prepared."
+      : "Daily Brief is paused. Enable it in Alert Preferences to schedule delivery."
   });
 }

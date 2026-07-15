@@ -30,6 +30,14 @@ export type SubscriptionPlanDetails = {
     monthly: string;
     unit: string;
   };
+  trial?: {
+    conversionPrice: string;
+    ctaLabel: string;
+    cycle: "monthly" | "annual";
+    days: number;
+    disclosure: string;
+    label: string;
+  };
 };
 
 export type SubscriptionFeature = {
@@ -61,19 +69,27 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
       annual: "$29.99",
       unit: "/ month"
     },
+    trial: {
+      conversionPrice: "$2.99/month",
+      ctaLabel: "Start 7-day free trial",
+      cycle: "monthly",
+      days: 7,
+      disclosure: "7 days free, then $2.99/month. Cancel anytime.",
+      label: "7-day free trial"
+    },
     highlights: ["Deeper dashboard panels", "Topic and official tracking", "Exportable reports", "Priority vote reminders"],
     limits: ["One-person plan", "No team seats"]
   },
   team: {
     name: "Civic Team",
-    description: "Shared tracking for teams",
+    description: "Shared tracking for organizations",
     pricing: {
       monthly: "$5.99",
       annual: "$59.99",
       unit: "/ seat"
     },
     highlights: ["Shared workspace", "Team alerts", "Exportable reports", "Shared watchlists"],
-    limits: ["Self-serve checkout supports 3-25 seats", "Email invites and shared editing are in rollout"]
+    limits: ["Self-serve Team supports 3 to 25 seats", "Email invites and shared editing are rolling out"]
   }
 };
 
@@ -152,8 +168,8 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   },
   {
     id: "weeklyBrief",
-    label: "Weekly Brief delivery",
-    description: "A weekly summary from your district, saved items, alerts, and topics.",
+    label: "Daily Brief",
+    description: "A daily summary from your district, saved items, alerts, topics, and major story watch.",
     minimumPlan: "pro"
   },
   {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { createAppStoreAccountToken, validateAppStoreTransaction } from "@/lib/billing/app-store";
+import { publicBrandName } from "@/lib/brand";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
   if (existingOwnerUserId && existingOwnerUserId !== accountUserId) {
     return NextResponse.json(
       {
-        error: "This App Store subscription is already linked to another Capitol Ledger CE account."
+        error: `This App Store subscription is already linked to another ${publicBrandName} account.`
       },
       { status: 409 }
     );

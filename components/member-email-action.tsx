@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CheckCircle2, Mail, Send } from "lucide-react";
+import { publicBrandName } from "@/lib/brand";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
 import {
   confirmLocalSentLetter,
@@ -79,7 +80,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
     if (payload?.mode === "manual") {
       setPendingLetter(localLetter ?? payload?.letter ?? null);
       setStatus("confirming");
-      setStatusMessage("Message opened. After you send it, confirm here so Capitol Ledger CE can mark it sent.");
+      setStatusMessage(`Message opened. After you send it, confirm here so ${publicBrandName} can mark it sent.`);
       return;
     }
 
@@ -127,7 +128,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           setStatusMessage("");
           setPendingLetter(null);
         }}
-        className="inline-flex items-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[15px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110"
+        className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110"
       >
         <Mail className="h-4 w-4" />
         Message
@@ -173,7 +174,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           ) : (
             <>
               <p className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-[12px] leading-snug text-white/56">
-                Write a message for this office. Capitol Ledger CE opens the official contact path and keeps a record when you mark it sent.
+                Write a message for this office. {publicBrandName} opens the official contact path and keeps a record when you mark it sent.
               </p>
 
               <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Your email</label>

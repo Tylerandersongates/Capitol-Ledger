@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Capitol Ledger already has a Congress.gov API client, normalizers, API preview routes, sync smoke test, and first database write path. This guide defines the setup needed to run member, bill, committee, source-link, official summary, cosponsor, House vote, and House member-vote upserts, then expand later into Senate vote ingestion.
+CapitolWonk CE already has a Congress.gov API client, normalizers, API preview routes, sync smoke test, and first database write path. This guide defines the setup needed to run member, bill, committee, source-link, official summary, cosponsor, House vote, and House member-vote upserts, then expand later into Senate vote ingestion.
 
 ## Current App Path
 
 1. `lib/congress/client.ts` fetches Congress.gov members, bills, committees, bill records, bill summaries, bill cosponsors, House votes, House member vote positions, and member records.
-2. `lib/congress/normalizers.ts` converts Congress.gov records into Capitol Ledger member, bill, committee, cosponsor, House vote, House member-vote, and source-link shapes.
+2. `lib/congress/normalizers.ts` converts Congress.gov records into CapitolWonk CE member, bill, committee, cosponsor, House vote, House member-vote, and source-link shapes.
 3. `/api/congress/members`, `/api/congress/bills`, and `/api/congress/committees` expose live preview endpoints when `CONGRESS_API_KEY` is configured.
 4. `pnpm sync:congress` smoke-tests API access and normalization.
 5. `CONGRESS_SYNC_WRITE=true pnpm sync:congress` persists normalized members, bills, committees, cosponsors, House votes, House member vote positions, official source links, and resolved official bill summaries into the app database.
@@ -18,6 +18,7 @@ Capitol Ledger already has a Congress.gov API client, normalizers, API preview r
 DATABASE_URL="postgresql://..."
 CONGRESS_API_KEY="your-congress-gov-api-key"
 CONGRESS_SYNC_CONGRESS="119"
+CONGRESS_SYNC_BATCH="true"
 CONGRESS_SYNC_LIMIT="25"
 CONGRESS_CHECK_LIVE="false"
 CONGRESS_SYNC_SUMMARIES="true"
@@ -28,6 +29,9 @@ CONGRESS_SYNC_HOUSE_SESSION="1"
 CONGRESS_SYNC_HOUSE_VOTE_LIMIT="5"
 CONGRESS_SYNC_HOUSE_MEMBER_VOTES="true"
 CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT="500"
+CONGRESS_SYNC_BILLS=""
+CONGRESS_SYNC_HOUSE_VOTE_NUMBERS=""
+CONGRESS_SYNC_TERRITORY_DELEGATES="true"
 CONGRESS_SYNC_WRITE="false"
 NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 ```
@@ -92,6 +96,12 @@ Example tiny House vote write:
 
 ```bash
 CONGRESS_SYNC_CONGRESS=119 CONGRESS_SYNC_LIMIT=5 CONGRESS_SYNC_HOUSE_VOTES=true CONGRESS_SYNC_HOUSE_VOTE_LIMIT=2 CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT=500 CONGRESS_SYNC_WRITE=true pnpm sync:congress
+```
+
+For a precise one-bill pull, set `CONGRESS_SYNC_BILLS` to comma-separated bill keys. Keys can be `HR:22` for the configured Congress or `119:HR:22` for an explicit Congress. Pair this with `CONGRESS_SYNC_HOUSE_VOTE_NUMBERS` when the bill has known House roll calls that should be synced with member positions:
+
+```bash
+CONGRESS_SYNC_CONGRESS=119 CONGRESS_SYNC_BATCH=false CONGRESS_SYNC_LIMIT=1 CONGRESS_SYNC_BILLS=119:HR:22 CONGRESS_SYNC_COSPONSOR_LIMIT=250 CONGRESS_SYNC_HOUSE_SESSION=1 CONGRESS_SYNC_HOUSE_VOTE_NUMBERS=102 CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT=500 CONGRESS_SYNC_TERRITORY_DELEGATES=false CONGRESS_SYNC_WRITE=true pnpm sync:congress
 ```
 
 ## Sync Order

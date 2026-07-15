@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth";
+import { publicBrand, publicBrandName } from "@/lib/brand";
 import { getMemberDetailWithLiveData } from "@/lib/data";
 import { contactSubjectForMember, resolveOfficialContactUrl } from "@/lib/member-contact";
 import {
@@ -20,7 +21,7 @@ const emailRequestSchema = z.object({
 const OFFICIAL_MESSAGE_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
+  return publicBrandName;
 }
 
 function webhookModeEnabled() {
@@ -77,7 +78,7 @@ export async function POST(
   const session = await getCurrentSession();
   const memberLabel = `${member.fullName} (${member.chamber === "House" ? "House" : "Senate"}, ${member.state}${member.district ? `-${member.district}` : ""})`;
   const senderEmail = parsed.data.fromEmail || session?.user?.email;
-  const senderName = parsed.data.fromName || session?.user?.name || "Capitol Ledger CE user";
+  const senderName = parsed.data.fromName || session?.user?.name || publicBrand.userLabel;
 
   if (!senderEmail) {
     return NextResponse.json({ error: "Add your email so the office can reply." }, { status: 400 });

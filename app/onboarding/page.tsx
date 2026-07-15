@@ -105,7 +105,7 @@ export default function OnboardingPage() {
                 </OnboardingCard>
               </main>
 
-              <div className="sticky bottom-0 -mx-8 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(6,24,52,0.78)_0%,rgba(3,14,32,0.96)_100%)] px-8 pb-5 pt-4 backdrop-blur-xl shadow-[0_-16px_34px_rgba(1,8,24,0.46),inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="sticky bottom-0 -mx-5 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(6,24,52,0.78)_0%,rgba(3,14,32,0.96)_100%)] px-5 pb-5 pt-4 backdrop-blur-xl shadow-[0_-16px_34px_rgba(1,8,24,0.46),inset_0_1px_0_rgba(255,255,255,0.08)] sm:-mx-8 sm:px-8">
                 <OnboardingCompleteButton />
                 <div className="mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/82" />
               </div>

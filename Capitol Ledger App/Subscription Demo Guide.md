@@ -2,7 +2,7 @@
 
 ## Goal
 
-Show how Capitol Ledger operates and feels across three subscription modes:
+Show how CapitolWonk CE operates and feels across three subscription modes:
 
 - Free
 - Pro Intelligence
@@ -72,7 +72,7 @@ Demo path:
 
 Talk track:
 
-Pro turns Capitol Ledger from a tracker into an intelligence layer. It gives users analysis, source trails, video context, advanced discovery, and higher-priority civic alerts.
+Pro turns CapitolWonk CE from a tracker into an intelligence layer. It gives users analysis, source trails, video context, advanced discovery, and higher-priority civic alerts.
 
 ## Civic Team Mode
 
@@ -145,7 +145,7 @@ Refresh persistence:
 - Use `/map` for Civic Team.
 - Use `/search` for Pro export/report value.
 - Use `/alerts` for priority reminders.
-- Use `Billing Readiness Guide.md` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on App Store account-wide Pro sync.
+- Use `Billing Readiness Guide.md` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on App Store account-wide paid subscription sync.
 
 ## Next Polish Items
 

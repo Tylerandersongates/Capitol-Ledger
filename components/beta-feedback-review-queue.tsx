@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Copy, Download, MessageSquarePlus, RefreshCw, Search } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileCard } from "@/components/mobile-ui";
+import { publicBrandName } from "@/lib/brand";
 import type { BetaFeedbackRecord, BetaFeedbackReleaseDecision, BetaFeedbackStatus } from "@/lib/beta-feedback";
 
 const statuses: Array<{ label: string; value: BetaFeedbackStatus }> = [
@@ -532,7 +533,7 @@ function buildTriageSummary(records: BetaFeedbackRecord[], filter: FeedbackFilte
     .join(", ");
 
   return [
-    `Capitol Ledger CE live app reports - ${formatFilterLabel(filter)}`,
+    `${publicBrandName} live app reports - ${formatFilterLabel(filter)}`,
     `${records.length} reports in this view`,
     `Active severity: ${severityCounts}`,
     `Decision triage: ${releaseCounts}`,

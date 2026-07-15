@@ -174,7 +174,7 @@ def configure_document(doc):
         style.paragraph_format.line_spacing = 1.25
 
     header = section.header.paragraphs[0]
-    header.text = "Capitol Ledger CE Beta Tester Guide"
+    header.text = "CapitolWonk CE Beta Tester Guide"
     set_paragraph_spacing(header, after=0)
     set_run_font(header.runs[0], size=9, color=MUTED)
 
@@ -188,7 +188,7 @@ def configure_document(doc):
 def add_title_block(doc):
     title = doc.add_paragraph()
     set_paragraph_spacing(title, after=3)
-    run = title.add_run("Capitol Ledger CE First-Round Beta Tester Guide")
+    run = title.add_run("CapitolWonk CE First-Round Beta Tester Guide")
     set_run_font(run, size=24, color=INK, bold=True)
 
     subtitle = doc.add_paragraph()
@@ -238,9 +238,9 @@ def build_docx():
     markdown = MARKDOWN_PATH.read_text()
     doc = Document()
     configure_document(doc)
-    doc.core_properties.title = "Capitol Ledger CE First-Round Beta Tester Guide"
+    doc.core_properties.title = "CapitolWonk CE First-Round Beta Tester Guide"
     doc.core_properties.subject = "Editable beta tester guide"
-    doc.core_properties.keywords = "Capitol Ledger CE, beta testing, civic app"
+    doc.core_properties.keywords = "CapitolWonk CE, beta testing, civic app"
     add_title_block(doc)
 
     for block in iter_markdown_blocks(markdown):

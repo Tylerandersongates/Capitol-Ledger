@@ -1,3 +1,4 @@
+import { publicBrandName } from "@/lib/brand";
 import { sendEmailWithResend } from "@/lib/resend-email";
 
 type TeamInviteEmailPayload = {
@@ -24,7 +25,7 @@ function appBaseUrl() {
 }
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
+  return publicBrandName;
 }
 
 function deliveryMode() {

@@ -54,7 +54,7 @@ const settingRows = [
     icon: <CreditCard />
   },
   {
-    label: "Weekly brief",
+    label: "Daily brief",
     value: "Recent briefs",
     href: "/brief",
     icon: <CalendarClock />
@@ -113,7 +113,7 @@ export default async function SettingsPage() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[16px] font-semibold text-white">Notifications</span>
-                  <span className="mt-1 block text-[13px] leading-snug text-white/52">Votes, local updates, weekly brief</span>
+                  <span className="mt-1 block text-[13px] leading-snug text-white/52">Votes, local updates, daily brief</span>
                 </span>
                 <ChevronRight className="h-5 w-5 text-white/42 transition group-open/notification:rotate-90" strokeWidth={1.8} aria-hidden="true" />
               </summary>

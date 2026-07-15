@@ -1,4 +1,5 @@
 import type { AuthUser } from "@/lib/auth-database";
+import { publicBrandName } from "@/lib/brand";
 import { sendEmailWithResend } from "@/lib/resend-email";
 
 type AuthEmailKind = "password_reset" | "verify_email";
@@ -23,12 +24,34 @@ type AuthEmailDelivery =
   | { delivered: false; mode: "manual_demo" | "silent"; actionUrl?: string }
   | { delivered: true; mode: "resend" | "webhook" };
 
-function appBaseUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+type AuthEmailOriginRequest = {
+  headers: {
+    get(name: string): string | null;
+  };
+  nextUrl: {
+    origin: string;
+    protocol: string;
+  };
+};
+
+function isLocalPreviewBaseUrl(value?: string) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+function appBaseUrl(requestBaseUrl?: string) {
+  const localRequestBaseUrl = isLocalPreviewBaseUrl(requestBaseUrl) ? requestBaseUrl : undefined;
+  return (localRequestBaseUrl || process.env.NEXT_PUBLIC_APP_URL || requestBaseUrl || "http://localhost:3000").replace(/\/$/, "");
 }
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
+  return publicBrandName;
 }
 
 function sender() {
@@ -39,9 +62,18 @@ function shouldExposeManualLinks() {
   return process.env.AUTH_EMAIL_DELIVERY === "manual_demo" || process.env.NODE_ENV !== "production";
 }
 
-export function buildAuthActionUrl(kind: AuthEmailKind, token: string, returnTo?: string) {
+export function authEmailRequestBaseUrl(request: AuthEmailOriginRequest) {
+  const host = request.headers.get("host")?.trim();
+  if (!host) return request.nextUrl.origin;
+
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const protocol = forwardedProtocol || request.nextUrl.protocol.replace(/:$/, "") || "http";
+  return `${protocol}://${host}`;
+}
+
+export function buildAuthActionUrl(kind: AuthEmailKind, token: string, returnTo?: string, requestBaseUrl?: string) {
   const parameter = kind === "password_reset" ? "resetToken" : "verifyToken";
-  const url = new URL("/sign-in", appBaseUrl());
+  const url = new URL("/sign-in", appBaseUrl(requestBaseUrl));
   url.searchParams.set(parameter, token);
   if (returnTo) url.searchParams.set("returnTo", returnTo);
   return url.toString();
@@ -49,16 +81,18 @@ export function buildAuthActionUrl(kind: AuthEmailKind, token: string, returnTo?
 
 function buildEmailPayload({
   kind,
+  requestBaseUrl,
   returnTo,
   token,
   user
 }: {
   kind: AuthEmailKind;
+  requestBaseUrl?: string;
   returnTo?: string;
   token: string;
   user: AuthEmailUser;
 }): AuthEmailPayload {
-  const actionUrl = buildAuthActionUrl(kind, token, returnTo);
+  const actionUrl = buildAuthActionUrl(kind, token, returnTo, requestBaseUrl);
   const name = user.name || user.email;
   const product = appName();
 
@@ -95,18 +129,20 @@ function buildEmailPayload({
 
 export async function deliverAuthEmail({
   kind,
+  requestBaseUrl,
   returnTo,
   token,
   user
 }: {
   kind: AuthEmailKind;
+  requestBaseUrl?: string;
   returnTo?: string;
   token?: string | null;
   user: AuthEmailUser;
 }): Promise<AuthEmailDelivery> {
   if (!token) return { delivered: false, mode: "silent" };
 
-  const payload = buildEmailPayload({ kind, returnTo, token, user });
+  const payload = buildEmailPayload({ kind, requestBaseUrl, returnTo, token, user });
   const deliveryMode = process.env.AUTH_EMAIL_DELIVERY;
 
   if (deliveryMode === "resend") {

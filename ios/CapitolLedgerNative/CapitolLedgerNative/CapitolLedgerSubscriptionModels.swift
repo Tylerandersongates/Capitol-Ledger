@@ -26,16 +26,38 @@ struct CapitolLedgerPurchaseMessage: Decodable {
 }
 
 enum CapitolLedgerProduct {
-    static let proMonthly = "com.capitolledger.pro.monthly"
-    static let proAnnual = "com.capitolledger.pro.annual"
-    static let proProductIds: Set<String> = [proMonthly, proAnnual]
+    static let proMonthly = "com.capitolwonk.pro.monthly"
+    static let proAnnual = "com.capitolwonk.pro.annual"
+    static let teamMonthly = "com.capitolwonk.team.monthly"
+    static let teamAnnual = "com.capitolwonk.team.annual"
+    static let productIds: Set<String> = [proMonthly, proAnnual, teamMonthly, teamAnnual]
 
     static func cycle(for productId: String) -> CapitolLedgerCycle? {
         switch productId {
-        case proMonthly:
+        case proMonthly, teamMonthly:
             return .monthly
-        case proAnnual:
+        case proAnnual, teamAnnual:
             return .annual
+        default:
+            return nil
+        }
+    }
+
+    static func plan(for productId: String) -> CapitolLedgerPlan? {
+        switch productId {
+        case proMonthly, proAnnual:
+            return .pro
+        case teamMonthly, teamAnnual:
+            return .team
+        default:
+            return nil
+        }
+    }
+
+    static func seatCount(for productId: String) -> Int? {
+        switch productId {
+        case teamMonthly, teamAnnual:
+            return 3
         default:
             return nil
         }

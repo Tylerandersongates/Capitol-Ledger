@@ -1,4 +1,5 @@
 import { currentCongressLabel } from "@/lib/utils";
+import { publicBrand } from "@/lib/brand";
 import type { MemberCaucusMembership, MemberVoteRecord } from "@/lib/data";
 import type { Bill, Member } from "@/types/capitol";
 
@@ -460,7 +461,7 @@ export function calculateMemberScore({
   return {
     constituentAlignment: alignment,
     factors,
-    methodologyLabel: "Capitol Ledger CE Accountability v0.2",
+    methodologyLabel: publicBrand.accountabilityLabel,
     overallScore,
     rating: ratingForScore(overallScore),
     summary:

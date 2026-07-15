@@ -46,7 +46,7 @@ export type MobileBottomNavItem = {
 };
 
 export function MobileBottomNav({
-  className = "sticky bottom-0 -mx-8 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(5,20,45,0.9)_0%,rgba(3,14,32,0.96)_100%)] px-8 pb-3 pt-4 backdrop-blur-xl shadow-[0_-12px_26px_rgba(1,8,24,0.38)]",
+  className = "sticky bottom-0 -mx-5 mt-auto border-t border-white/12 bg-[linear-gradient(180deg,rgba(5,20,45,0.9)_0%,rgba(3,14,32,0.96)_100%)] px-5 pb-3 pt-4 backdrop-blur-xl shadow-[0_-12px_26px_rgba(1,8,24,0.38)] sm:-mx-8 sm:px-8",
   indicatorClassName = "mx-auto mt-4 h-1.5 w-36 rounded-full bg-white/82",
   items
 }: {

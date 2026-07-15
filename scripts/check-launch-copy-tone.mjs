@@ -10,24 +10,33 @@ const launchFacingPaths = [
   "app/privacy",
   "app/support",
   "app/upgrade",
+  "app/onboarding",
+  "app/petitions",
+  "app/team",
   "app/feedback",
   "app/alerts",
   "app/brief",
   "app/search",
   "app/bills",
   "app/members",
+  "app/api/account/subscription/app-store",
+  "app/api/members",
   "components/auth-flow-client.tsx",
   "components/beta-feedback-form.tsx",
   "components/beta-feedback-review-queue.tsx",
   "components/dashboard-client.tsx",
   "components/demo-auth-controls.tsx",
+  "components/member-email-action.tsx",
   "components/settings-account-sync-status.tsx",
   "components/subscription-controls.tsx",
   "lib/auth.ts",
+  "lib/brand.ts",
   "lib/billing/app-store.ts",
+  "lib/congress/normalizers.ts",
   "lib/data.ts",
   "lib/demo-data.ts",
   "lib/member-scoring.ts",
+  "lib/senate-votes.ts",
   "lib/weekly-brief.ts"
 ];
 
@@ -62,12 +71,21 @@ const blockedPhrases = [
   "live Stripe checkout"
 ];
 
+const legacyBrandName = ["Capitol", "Ledger"].join(" ");
+const retiredPublicBrandName = `${legacyBrandName} CE`;
+
 const blockedPatterns = [
   {
-    label: "Capitol Ledger without CE",
-    pattern: /Capitol Ledger(?! CE)/g
+    label: "legacy brand without CE",
+    pattern: new RegExp(`${legacyBrandName}(?! CE)`, "g")
+  },
+  {
+    label: "retired public brand placeholder",
+    pattern: new RegExp(retiredPublicBrandName, "g")
   }
 ];
+
+const allowedHardcodedBrandFiles = new Set(["lib/brand.ts"]);
 
 function listFiles(path) {
   if (!existsSync(path)) return [];
@@ -92,6 +110,10 @@ for (const file of files) {
     if (source.includes(phrase)) failures.push({ file, phrase });
   }
   for (const { label, pattern } of blockedPatterns) {
+    if (label === "hardcoded public brand name" && allowedHardcodedBrandFiles.has(file)) {
+      pattern.lastIndex = 0;
+      continue;
+    }
     if (pattern.test(source)) failures.push({ file, phrase: label });
     pattern.lastIndex = 0;
   }

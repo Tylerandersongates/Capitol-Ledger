@@ -212,7 +212,7 @@ async function main() {
     });
   }
 
-  console.log("Seeded Capitol Ledger demo data.");
+  console.log("Seeded CapitolWonk CE demo data.");
 }
 
 main()

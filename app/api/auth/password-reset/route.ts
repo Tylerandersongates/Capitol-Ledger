@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requestPasswordReset } from "@/lib/auth-database";
-import { deliverAuthEmail } from "@/lib/auth-email";
+import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     result.resetToken && body.email
       ? await deliverAuthEmail({
           kind: "password_reset",
+          requestBaseUrl: authEmailRequestBaseUrl(request),
           token: result.resetToken,
           user: {
             email: body.email

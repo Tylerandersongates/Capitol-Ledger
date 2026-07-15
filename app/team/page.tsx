@@ -15,12 +15,13 @@ import {
   UserRound,
   UsersRound
 } from "lucide-react";
-import { TeamCheckoutReturnSync } from "@/components/team-checkout-return-sync";
+import { TeamPurchaseReturnSync } from "@/components/team-purchase-return-sync";
 import { TeamInviteControls } from "@/components/team-invite-controls";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
+import { publicBrandName } from "@/lib/brand";
 import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
 import { requireAccountSession } from "@/lib/route-guards";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
@@ -76,7 +77,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
     readLedgerFromDatabase(accountUserId).catch(() => null)
   ]);
   const accountLedger = databaseLedger ?? getAccountLedger(accountUserId);
-  const teamCheckoutReturn = readSearchParam(searchParams, "checkout") === "success" && readSearchParam(searchParams, "plan") === "team";
+  const teamPurchaseReturn = readSearchParam(searchParams, "checkout") === "success" && readSearchParam(searchParams, "plan") === "team";
   const ownerAccess = hasActiveTeamAccess(subscription);
   const memberWorkspaceResult = ownerAccess
     ? null
@@ -86,7 +87,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
       }).catch(() => null);
 
   if (!ownerAccess && !memberWorkspaceResult) {
-    return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
+    return <TeamAccessGate purchaseReturn={teamPurchaseReturn} subscription={subscription} />;
   }
 
   const seatCount = normalizeTeamSeatCount(subscription.seatCount);
@@ -101,7 +102,7 @@ export default async function TeamWorkspacePage({ searchParams }: { searchParams
         workspaceName
       })
     : memberWorkspaceResult;
-  if (!teamWorkspaceResult) return <TeamAccessGate checkoutReturn={teamCheckoutReturn} subscription={subscription} />;
+  if (!teamWorkspaceResult) return <TeamAccessGate purchaseReturn={teamPurchaseReturn} subscription={subscription} />;
   const teamWorkspace = teamWorkspaceResult.workspace;
   const canManageBilling = ownerAccess && teamWorkspace.ownerUserId === accountUserId;
   const viewerMembership: TeamWorkspaceMember | undefined = canManageBilling ? undefined : memberWorkspaceResult?.membership;
@@ -350,13 +351,13 @@ function readSearchParam(searchParams: TeamPageSearchParams | undefined, key: st
   return Array.isArray(value) ? value[0] : value;
 }
 
-function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutReturn?: boolean; subscription: AccountSubscriptionSnapshot }) {
+function TeamAccessGate({ purchaseReturn = false, subscription }: { purchaseReturn?: boolean; subscription: AccountSubscriptionSnapshot }) {
   const currentPlan = subscription.plan === "team" ? "Team" : subscription.plan === "pro" ? "Pro" : "Free";
   const teamPlanSelected = subscription.plan === "team";
   const metrics: Metric[] = [
     { label: "Current plan", value: currentPlan },
     { label: "Team seats", value: teamPlanSelected ? String(normalizeTeamSeatCount(subscription.seatCount)) : "3+" },
-    { label: "Status", value: checkoutReturn ? "Finalizing" : teamPlanSelected ? formatStatusLabel(subscription.status) : "Upgrade" }
+    { label: "Status", value: purchaseReturn ? "Finalizing" : teamPlanSelected ? formatStatusLabel(subscription.status) : "Upgrade" }
   ];
 
   return (
@@ -380,13 +381,13 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
             <div className="min-w-0">
-              <div className={premiumEyebrowClass}>{checkoutReturn ? "Checkout return" : "Team access"}</div>
+              <div className={premiumEyebrowClass}>{purchaseReturn ? "Purchase return" : "Team access"}</div>
               <h2 className="mt-2 text-[26px] font-medium leading-tight text-white">
-                {checkoutReturn ? "Finishing Team setup" : "Start Team to open this workspace"}
+                {purchaseReturn ? "Finishing Team setup" : "Start Team to open this workspace"}
               </h2>
               <p className="mt-3 text-[15px] leading-snug text-white/60">
-                {checkoutReturn
-                  ? "Checkout is complete. Capitol Ledger CE is confirming billing before opening the workspace."
+                {purchaseReturn
+                  ? `${publicBrandName} is confirming your Team purchase before opening the workspace.`
                   : "Choose a Team plan first, then invite teammates and manage shared watchlists here."}
               </p>
             </div>
@@ -401,8 +402,8 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
             ))}
           </div>
 
-          {checkoutReturn ? (
-            <TeamCheckoutReturnSync />
+          {purchaseReturn ? (
+            <TeamPurchaseReturnSync />
           ) : (
             <Link href="/upgrade#team-plan" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:brightness-110">
               Choose Team plan
@@ -419,7 +420,7 @@ function TeamAccessGate({ checkoutReturn = false, subscription }: { checkoutRetu
           />
           <div className="mt-5 grid gap-3">
             <SetupStep
-              description="Team starts at 3 seats. You can add more before checkout."
+              description="Team starts at 3 seats. You can adjust seats before purchase."
               label="Team seats"
               value="Required"
             />

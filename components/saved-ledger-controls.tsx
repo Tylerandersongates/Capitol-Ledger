@@ -7,6 +7,7 @@ import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { useSubscriptionState } from "@/components/subscription-controls";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { readLocalNotificationPreferences } from "@/lib/browser-account-profile";
+import { issueInterestsPendingSyncKey } from "@/lib/browser-account-ledger";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, FollowTargetType, SavedFollowRecord } from "@/types/capitol";
@@ -19,6 +20,7 @@ const persistenceEvent = "capitol-ledger:persistence-changed";
 const accountLedgerEndpoint = "/api/account/ledger";
 
 let accountHydrationPromise: Promise<void> | null = null;
+let accountSyncQueue: Promise<void> = Promise.resolve();
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
@@ -33,6 +35,9 @@ type SavedCounts = {
 
 type LedgerStorageKey = typeof alertsKey | typeof followsKey | typeof interestsKey | typeof readAlertsKey;
 
+let ledgerLocalRevision = 0;
+const latestLedgerRevisionByKey = new Map<LedgerStorageKey, number>();
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
 
@@ -44,9 +49,17 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: LedgerStorageKey, value: T) {
+  const revision = ++ledgerLocalRevision;
+  latestLedgerRevisionByKey.set(key, revision);
   window.localStorage.setItem(key, JSON.stringify(value));
+  if (key === interestsKey) window.localStorage.setItem(issueInterestsPendingSyncKey, "1");
   dispatchPersistenceChanged(key);
-  void syncLocalLedgerToAccount(key);
+  const patch = getLedgerPatchForKey(key);
+
+  accountSyncQueue = accountSyncQueue
+    .catch(() => undefined)
+    .then(() => syncLocalLedgerToAccount(key, patch, revision))
+    .catch(() => undefined);
 }
 
 function dispatchPersistenceChanged(key?: string) {
@@ -159,6 +172,23 @@ function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
   dispatchPersistenceChanged(followsKey);
 }
 
+function writeServerLedgerValue(key: LedgerStorageKey, snapshot: AccountLedgerSnapshot) {
+  if (key === followsKey) window.localStorage.setItem(followsKey, JSON.stringify(uniqueFollows(snapshot.follows)));
+  if (key === alertsKey) window.localStorage.setItem(alertsKey, JSON.stringify(uniqueStrings(snapshot.savedAlerts)));
+  if (key === readAlertsKey) window.localStorage.setItem(readAlertsKey, JSON.stringify(uniqueStrings(snapshot.readAlerts)));
+  if (key === interestsKey) {
+    window.localStorage.setItem(interestsKey, JSON.stringify(uniqueStrings(snapshot.issueInterests)));
+    window.localStorage.removeItem(issueInterestsPendingSyncKey);
+  }
+  dispatchPersistenceChanged(key);
+}
+
+function clearPendingIssueSync(key: LedgerStorageKey, revision: number) {
+  if (key !== interestsKey || latestLedgerRevisionByKey.get(key) !== revision) return;
+  window.localStorage.removeItem(issueInterestsPendingSyncKey);
+  dispatchPersistenceChanged(key);
+}
+
 function getLedgerPatchForKey(key?: LedgerStorageKey): Partial<AccountLedgerSnapshot> {
   if (key === followsKey) return { follows: uniqueFollows(readFollows()) };
   if (key === alertsKey) return { savedAlerts: uniqueStrings(readSavedAlerts()) };
@@ -167,36 +197,47 @@ function getLedgerPatchForKey(key?: LedgerStorageKey): Partial<AccountLedgerSnap
   return readLocalLedger();
 }
 
-async function syncLocalLedgerToAccount(key?: LedgerStorageKey) {
+async function syncLocalLedgerToAccount(
+  key: LedgerStorageKey,
+  patch: Partial<AccountLedgerSnapshot>,
+  revision: number
+) {
   if (typeof window === "undefined") return;
-  if (!(await hasActiveBrowserSession())) return;
+  if (!(await hasActiveBrowserSession())) {
+    clearPendingIssueSync(key, revision);
+    return;
+  }
 
   const response = await fetch(accountLedgerEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(getLedgerPatchForKey(key))
+    body: JSON.stringify(patch)
   }).catch(() => null);
 
   if (!response?.ok) return;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  if (data?.ledger) writeLocalLedger(data.ledger);
+  if (!data?.ledger || latestLedgerRevisionByKey.get(key) !== revision) return;
+  writeServerLedgerValue(key, data.ledger);
 }
 
 async function hydrateSavedLedgerFromAccount() {
   if (typeof window === "undefined") return;
+  if (ledgerLocalRevision > 0) return;
+  const hydrationRevision = ledgerLocalRevision;
   if (!(await hasActiveBrowserSession())) return;
+  if (ledgerLocalRevision !== hydrationRevision) return;
   if (accountHydrationPromise) return accountHydrationPromise;
 
-  accountHydrationPromise = hydrateSavedLedgerFromApi().finally(() => {
+  accountHydrationPromise = hydrateSavedLedgerFromApi(hydrationRevision).finally(() => {
     accountHydrationPromise = null;
   });
   return accountHydrationPromise;
 }
 
-async function hydrateSavedLedgerFromApi() {
+async function hydrateSavedLedgerFromApi(hydrationRevision: number) {
   const response = await fetch(accountLedgerEndpoint, {
     cache: "no-store"
   }).catch(() => null);
@@ -205,6 +246,7 @@ async function hydrateSavedLedgerFromApi() {
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
   if (!data?.ledger) return;
+  if (ledgerLocalRevision !== hydrationRevision) return;
 
   writeLocalLedger(data.ledger);
 }
@@ -343,6 +385,7 @@ export function PolicyInterestsEditor({
   interests: string[];
 }) {
   const [selected, setSelected] = useState<string[]>(() => uniqueStrings(initialSelectedInterests ?? []));
+  const selectedRef = useRef(selected);
   const [editing, setEditing] = useState(false);
   const seededInitialInterestsRef = useRef<string | null>(null);
 
@@ -356,12 +399,17 @@ export function PolicyInterestsEditor({
     }
 
     function refreshInterests() {
-      setSelected(readCurrentInterests());
+      const next = readCurrentInterests();
+      selectedRef.current = next;
+      setSelected(next);
     }
 
     if (seededInitialKey && seededInitialInterestsRef.current !== seededInitialKey) {
       seededInitialInterestsRef.current = seededInitialKey;
+      const revision = ++ledgerLocalRevision;
+      latestLedgerRevisionByKey.set(interestsKey, revision);
       window.localStorage.setItem(interestsKey, JSON.stringify(seededInitialInterests));
+      selectedRef.current = seededInitialInterests;
       setSelected(seededInitialInterests);
     } else {
       async function hydrateInterestsBeforeRefresh() {
@@ -384,13 +432,16 @@ export function PolicyInterestsEditor({
   function toggleInterest(interest: string) {
     if (!editing && !compact) return;
 
-    const next = selected.includes(interest) ? selected.filter((item) => item !== interest) : [...selected, interest];
+    const current = selectedRef.current;
+    const next = current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest];
+    selectedRef.current = next;
     setSelected(next);
     writeJson(interestsKey, next);
   }
 
   function resetInterests() {
     const next: string[] = [];
+    selectedRef.current = next;
     setSelected(next);
     writeJson(interestsKey, next);
   }
@@ -403,7 +454,7 @@ export function PolicyInterestsEditor({
             <div className={premiumEyebrowClass}>Alert topics</div>
             <h2 className={`${premiumCardTitleClass} mt-2`}>Topics you follow</h2>
             <p className={premiumCardDescriptionClass}>
-              {editing ? "Choose topics for alerts and your weekly brief." : "These topics shape your alerts and weekly brief."}
+              {editing ? "Choose topics for alerts and your daily brief." : "These topics shape your alerts and daily brief."}
             </p>
           </div>
           <button
@@ -432,6 +483,7 @@ export function PolicyInterestsEditor({
                 type="button"
                 onClick={() => toggleInterest(interest)}
                 disabled={disabled}
+                aria-pressed={active}
                 className={`rounded-full border px-3 py-2 text-[13px] font-medium transition disabled:cursor-default ${
                   active
                     ? "border-[#ffb12b]/34 bg-[#ffb12b]/14 text-[#ffcf54]"

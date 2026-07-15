@@ -47,8 +47,13 @@ final class CapitolLedgerStoreKitService: ObservableObject {
     }
 
     func purchase(_ message: CapitolLedgerPurchaseMessage) async -> CapitolLedgerNativePurchaseResult {
-        guard message.plan == .pro, let productId = message.productId, CapitolLedgerProduct.proProductIds.contains(productId) else {
-            return result(action: message.action.rawValue, ok: false, message: "Only Pro is available for in-app purchase right now.")
+        guard
+            let requestedPlan = message.plan,
+            let productId = message.productId,
+            CapitolLedgerProduct.productIds.contains(productId),
+            CapitolLedgerProduct.plan(for: productId) == requestedPlan
+        else {
+            return result(action: message.action.rawValue, ok: false, message: "This App Store product is not available for the selected plan.")
         }
 
         do {
@@ -65,7 +70,7 @@ final class CapitolLedgerStoreKitService: ObservableObject {
                 return result(
                     action: message.action.rawValue,
                     ok: true,
-                    message: "Pro is active.",
+                    message: activePlanName(for: subscription) + " is active.",
                     transaction: transaction,
                     signedTransactionJWS: verification.jwsRepresentation,
                     subscription: subscription
@@ -87,11 +92,11 @@ final class CapitolLedgerStoreKitService: ObservableObject {
             try await AppStore.sync()
             let entitlement = await refreshCurrentEntitlement()
 
-            let restored = currentSubscription.plan == CapitolLedgerPlan.pro.rawValue
+            let restored = currentSubscription.plan == CapitolLedgerPlan.pro.rawValue || currentSubscription.plan == CapitolLedgerPlan.team.rawValue
             return result(
                 action: CapitolLedgerPurchaseAction.restore.rawValue,
                 ok: restored,
-                message: restored ? "Pro purchase restored." : "No active Pro purchase was found.",
+                message: restored ? activePlanName(for: currentSubscription) + " purchase restored." : "No active App Store purchase was found.",
                 transaction: entitlement?.transaction,
                 signedTransactionJWS: entitlement?.signedTransactionJWS,
                 subscription: currentSubscription
@@ -103,11 +108,12 @@ final class CapitolLedgerStoreKitService: ObservableObject {
 
     func currentEntitlementResult() async -> CapitolLedgerNativePurchaseResult {
         let entitlement = await refreshCurrentEntitlement()
+        let hasPaidEntitlement = currentSubscription.plan == CapitolLedgerPlan.pro.rawValue || currentSubscription.plan == CapitolLedgerPlan.team.rawValue
 
         return result(
             action: "entitlement",
-            ok: currentSubscription.plan == CapitolLedgerPlan.pro.rawValue,
-            message: currentSubscription.plan == CapitolLedgerPlan.pro.rawValue ? "Pro entitlement found." : "No active Pro entitlement found.",
+            ok: hasPaidEntitlement,
+            message: hasPaidEntitlement ? activePlanName(for: currentSubscription) + " entitlement found." : "No active App Store entitlement found.",
             transaction: entitlement?.transaction,
             signedTransactionJWS: entitlement?.signedTransactionJWS,
             subscription: currentSubscription
@@ -115,7 +121,7 @@ final class CapitolLedgerStoreKitService: ObservableObject {
     }
 
     private func loadProducts() async {
-        let products = (try? await Product.products(for: Array(CapitolLedgerProduct.proProductIds))) ?? []
+        let products = (try? await Product.products(for: Array(CapitolLedgerProduct.productIds))) ?? []
         productsById = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
     }
 
@@ -150,7 +156,7 @@ final class CapitolLedgerStoreKitService: ObservableObject {
 
         for await entitlement in Transaction.currentEntitlements {
             guard let transaction = try? checkVerified(entitlement) else { continue }
-            guard CapitolLedgerProduct.proProductIds.contains(transaction.productID) else { continue }
+            guard CapitolLedgerProduct.productIds.contains(transaction.productID) else { continue }
             guard isActive(transaction) else { continue }
 
             if activeEntitlement == nil || (transaction.expirationDate ?? .distantFuture) > (activeEntitlement?.transaction.expirationDate ?? .distantPast) {
@@ -182,16 +188,17 @@ final class CapitolLedgerStoreKitService: ObservableObject {
 
     private func subscriptionSnapshot(for transaction: Transaction) -> CapitolLedgerSubscriptionSnapshot {
         let cycle = CapitolLedgerProduct.cycle(for: transaction.productID) ?? .monthly
+        let plan = CapitolLedgerProduct.plan(for: transaction.productID) ?? .free
         let active = isActive(transaction)
 
         return CapitolLedgerSubscriptionSnapshot(
             cycle: cycle.rawValue,
-            plan: active ? CapitolLedgerPlan.pro.rawValue : CapitolLedgerPlan.free.rawValue,
+            plan: active ? plan.rawValue : CapitolLedgerPlan.free.rawValue,
             provider: "app-store",
             providerCustomerId: "app-store",
             providerEntitlementId: transaction.productID,
             providerSubscriptionId: String(transaction.originalID),
-            seatCount: nil,
+            seatCount: active ? CapitolLedgerProduct.seatCount(for: transaction.productID) : nil,
             status: active ? "active" : "canceled",
             updatedAt: ISO8601DateFormatter.capitolLedger.string(from: Date())
         )
@@ -229,5 +236,9 @@ final class CapitolLedgerStoreKitService: ObservableObject {
             status: "active",
             updatedAt: ISO8601DateFormatter.capitolLedger.string(from: Date())
         )
+    }
+
+    private func activePlanName(for subscription: CapitolLedgerSubscriptionSnapshot) -> String {
+        return subscription.plan == CapitolLedgerPlan.team.rawValue ? "Team" : "Pro"
     }
 }

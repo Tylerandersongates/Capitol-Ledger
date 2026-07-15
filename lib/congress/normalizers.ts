@@ -10,6 +10,7 @@ import type {
   CongressHouseVoteMemberItem,
   CongressMemberListItem
 } from "./client";
+import { publicBrandName } from "../brand";
 import { currentCongressLabel, federalElectionDateIso } from "../utils";
 import type { Bill, BillAction, BillActionKind, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
 
@@ -369,7 +370,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
     photoUrl: raw.depiction?.imageUrl,
     officialUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
-    description: `${chamber} member from ${state} normalized from Congress.gov for Capitol Ledger CE live data.`
+    description: `${chamber} member from ${state} normalized from Congress.gov for ${publicBrandName} live data.`
   };
 }
 
@@ -401,7 +402,7 @@ export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Me
     active: raw.currentMember ?? Boolean(activeTerm && !activeTerm.endYear),
     bioguideId: raw.bioguideId,
     chamber,
-    description: `${chamber} member from ${state} normalized from Congress.gov member detail for Capitol Ledger CE live data.`,
+    description: `${chamber} member from ${state} normalized from Congress.gov member detail for ${publicBrandName} live data.`,
     district: typeof activeTerm?.district === "number" ? String(activeTerm.district) : typeof raw.district === "number" ? String(raw.district) : undefined,
     firstElectedDate: service.firstElectedDate,
     firstName,
@@ -440,7 +441,7 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
     committeeName: raw.committees?.count ? `${raw.committees.count} committee record${raw.committees.count === 1 ? "" : "s"}` : undefined,
     latestActionText: raw.latestAction?.text ?? "Latest action pending from Congress.gov.",
     latestActionDate,
-    summary: raw.latestAction?.text ?? "Live Congress.gov bill record normalized for Capitol Ledger CE.",
+    summary: raw.latestAction?.text ?? `Live Congress.gov bill record normalized for ${publicBrandName}.`,
     sourceUrl
   };
 }
@@ -640,7 +641,7 @@ export function normalizeCongressHouseMemberVote(
 
   const rawName = raw.name ?? raw.memberName ?? [raw.firstName, raw.lastName].filter(Boolean).join(" ");
   const { displayName, firstName, lastName } = splitMemberName(rawName);
-  const state = normalizeStateCode(raw.state);
+  const state = normalizeStateCode(raw.state ?? raw.voteState);
 
   const member: Member = {
     active: true,
@@ -652,7 +653,7 @@ export function normalizeCongressHouseMemberVote(
     fullName: `Rep. ${displayName}`,
     lastName,
     officialUrl: undefined,
-    party: normalizeParty(raw.party),
+    party: normalizeParty(raw.party ?? raw.voteParty),
     photoUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId, firstName, lastName }),
     state,

@@ -1,7 +1,9 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { fetchBill, fetchBillActions, fetchBillSummaries, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
-import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
+import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { publicBrandName } from "@/lib/brand";
+import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberServiceFallbacks } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
@@ -9,7 +11,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
 import { fetchSenateMemberVotes } from "@/lib/senate-votes";
-import { currentCongressLabel, estimateTermsInOfficeFromCongressLabel, federalElectionDateIso } from "@/lib/utils";
+import { currentCongressLabel, federalElectionDateIso } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
@@ -86,10 +88,11 @@ type DatabaseSourceLinkRow = {
 };
 
 const pendingOfficialSummaryText =
-  "Official CRS summary not yet published by Congress.gov. Capitol Ledger CE will display the official summary first when it becomes available.";
+  `Official CRS summary not yet published by Congress.gov. ${publicBrandName} will display the official summary first when it becomes available.`;
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
 const memberLegislationFetchTimeoutMs = resolveMemberLegislationFetchTimeoutMs();
+const houseVotesFetchTimeoutMs = resolveHouseVotesFetchTimeoutMs();
 const senateVotesFetchTimeoutMs = resolveSenateVotesFetchTimeoutMs();
 const dashboardLiveRecordsCacheMaxAgeMs = 10 * 60 * 1000;
 const memberLegislationCacheMaxAgeMs = 10 * 60 * 1000;
@@ -101,8 +104,46 @@ type DashboardRecords = {
 
 let dashboardLiveRecordsCache: { cachedAt: number; records: DashboardRecords } | null = null;
 let memberLegislationCache = new Map<string, { cachedAt: number; records: Pick<MemberDetailData, "cosponsoredBills" | "sponsoredBills"> }>();
+let memberProfileCache = new Map<string, { cachedAt: number; member: Member }>();
 
 const memberCaucusMemberships: Record<string, MemberCaucusMembership[]> = {
+  D000399: [
+    {
+      caucusName: "House Committee on Ways and Means",
+      role: "Member",
+      sourceLabel: "Ways and Means Democrats 119th Congress roster",
+      sourceUrl: "https://democrats-waysandmeans.house.gov/subcommittees/committee-ways-and-means-119th-congress",
+      verifiedAt: "2026-07-06"
+    },
+    {
+      caucusName: "Ways and Means Subcommittee on Health",
+      role: "Ranking Member",
+      sourceLabel: "Ways and Means Democrats Health Subcommittee roster",
+      sourceUrl: "https://democrats-waysandmeans.house.gov/subcommittees/health-119th-congress",
+      verifiedAt: "2026-07-06"
+    },
+    {
+      caucusName: "Ways and Means Subcommittee on Trade",
+      role: "Member",
+      sourceLabel: "Ways and Means Democrats Trade Subcommittee roster",
+      sourceUrl: "https://democrats-waysandmeans.house.gov/subcommittees/trade-119th-congress",
+      verifiedAt: "2026-07-06"
+    },
+    {
+      caucusName: "Ways and Means Subcommittee on Oversight",
+      role: "Member",
+      sourceLabel: "Ways and Means Democrats Oversight Subcommittee roster",
+      sourceUrl: "https://democrats-waysandmeans.house.gov/subcommittees/oversight-119th-congress",
+      verifiedAt: "2026-07-06"
+    },
+    {
+      caucusName: "House Committee on the Budget",
+      role: "Member",
+      sourceLabel: "House Budget Committee Democrats 119th Congress roster",
+      sourceUrl: "https://democrats-budget.house.gov/about/membership",
+      verifiedAt: "2026-07-06"
+    }
+  ],
   S001150: [
     {
       caucusName: "Senate Committee on the Judiciary",
@@ -382,6 +423,27 @@ const issueSearchAliases = {
   "Public Safety": ["emergency", "first responder", "first responders", "law enforcement", "police", "public safety", "violence"]
 } as const satisfies Record<IssueSignal, readonly string[]>;
 
+const billSearchAliases = {
+  "save america act": ["SAVE Act", "Safeguard American Voter Eligibility Act", "voter eligibility"],
+  "save america": ["SAVE Act", "Safeguard American Voter Eligibility Act", "voter eligibility"]
+} as const satisfies Record<string, readonly string[]>;
+
+const billReferenceTypeMap = {
+  hconres: "HCONRES",
+  hjres: "HJRES",
+  hr: "HR",
+  hres: "HRES",
+  s: "S",
+  sconres: "SCONRES",
+  sjres: "SJRES",
+  sres: "SRES"
+} as const;
+
+type ParsedBillReference = {
+  billNumber: string;
+  billType: (typeof billReferenceTypeMap)[keyof typeof billReferenceTypeMap];
+};
+
 function matchesText(values: Array<string | undefined>, query: string) {
   const normalized = query.toLowerCase();
   return values.some((value) => value?.toLowerCase().includes(normalized));
@@ -407,6 +469,35 @@ function getIssueSearchTerms(query: string) {
   return uniqueSearchTerms([query, ...issueSearchAliases[matchedSignal]]);
 }
 
+function parseBillSearchReference(query: string): ParsedBillReference | null {
+  const normalizedQuery = normalizeSearchTerm(query);
+  const compactQuery = normalizedQuery.replace(/\s+/g, "");
+  const compactMatch = compactQuery.match(/^(hconres|hjres|hres|hr|sconres|sjres|sres|s)(\d+)$/);
+  const spacedMatch = normalizedQuery.match(/\b(h\s*con\s*res|h\s*j\s*res|h\s*res|h\s*r|s\s*con\s*res|s\s*j\s*res|s\s*res|s)\s+(\d+)\b/);
+  const matchedType = compactMatch?.[1] ?? spacedMatch?.[1]?.replace(/\s+/g, "");
+  const billNumber = compactMatch?.[2] ?? spacedMatch?.[2];
+
+  if (!matchedType || !billNumber) return null;
+  const billType = billReferenceTypeMap[matchedType as keyof typeof billReferenceTypeMap];
+  if (!billType) return null;
+
+  return {
+    billNumber,
+    billType
+  };
+}
+
+function getBillSearchTerms(query: string) {
+  const normalizedQuery = normalizeSearchTerm(query);
+  const parsedBillReference = parseBillSearchReference(query);
+  const billNumberTerms = parsedBillReference ? [] : query.match(/\d+/g) ?? [];
+  const aliasTerms = Object.entries(billSearchAliases)
+    .filter(([alias]) => normalizedQuery === alias || normalizedQuery.includes(alias))
+    .flatMap(([, terms]) => terms);
+
+  return uniqueSearchTerms([...getIssueSearchTerms(query), ...billNumberTerms, ...aliasTerms]);
+}
+
 function matchesAnyText(values: Array<string | undefined>, queries: string[]) {
   return queries.some((query) => matchesText(values, query));
 }
@@ -424,16 +515,34 @@ function billSearchValues(bill: Bill) {
   ];
 }
 
-function databaseBillSearchClauses(terms: string[]): Prisma.BillWhereInput[] {
-  return terms.flatMap((term) => [
-    { billNumber: { contains: term, mode: "insensitive" } },
-    { billType: { contains: term, mode: "insensitive" } },
-    { latestActionText: { contains: term, mode: "insensitive" } },
-    { policyArea: { contains: term, mode: "insensitive" } },
-    { shortTitle: { contains: term, mode: "insensitive" } },
-    { summary: { contains: term, mode: "insensitive" } },
-    { title: { contains: term, mode: "insensitive" } }
-  ]);
+function databaseBillSearchClauses(query: string, terms: string[]): Prisma.BillWhereInput[] {
+  const parsedBillReference = parseBillSearchReference(query);
+  const exactReferenceClauses: Prisma.BillWhereInput[] = parsedBillReference
+    ? [
+        {
+          billNumber: parsedBillReference.billNumber,
+          billType: {
+            equals: parsedBillReference.billType,
+            mode: "insensitive"
+          }
+        }
+      ]
+    : [];
+
+  return [
+    ...exactReferenceClauses,
+    ...terms.flatMap(
+      (term): Prisma.BillWhereInput[] => [
+        { billNumber: { contains: term, mode: "insensitive" } },
+        { billType: { contains: term, mode: "insensitive" } },
+        { latestActionText: { contains: term, mode: "insensitive" } },
+        { policyArea: { contains: term, mode: "insensitive" } },
+        { shortTitle: { contains: term, mode: "insensitive" } },
+        { summary: { contains: term, mode: "insensitive" } },
+        { title: { contains: term, mode: "insensitive" } }
+      ]
+    )
+  ];
 }
 
 function stripSummaryMarkup(value: string) {
@@ -559,7 +668,7 @@ function readRawMemberService(rawJson: Prisma.JsonValue | null) {
   } as const;
 }
 
-function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber, fallbackTermLabel?: string) {
+function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber) {
   const chamberTerms = rawTerms.filter((term) => {
     const rawChamber = normalizeRawChamber(term.chamber);
     return !rawChamber || rawChamber === chamber;
@@ -567,7 +676,7 @@ function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber, f
   const workingTerms = chamberTerms.length ? chamberTerms : rawTerms;
   const starts = workingTerms.map((term) => term.startYear).filter((value): value is number => Number.isFinite(value));
 
-  if (!starts.length) return estimateTermsInOfficeFromCongressLabel(fallbackTermLabel, chamber);
+  if (!starts.length) return undefined;
 
   const firstStart = Math.min(...starts);
   const currentYear = new Date().getUTCFullYear();
@@ -622,7 +731,7 @@ function mapDatabaseMember(member: PrismaMember): Member {
   const termLabel = currentCongressLabel();
   const serviceFallback = memberServiceFallbacks[member.bioguideId];
   const rawService = readRawMemberService(member.rawJson ?? null);
-  const termsInOffice = serviceFallback?.termsInOffice ?? rawService.termsInOffice ?? (rawTerms.length ? deriveTermsFromRaw(rawTerms, chamber, termLabel) : estimateTermsInOfficeFromCongressLabel(termLabel, chamber));
+  const termsInOffice = serviceFallback?.termsInOffice ?? rawService.termsInOffice ?? (rawTerms.length ? deriveTermsFromRaw(rawTerms, chamber) : undefined);
   const derivedElectionDates = deriveElectionDatesFromRaw(rawTerms, chamber);
   const firstElectedDate = serviceFallback?.firstElectedDate ?? rawService.firstElectedDate ?? derivedElectionDates.firstElectedDate;
   const nextElectionDate = serviceFallback?.nextElectionDate ?? rawService.nextElectionDate ?? derivedElectionDates.nextElectionDate;
@@ -663,7 +772,7 @@ function mapDatabaseBill(bill: PrismaBill): Bill {
     shortTitle: bill.shortTitle ?? bill.title,
     sourceUrl: bill.sourceUrl ?? "https://www.congress.gov/",
     sponsorBioguideId: bill.sponsorBioguideId ?? undefined,
-    summary: bill.summary ?? "Live Congress.gov bill record imported into Capitol Ledger CE.",
+    summary: bill.summary ?? `Live Congress.gov bill record imported into ${publicBrandName}.`,
     title: bill.title
   };
 }
@@ -802,6 +911,16 @@ function resolveMemberLegislationFetchTimeoutMs() {
   return process.env.NODE_ENV === "production" ? 4_000 : 7_000;
 }
 
+function resolveHouseVotesFetchTimeoutMs() {
+  const configuredTimeout = Number(process.env.CAPITOL_LEDGER_HOUSE_VOTES_FETCH_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.max(1_000, configuredTimeout);
+  }
+
+  return process.env.NODE_ENV === "production" ? 10_000 : 8_000;
+}
+
 function resolveSenateVotesFetchTimeoutMs() {
   const configuredTimeout = Number(process.env.CAPITOL_LEDGER_SENATE_VOTES_FETCH_TIMEOUT_MS);
 
@@ -937,7 +1056,7 @@ function getDemoMemberDetailData(bioguideId: string): MemberDetailData | null {
     caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
     cosponsoredBills: getCosponsoredBills(member.bioguideId),
     member,
-    memberVotes: getMemberVotes(member.bioguideId) as MemberVoteRecord[],
+    memberVotes: selectMemberVoteRecords([], getMemberVotes(member.bioguideId) as MemberVoteRecord[], 20),
     sponsoredBills: getSponsoredBills(member.bioguideId)
   };
 }
@@ -1005,12 +1124,16 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
       caucusMemberships: getMemberCaucusMemberships(memberRow.bioguideId),
       cosponsoredBills: memberRow.cosponsoredBills.map((cosponsor) => mapDatabaseBill(cosponsor.bill)),
       member: mapDatabaseMember(memberRow),
-      memberVotes: memberRow.memberVotes.map((memberVote) => ({
-        memberBioguideId: memberVote.memberBioguideId,
-        position: dbVotePositionMap[memberVote.position],
-        vote: mapDatabaseVote(memberVote.vote),
-        voteId: memberVote.voteId
-      })),
+      memberVotes: selectMemberVoteRecords(
+        [],
+        memberRow.memberVotes.map((memberVote) => ({
+          memberBioguideId: memberVote.memberBioguideId,
+          position: dbVotePositionMap[memberVote.position],
+          vote: mapDatabaseVote(memberVote.vote),
+          voteId: memberVote.voteId
+        })),
+        20
+      ),
       sponsoredBills: memberRow.sponsoredBills.map(mapDatabaseBill)
     };
   } catch {
@@ -1026,6 +1149,61 @@ function getFreshMemberLegislationCache(bioguideId: string) {
     return null;
   }
   return cached.records;
+}
+
+function getFreshMemberProfileCache(bioguideId: string) {
+  const cached = memberProfileCache.get(bioguideId);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > memberLegislationCacheMaxAgeMs) {
+    memberProfileCache.delete(bioguideId);
+    return null;
+  }
+  return cached.member;
+}
+
+async function getLiveMemberProfile(bioguideId: string) {
+  const cached = getFreshMemberProfileCache(bioguideId);
+  if (cached) return cached;
+
+  const response = await fetchMember(bioguideId, {
+    timeoutMs: memberLegislationFetchTimeoutMs
+  }).catch(() => null);
+  const member = response?.member ? normalizeCongressMemberDetail(response.member) : null;
+  if (!member) return null;
+
+  memberProfileCache.set(bioguideId, {
+    cachedAt: Date.now(),
+    member
+  });
+
+  return member;
+}
+
+function mergeMemberLiveProfile(member: Member, liveMember: Member): Member {
+  return {
+    ...member,
+    district: member.district ?? liveMember.district,
+    firstElectedDate: liveMember.firstElectedDate ?? member.firstElectedDate,
+    nextElectionDate: liveMember.nextElectionDate ?? member.nextElectionDate,
+    officialUrl: member.officialUrl ?? liveMember.officialUrl,
+    photoUrl: member.photoUrl ?? liveMember.photoUrl,
+    sourceUrl: member.sourceUrl ?? liveMember.sourceUrl,
+    termsInOffice: liveMember.termsInOffice ?? member.termsInOffice
+  };
+}
+
+async function hydrateMemberDetailWithLiveProfile(detail: MemberDetailData): Promise<MemberDetailData> {
+  const liveMember = await getLiveMemberProfile(detail.member.bioguideId);
+  if (!liveMember) return detail;
+  const member = mergeMemberLiveProfile(detail.member, liveMember);
+
+  return {
+    ...detail,
+    chamberMembers: detail.chamberMembers.map((candidate) =>
+      candidate.bioguideId === member.bioguideId ? mergeMemberLiveProfile(candidate, liveMember) : candidate
+    ),
+    member
+  };
 }
 
 function orderMemberLegislationBills(records: Bill[]) {
@@ -1089,7 +1267,48 @@ async function hydrateMemberDetailWithLiveLegislation(detail: MemberDetailData):
 }
 
 function orderMemberVoteRecords(records: MemberVoteRecord[]) {
-  return [...records].sort((a, b) => Date.parse(b.vote?.voteDate ?? "0") - Date.parse(a.vote?.voteDate ?? "0"));
+  return [...records].sort((a, b) => {
+    const dateDelta = Date.parse(b.vote?.voteDate ?? "0") - Date.parse(a.vote?.voteDate ?? "0");
+    if (dateDelta) return dateDelta;
+    return Number(b.vote?.rollCall ?? 0) - Number(a.vote?.rollCall ?? 0);
+  });
+}
+
+function memberVoteRecordKey(record: MemberVoteRecord) {
+  if (record.vote) {
+    return `${record.vote.congress}:${record.vote.chamber}:${record.vote.rollCall}`;
+  }
+
+  return record.voteId;
+}
+
+function chooseMemberVoteRecord(current: MemberVoteRecord | undefined, candidate: MemberVoteRecord) {
+  if (!current) return candidate;
+  if (!current.vote && candidate.vote) return candidate;
+  return candidate;
+}
+
+function selectMemberVoteRecords(liveRecords: MemberVoteRecord[], existingRecords: MemberVoteRecord[], limit = 20) {
+  const recordsByKey = new Map<string, MemberVoteRecord>();
+
+  [...liveRecords, ...existingRecords].forEach((record) => {
+    const key = memberVoteRecordKey(record);
+    recordsByKey.set(key, chooseMemberVoteRecord(recordsByKey.get(key), record));
+  });
+
+  return orderMemberVoteRecords(Array.from(recordsByKey.values())).slice(0, limit);
+}
+
+async function hydrateMemberDetailWithLiveHouseVotes(detail: MemberDetailData): Promise<MemberDetailData> {
+  if (detail.member.chamber !== "House") return detail;
+
+  const liveVotes = await fetchHouseMemberVotes(detail.member, 12, houseVotesFetchTimeoutMs);
+  if (!liveVotes.length) return detail;
+
+  return {
+    ...detail,
+    memberVotes: selectMemberVoteRecords(liveVotes, detail.memberVotes, 20)
+  };
 }
 
 async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData): Promise<MemberDetailData> {
@@ -1100,7 +1319,7 @@ async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData):
 
   return {
     ...detail,
-    memberVotes: orderMemberVoteRecords(mergeBy(liveVotes, detail.memberVotes, (record) => record.voteId)).slice(0, 20)
+    memberVotes: selectMemberVoteRecords(liveVotes, detail.memberVotes, 20)
   };
 }
 
@@ -1108,8 +1327,10 @@ export async function getMemberDetailWithLiveData(bioguideId: string): Promise<M
   const detail = (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
   if (!detail) return null;
 
-  const detailWithLegislation = await hydrateMemberDetailWithLiveLegislation(detail);
-  return hydrateMemberDetailWithLiveSenateVotes(detailWithLegislation);
+  const detailWithProfile = await hydrateMemberDetailWithLiveProfile(detail);
+  const detailWithLegislation = await hydrateMemberDetailWithLiveLegislation(detailWithProfile);
+  const detailWithHouseVotes = await hydrateMemberDetailWithLiveHouseVotes(detailWithLegislation);
+  return hydrateMemberDetailWithLiveSenateVotes(detailWithHouseVotes);
 }
 
 async function getDatabaseActiveMembers(): Promise<Member[] | null> {
@@ -1277,6 +1498,17 @@ function buildBillActionsForDetail(bill: Bill, billVotes: Vote[], officialAction
   );
 }
 
+async function fetchOfficialBillActionsForBill(bill: Bill) {
+  const actionsResponse = await fetchBillActions(bill.congress, bill.billType, bill.billNumber, {
+    limit: 50,
+    timeoutMs: memberLegislationFetchTimeoutMs
+  }).catch(() => null);
+
+  return (actionsResponse?.actions ?? [])
+    .map((action, index) => normalizeCongressBillAction(action, bill, index))
+    .filter((action): action is BillAction => Boolean(action));
+}
+
 export function getVoteMemberPositions(voteId: string) {
   return memberVotes
     .filter((memberVote) => memberVote.voteId === voteId)
@@ -1320,6 +1552,53 @@ function getDemoBillDetailData(billId: string): BillDetailData | null {
     sourceMatches: getBillSourceMatches(bill.id),
     sponsor: getBillSponsor(bill),
     voteMemberPositionsByVoteId: getDemoVoteMemberPositionsByVoteId(billVotes)
+  };
+}
+
+async function fetchLiveBillSponsor(bill: Bill, fallback?: Member) {
+  if (fallback || !bill.sponsorBioguideId) return fallback;
+
+  const response = await fetchMember(bill.sponsorBioguideId, {
+    timeoutMs: memberLegislationFetchTimeoutMs
+  }).catch(() => null);
+
+  return response?.member ? (normalizeCongressMemberDetail(response.member) ?? fallback) : fallback;
+}
+
+async function fetchLiveBillCosponsors(bill: Bill, fallback: Member[]) {
+  if (fallback.length) return fallback;
+
+  const response = await fetchBillCosponsors(bill.congress, bill.billType, bill.billNumber, {
+    limit: 100,
+    timeoutMs: memberLegislationFetchTimeoutMs
+  }).catch(() => null);
+  const liveCosponsors = (response?.cosponsors ?? [])
+    .map((cosponsor) => normalizeCongressBillCosponsor(cosponsor, bill))
+    .filter((cosponsor): cosponsor is NonNullable<typeof cosponsor> => Boolean(cosponsor))
+    .filter((cosponsor) => !cosponsor.withdrawnAt)
+    .map((cosponsor) => cosponsor.member);
+
+  return liveCosponsors.length ? liveCosponsors : fallback;
+}
+
+async function fetchLiveBillPeople(
+  bill: Bill,
+  {
+    cosponsors,
+    sponsor
+  }: {
+    cosponsors: Member[];
+    sponsor?: Member;
+  }
+) {
+  const [liveSponsor, liveCosponsors] = await Promise.all([
+    fetchLiveBillSponsor(bill, sponsor),
+    fetchLiveBillCosponsors(bill, cosponsors)
+  ]);
+
+  return {
+    cosponsors: liveCosponsors,
+    sponsor: liveSponsor
   };
 }
 
@@ -1434,9 +1713,17 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
         LIMIT 12
       `
       .catch(() => []);
-    const sponsor = billRow.sponsor ? mapDatabaseMember(billRow.sponsor) : getBillSponsor(bill);
-    const liveCosponsors = billRow.cosponsors.map((cosponsor) => mapDatabaseMember(cosponsor.member));
+    const fallbackSponsor = billRow.sponsor ? mapDatabaseMember(billRow.sponsor) : getBillSponsor(bill);
+    const fallbackCosponsors = billRow.cosponsors.map((cosponsor) => mapDatabaseMember(cosponsor.member));
     const billVideos = getBillVideos(bill.id);
+    const [officialActions, livePeople] = await Promise.all([
+      fetchOfficialBillActionsForBill(bill),
+      fetchLiveBillPeople(bill, {
+        cosponsors: fallbackCosponsors.length ? fallbackCosponsors : getBillCosponsors(bill.id),
+        sponsor: fallbackSponsor
+      })
+    ]);
+    const { cosponsors, sponsor } = livePeople;
     const deterministicSourceMatches = matchBillSources({
       bill,
       sponsor,
@@ -1451,10 +1738,10 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     return {
       bill,
-      billActions: buildBillActionsForDetail(bill, billVotes),
+      billActions: buildBillActionsForDetail(bill, billVotes, officialActions),
       billVideos,
       billVotes,
-      cosponsors: liveCosponsors.length ? liveCosponsors : getBillCosponsors(bill.id),
+      cosponsors,
       sourceMatches,
       sponsor,
       voteMemberPositionsByVoteId: Object.fromEntries(
@@ -1485,23 +1772,23 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
     const bill = response.bill ? normalizeCongressBill(response.bill) : null;
     if (!bill) return null;
 
-    const actionsResponse = await fetchBillActions(bill.congress, bill.billType, bill.billNumber, {
-      limit: 50,
-      timeoutMs: memberLegislationFetchTimeoutMs
-    }).catch(() => null);
-    const officialActions = (actionsResponse?.actions ?? [])
-      .map((action, index) => normalizeCongressBillAction(action, bill, index))
-      .filter((action): action is BillAction => Boolean(action));
     const billVotes = getBillVotes(bill.id);
     const billVideos = getBillVideos(bill.id);
-    const sponsor = getBillSponsor(bill);
+    const [officialActions, livePeople] = await Promise.all([
+      fetchOfficialBillActionsForBill(bill),
+      fetchLiveBillPeople(bill, {
+        cosponsors: getBillCosponsors(bill.id),
+        sponsor: getBillSponsor(bill)
+      })
+    ]);
+    const { cosponsors, sponsor } = livePeople;
 
     return {
       bill,
       billActions: buildBillActionsForDetail(bill, billVotes, officialActions),
       billVideos,
       billVotes,
-      cosponsors: getBillCosponsors(bill.id),
+      cosponsors,
       sourceMatches: matchBillSources({
         bill,
         sponsor,
@@ -1730,7 +2017,7 @@ function normalizeSearchStateFilters(value?: string | string[]) {
 
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
-  const billSearchTerms = q ? getIssueSearchTerms(q) : [];
+  const billSearchTerms = q ? getBillSearchTerms(q) : [];
   const statusFilter = normalizeBillStatusFilter(filters.status);
   const chamber = filters.chamber as Chamber | undefined;
   const party = normalizeSearchPartyFilter(filters.party);
@@ -1781,7 +2068,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
   try {
     const prisma = getPrisma();
     const q = filters.q?.trim();
-    const billSearchTerms = q ? getIssueSearchTerms(q) : [];
+    const billSearchTerms = q ? getBillSearchTerms(q) : [];
     const statusFilter = normalizeBillStatusFilter(filters.status);
     const chamber = filters.chamber && filters.chamber in filterChamberMap ? filterChamberMap[filters.chamber as Chamber] : undefined;
     const party = normalizeSearchPartyFilter(filters.party);
@@ -1819,7 +2106,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
             take: 30,
             where: q
               ? {
-                  OR: databaseBillSearchClauses(billSearchTerms)
+                  OR: databaseBillSearchClauses(q, billSearchTerms)
                 }
               : {}
           })

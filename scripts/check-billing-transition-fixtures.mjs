@@ -95,8 +95,9 @@ assert.ok(
 );
 assert.ok(
   upgradePageSource.includes("RestorePurchasesButton") &&
-    upgradePageSource.includes("Upgrade with Apple") &&
-    upgradePageSource.includes("Team coming later") &&
+    upgradePageSource.includes("Start Pro Trial") &&
+    upgradePageSource.includes("PlanTrialDisclosure") &&
+    upgradePageSource.includes("Start Team Plan") &&
     !upgradePageSource.includes("showStripeSandboxNotice") &&
     !upgradePageSource.includes("STRIPE") &&
     !upgradePageSource.includes("Test checkout") &&

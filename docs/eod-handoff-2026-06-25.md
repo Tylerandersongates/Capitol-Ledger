@@ -1,6 +1,6 @@
 # Capitol Ledger EOD Handoff - June 25, 2026
 
-Generated at EOD on June 25, 2026 for the next continuation.
+Generated as the dated EOD handoff for June 25, 2026.
 
 ## Standing Rules
 - Speak directly. Keep updates concise, useful, and low-fluff.
@@ -14,55 +14,115 @@ Generated at EOD on June 25, 2026 for the next continuation.
 ## Baseline
 - Repo: `/Users/tylergates/Documents/Capitol Ledger`
 - Branch: `main`
-- HEAD at diagnostic start: `ee9617d80a4e1b5a88a7081a672354f930038ddf` (`Move issue topics collapse control below list`)
+- HEAD at diagnostic start: `4e062bbf9033fc3ba502aa733ba3089c8610e2d2` (`Prepare Capitol Ledger CE TestFlight path`)
 - Origin sync at diagnostic start: `0` behind / `0` ahead
-- Worktree at diagnostic start: clean
+- Worktree at diagnostic start: dirty with the rename-ready brand pass, App Store setup packet updates, native display-name centralization, roadmap sequencing docs, and `lib/brand.ts` untracked.
 - Production target: `https://project-qosv1.vercel.app`
-- Latest deployment: not versioned in the browser probe; production smoke was run against Vercel URLs on June 25, 2026.
-- Browser state: in-app browser visible, one tab restored to `https://project-qosv1.vercel.app/bills/live-119-s-4591`
+- Local target used during the session: `http://127.0.0.1:3023`
+- Browser state: in-app browser visible on `http://127.0.0.1:3023/privacy`
 
 ## Completed Today
-- Continued the app language pass through officials, bills, comments/petitions, badges, impact, onboarding, search, and member profile flows.
-- Connected and hardened Senate member legislative data paths, including votes, bill rows, committee details, and live bill links.
-- Simplified the official profile overview so users see the result first and can open methodology only when they want it.
-- Moved bill-linked committee details into bill rows and added scroll frames to dense member bills/votes areas.
-- Expanded member search filters to support multiple states and the full party/affiliation list used by the app.
-- Retuned gamification and civic-action wording around public comments now that live third-party petitions are paused.
-- Ran the EOD diagnostic and refreshed stale guard checks so they match current app behavior.
-- Tightened election badge copy from "more elections" to "more unique elections" so the milestone requirement is clearer.
+- Added a rename-ready public brand helper in `lib/brand.ts`, with current default `Capitol Ledger CE` and future override through `NEXT_PUBLIC_APP_NAME`.
+- Moved launch-facing app/support/privacy/auth/account/reporting/email/purchase copy to the shared brand helper so the final legal name can be changed in one place.
+- Updated `.env.local` public app name to `Capitol Ledger CE` so local QA matches the current legal placeholder.
+- Updated the native iOS shell so `Info.plist` reads `$(APP_DISPLAY_NAME)` and the Xcode project owns the current display-name setting.
+- Reworked the App Store Connect setup packet into a rename-ready template using `FINAL_APP_NAME`, `FINAL_BUNDLE_ID`, and final product-ID placeholders.
+- Updated TestFlight readiness docs/checks so Apple record/product creation is explicitly held until final naming, bundle ID, and product IDs are confirmed.
+- Expanded `pnpm launch-copy:check`, `pnpm testflight:check`, `pnpm ios-native:check`, and `pnpm weekly-brief:in-app-check` to match the rename-ready architecture.
+- Confirmed the current visible public pages render as `Capitol Ledger CE Support` and `Capitol Ledger CE Privacy Policy` in the browser after the public env correction.
+- Captured the post-TestFlight product sequence in roadmap docs: main app TestFlight first, standalone Supreme Court sister app next, state legislation later inside the main app.
+- Discussed naming direction: `CivicIQ` is the stronger format between `Civic IQ` and `CivicIQ`; final legal/trademark check remains pending before applying any name change.
 
 ## Diagnostics
-- Code scan: 236 tracked app/component/lib/script/doc files checked; 29 page routes, 32 API routes, 207 source files, 91 static app hrefs, 0 missing static hrefs.
-- Static stale/debug scan: no route breakage found. Remaining cleanup candidates are mostly script `console.log` output and a few older user-facing words such as "synced" or "not connected" in placeholder/copy paths.
-- Duplicate/helper scan: repeated small UI helpers and class constants exist in premium/member surfaces, but nothing was risky enough to refactor during EOD.
-- Timer/performance scan: found bounded request timeouts, UI feedback timers, autocomplete debounce, and standard `useEffect` usage; no obvious unbounded polling loop.
-- Checks run: targeted guard suite passed, including weekly brief, search filter collapse, search result scroll, policy edge routes/feed, live docket, bill detail summary/action log/law status/timeline/votes, vote position scroll, election copy, billing transition fixtures, video links, YouTube bill statements, and gamification streak.
-- Readiness checks: backend, billing, Congress, auth email delivery, live app reporting readiness, live app report triage, production auth schema, and AI Policy Lens fixtures all passed.
-- Production auth note: `check-production-auth` passed after database access with a warning that `AUTH_COOKIE_SECURE` is not true; set it true for deployed HTTPS production if it is not already configured in Vercel.
-- Live app report snapshot: 36 total reports, 3 active, 33 resolved, 0 blockers, 1 known issue, 2 untriaged; active severity count was 0 high, 2 medium, 1 low.
-- Blocked checks: none. A few diagnostics required narrow escalation because sandboxed runs could not reach the database or create the fixture runner IPC pipe.
-- Cleanup applied: updated five guard scripts for current copy/data behavior and clarified election badge countdown copy.
+- Code scan: 170 app/component/lib/script source files scanned for static routes and links; 31 page routes, 34 API routes, 87 static internal hrefs, 0 missing static route targets.
+- Broader inventory: 265 files under `app`, `components`, `lib`, `scripts`, `docs`, and `Capitol Ledger App`.
+- Brand scan: launch-facing app code now keeps hardcoded `Capitol Ledger CE` limited to the brand/default/native placeholder paths. Remaining `Capitol Ledger` references are mostly docs, old guides, script status output, or intentional historical project naming.
+- Stale/debug scan: remaining `console.log` usage is concentrated in scripts; remaining `beta` identifiers are compatibility/internal report model names; Stripe code remains for legacy/team transition paths but launch checks warn to keep Stripe disabled for App Store v1.
+- Duplicate/helper scan: broad helper/class scan returned 1,795 candidate lines, mostly expected React functions, class constants, and reusable UI helpers. No safe EOD refactor was obvious without broad visual churn.
+- Timer/performance scan: found bounded `setTimeout` use for UI feedback, autocomplete blur/debounce, request timeouts, and retry delays; no obvious unbounded polling loop surfaced in the scan.
+- Live report triage: escalated database run passed with 36 total reports, 36 resolved, 0 active, 0 launch blockers, and 0 untriaged.
+- Production auth: database schema is ready; warning remains that `AUTH_COOKIE_SECURE` is not true and should be true for deployed HTTPS production.
+- Local preview runtime check: failed because the bundled runtime is Node `24.14.0` while the repo guard requires Node 20 or 22, and `node_modules` has 8 duplicate `* 2` entries. Direct `next dev` was used earlier to keep the local browser preview available.
+
+## Verification Run
+- `pnpm launch-copy:check`: passed.
+- `pnpm testflight:check`: passed for local prep mode; warned that App Store env values are still needed before sandbox/TestFlight account-sync QA.
+- `pnpm ios-native:check`: passed.
+- `pnpm weekly-brief:in-app-check`: passed.
+- `pnpm billing:check`: passed for app-only demo mode; warned that App Store env values are needed and Stripe launch config is present.
+- `pnpm reports:triage`: first sandboxed run could not reach Neon; escalated run passed with 0 active reports.
+- `pnpm lint`: passed with no ESLint warnings or errors.
+- `pnpm exec tsc --noEmit --pretty false`: passed.
+- `pnpm build`: passed, generated 63 static pages.
+- `pnpm backend:check`: passed demo-safe mode with expected production-readiness warnings for final provider/env setup.
+- `pnpm congress:check`: passed demo-safe mode; live request check was skipped.
+- `pnpm reports:check`: passed local readiness; `REPORTS_CHECK_DATABASE=true pnpm reports:check` passed after escalation and confirmed feedback table + release-triage column.
+- `pnpm auth-email:check`: passed demo-safe mode with Resend configured.
+- `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check`: failed as expected on 5 Apple-side env values: `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_PRIVATE_KEY`.
+- `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`: failed as expected on the same 5 Apple-side values.
+- `pnpm local-preview:check`: failed on Node 24 and duplicate `node_modules` copy links.
 
 ## QA
-- Local compile: `tsc --noEmit` passed.
-- Lint: `next lint` passed with no warnings or errors.
-- Build: `next build` passed and generated 59 static pages.
-- Production smoke: `/bills/live-119-s-4591`, `/members/S001150`, `/search?type=members&state=CA&state=NY`, `/petitions`, and `/dashboard` rendered without 404/application-error states.
-- Browser QA: no warning or error console entries were returned for the smoked production routes.
-- Search QA: multi-state query preserved both `state=CA` and `state=NY`; party links included Democrat, Republican, Independent, Libertarian, Green, Nonpartisan, and Other.
-- Civic actions QA: comments/petitions page rendered as "Civic actions" with official comment windows and petitions coming soon.
-- Production deployment note: production still showed the older member profile topic text `+5 more topics included` after a cache-busting reload. Local `main` contains the newer show/fewer control from `ee9617d`, so verify the latest Vercel deployment has picked up current `main`.
-- Known issues: remaining wording candidates are low risk and mostly consistency polish, not blockers.
+- Local compile: `pnpm exec tsc --noEmit --pretty false` passed.
+- Lint: `pnpm lint` passed.
+- Build: `pnpm build` passed and generated 63 static pages.
+- Browser QA: earlier verified `/support` rendered `Capitol Ledger CE Support` and `/privacy` rendered `Capitol Ledger CE Privacy Policy` after updating `NEXT_PUBLIC_APP_NAME`.
+- Local preview note: the direct `next dev` process logged successful `/privacy`, `/support`, and account API responses, but repeated demo-account duplicate-key fallback warnings appeared for `demo-citizen`. Those warnings did not block 200 responses.
+- Known issues: strict TestFlight/App Store billing checks remain blocked until final Apple-side naming, bundle ID, product IDs, and App Store Server API credentials are created/configured. Local preview guard remains blocked until Node 20/22 and clean `node_modules` are restored.
 
 ## Current State
-- App checks are green locally.
+- The app is rename-ready but the actual final name change has not been applied yet.
+- Current placeholder remains `Capitol Ledger CE`.
+- The strongest working future-name candidate discussed is `CivicIQ`, pending trademark/domain/App Store checks.
+- Roadmap sequence is documented: finish main-app TestFlight, then start the standalone Supreme Court sister app, then revisit state legislation as a main-app future update likely early next year.
+- All local prep checks are green except the local preview runtime guard. Strict Apple readiness checks correctly fail on missing Apple-side setup.
 - No secrets were added or changed.
-- This EOD bundle includes the handoff document, guard refreshes, and the election copy clarification.
-- In-app browser is visible and back on the live S. 4591 bill detail page.
+- Worktree remains dirty with the rename-ready implementation, roadmap docs, and this refreshed EOD handoff. No commit or push was made during this EOD pass.
+
+## Next Task (Single Safest Step)
+Confirm the final legal app name decision, then update only the centralized naming points:
+
+```bash
+rg -n "NEXT_PUBLIC_APP_NAME|APP_DISPLAY_NAME|defaultPublicBrandName|FINAL_APP_NAME" .env.example .env.local lib/brand.ts ios "Capitol Ledger App"
+```
+
+After the final name is selected, update `NEXT_PUBLIC_APP_NAME`, `lib/brand.ts`, native `APP_DISPLAY_NAME`, and the App Store setup packet. Then rerun:
+
+```bash
+pnpm launch-copy:check
+pnpm testflight:check
+pnpm ios-native:check
+pnpm lint
+pnpm exec tsc --noEmit --pretty false
+```
+
+## Resume Prompt For New Thread
+```text
+Use this handoff as the source of truth and continue execution from "Next Task (Single Safest Step)".
+
+Context:
+- Repo: /Users/tylergates/Documents/Capitol Ledger
+- Branch: main
+- Current dated handoff: docs/eod-handoff-2026-06-25.md
+- Current placeholder app name: Capitol Ledger CE
+- Likely final name candidate: CivicIQ, not yet applied
+- Roadmap: finish main-app TestFlight first; then start standalone Supreme Court sister app; state legislation stays in the main app but is deferred to a later update, likely early next year.
+- Worktree is dirty with rename-ready brand centralization, App Store packet/checklist updates, native APP_DISPLAY_NAME centralization, roadmap sequencing docs, and refreshed EOD handoff.
+- Local prep checks passed: launch-copy, testflight local mode, ios-native, weekly-brief in-app, billing demo mode, report triage, lint, tsc, build, backend demo-safe, congress demo-safe, reports DB check, auth-email demo-safe.
+- Expected blockers: strict TestFlight/billing checks fail until Apple bundle ID/account token namespace/App Store Server API values are configured; local-preview guard fails on Node 24 and duplicate node_modules copy links.
+
+Constraints:
+- Do not repeat completed work.
+- Keep TestFlight/App Store upload as the north star.
+- Do not pull Supreme Court or state-legislation expansion into the current TestFlight scope.
+- Confirm assumptions only if there is hidden risk.
+- Start by running:
+  rg -n "NEXT_PUBLIC_APP_NAME|APP_DISPLAY_NAME|defaultPublicBrandName|FINAL_APP_NAME" .env.example .env.local lib/brand.ts ios "Capitol Ledger App"
+```
 
 ## Next Best Steps
-1. Confirm Vercel has deployed current `main`; specifically re-check `/members/S001150` for the issue-topic show/fewer control replacing `+5 more topics included`.
-2. Decide whether to soften the remaining older "synced" / "not connected" wording in placeholders and data descriptions.
-3. Triage the 3 active live app reports, especially the 2 untriaged reports, while keeping 0 blockers as the bar.
+1. Decide and legally clear the final app name before creating App Store Connect records or subscription products.
+2. Apply the final name through the centralized brand/env/native/App Store packet points only.
+3. Restore a supported local preview runtime later: Node 20/22 and clean `node_modules` without duplicate `* 2` entries.
 4. Set or verify `AUTH_COOKIE_SECURE=true` for deployed HTTPS production.
-5. Continue the tone pass on any deeper flows not yet reviewed, especially modals, empty states, and error states.
+5. After final Apple setup exists, rerun `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.

@@ -96,17 +96,17 @@ export function MobileGlassScrollFrame({
         };
 
   return (
-    <div className={`${frameBaseClass} ${frameClassName}`}>
+    <div className={`${frameBaseClass} mobile-glass-scroll-frame mobile-glass-scroll-frame--${axis} ${frameClassName}`}>
       <div
         ref={scrollRef}
-        className={`${resolvedHeightClassName} ${scrollPanelBaseClass} ${className}`}
+        className={`${resolvedHeightClassName} ${scrollPanelBaseClass} mobile-glass-scroll-panel mobile-glass-scroll-panel--${axis} ${className}`}
         aria-label={ariaLabel}
         role={ariaLabel ? "region" : undefined}
       >
         {children}
       </div>
       <div className={glassOverlayClass} aria-hidden="true" />
-      <div className={railClass} aria-hidden="true">
+      <div className={`${railClass} mobile-glass-scroll-rail mobile-glass-scroll-rail--${axis}`} aria-hidden="true">
         <span
           className={`${thumbClass} ${axis === "vertical" ? "w-full" : "h-full"}`}
           style={thumbStyle}

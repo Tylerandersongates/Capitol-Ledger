@@ -9,6 +9,7 @@ import {
   Home,
   ListChecks,
   LockKeyhole,
+  Newspaper,
   Search,
   Settings
 } from "lucide-react";
@@ -48,37 +49,32 @@ export default async function WeeklyBriefPage() {
         </Link>
         <div className="text-right">
           <div className="text-[14px] uppercase tracking-wide text-white/48">{brief.cadence}</div>
-          <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Weekly Brief</h1>
+          <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Daily Brief</h1>
         </div>
       </header>
 
       <main className="mt-7 space-y-4 pb-8">
         <MobileCard variant="dashboard" className="px-5 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[#ffb12b]">
-                <CalendarClock className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                <span className="text-[13px] font-medium uppercase tracking-wide">In-App Brief</span>
-              </div>
-              <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.title}</h2>
-              <p className="mt-3 text-[15px] leading-snug text-white/58">{brief.delivery.note}</p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[#ffb12b]">
+              <CalendarClock className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+              <span className="text-[13px] font-medium uppercase tracking-wide">In-app brief</span>
             </div>
-            <span className="rounded-full bg-[#43ed74]/12 px-3 py-1.5 text-[13px] font-medium text-[#43ed74]">
-              Live in app
-            </span>
+            <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.title}</h2>
+            <p className="mt-3 text-[15px] leading-snug text-white/58">{brief.delivery.note}</p>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3 text-[13px]">
             <BriefMeta label="District" value={brief.district.code} />
-            <BriefMeta label="Plan" value={brief.plan.label} />
-            <BriefMeta label="Mode" value={brief.delivery.channel} />
             <BriefMeta label="Updated" value={formatBriefGeneratedAt(brief.generatedAt)} />
           </div>
         </MobileCard>
 
         <WrittenSummaryCard brief={brief} />
 
+        <DailySourceDigestCard brief={brief} />
+
         <MobileCard variant="dashboard" className="px-5 py-5">
-          <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">This Week&apos;s Civic Lens</div>
+          <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Today&apos;s civic lens</div>
           <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.lens.headline}</h2>
           <p className="mt-3 text-[16px] leading-snug text-white/62">{brief.lens.body}</p>
           <div className="mt-5 space-y-3">
@@ -99,7 +95,7 @@ export default async function WeeklyBriefPage() {
 
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-[21px] font-medium leading-none text-white">Priority Updates</h2>
+            <h2 className="text-[21px] font-medium leading-none text-white">Priority updates</h2>
             <span className="rounded-full bg-white/8 px-3 py-1.5 text-[13px] text-white/52">{brief.priorityUpdates.length} items</span>
           </div>
           <div className="mt-5 divide-y divide-white/8">
@@ -122,7 +118,7 @@ export default async function WeeklyBriefPage() {
         </MobileCard>
 
         <MobileCard variant="dashboard" className="px-5 py-5">
-          <h2 className="text-[21px] font-medium leading-none text-white">Watchlist Focus</h2>
+          <h2 className="text-[21px] font-medium leading-none text-white">Watchlist focus</h2>
           <div className="mt-5 space-y-4">
             {brief.watchlist.bills.map((bill) => (
               <Link key={bill.id} href={bill.href} className="block rounded-2xl border border-white/8 bg-white/5 p-4">
@@ -142,7 +138,7 @@ export default async function WeeklyBriefPage() {
           </div>
           {brief.watchlist.officials.length ? (
             <div className="mt-5 border-t border-white/8 pt-4">
-              <div className="text-[12px] font-medium uppercase tracking-wide text-white/38">Following Officials</div>
+              <div className="text-[12px] font-medium uppercase tracking-wide text-white/38">Following officials</div>
               <div className="mt-3 space-y-2">
                 {brief.watchlist.officials.map((official) => (
                   <Link key={official.id} href={official.href} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2.5">
@@ -158,7 +154,7 @@ export default async function WeeklyBriefPage() {
         <MobileCard variant="dashboard" className="px-5 py-5">
           <div className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-            <h2 className="text-[21px] font-medium leading-none text-white">Action Queue</h2>
+            <h2 className="text-[21px] font-medium leading-none text-white">Action queue</h2>
           </div>
           <div className="mt-5 space-y-3">
             {brief.actionItems.map((action) => (
@@ -198,7 +194,7 @@ function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
         </Link>
         <div className="text-right">
           <div className="text-[14px] uppercase tracking-wide text-white/48">{planLabel}</div>
-          <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Weekly Brief</h1>
+          <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Daily Brief</h1>
         </div>
       </header>
 
@@ -210,9 +206,9 @@ function LockedWeeklyBriefPage({ planLabel }: { planLabel: string }) {
                 <LockKeyhole className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
                 <span className="text-[13px] font-medium uppercase tracking-wide">Pro Brief</span>
               </div>
-              <h2 className="mt-3 text-[25px] font-medium leading-tight text-white">Weekly Brief unlocks with Pro</h2>
+              <h2 className="mt-3 text-[25px] font-medium leading-tight text-white">Daily Brief is a Pro feature</h2>
               <p className="mt-3 text-[16px] leading-snug text-white/62">
-                Free accounts keep the dashboard, saved ledger, and civic alerts. Upgrade to Pro for district summaries, saved watchlist movement, and weekly action queues.
+                Free accounts keep the dashboard, saved ledger, and civic alerts. Upgrade to Pro for daily district context, saved watchlist movement, and focused next steps.
               </p>
             </div>
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
@@ -256,8 +252,11 @@ function BriefMeta({ label, value }: { label: string; value: string }) {
 function WrittenSummaryCard({ brief }: { brief: WeeklyBriefSnapshot }) {
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
-      <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Written Summary</div>
+      <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">Written summary</div>
       <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">{brief.writtenSummary.headline}</h2>
+      <p className="mt-3 rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-2 text-[12px] leading-snug text-white/48">
+        {brief.writtenSummary.sourceNote}
+      </p>
       <div className="mt-4 space-y-3">
         {brief.writtenSummary.paragraphs.map((paragraph) => (
           <p key={paragraph} className="text-[15px] leading-snug text-white/62">
@@ -273,6 +272,75 @@ function WrittenSummaryCard({ brief }: { brief: WeeklyBriefSnapshot }) {
   );
 }
 
+function DailySourceDigestCard({ brief }: { brief: WeeklyBriefSnapshot }) {
+  return (
+    <MobileCard variant="dashboard" className="px-5 py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[#ffb12b]">
+            <Newspaper className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            <span className="text-[13px] font-medium uppercase tracking-wide">{brief.sourceDigest.title}</span>
+          </div>
+          <h2 className="mt-3 text-[23px] font-medium leading-tight text-white">Official updates and story signals</h2>
+          <p className="mt-3 text-[15px] leading-snug text-white/58">{brief.sourceDigest.summary}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#ffb12b]/12 px-3 py-1.5 text-[13px] font-medium text-[#ffb12b]">
+          {brief.metrics.majorStoryMatches} story signal{brief.metrics.majorStoryMatches === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="mt-5 divide-y divide-white/8">
+        {brief.sourceDigest.items.map((item) => (
+          <div key={item.id} className="py-4 first:pt-0 last:pb-0">
+            <div className="flex items-center justify-between gap-3">
+              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.label === "Official update" ? "bg-[#43ed74]/12 text-[#43ed74]" : "bg-[#ffb12b]/12 text-[#ffb12b]"}`}>
+                {item.label}
+              </span>
+              <span className="truncate text-[12px] text-white/42">{item.sourceName}</span>
+            </div>
+            <BriefSourceItemLink item={item} />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {(item.issueMatches.length ? item.issueMatches : brief.watchlist.interests.slice(0, 2)).map((issue) => (
+                <span key={`${item.id}-${issue}`} className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium text-white/50">
+                  {issue}
+                </span>
+              ))}
+              {item.sourceUrl ? (
+                <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="rounded-full border border-[#ffb12b]/20 bg-[#ffb12b]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ffb12b]">
+                  Source
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </MobileCard>
+  );
+}
+
+function BriefSourceItemLink({ item }: { item: WeeklyBriefSnapshot["sourceDigest"]["items"][number] }) {
+  const content = (
+    <>
+      <span className="block text-[16px] font-medium leading-snug text-white">{item.title}</span>
+      <span className="mt-1 block text-[13px] leading-snug text-white/54">{item.body}</span>
+    </>
+  );
+
+  if (item.href.startsWith("http://") || item.href.startsWith("https://")) {
+    return (
+      <a href={item.href} target="_blank" rel="noreferrer" className="mt-3 block">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={item.href} className="mt-3 block">
+      {content}
+    </Link>
+  );
+}
+
 function BriefSignalCard({ brief }: { brief: WeeklyBriefSnapshot }) {
   const signals = [
     {
@@ -284,8 +352,12 @@ function BriefSignalCard({ brief }: { brief: WeeklyBriefSnapshot }) {
       value: `${brief.metrics.savedRecords} saved record${brief.metrics.savedRecords === 1 ? "" : "s"}`
     },
     {
-      label: "Issue interests",
-      value: `${brief.metrics.policyInterests} tracked topic${brief.metrics.policyInterests === 1 ? "" : "s"}`
+      label: "Followed issues",
+      value: `${brief.metrics.policyInterests} issue${brief.metrics.policyInterests === 1 ? "" : "s"}`
+    },
+    {
+      label: "Story signals",
+      value: `${brief.metrics.majorStoryMatches} matched item${brief.metrics.majorStoryMatches === 1 ? "" : "s"}`
     },
     {
       label: "Unread alerts",
@@ -296,7 +368,7 @@ function BriefSignalCard({ brief }: { brief: WeeklyBriefSnapshot }) {
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[21px] font-medium leading-none text-white">Built From</h2>
+        <h2 className="text-[21px] font-medium leading-none text-white">Brief inputs</h2>
         <span className={`rounded-full px-3 py-1.5 text-[12px] font-medium ${brief.delivery.enabled ? "bg-[#43ed74]/12 text-[#43ed74]" : "bg-white/8 text-white/52"}`}>
           {brief.delivery.enabled ? "Brief alerts on" : "Alerts paused"}
         </span>
@@ -319,7 +391,7 @@ function BriefHistoryCard({ records }: { records: WeeklyBriefDeliveryRecord[] })
   return (
     <MobileCard variant="dashboard" className="px-5 py-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[21px] font-medium leading-none text-white">Recent Briefs</h2>
+        <h2 className="text-[21px] font-medium leading-none text-white">Recent briefs</h2>
         <span className="rounded-full bg-white/8 px-3 py-1.5 text-[12px] font-medium text-white/52">
           {visibleRecords.length ? `${visibleRecords.length} saved` : "Live only"}
         </span>

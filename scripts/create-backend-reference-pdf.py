@@ -17,7 +17,8 @@ from reportlab.platypus import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "Capitol Ledger App" / "Capitol Ledger Backend Setup Recommendations.pdf"
+APP_DOCS_DIR = ROOT / ("Capitol" + " Ledger App")
+OUT = APP_DOCS_DIR / "CapitolWonk CE Backend Setup Recommendations.pdf"
 
 
 def p(text, style):
@@ -63,8 +64,8 @@ def main():
         leftMargin=0.62 * inch,
         topMargin=0.55 * inch,
         bottomMargin=0.52 * inch,
-        title="Capitol Ledger CE Backend Setup Recommendations",
-        author="Capitol Ledger CE",
+        title="CapitolWonk CE Backend Setup Recommendations",
+        author="CapitolWonk CE",
     )
 
     base = getSampleStyleSheet()
@@ -150,10 +151,10 @@ def main():
     }
 
     story = []
-    story.append(p("Capitol Ledger CE Backend Setup Recommendations", styles["Title"]))
+    story.append(p("CapitolWonk CE Backend Setup Recommendations", styles["Title"]))
     story.append(
         p(
-            "Reference guide for outside services needed to move Capitol Ledger CE from demo mode toward production. Updated May 22, 2026.",
+            "Reference guide for outside services needed to move CapitolWonk CE from demo mode toward production. Updated May 22, 2026.",
             styles["Subtitle"],
         )
     )
@@ -184,7 +185,7 @@ def main():
         ["Database alternative", "Supabase Postgres", "Good dashboard and backup tooling if you want a broader backend platform."],
         ["Auth email", "Resend", "Simple developer email API for verification, reset links, and future briefs."],
         ["Email alternative", "Postmark", "Strong transactional reliability if deliverability becomes the top priority."],
-        ["Subscriptions", "Stripe", "Already matches Capitol Ledger CE checkout and webhook architecture."],
+        ["Subscriptions", "Stripe", "Already matches CapitolWonk CE checkout and webhook architecture."],
         ["Weekly Brief schedule", "Vercel Cron", "Simplest if hosting the app on Vercel."],
         ["Rate limiting", "Upstash Redis", "Good fit for auth, password reset, checkout, AI, and public API abuse protection."],
         ["AI analysis", "OpenAI API", "Best fit for bill summaries, policy lens, and plain-language pros/cons."],

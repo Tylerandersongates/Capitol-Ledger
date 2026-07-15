@@ -41,7 +41,51 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
       "article iii"
     ]) ||
     (matchesAny(text, ["constitution", "constitutional amendment"]) &&
-      matchesAny(text, ["supreme court", "justices", "judiciary"]));
+      matchesAny(text, ["supreme court", "justices"]));
+  const isForeignMilitarySaleBill = matchesAny(text, [
+    "foreign military sale",
+    "foreign military sales",
+    "defense article",
+    "defense articles",
+    "defense service",
+    "defense services",
+    "arms export",
+    "arms exports",
+    "arms sale",
+    "arms sales",
+    "military sale to",
+    "proposed foreign military sale",
+    "congressional disapproval"
+  ]);
+  const isCongressContinuityBill = matchesAny(text, [
+    "continuity of congress",
+    "vacancies in the house of representatives",
+    "temporarily fill vacancies",
+    "temporary fill vacancies"
+  ]);
+  const isCommemorativeDesignationBill = matchesAny(text, [
+    "designate the facility",
+    "post office building",
+    "post office",
+    "congressional gold medal",
+    "honoring the life",
+    "honoring the legacy",
+    "recognizing the anniversary",
+    "commemorative"
+  ]);
+  const isElectionAdministrationBill = matchesAny(text, [
+    "voter",
+    "voters",
+    "voter registration",
+    "federal voter registration",
+    "proof of citizenship",
+    "election observer",
+    "election observers",
+    "congressional election observers",
+    "primary elections",
+    "help america vote act",
+    "election administration"
+  ]);
 
   if (matchesAny(text, ["public waters", "waterway", "waterways", "fishing restriction", "fishing restrictions", "public access", "outdoor recreation", "recreation", "outdoor recreational access", "recreational access", "recreation access", "geospatial data"])) {
     return {
@@ -107,6 +151,86 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
     };
   }
 
+  if (isForeignMilitarySaleBill) {
+    return {
+      context: `${billName} is about Congress reviewing a proposed foreign military sale. For most households, the direct effect would be indirect: national-security policy, diplomatic relationships, defense-industry work, and how much oversight lawmakers apply before weapons or services move abroad. ${statusLine}`,
+      pros: [
+        "Supporters may see stronger congressional oversight before sensitive defense equipment or services are transferred overseas.",
+        "A public disapproval process can force clearer debate about whether a sale fits U.S. security interests, alliances, and human-rights concerns.",
+        "If lawmakers stop or reshape a risky sale, communities may avoid some downstream costs tied to escalation, instability, or future military commitments."
+      ],
+      cons: [
+        "Blocking or delaying a sale can strain diplomatic relationships or security cooperation with the affected country.",
+        "Defense workers, contractors, and local economies tied to approved exports could feel uncertainty if sales are paused or canceled.",
+        "A disapproval resolution may signal concern without resolving the broader foreign-policy tradeoffs that led to the sale request."
+      ]
+    };
+  }
+
+  if (isCongressContinuityBill) {
+    return {
+      context: `${billName} is about keeping representation and House operations functioning if seats become vacant. The effect for most people would be indirect but civic: whether constituents keep a voice in Congress during disruptions, emergencies, or unusual vacancy periods. ${statusLine}`,
+      pros: [
+        "Communities could avoid long gaps without representation if the proposal creates a clear temporary process for filling House vacancies.",
+        "Continuity rules can help Congress keep voting, overseeing agencies, and responding during emergencies instead of waiting for normal replacement timelines.",
+        "A constitutional or procedural framework can make the rules more predictable before a crisis happens."
+      ],
+      cons: [
+        "Temporary appointments or replacement rules can raise accountability concerns if voters have less direct control over who speaks for them.",
+        "Changing House vacancy rules can create partisan or local disputes if the process feels tilted toward one side.",
+        "The proposal may not affect daily life unless a major disruption or vacancy actually occurs in a district."
+      ]
+    };
+  }
+
+  if (isVeteransOrMilitaryBill && matchesAny(text, ["payment", "benefit", "benefits", "compensation", "pension", "readjustment act", "servicemen's readjustment act"])) {
+    return {
+      context: `${billName} could show up as a targeted service benefit: eligible veterans or merchant mariners may need to prove qualifying service, apply through the Department of Veterans Affairs, and track whether a one-time payment or benefit reaches them. ${statusLine}`,
+      pros: [
+        "Eligible WWII merchant mariners or other covered service members could receive recognition through a direct federal benefit instead of only symbolic honors.",
+        "Clearer eligibility rules can help families understand what service records, licensing history, or prior-benefit history they need before applying.",
+        "Putting the process through VA can give applicants a familiar federal channel for questions, records, and payment status."
+      ],
+      cons: [
+        "People with missing records, unclear service history, or prior benefits may be excluded even if they feel the service was comparable.",
+        "Older applicants, or families helping them with records, may miss the benefit if outreach, paperwork, or documentation requirements are hard to navigate.",
+        "A one-time payment can recognize past service but may not solve ongoing health, caregiving, or financial needs."
+      ]
+    };
+  }
+
+  if (isCommemorativeDesignationBill) {
+    return {
+      context: `${billName} is mostly about recognition, naming, or commemoration rather than changing household benefits or legal rights. Its practical effect is usually local and symbolic unless the bill also includes funding, program rules, or agency duties. ${statusLine}`,
+      pros: [
+        "Families, veterans, local communities, or civic groups may see public recognition of service, history, or local identity.",
+        "Naming or commemorative bills can preserve a public record and give communities a visible way to honor people or events.",
+        "Because these bills usually have narrow scope, they can move without creating broad new compliance burdens for households."
+      ],
+      cons: [
+        "Symbolic recognition may not address material needs such as services, benefits, infrastructure, or local funding.",
+        "Communities can disagree over who is honored, what history is emphasized, or whether Congress should prioritize symbolic measures.",
+        "If the bill requires signage, ceremonies, or agency work, small costs can still fall on public budgets."
+      ]
+    };
+  }
+
+  if (isElectionAdministrationBill) {
+    return {
+      context: `${billName} could affect people through voter registration rules, election administration, documentation requirements, observer access, or how states verify eligibility. ${statusLine}`,
+      pros: [
+        "Supporters may see clearer election rules and more confidence that voter rolls and procedures are being checked consistently.",
+        "Election offices could get more explicit standards for documentation, observers, or eligibility review if the bill is implemented clearly.",
+        "A public debate over the rules can help voters see what lawmakers want to change before the next election cycle."
+      ],
+      cons: [
+        "Documentation or process changes can create delays or barriers for eligible voters if records are hard to find, names have changed, or local offices are understaffed.",
+        "New election rules can be applied unevenly across states or counties if guidance, funding, and training are not strong.",
+        "Disputes over voting rules can reduce trust if people see the changes as partisan rather than administrative."
+      ]
+    };
+  }
+
   if (matchesAny(text, ["immigration", "immigrant", "immigrants", "alien", "aliens", "non-u.s. national", "non-u.s. nationals", "lawfully admitted", "permanent resident", "permanent residents", "asylum", "refugee", "deportation"])) {
     return {
       context: `${billName} could affect people through immigration status rules, eligibility for public programs, local government funding, housing or work stability, and how agencies verify who qualifies. ${statusLine}`,
@@ -135,22 +259,6 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
         "Costs may be passed along through prices, rents, hiring decisions, mortgage terms, or reduced local services if the bill is not funded carefully.",
         "People most affected may still miss out if eligibility rules are complicated or enforcement is weak.",
         "A bill can sound protective but still leave gaps for part-time workers, contractors, renters, borrowers, or people between systems."
-      ]
-    };
-  }
-
-  if (isVeteransOrMilitaryBill && matchesAny(text, ["payment", "benefit", "benefits", "compensation", "pension", "readjustment act", "servicemen's readjustment act"])) {
-    return {
-      context: `${billName} could show up as a targeted service benefit: eligible veterans or merchant mariners may need to prove qualifying service, apply through the Department of Veterans Affairs, and track whether a one-time payment or benefit reaches them. ${statusLine}`,
-      pros: [
-        "Eligible WWII merchant mariners or other covered service members could receive recognition through a direct federal benefit instead of only symbolic honors.",
-        "Clearer eligibility rules can help families understand what service records, licensing history, or prior-benefit history they need before applying.",
-        "Putting the process through VA can give applicants a familiar federal channel for questions, records, and payment status."
-      ],
-      cons: [
-        "People with missing records, unclear service history, or prior benefits may be excluded even if they feel the service was comparable.",
-        "Older applicants, or families helping them with records, may miss the benefit if outreach, paperwork, or documentation requirements are hard to navigate.",
-        "A one-time payment can recognize past service but may not solve ongoing health, caregiving, or financial needs."
       ]
     };
   }
@@ -300,16 +408,16 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
   }
 
   return {
-    context: `${billName} matters if it touches your work, school, bills, health, safety, rights, or local services. ${statusLine}`,
+    context: `${billName} has a limited official record so far, so the safest plain-language read is procedural: watch who changes the text, whether it gets a hearing or vote, and whether funding or agency rules are added later. ${statusLine}`,
     pros: [
-      "The upside is clearer rules and a public record you can use to judge whether elected officials delivered.",
-      "If the bill targets a problem your household already feels, it could bring attention, funding, or coordination to that issue.",
-      "Better reporting can help you compare what lawmakers say with what the program actually does."
+      "The near-term upside is public notice: you can track sponsors, committee action, amendments, and votes before anything changes in daily life.",
+      "If the bill later adds clear duties, funding, or eligibility rules, it may become easier to understand who is supposed to benefit.",
+      "A cautious early read can help you follow the issue without treating an introduced or referred bill as a finished policy."
     ],
     cons: [
-      "The benefit may miss you if eligibility, geography, timing, or agency rules do not line up with your real life.",
-      "New programs can create costs that show up later through taxes, fees, paperwork, or stretched public budgets.",
-      "The final impact may change as amendments, funding decisions, and agency rules are written."
+      "The bill may never advance, or it may change enough through amendments that today's plain-language read becomes stale.",
+      "Without a detailed summary, it is easy to overstate benefits or harms before Congress has settled the actual mechanics.",
+      "Costs, rights, deadlines, and eligibility may stay unclear until later votes, agency rules, or implementation guidance."
     ]
   };
 }

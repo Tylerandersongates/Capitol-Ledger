@@ -6,7 +6,7 @@ Last updated: June 11, 2026.
 
 ## Goal
 
-Use Round 2 to widen testing only after Capitol Ledger is stable enough that new testers can focus on product value, clarity, and missing features instead of basic setup or broken flows.
+Use Round 2 to widen testing only after CapitolWonk CE is stable enough that new testers can focus on product value, clarity, and missing features instead of basic setup or broken flows.
 
 ## Round 1 Wrap Gate
 

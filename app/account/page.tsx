@@ -7,6 +7,7 @@ import { PartyAffiliationDisplay } from "@/components/party-affiliation-control"
 import { PolicyInterestsEditor, SavedLedgerSummary } from "@/components/saved-ledger-controls";
 import { SubscriptionBadge } from "@/components/subscription-controls";
 import { getAccountLedger } from "@/lib/account-ledger";
+import { publicBrand } from "@/lib/brand";
 import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase } from "@/lib/account-database";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { issueSignals } from "@/lib/issue-signals";
@@ -35,7 +36,7 @@ const premiumHeaderGreenIconClass =
 
 export default async function AccountPage() {
   const session = await requireAccountSession("/account");
-  const profileDisplayName = session?.user.name?.trim() || "Capitol Ledger CE Citizen";
+  const profileDisplayName = session?.user.name?.trim() || publicBrand.citizenLabel;
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
   const [initialLedger, initialProfile, personalSubscription] = await Promise.all([
     readLedgerFromDatabase(accountUserId).catch(() => null),

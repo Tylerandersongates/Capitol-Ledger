@@ -2,6 +2,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { getWeeklyBriefForUser } from "@/lib/weekly-brief";
 import { buildWeeklyBriefDeliveryInput } from "@/lib/weekly-brief-history";
 import { writeWeeklyBriefDeliveryToDatabase } from "@/lib/account-database";
+import { publicBrandName } from "@/lib/brand";
 import { sendEmailWithResend } from "@/lib/resend-email";
 import type { AuthUser } from "@/lib/auth-database";
 import type { WeeklyBriefSnapshot } from "@/lib/weekly-brief";
@@ -50,7 +51,7 @@ export type WeeklyBriefDeliveryRunResult = {
 };
 
 function appName() {
-  return process.env.NEXT_PUBLIC_APP_NAME || "Capitol Ledger CE";
+  return publicBrandName;
 }
 
 function sender() {
@@ -79,10 +80,10 @@ function buildWeeklyBriefText(brief: WeeklyBriefSnapshot) {
     brief.lens.body,
     "",
     "Priority updates:",
-    updates || "- No priority updates this week.",
+    updates || "- No priority updates today.",
     "",
     "Suggested actions:",
-    actions || "- Review your Capitol Ledger CE dashboard."
+    actions || `- Review your ${publicBrandName} dashboard.`
   ].join("\n");
 }
 
@@ -92,7 +93,7 @@ function buildWebhookPayload({ brief, user }: { brief: WeeklyBriefSnapshot; user
     brief,
     from: sender(),
     kind: "weekly_brief",
-    subject: `${appName()} Weekly Civic Brief`,
+    subject: `${appName()} Daily Civic Brief`,
     text: buildWeeklyBriefText(brief),
     to: user.email,
     user: {
@@ -111,7 +112,7 @@ async function deliverWeeklyBrief({ brief, user }: { brief: WeeklyBriefSnapshot;
 
     await sendEmailWithResend({
       from,
-      subject: `${appName()} Weekly Civic Brief`,
+      subject: `${appName()} Daily Civic Brief`,
       text: buildWeeklyBriefText(brief),
       to: user.email
     });
@@ -139,7 +140,7 @@ async function deliverWeeklyBrief({ brief, user }: { brief: WeeklyBriefSnapshot;
   });
 
   if (!response.ok) {
-    throw new Error(`Weekly Brief webhook failed with status ${response.status}.`);
+    throw new Error(`Daily Brief webhook failed with status ${response.status}.`);
   }
 
   return { delivered: true, mode: "webhook" };
@@ -175,7 +176,7 @@ export async function runWeeklyBriefDelivery({
       dryRun,
       eligibleUsers: 0,
       failed: 0,
-      message: "Weekly Brief delivery runner needs DATABASE_URL before scheduled delivery can run.",
+      message: "Daily Brief delivery runner needs DATABASE_URL before scheduled delivery can run.",
       prepared: 0,
       records: []
     };
@@ -221,7 +222,7 @@ export async function runWeeklyBriefDelivery({
         records.push({
           deliveryMode: "webhook",
           email: user.email,
-          error: error instanceof Error ? error.message : "Weekly Brief delivery failed.",
+          error: error instanceof Error ? error.message : "Daily Brief delivery failed.",
           status: "failed",
           summary: brief.lens.headline
         });
@@ -255,7 +256,7 @@ export async function runWeeklyBriefDelivery({
       failed += 1;
       records.push({
         email: user.email,
-        error: error instanceof Error ? error.message : "Weekly Brief delivery failed.",
+        error: error instanceof Error ? error.message : "Daily Brief delivery failed.",
         status: "failed"
       });
     }
@@ -267,7 +268,7 @@ export async function runWeeklyBriefDelivery({
     dryRun,
     eligibleUsers: users.length,
     failed,
-    message: dryRun ? "Weekly Brief delivery dry run completed." : "Weekly Brief delivery run completed.",
+    message: dryRun ? "Daily Brief delivery dry run completed." : "Daily Brief delivery run completed.",
     prepared,
     records
   };

@@ -21,16 +21,18 @@ export function MobileShell({
   statusBarClassName = "flex items-center justify-between px-3 text-[17px] font-semibold"
 }: MobileShellProps) {
   return (
-    <section className="min-h-screen bg-black px-3 py-4 text-white sm:px-6 sm:py-8">
-      <div className="mx-auto w-full max-w-[560px] rounded-[3.35rem] border-[7px] border-neutral-900 bg-black p-2 shadow-[0_0_0_2px_rgba(255,255,255,0.36),0_40px_95px_rgba(0,0,0,0.9)]">
-        <div className="relative overflow-hidden rounded-[2.75rem] border border-white/18 bg-[#031126]">
+    <section className="mobile-shell-root min-h-[100dvh] overflow-x-hidden bg-[#031126] text-white sm:min-h-screen sm:bg-black sm:px-6 sm:py-8">
+      <div className="mx-auto w-full min-w-0 max-w-[560px] bg-black sm:rounded-[3.35rem] sm:border-[7px] sm:border-neutral-900 sm:p-2 sm:shadow-[0_0_0_2px_rgba(255,255,255,0.36),0_40px_95px_rgba(0,0,0,0.9)]">
+        <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#031126] sm:min-h-0 sm:rounded-[2.75rem] sm:border sm:border-white/18">
           <div className={`absolute inset-0 ${backgroundClassName}`} />
           <div className={`pointer-events-none absolute inset-0 ${ambientClassName}`} />
           <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)", backgroundSize: "26px 26px" }} />
-          <div className="absolute left-1/2 top-0 z-20 h-8 w-36 -translate-x-1/2 rounded-b-3xl bg-black" />
+          <div className="absolute left-1/2 top-0 z-20 hidden h-8 w-36 -translate-x-1/2 rounded-b-3xl bg-black sm:block" />
 
-          <div className={`relative z-10 flex ${minHeight} flex-col ${contentClassName}`}>
-            <MobileStatusBar className={statusBarClassName} />
+          <div className={`mobile-shell-content relative z-10 flex ${minHeight} min-w-0 flex-col ${contentClassName}`}>
+            <div className="hidden sm:block">
+              <MobileStatusBar className={statusBarClassName} />
+            </div>
             {children}
           </div>
         </div>

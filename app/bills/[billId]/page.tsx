@@ -38,10 +38,12 @@ import {
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
-import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
+import { resolveAiBillAnalysis } from "@/lib/ai-bill-analysis-agent";
+import type { AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { isBillLawActionText } from "@/lib/bill-status";
 import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
+import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
@@ -156,13 +158,25 @@ function resolveProgressStepIndex(actionText: string, status: string, stepCount:
 
   if (isBillLawActionText(action) || normalizedStatus === "enacted") return stepCount - 1;
   if (action.includes("passed") || action.includes("agreed to") || normalizedStatus === "passed") return Math.max(0, stepCount - 2);
-  if (action.includes("floor") || action.includes("consideration") || action.includes("roll call") || action.includes("vote")) return Math.min(stepCount - 1, 5);
+  if (isFloorActionText(action)) return Math.min(stepCount - 1, 5);
   if (action.includes("calendar") || action.includes("placed on")) return Math.min(stepCount - 1, 4);
   if (action.includes("reported") || action.includes("ordered to be reported") || action.includes("committee report")) return Math.min(stepCount - 1, 3);
   if (action.includes("hearing") || action.includes("markup") || action.includes("committee") || action.includes("subcommittee")) return Math.min(stepCount - 1, 2);
   if (action.includes("referred") || action.includes("received in")) return Math.min(stepCount - 1, 1);
 
   return 0;
+}
+
+function isFloorActionText(action: string) {
+  return (
+    action.includes("floor") ||
+    action.includes("roll call") ||
+    action.includes("vote") ||
+    action.includes("debate") ||
+    action.includes("considered under") ||
+    action.includes("rule provides for consideration") ||
+    action.includes("motion to recommit")
+  );
 }
 
 function progressStepState(index: number, currentIndex: number): ProgressStep["state"] {
@@ -472,6 +486,17 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const activeTab = normalizeTab(searchParams?.tab);
   const billSummary = activeTab === "details" ? await getBillSummary(bill) : null;
+  const canUseAiPolicyLens = isPlanFeatureEnabled(initialSubscription?.plan ?? "free", "aiPolicyLens");
+  const aiPolicyLensAnalysis =
+    billSummary
+      ? await resolveAiBillAnalysis(bill, {
+          billActions,
+          billVotes,
+          enableLive: canUseAiPolicyLens,
+          sourceMatches,
+          summaryText: billSummary.text
+        })
+      : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
@@ -547,7 +572,7 @@ export default async function BillPage({ params, searchParams }: BillPageProps) 
           <>
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
-              <AiPolicyLensCard analysis={buildAiBillAnalysis(bill, billSummary.text)} />
+              {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} /> : null}
             </PlanFeatureGate>
             <PlanFeatureGate feature="sourceMap" initialSubscription={initialSubscription}>
               <SourceMapCard sourceMatches={sourceMatches} />

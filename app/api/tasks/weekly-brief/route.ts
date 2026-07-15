@@ -25,13 +25,13 @@ function guardTaskRequest(request: NextRequest) {
 
   if (!expected) {
     if (process.env.NODE_ENV !== "production") return null;
-    return NextResponse.json({ error: "Weekly Brief task secret is not configured." }, { status: 503 });
+    return NextResponse.json({ error: "Daily Brief task secret is not configured." }, { status: 503 });
   }
 
   const actual = requestTaskSecret(request);
   if (actual && secretsMatch(expected, actual)) return null;
 
-  return NextResponse.json({ error: "Weekly Brief task is not authorized." }, { status: 401 });
+  return NextResponse.json({ error: "Daily Brief task is not authorized." }, { status: 401 });
 }
 
 async function runFromRequest(request: NextRequest) {

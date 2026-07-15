@@ -51,9 +51,9 @@ const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: s
     label: "District alerts"
   },
   {
-    detail: "A weekly recap of what you follow",
+    detail: "A daily recap of what you follow",
     key: "weeklyBrief",
-    label: "Weekly brief"
+    label: "Daily brief"
   }
 ];
 

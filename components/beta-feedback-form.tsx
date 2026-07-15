@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, ClipboardList, MessageSquarePlus } from "lucide-react";
+import { publicBrandName } from "@/lib/brand";
 
 type FeedbackCategory = "bug" | "flow" | "missing" | "data" | "design" | "other";
 type FeedbackSeverity = "low" | "medium" | "high";
@@ -222,7 +223,7 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
           <div>
             <h2 className="text-[22px] font-medium leading-tight">Report a live app issue</h2>
             <p className="mt-2 text-[14px] leading-5 text-white/56">
-              Report anything that breaks, feels confusing, looks off, or would make Capitol Ledger CE more useful.
+              Report anything that breaks, feels confusing, looks off, or would make {publicBrandName} more useful.
             </p>
           </div>
         </div>
@@ -360,7 +361,7 @@ export function BetaFeedbackForm({ initialSource = "" }: { initialSource?: strin
         </div>
 
         <div className="mt-5">
-          <FieldLabel label="Contact email optional" />
+          <FieldLabel label="Contact email (optional)" />
           <input
             autoCapitalize="none"
             autoComplete="email"

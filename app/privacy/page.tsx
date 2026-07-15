@@ -2,37 +2,38 @@ import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, LockKeyhole, Search, Settings, ShieldCheck } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { publicBrand } from "@/lib/brand";
 
 export const metadata = {
-  title: "Capitol Ledger CE Privacy Policy",
-  description: "How Capitol Ledger CE handles account, personalization, report, and subscription data."
+  title: publicBrand.privacyTitle,
+  description: `How ${publicBrand.name} handles account, personalization, report, and subscription data.`
 };
 
 const policySections = [
   {
-    title: "What We Collect",
+    title: "What we collect",
     body:
-      "Capitol Ledger CE uses account details, district setup, policy interests, saved items, alert preferences, and app activity needed for badges, alerts, and saved legislative tracking."
+      `${publicBrand.name} uses account details, district setup, policy interests, saved items, alert preferences, and app activity needed for badges, alerts, and saved legislative tracking.`
   },
   {
     title: "Purchases",
     body:
-      "Paid Pro upgrades are handled through Apple in-app purchase. Capitol Ledger CE receives subscription status, product identifiers, and transaction references needed to unlock Pro and sync access to the signed-in account."
+      `Paid Pro and Team upgrades are handled by the App Store. ${publicBrand.name} receives trial, renewal, subscription status, product identifiers, transaction references, and Team seat entitlement details needed to unlock access and sync purchases to the signed-in account.`
   },
   {
-    title: "Reports And Support",
+    title: "Reports and support",
     body:
       "Issue reports may include the selected app area, message, severity, page context, and optional contact email so reports can be reviewed and resolved."
   },
   {
-    title: "How Data Is Used",
+    title: "How data is used",
     body:
       "Data is used to run the account, personalize civic alerts and briefs, sync saved items, verify purchases, prevent misuse, troubleshoot reports, and improve app quality."
   },
   {
-    title: "What We Do Not Do",
+    title: "What we do not do",
     body:
-      "Capitol Ledger CE does not sell personal data and does not use third-party advertising trackers. Official civic data is used for public legislative context, not ad targeting."
+      `${publicBrand.name} does not sell personal data and does not use third-party advertising trackers. Official civic data is used for public legislative context, not ad targeting.`
   },
   {
     title: "Choices",
@@ -59,9 +60,9 @@ export default function PrivacyPage() {
 
       <section className="mt-10">
         <div className="text-[18px] uppercase tracking-wide text-white/54">Privacy</div>
-        <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">Capitol Ledger CE Privacy Policy</h1>
+        <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">{publicBrand.privacyTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Last updated June 25, 2026. This page summarizes how Capitol Ledger CE handles data for accounts, civic tracking, live reports, and Apple purchases.
+          Last updated June 25, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, live reports, and Apple purchases.
         </p>
       </section>
 

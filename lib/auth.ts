@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
+import { publicBrand } from "@/lib/brand";
 import { deleteProductionSession, readProductionSession, type AuthUser } from "@/lib/auth-database";
 
 export const authSessionCookie = "capitol-ledger-auth-session";
@@ -14,7 +15,7 @@ export type DemoSession = {
 export const demoUser = {
   id: "demo-citizen",
   email: "preview@capitolledger.local",
-  name: "Capitol Ledger CE Citizen"
+  name: publicBrand.citizenLabel
 };
 
 function shouldUseSecureCookies() {
@@ -119,6 +120,6 @@ export async function clearCurrentAuthSession(response: NextResponse) {
 export function requireAuthMessage() {
   return {
     error: "Sign in is required to use account-backed storage.",
-    nextStep: "Start a Capitol Ledger CE demo account session, then sync saved records."
+    nextStep: `Start a ${publicBrand.name} demo account session, then sync saved records.`
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -22,6 +22,7 @@ import {
 } from "@/lib/browser-account-profile";
 import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
+import { publicBrand } from "@/lib/brand";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 const followsKey = "capitol-ledger:follows";
@@ -236,13 +237,13 @@ export function AuthFlowClient({
     if (mode === "reset") return "Choose a new password.";
     if (mode === "verify") return "Verify your email.";
     if (mode === "success") return "You are signed in.";
-    return "Sign in to Capitol Ledger CE.";
+    return `Sign in to ${publicBrand.name}.`;
   }, [mode]);
 
   const body = useMemo(() => {
     if (mode === "create") return "Save your district, alerts, topics, and plan in one place.";
     if (mode === "forgot") return "Enter your email and we will send reset instructions if there is an account for it.";
-    if (mode === "reset") return "Choose a new password for your Capitol Ledger CE account.";
+    if (mode === "reset") return `Choose a new password for your ${publicBrand.accountLabel}.`;
     if (mode === "verify") return `Open the verification link sent to ${form.email || "your email"}, or paste the token below.`;
     if (mode === "success") return "Continue to setup or open your dashboard.";
     return "Open your dashboard, saved items, alerts, and profile settings.";
@@ -751,21 +752,24 @@ export function AuthFlowClient({
           <div className="mt-6 space-y-4">
           {mode === "create" ? (
             <>
-              <Field icon={<UserRound />} label="First name" type="text" placeholder="First name" value={form.firstName} onChange={(value) => updateField("firstName", value)} />
-              <Field icon={<UserRound />} label="Last name" type="text" placeholder="Last name" value={form.lastName} onChange={(value) => updateField("lastName", value)} />
+              <Field id="auth-first-name" name="given-name" autoComplete="given-name" autoCapitalize="words" icon={<UserRound />} label="First name" type="text" placeholder="First name" value={form.firstName} onChange={(value) => updateField("firstName", value)} />
+              <Field id="auth-last-name" name="family-name" autoComplete="family-name" autoCapitalize="words" icon={<UserRound />} label="Last name" type="text" placeholder="Last name" value={form.lastName} onChange={(value) => updateField("lastName", value)} />
             </>
           ) : null}
 
           {mode !== "success" && mode !== "reset" ? (
-            <Field icon={<Mail />} label="Email" type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={(value) => updateField("email", value)} />
+            <Field id="auth-email" name="email" icon={<Mail />} label="Email" type="email" autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={form.email} onChange={(value) => updateField("email", value)} />
           ) : null}
 
           {mode === "signIn" || mode === "create" || mode === "reset" ? (
             <Field
+              id="auth-password"
+              name="password"
               icon={<KeyRound />}
               label={mode === "reset" ? "New password" : "Password"}
               type={showPassword ? "text" : "password"}
               autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+              autoCapitalize="none"
               placeholder={mode === "reset" ? "New password" : "Password"}
               trailing={
                 <PasswordVisibilityButton
@@ -781,10 +785,13 @@ export function AuthFlowClient({
 
           {mode === "create" || mode === "reset" ? (
             <Field
+              id="auth-confirm-password"
+              name="confirm-password"
               icon={<LockKeyhole />}
               label="Confirm password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
+              autoCapitalize="none"
               placeholder={mode === "reset" ? "Confirm new password" : "Confirm password"}
               value={form.confirmPassword}
               onChange={(value) => updateField("confirmPassword", value)}
@@ -793,9 +800,13 @@ export function AuthFlowClient({
 
           {mode === "verify" ? (
             <Field
+              id="auth-verification-token"
+              name="verification-token"
               icon={<ShieldCheck />}
               label="Verification token"
               type="text"
+              autoComplete="one-time-code"
+              autoCapitalize="none"
               placeholder="Paste token from your email link"
               value={form.code}
               onChange={(value) => updateField("code", value)}
@@ -821,7 +832,7 @@ export function AuthFlowClient({
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded border ${form.consent ? "border-[#43ed74]/45 bg-[#43ed74]/12 text-[#43ed74]" : "border-white/15 bg-white/5"}`}>
                 {form.consent ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : null}
               </span>
-              I agree to create my Capitol Ledger CE account and use my setup choices to personalize the app.
+              I agree to create my {publicBrand.accountLabel} and use my setup choices to personalize the app.
             </button>
           ) : null}
 
@@ -851,7 +862,7 @@ export function AuthFlowClient({
                 disabled={pending}
                 className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[16px] font-semibold text-[#071225]"
               >
-                Setup
+                Set up
               </button>
               <button
                 type="button"
@@ -956,8 +967,11 @@ export function AuthFlowClient({
 
 function Field({
   autoComplete,
+  autoCapitalize,
   icon,
+  id,
   label,
+  name,
   onChange,
   placeholder,
   trailing,
@@ -965,28 +979,27 @@ function Field({
   value
 }: {
   autoComplete?: string;
+  autoCapitalize?: "characters" | "none" | "sentences" | "words";
   icon: ReactElement;
+  id: string;
   label: string;
+  name: string;
   onChange: (value: string) => void;
   placeholder: string;
   trailing?: ReactElement;
   type: string;
   value: string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   return (
-    <label className="block">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">{label}</span>
-      <span
-        className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
-        onPointerDown={() => inputRef.current?.focus()}
-      >
+    <div className="block">
+      <label htmlFor={id} className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/46">{label}</label>
+      <div className="mt-2 flex h-13 items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,26,56,0.88)_0%,rgba(2,12,29,0.92)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] focus-within:border-[#ffb12b]/45 focus-within:ring-2 focus-within:ring-[#ffb12b]/15">
         <span className="text-[#ffb12b] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]">{icon}</span>
         <input
-          ref={inputRef}
+          id={id}
+          name={name}
           autoComplete={autoComplete}
-          autoCapitalize={type === "email" ? "none" : undefined}
+          autoCapitalize={autoCapitalize}
           autoCorrect="off"
           inputMode={type === "email" ? "email" : undefined}
           spellCheck={false}
@@ -997,8 +1010,8 @@ function Field({
           className="auth-field-input min-w-0 flex-1 bg-transparent text-[16px] outline-none"
         />
         {trailing ? trailing : null}
-      </span>
-    </label>
+      </div>
+    </div>
   );
 }
 

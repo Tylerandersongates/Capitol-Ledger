@@ -313,6 +313,8 @@ export type CongressHouseVoteMemberItem = {
   state?: string;
   voteCast?: string;
   vote?: string;
+  voteParty?: string;
+  voteState?: string;
 };
 
 export type CongressHouseVoteMembersResponse = {
@@ -374,8 +376,8 @@ export async function fetchHouseVoteMembers(congress: number, session: number, v
   return congressFetch<CongressHouseVoteMembersResponse>(`/house-vote/${congress}/${session}/${voteNumber}/members`, options);
 }
 
-export async function fetchMember(bioguideId: string) {
-  return congressFetch<CongressMemberDetailResponse>(`/member/${bioguideId}`);
+export async function fetchMember(bioguideId: string, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressMemberDetailResponse>(`/member/${bioguideId}`, options);
 }
 
 export async function fetchMemberCosponsoredLegislation(bioguideId: string, options: CongressFetchOptions = {}) {

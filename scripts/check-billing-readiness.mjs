@@ -13,8 +13,10 @@ const retiredStripeEnvNames = [
 ];
 
 const requiredProductIds = [
-  "com.capitolledger.pro.monthly",
-  "com.capitolledger.pro.annual"
+  "com.capitolwonk.pro.monthly",
+  "com.capitolwonk.pro.annual",
+  "com.capitolwonk.team.monthly",
+  "com.capitolwonk.team.annual"
 ];
 
 const requireAppStore = process.env.BILLING_REQUIRE_APP_STORE === "true";
@@ -80,7 +82,7 @@ function checkDatabase() {
   if (requireAppStore || productionMode) {
     fail("DATABASE_URL is configured", "App Store account sync needs database-backed users and subscriptions.");
   } else {
-    warn("DATABASE_URL is configured", "Device-local demo billing can run without it, but account-wide Pro sync needs a database.");
+    warn("DATABASE_URL is configured", "Device-local demo billing can run without it, but account-wide paid sync needs a database.");
   }
 }
 
@@ -100,7 +102,7 @@ function checkAppUrl() {
 }
 
 function checkAppStoreBundleId() {
-  const bundleId = process.env.APP_STORE_BUNDLE_ID || "com.capitolledger.app";
+  const bundleId = process.env.APP_STORE_BUNDLE_ID || "com.capitolwonk.ce";
 
   if (!bundleId.includes(".")) {
     fail("APP_STORE_BUNDLE_ID is configured", "Expected a reverse-DNS bundle identifier.");
@@ -219,7 +221,7 @@ function checkProductionCookie() {
 }
 
 function main() {
-  console.log("Checking Capitol Ledger CE App Store billing readiness");
+  console.log("Checking CapitolWonk CE App Store billing readiness");
 
   checkDatabase();
   checkAppUrl();

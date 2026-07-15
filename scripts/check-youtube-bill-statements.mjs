@@ -24,7 +24,7 @@ const billPage = read("app/bills/[billId]/page.tsx");
 
 const verifiedRegistryCount = (registry.match(/verificationStatus: "verified"/g) ?? []).length;
 
-console.log("Checking Capitol Ledger CE YouTube bill-statement readiness");
+console.log("Checking CapitolWonk CE YouTube bill-statement readiness");
 
 addCheck("Verified official-channel registry exists", verifiedRegistryCount >= 7, `${verifiedRegistryCount} verified channels`);
 addCheck("Ted Cruz channel is source-verified", registry.includes("UCOTZ-6H1rri1lSsj6IzhUyw") && registry.includes("https://www.cruz.senate.gov/"), "Cruz official site channel wired");

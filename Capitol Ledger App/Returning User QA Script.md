@@ -6,7 +6,7 @@ Last updated: June 11, 2026.
 
 ## Goal
 
-Confirm that a tester can create an account, leave, come back, and still see the same Capitol Ledger profile, setup, and civic activity state.
+Confirm that a tester can create an account, leave, come back, and still see the same CapitolWonk CE profile, setup, and civic activity state.
 
 ## Before You Start
 

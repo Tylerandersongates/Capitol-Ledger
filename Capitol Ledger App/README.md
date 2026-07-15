@@ -1,12 +1,10 @@
-# Capitol Ledger App
+# CapitolWonk CE App
 
-Capitol Ledger is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
+CapitolWonk CE is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
 
 ## Current Workspace
 
-Source app:
-
-`/Users/tylergates/Documents/Capitol Ledger`
+Source app: this local workspace folder.
 
 Clean local preview:
 
@@ -22,7 +20,7 @@ The preview is running in production mode, so after changes:
 
 ## Core Direction
 
-Capitol Ledger should feel like Bloomberg Terminal meets Apple meets modern civic accountability:
+CapitolWonk CE should feel like Bloomberg Terminal meets Apple meets modern civic accountability:
 
 - Deep navy mobile interface
 - Gold and amber civic-tech highlights

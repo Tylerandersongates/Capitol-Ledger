@@ -1,16 +1,16 @@
-# Capitol Ledger CE First-Round Beta Tester Guide
+# CapitolWonk CE First-Round Beta Tester Guide
 
-## What Capitol Ledger CE Is
+## What CapitolWonk CE Is
 
-Capitol Ledger CE is a mobile-first civic tracking app for people who want to follow bills, representatives, votes, alerts, and their own civic engagement without bouncing between scattered government sites and news feeds.
+CapitolWonk CE is a mobile-first civic tracking app for people who want to follow bills, representatives, votes, alerts, and their own civic engagement without bouncing between scattered government sites and news feeds.
 
-I created Capitol Ledger CE because civic information is too fragmented for regular people to use consistently. The goal is to make it easier to know what is happening, save what matters, contact the right officials, and build the habit of civic participation without needing to be a policy expert.
+I created CapitolWonk CE because civic information is too fragmented for regular people to use consistently. The goal is to make it easier to know what is happening, save what matters, contact the right officials, and build the habit of civic participation without needing to be a policy expert.
 
 This first beta round is about trust, clarity, and basic usability. The app should feel useful, premium, and calm, even when the underlying civic data is complex.
 
 ## How To Be A First-Round Beta Tester
 
-Use Capitol Ledger CE like you would use a real civic companion app. Do not just click through screens. Try to complete small real-world tasks:
+Use CapitolWonk CE like you would use a real civic companion app. Do not just click through screens. Try to complete small real-world tasks:
 
 - Find a bill or official that interests you.
 - Save something to your watchlist.
@@ -41,7 +41,7 @@ Send feedback when something feels confusing, broken, misleading, too small to t
 
 ## How To Report Feedback
 
-Use the feedback reporting inside Capitol Ledger CE whenever possible. This keeps tester notes in the beta review queue instead of scattering them across texts, emails, or screenshots.
+Use the feedback reporting inside CapitolWonk CE whenever possible. This keeps tester notes in the beta review queue instead of scattering them across texts, emails, or screenshots.
 
 Browser bypass link, use this if the tester needs to open the feedback form directly:
 https://project-qosv1.vercel.app/feedback?source=beta

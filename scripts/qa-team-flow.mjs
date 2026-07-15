@@ -543,7 +543,7 @@ async function runSeatReplacementScenario(owner) {
 }
 
 async function main() {
-  console.log(`Running Capitol Ledger CE Team QA against ${baseUrl}`);
+  console.log(`Running CapitolWonk CE Team QA against ${baseUrl}`);
   await runSafeChecks();
 
   const owner = await ensureAccount("owner");

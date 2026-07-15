@@ -520,7 +520,8 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
   const nextElection = formatDate(nextElectionDate);
   const firstElectedDate = member.firstElectedDate;
   const firstElected = firstElectedDate ? formatDate(firstElectedDate) : "Not listed";
-  const termsInOffice = member.termsInOffice ?? estimateTermsInOfficeFromCongressLabel(member.term, member.chamber);
+  const officialWebsiteUrl = member.officialUrl ?? member.sourceUrl;
+  const termsInOffice = member.termsInOffice;
   const termsInOfficeLabel = termsInOffice ? `${termsInOffice} ${termsInOffice === 1 ? "term" : "terms"}` : "Not listed";
   const seniority = member.term;
 
@@ -555,6 +556,7 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
                   alt=""
                   width={128}
                   height={128}
+                  priority
                   className="relative h-32 w-32 rounded-[1.45rem] border border-white/18 object-cover shadow-[0_16px_32px_rgba(1,8,24,0.34)]"
                 />
               </div>
@@ -564,9 +566,20 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
                 <p className="mt-2 text-white/68">
                   <span className="block max-w-full text-[16px] leading-snug">{districtLabel} {seatTag}</span>
                 </p>
-                <div id="contact" className="mt-3 flex flex-wrap items-center gap-2 scroll-mt-8">
-                  <span className="inline-flex rounded-xl border border-blue-300/20 bg-civic/35 px-4 py-2 text-[15px] text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">{member.party}</span>
-                  <MemberEmailAction bioguideId={member.bioguideId} chamber={member.chamber} memberName={displayName} />
+                <div id="contact" className="mt-3 grid grid-cols-2 gap-2 scroll-mt-8">
+                  <span className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-blue-300/20 bg-civic/35 px-3 py-2 text-center text-[14px] font-semibold text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    {member.party}
+                  </span>
+                  <MemberEmailAction bioguideId={member.bioguideId} chamber={member.chamber} className="w-full" memberName={displayName} />
+                  <a
+                    href={officialWebsiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="col-span-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-4 py-2 text-[14px] font-semibold text-[#ffcf54] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.2)] transition hover:bg-[#ffb12b]/15"
+                  >
+                    <span>Website</span>
+                    <ExternalLink className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </a>
                 </div>
               </div>
             </section>
@@ -710,18 +723,13 @@ function OverviewTab({
   const topScoreFactor = topScoreFactors[0];
   const issueMatchValue = alignmentFactor?.value ?? accountabilityTrend.current;
   const sortedIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.topicScore - a.topicScore);
-  const topIssueTopics = sortedIssueTopics.slice(0, 3);
-  const hiddenIssueTopics = sortedIssueTopics.slice(topIssueTopics.length);
-  const hiddenIssueTopicCount = hiddenIssueTopics.length;
-  const comparedTopics = scoreModel.constituentAlignment.selectedTopics.length
-    ? formatTopicList(scoreModel.constituentAlignment.selectedTopics)
-    : "saved issue interests";
+  const localOfficialLabel = member.chamber === "Senate" ? "Senator" : "Representative";
 
   return (
     <>
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="Quick read on standing, issue fit, and the strongest public-record signals."
+          description={`What does the public record say about your ${localOfficialLabel} right now.`}
           eyebrow="At a glance"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
@@ -764,7 +772,7 @@ function OverviewTab({
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description="The strongest public-record signals behind the snapshot."
+          description={`What is shaping your ${localOfficialLabel}'s accountability score right now.`}
           eyebrow="Key signals"
           icon={<FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           title="What matters now"
@@ -780,28 +788,22 @@ function OverviewTab({
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-[16px] font-medium text-white">Issue topics</h3>
-              <p className="mt-1 text-[12px] leading-snug text-white/46">Compared against {comparedTopics}.</p>
+              <p className="mt-1 text-[12px] leading-snug text-white/46">
+                How aligned is your {localOfficialLabel} with the issues you care about.
+              </p>
             </div>
             <IssueMatchInfoPopover />
           </div>
-          <div className="mt-3 grid gap-2">
-            {topIssueTopics.map((topic) => (
+          <MobileGlassScrollFrame
+            ariaLabel="Issue topic match scores"
+            className="grid gap-2"
+            frameClassName="mt-3"
+            heightClassName="max-h-[176px]"
+          >
+            {sortedIssueTopics.map((topic) => (
               <OverviewTopicChip key={topic.topic} topic={topic} />
             ))}
-            {hiddenIssueTopicCount ? (
-              <details className="group grid gap-2">
-                <summary className="order-2 cursor-pointer list-none rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[12px] font-medium text-white/58 transition hover:border-[#ffb12b]/28 hover:text-white/74 [&::-webkit-details-marker]:hidden">
-                  <span className="group-open:hidden">+{hiddenIssueTopicCount} more topic{hiddenIssueTopicCount === 1 ? "" : "s"} included</span>
-                  <span className="hidden group-open:inline">Show fewer topics</span>
-                </summary>
-                <div className="order-1 hidden gap-2 group-open:grid">
-                  {hiddenIssueTopics.map((topic) => (
-                    <OverviewTopicChip key={topic.topic} topic={topic} />
-                  ))}
-                </div>
-              </details>
-            ) : null}
-          </div>
+          </MobileGlassScrollFrame>
         </div>
       </MobileCard>
     </>
@@ -823,11 +825,6 @@ function plainStatusLabel(status: MemberScoreFactor["status"]) {
   if (status === "source-linked") return "Records available";
   if (status === "partial") return "Some records available";
   return "Not available yet";
-}
-
-function formatTopicList(topics: string[]) {
-  if (topics.length <= 4) return topics.join(", ");
-  return `${topics.slice(0, 4).join(", ")} and ${topics.length - 4} more`;
 }
 
 function OverviewMetricTile({
@@ -942,17 +939,19 @@ function IssueMatchInfoPopover() {
 }
 
 function VotesTab({ member, memberVotes }: { member: Member; memberVotes: MemberVoteRecord[] }) {
-  const records = memberVotes.filter((record) => record.vote).slice(0, 12);
+  const linkedRecords = memberVotes.filter((record): record is MemberVoteRecord & { vote: NonNullable<MemberVoteRecord["vote"]> } => Boolean(record.vote));
+  const records = linkedRecords.slice(0, 12);
+  const countLabel = linkedRecords.length > records.length ? `${records.length} of ${linkedRecords.length}` : `${records.length} shown`;
 
   if (!records.length) {
     return (
       <EmptyTab
         icon={<VoteIcon className="h-6 w-6" strokeWidth={1.8} />}
-        title="No vote records yet"
+        title="No recorded positions yet"
         body={
           member.chamber === "Senate"
             ? "Recent Senate roll-call positions are not available for this profile yet. Bills and roles may still have records to review."
-            : "Roll-call positions will appear here when vote records are available for this official."
+            : "Recent House roll-call positions are not available for this profile yet. Bills and roles may still have records to review."
         }
       />
     );
@@ -961,7 +960,7 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <PremiumCardHeader
-        aside={<span className={premiumPillClass}>{records.length} shown</span>}
+        aside={<span className={premiumPillClass}>{countLabel}</span>}
         eyebrow="Recent roll calls"
         title="Vote record"
       />
@@ -969,18 +968,18 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
         {records.map((record) => {
           const vote = record.vote;
           if (!vote) return null;
-          const isLiveSenateVote = vote.id.startsWith("senate-live-");
+          const isExternalVoteRecord = vote.id.startsWith("senate-live-") || vote.id.startsWith("house-live-");
           const rowContent = (
             <>
               <div className="min-w-0">
-                <div className="text-[18px] font-medium leading-tight text-white">{vote.question}</div>
+                <div className="break-words text-[18px] font-medium leading-tight text-white">{vote.question}</div>
                 <div className="mt-2 text-[14px] text-white/50">
-                  {vote.chamber} roll call {vote.rollCall} | {formatDate(vote.voteDate)}
+                  {vote.chamber} roll call {vote.rollCall} · {formatDate(vote.voteDate)}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-3 py-1.5 text-[13px] font-medium ${positionTone(record.position)}`}>{record.position}</span>
-                {isLiveSenateVote ? (
+                {isExternalVoteRecord ? (
                   <ExternalLink className="h-4 w-4 text-white/38" strokeWidth={1.8} aria-hidden="true" />
                 ) : (
                   <ChevronRight className="h-5 w-5 text-white/38" strokeWidth={1.8} aria-hidden="true" />
@@ -989,14 +988,14 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
             </>
           );
 
-          if (isLiveSenateVote) {
+          if (isExternalVoteRecord) {
             return (
               <a
                 key={`${record.voteId}-${record.position}`}
                 href={vote.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
-                className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
+                className={`grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
               >
                 {rowContent}
               </a>
@@ -1004,7 +1003,7 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
           }
 
           return (
-            <Link key={`${record.voteId}-${record.position}`} href={`/votes/${vote.id}`} className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+            <Link key={`${record.voteId}-${record.position}`} href={`/votes/${vote.id}`} className={`grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}>
               {rowContent}
             </Link>
           );
@@ -1069,11 +1068,24 @@ function CommitteesTab({
   member: Member;
 }) {
   if (!caucusMemberships.length) {
+    const officialProfileUrl = member.officialUrl ?? member.sourceUrl;
+
     return (
       <EmptyTab
         icon={<Landmark className="h-6 w-6" strokeWidth={1.8} />}
-        title="No roles listed yet"
-        body={`Committee and caucus assignments will appear here when they are available for this ${member.chamber.toLowerCase()} official.`}
+        title="No source-linked roles yet"
+        body={`Committee and caucus assignments are pending source review for this ${member.chamber.toLowerCase()} official.`}
+        action={
+          <a
+            href={officialProfileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#ffb12b]/25 bg-[#ffb12b]/10 px-4 py-2 text-[13px] font-semibold text-[#ffcf54] transition hover:bg-[#ffb12b]/15"
+          >
+            <span>Official profile</span>
+            <ExternalLink className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+          </a>
+        }
       />
     );
   }
@@ -1092,13 +1104,13 @@ function CommitteesTab({
             href={membership.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className={`grid grid-cols-[1fr_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
+            className={`grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-4 transition hover:brightness-110 ${premiumPanelClass}`}
           >
             <div className="min-w-0">
-              <div className="text-[17px] font-medium leading-tight text-white">{membership.caucusName}</div>
-              <div className="mt-1 text-[14px] text-white/50">Official source</div>
+              <div className="break-words text-[17px] font-medium leading-tight text-white">{membership.caucusName}</div>
+              <div className="mt-1 break-words text-[14px] text-white/50">{membership.sourceLabel}</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <span className="rounded-full border border-[#ffb12b]/25 bg-[#ffb12b]/10 px-3 py-1.5 text-[13px] font-medium text-[#ffb12b]">
                 {membership.role}
               </span>
@@ -1158,7 +1170,7 @@ function FinanceRow({ icon, label, value }: { icon: ReactNode; label: string; va
   );
 }
 
-function EmptyTab({ body, icon, title }: { body: string; icon: ReactNode; title: string }) {
+function EmptyTab({ action, body, icon, title }: { action?: ReactNode; body: string; icon: ReactNode; title: string }) {
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-6">
       <div className="grid grid-cols-[48px_1fr] gap-4">
@@ -1166,6 +1178,7 @@ function EmptyTab({ body, icon, title }: { body: string; icon: ReactNode; title:
         <div>
           <h2 className="text-[22px] font-medium leading-tight text-white">{title}</h2>
           <p className="mt-3 text-[16px] leading-snug text-white/58">{body}</p>
+          {action}
         </div>
       </div>
     </MobileCard>

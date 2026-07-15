@@ -22,6 +22,7 @@ import {
   BillingCycleToggle,
   PlanActionButton,
   PlanPrice,
+  PlanTrialDisclosure,
   RestorePurchasesButton,
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
@@ -37,7 +38,7 @@ import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/ca
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const upgradeDefaultCycle: AccountSubscriptionSnapshot["cycle"] = "annual";
+const upgradeDefaultCycle: AccountSubscriptionSnapshot["cycle"] = "monthly";
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
@@ -78,14 +79,14 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Upgrade to Pro through Apple in-app purchase. Team stays visible for the later shared-work rollout."
+            description="Start Pro with 7 days free, then $2.99/month. Cancel anytime."
             eyebrow="Plans"
             title="Choose a plan"
           />
           <div className="mt-5 grid grid-cols-3 gap-2">
             <ValuePill label="Alerts" value="Faster" />
-            <ValuePill label="Sources" value="Linked" />
-            <ValuePill label="Briefs" value="Weekly" />
+            <ValuePill label="Trial" value="7 days" />
+            <ValuePill label="Briefs" value="Daily" />
           </div>
           <Link href="#plans" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
             View plans
@@ -97,7 +98,7 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Choose monthly or annual before starting the Apple in-app purchase."
+              description="Monthly Pro includes the 7-day free trial. Annual Pro and Team purchases begin with the terms shown before confirmation."
               eyebrow="App Store"
               icon={<Sparkles />}
               title="Subscription cycle"
@@ -110,7 +111,7 @@ export default async function UpgradePage() {
 
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
-            description="Already subscribed through Apple? Restore purchases to refresh this account."
+            description="Already subscribed? Restore purchases to refresh this account."
             eyebrow="Purchases"
             icon={<ShieldCheck />}
             title="Restore access"
@@ -120,10 +121,10 @@ export default async function UpgradePage() {
 
         <section className="space-y-3" aria-label="Subscription plans">
           <PlanTierCard
-            badge="Best Value"
+            badge="7-Day Trial"
             featured
             icon={<Crown />}
-            inactiveLabel="Upgrade with Apple"
+            inactiveLabel="Start Pro Trial"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="pro"
@@ -138,7 +139,7 @@ export default async function UpgradePage() {
           <PlanTierCard
             badge="Team plan"
             icon={<Sparkles />}
-            inactiveLabel="Team coming later"
+            inactiveLabel="Start Team Plan"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="team"
@@ -323,11 +324,7 @@ function PlanTierCard({
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
-      {plan === "team" ? (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-[13px] leading-snug text-white/54">
-          Team is planned for a later App Store-ready rollout after Pro subscriptions.
-        </div>
-      ) : null}
+      {plan === "pro" ? <PlanTrialDisclosure plan={plan} initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
       <FeatureList items={planDetails.highlights} />
       <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} defaultCycle={defaultCycle} className={actionClassName} />
       </MobileCard>

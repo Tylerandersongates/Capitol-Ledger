@@ -133,7 +133,7 @@ def configure_document(document: Document) -> None:
 
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    footer_run = footer.add_run("Capitol Ledger CE Round 3 Beta Tester Guide")
+    footer_run = footer.add_run("CapitolWonk CE Round 3 Beta Tester Guide")
     footer_run.font.name = "Calibri"
     footer_run.font.size = Pt(9)
     footer_run.font.color.rgb = MUTED

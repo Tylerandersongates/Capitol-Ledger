@@ -5,6 +5,7 @@ import { TeamInviteAcceptanceControls } from "@/components/team-invite-acceptanc
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { getCurrentSession } from "@/lib/auth";
+import { publicBrandName } from "@/lib/brand";
 import { readTeamWorkspaceInviteAcceptance, TeamWorkspaceError, type TeamWorkspaceAcceptancePreview } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
 
@@ -142,7 +143,7 @@ function InviteCard({
             <div className={premiumEyebrowClass}>Seat rules</div>
             <h2 className="mt-2 text-[22px] font-medium leading-tight text-white">Paid capacity applies</h2>
             <p className="mt-2 text-[13px] leading-snug text-white/54">
-              Capitol Ledger CE confirms the owner&apos;s Team billing before assigning this seat.
+              {publicBrandName} confirms the owner&apos;s Team billing before assigning this seat.
             </p>
           </div>
           <span className={premiumIconTileClass}>

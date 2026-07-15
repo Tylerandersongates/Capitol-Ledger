@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   if (subscription.provider !== "stripe" || !hasStripeCustomerId(subscription.providerCustomerId)) {
     return NextResponse.json(
       {
-        error: "Stripe billing management is available after a Stripe checkout subscription is connected.",
+        error: "Legacy Stripe billing management is available only after a Stripe subscription is connected.",
         mode: databaseSubscription ? "database" : "account",
         subscription
       },

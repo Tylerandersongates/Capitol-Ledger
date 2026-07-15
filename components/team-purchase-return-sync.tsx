@@ -17,9 +17,9 @@ function writeBrowserSubscription(subscription: AccountSubscriptionSnapshot) {
   window.dispatchEvent(new CustomEvent(subscriptionEvent, { detail: subscription }));
 }
 
-export function TeamCheckoutReturnSync() {
+export function TeamPurchaseReturnSync() {
   const router = useRouter();
-  const [status, setStatus] = useState("Confirming Team billing...");
+  const [status, setStatus] = useState("Confirming Team access...");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export function TeamCheckoutReturnSync() {
         return;
       }
 
-      setStatus(attempts < 3 ? "Confirming Team billing..." : "Waiting for the billing update...");
+      setStatus(attempts < 3 ? "Confirming Team access..." : "Waiting for the purchase update...");
       timeoutId = window.setTimeout(refreshSubscription, 1000);
     }
 

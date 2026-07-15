@@ -1,3 +1,4 @@
+import { publicBrandName } from "@/lib/brand";
 import { withMemberServiceFallback } from "@/lib/member-service-history";
 import type { Bill, BillAction, BillVideo, Cosponsor, Member, MemberVote, UpdateEvent, Vote } from "@/types/capitol";
 
@@ -442,7 +443,7 @@ export const bills: Bill[] = [
     latestActionText: "Read twice and referred to the Senate Finance Committee.",
     latestActionDate: "2025-07-10",
     summary:
-      "Congress.gov lists this health bill as introduced and referred to Senate Finance. The official CRS summary is still in progress, so Capitol Ledger CE keeps the record clearly marked as pending deeper summary text.",
+      `Congress.gov lists this health bill as introduced and referred to Senate Finance. The official CRS summary is still in progress, so ${publicBrandName} keeps the record clearly marked as pending deeper summary text.`,
     sourceUrl: "https://www.congress.gov/bill/119th-congress/senate-bill/2237"
   },
   {

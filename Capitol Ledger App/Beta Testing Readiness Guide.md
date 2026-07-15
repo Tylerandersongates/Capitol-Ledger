@@ -2,7 +2,7 @@
 
 ## Goal
 
-Get Capitol Ledger into the hands of trusted testers before App Store sale or public launch, collect useful feedback, fix the highest-impact issues, then package the Apple/TestFlight version with much less risk.
+Get CapitolWonk CE into the hands of trusted testers before App Store sale or public launch, collect useful feedback, fix the highest-impact issues, then package the Apple/TestFlight version with much less risk.
 
 Current status: first trusted tester intake is planned for June 6, 2026.
 

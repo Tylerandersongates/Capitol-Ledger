@@ -226,7 +226,7 @@ async function runRateLimitCheck() {
 }
 
 async function main() {
-  console.log(`Running Capitol Ledger CE production-auth QA against ${baseUrl}`);
+  console.log(`Running CapitolWonk CE production-auth QA against ${baseUrl}`);
   await runSafeChecks();
 
   if (shouldCreateAccount) {

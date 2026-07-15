@@ -19,7 +19,12 @@ const appStoreValidator = read("lib/billing/app-store.ts");
 const appStoreRoute = read("app/api/account/subscription/app-store/route.ts");
 const appStoreAccountTokenRoute = read("app/api/account/subscription/app-store/account-token/route.ts");
 
-for (const productId of ["com.capitolledger.pro.monthly", "com.capitolledger.pro.annual"]) {
+for (const productId of [
+  "com.capitolwonk.pro.monthly",
+  "com.capitolwonk.pro.annual",
+  "com.capitolwonk.team.monthly",
+  "com.capitolwonk.team.annual"
+]) {
   assert.ok(webControls.includes(productId), `web controls should reference ${productId}`);
   assert.ok(models.includes(productId), `native models should reference ${productId}`);
 }
@@ -70,7 +75,8 @@ assert.ok(
     appStoreRoute.includes("validateAppStoreTransaction") &&
     appStoreRoute.includes("createAppStoreAccountToken") &&
     appStoreRoute.includes("findSubscriptionUserIdByProvider") &&
-    appStoreRoute.includes("already linked to another Capitol Ledger CE account") &&
+    appStoreRoute.includes("already linked to another ${publicBrandName} account") &&
+    appStoreRoute.includes("publicBrandName") &&
     appStoreRoute.includes("writeSubscriptionToDatabase") &&
     appStoreAccountTokenRoute.includes("createAppStoreAccountToken") &&
     appStoreValidator.includes("expectedAppAccountToken") &&
@@ -87,8 +93,10 @@ assert.ok(
 assert.ok(
   app.includes("CapitolLedgerWebView") &&
     plist.includes("CapitolLedgerAppURL") &&
+    plist.includes("$(APP_DISPLAY_NAME)") &&
+    project.includes("APP_DISPLAY_NAME") &&
     project.includes("CapitolLedgerNative.app"),
-  "native app target should load the Capitol Ledger CE WebView from the configured app URL"
+  "native app target should load the configured WebView URL and build display name"
 );
 
 console.log("iOS native StoreKit bridge check passed.");

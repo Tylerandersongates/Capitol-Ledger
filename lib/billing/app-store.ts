@@ -1,5 +1,7 @@
 import { createHash, sign as signJwt } from "crypto";
-import type { AccountSubscriptionSnapshot, BillingCycle } from "@/types/capitol";
+import { publicBrandName } from "@/lib/brand";
+import { minimumTeamSeatCount } from "@/lib/subscription-seat-count";
+import type { AccountSubscriptionSnapshot, BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 type AppStoreEnvironment = "Production" | "Sandbox" | "Xcode";
 
@@ -40,9 +42,32 @@ const appStoreServerApiBaseUrl: Record<Exclude<AppStoreEnvironment, "Xcode">, st
   Sandbox: "https://api.storekit-sandbox.itunes.apple.com"
 };
 
-const appStoreProductCycles: Record<string, BillingCycle> = {
-  "com.capitolledger.pro.annual": "annual",
-  "com.capitolledger.pro.monthly": "monthly"
+const appStoreProducts: Record<
+  string,
+  {
+    cycle: BillingCycle;
+    plan: Exclude<SubscriptionPlanId, "free">;
+    seatCount?: number;
+  }
+> = {
+  "com.capitolwonk.pro.annual": {
+    cycle: "annual",
+    plan: "pro"
+  },
+  "com.capitolwonk.pro.monthly": {
+    cycle: "monthly",
+    plan: "pro"
+  },
+  "com.capitolwonk.team.annual": {
+    cycle: "annual",
+    plan: "team",
+    seatCount: minimumTeamSeatCount
+  },
+  "com.capitolwonk.team.monthly": {
+    cycle: "monthly",
+    plan: "team",
+    seatCount: minimumTeamSeatCount
+  }
 };
 
 function base64UrlEncode(value: Buffer | string) {
@@ -65,7 +90,7 @@ function normalizePrivateKey(value?: string) {
 }
 
 function configuredAppStoreBundleId() {
-  return process.env.APP_STORE_BUNDLE_ID || "com.capitolledger.app";
+  return process.env.APP_STORE_BUNDLE_ID || "com.capitolwonk.ce";
 }
 
 export function createAppStoreAccountToken(userId: string) {
@@ -133,8 +158,8 @@ function readEnvironmentCandidates(environment?: string): Array<Exclude<AppStore
   return ["Production", "Sandbox"];
 }
 
-function getAppStoreCycle(productId?: string): BillingCycle | null {
-  return productId ? appStoreProductCycles[productId] ?? null : null;
+function getAppStoreProduct(productId?: string) {
+  return productId ? appStoreProducts[productId] ?? null : null;
 }
 
 function isActiveTransaction(payload: AppStoreTransactionPayload) {
@@ -147,16 +172,17 @@ function isActiveTransaction(payload: AppStoreTransactionPayload) {
 
 function toSubscriptionSnapshot(payload: AppStoreTransactionPayload): AccountSubscriptionSnapshot {
   const active = isActiveTransaction(payload);
-  const cycle = getAppStoreCycle(payload.productId) ?? "monthly";
+  const product = getAppStoreProduct(payload.productId);
   const subscriptionId = payload.originalTransactionId || payload.transactionId || "app-store-transaction";
 
   return {
-    cycle,
-    plan: active ? "pro" : "free",
+    cycle: product?.cycle ?? "monthly",
+    plan: active ? product?.plan ?? "free" : "free",
     provider: "app-store",
     providerCustomerId: `app-store-${payload.environment ?? "unknown"}`.toLowerCase(),
     providerEntitlementId: payload.productId ?? "capitol-ledger-free",
     providerSubscriptionId: subscriptionId,
+    seatCount: active && product?.plan === "team" ? product.seatCount : undefined,
     status: active ? "active" : "canceled",
     updatedAt: new Date().toISOString()
   };
@@ -168,15 +194,15 @@ function assertValidAppStoreTransactionPayload(
   expectedAppAccountToken?: string
 ) {
   const expectedBundleId = configuredAppStoreBundleId();
-  const cycle = getAppStoreCycle(payload.productId);
+  const product = getAppStoreProduct(payload.productId);
 
   if (!payload.transactionId) throw new Error("App Store transaction is missing a transaction id.");
   if (expectedTransactionId && payload.transactionId !== expectedTransactionId) throw new Error("App Store transaction id mismatch.");
   if (expectedAppAccountToken && payload.appAccountToken !== expectedAppAccountToken) {
-    throw new Error("App Store transaction is not linked to this Capitol Ledger CE account.");
+    throw new Error(`App Store transaction is not linked to this ${publicBrandName} account.`);
   }
   if (payload.bundleId !== expectedBundleId) throw new Error("App Store transaction bundle id does not match this app.");
-  if (!cycle) throw new Error("App Store transaction product id is not a supported Capitol Ledger CE product.");
+  if (!product) throw new Error(`App Store transaction product id is not a supported ${publicBrandName} product.`);
   if (payload.revocationDate) throw new Error("App Store transaction has been revoked.");
   if (!isActiveTransaction(payload)) throw new Error("App Store transaction is expired.");
 }

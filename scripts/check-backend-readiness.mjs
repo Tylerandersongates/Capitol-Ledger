@@ -150,11 +150,39 @@ function checkData() {
   } else {
     warn("CONGRESS_SYNC_WRITE mode", "Dry-run mode; set true only after DATABASE_URL and API key are ready.");
   }
+
+  const gdeltEnabled = process.env.GDELT_DAILY_BRIEF_ENABLED ?? "true";
+  if (gdeltEnabled === "true" || gdeltEnabled === "false") {
+    pass("GDELT_DAILY_BRIEF_ENABLED is valid", gdeltEnabled);
+  } else {
+    warn("GDELT_DAILY_BRIEF_ENABLED is valid", "Use true or false.");
+  }
+
+  const gdeltTimespan = process.env.GDELT_DAILY_BRIEF_TIMESPAN || "24h";
+  if (/^\d+(min|h|d)$/i.test(gdeltTimespan)) {
+    pass("GDELT_DAILY_BRIEF_TIMESPAN is valid", gdeltTimespan);
+  } else {
+    warn("GDELT_DAILY_BRIEF_TIMESPAN is valid", "Use a value such as 24h or 1d.");
+  }
+
+  const gdeltMaxRecords = Number(process.env.GDELT_DAILY_BRIEF_MAX_RECORDS ?? 6);
+  if (Number.isInteger(gdeltMaxRecords) && gdeltMaxRecords >= 1 && gdeltMaxRecords <= 20) {
+    pass("GDELT_DAILY_BRIEF_MAX_RECORDS is valid", String(gdeltMaxRecords));
+  } else {
+    warn("GDELT_DAILY_BRIEF_MAX_RECORDS is valid", "Use an integer from 1 to 20.");
+  }
+
+  const gdeltTimeout = Number(process.env.GDELT_DAILY_BRIEF_TIMEOUT_MS ?? 2500);
+  if (Number.isInteger(gdeltTimeout) && gdeltTimeout >= 500 && gdeltTimeout <= 8000) {
+    pass("GDELT_DAILY_BRIEF_TIMEOUT_MS is valid", String(gdeltTimeout));
+  } else {
+    warn("GDELT_DAILY_BRIEF_TIMEOUT_MS is valid", "Use an integer from 500 to 8000.");
+  }
 }
 
 function checkBilling() {
   console.log("\nSubscriptions and billing");
-  optional("APP_STORE_BUNDLE_ID", process.env.APP_STORE_BUNDLE_ID, "Defaults to com.capitolledger.app; set explicitly before App Store launch.");
+  optional("APP_STORE_BUNDLE_ID", process.env.APP_STORE_BUNDLE_ID, "Defaults to com.capitolwonk.ce; set explicitly before App Store launch.");
   optional("APP_STORE_ACCOUNT_TOKEN_NAMESPACE", process.env.APP_STORE_ACCOUNT_TOKEN_NAMESPACE, "Set a stable value before first TestFlight purchase if the bundle ID may change.");
   optional("APP_STORE_CONNECT_ISSUER_ID", process.env.APP_STORE_CONNECT_ISSUER_ID, "Needed before App Store Server API account-sync QA.");
   optional("APP_STORE_CONNECT_KEY_ID", process.env.APP_STORE_CONNECT_KEY_ID, "Needed before App Store Server API account-sync QA.");
@@ -213,14 +241,23 @@ function checkWeeklyBrief() {
 
 function checkHardening() {
   console.log("\nHardening and observability");
+  const aiBillAnalysisProvider = (process.env.CAPITOL_LEDGER_AI_BILL_ANALYSIS_PROVIDER ?? "fallback").toLowerCase();
   optional("UPSTASH_REDIS_REST_URL", process.env.UPSTASH_REDIS_REST_URL, "Recommended for persistent rate limiting across deployed instances.");
   optional("UPSTASH_REDIS_REST_TOKEN", process.env.UPSTASH_REDIS_REST_TOKEN, "Recommended with UPSTASH_REDIS_REST_URL.");
-  optional("OPENAI_API_KEY", process.env.OPENAI_API_KEY, "Needed before live AI bill analysis and policy lens generation.");
+  if (aiBillAnalysisProvider === "openai") {
+    if (isLongSecret(process.env.OPENAI_API_KEY)) {
+      pass("OPENAI_API_KEY is configured");
+    } else {
+      (shouldFailRequired() ? fail : warn)("OPENAI_API_KEY is configured", "Required when CAPITOL_LEDGER_AI_BILL_ANALYSIS_PROVIDER=openai.");
+    }
+  } else {
+    optional("OPENAI_API_KEY", process.env.OPENAI_API_KEY, "Needed before live AI bill analysis and policy lens generation.");
+  }
   optional("SENTRY_DSN", process.env.SENTRY_DSN, "Optional deeper error monitoring after basic hosting logs.");
 }
 
 function main() {
-  console.log("Checking Capitol Ledger CE backend setup");
+  console.log("Checking CapitolWonk CE backend setup");
 
   checkCore();
   checkAuthEmail();

@@ -99,7 +99,7 @@ function checkNativeSwc() {
   fail("Next native SWC binary is signed", `Run codesign --force --sign - "${swcBinary}" before starting local preview.`);
 }
 
-console.log("Checking Capitol Ledger CE local preview runtime");
+console.log("Checking CapitolWonk CE local preview runtime");
 checkNodeVersion();
 checkNodeModules();
 checkDuplicateDependencyLinks();

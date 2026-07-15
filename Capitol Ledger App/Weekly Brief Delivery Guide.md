@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Weekly Brief delivery is now ready for a production provider, but the app does not need to choose that provider yet. Capitol Ledger can send a provider-agnostic webhook payload to an email or push bridge, while continuing to record delivery history in the app.
+Weekly Brief delivery is now ready for a production provider, but the app does not need to choose that provider yet. CapitolWonk CE can send a provider-agnostic webhook payload to an email or push bridge, while continuing to record delivery history in the app.
 
 ## Current App Path
 
@@ -20,7 +20,7 @@ WEEKLY_BRIEF_CRON_SECRET="long-random-secret"
 WEEKLY_BRIEF_DELIVERY="webhook"
 WEEKLY_BRIEF_WEBHOOK_URL="https://provider-bridge.example.com/weekly-brief"
 WEEKLY_BRIEF_WEBHOOK_SECRET="long-random-secret"
-WEEKLY_BRIEF_FROM="Capitol Ledger <briefs@example.com>"
+WEEKLY_BRIEF_FROM="CapitolWonk CE <briefs@example.com>"
 ```
 
 Run:
@@ -34,16 +34,16 @@ Use `WEEKLY_BRIEF_REQUIRE_PROVIDER=true pnpm weekly-brief:check` when checking p
 
 ## Provider Bridge Contract
 
-When `WEEKLY_BRIEF_DELIVERY=webhook`, Capitol Ledger sends a `POST` request to `WEEKLY_BRIEF_WEBHOOK_URL` with:
+When `WEEKLY_BRIEF_DELIVERY=webhook`, CapitolWonk CE sends a `POST` request to `WEEKLY_BRIEF_WEBHOOK_URL` with:
 
 ```json
 {
   "kind": "weekly_brief",
   "to": "user@example.com",
-  "from": "Capitol Ledger <briefs@example.com>",
-  "subject": "Capitol Ledger Weekly Civic Brief",
+  "from": "CapitolWonk CE <briefs@example.com>",
+  "subject": "CapitolWonk CE Daily Civic Brief",
   "text": "Plain-text weekly brief body",
-  "appName": "Capitol Ledger",
+  "appName": "CapitolWonk CE",
   "user": {
     "email": "user@example.com",
     "name": "Demo Citizen"

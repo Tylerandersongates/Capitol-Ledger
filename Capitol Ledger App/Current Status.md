@@ -2,17 +2,18 @@
 
 ## What We Built
 
-The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The primary experience is an iPhone-style product demo with a consistent dark navy/gold visual system.
+The app now has a cohesive set of mobile MVP screens for CapitolWonk CE. The primary experience is an iPhone-style product demo with a consistent dark navy/gold visual system.
 
 ## Most Recent Work
 
-- Completed a legal-name branding pass so front-facing app copy, public support/privacy pages, native iOS display name, App Store setup copy, active tester docs, and launch-facing checks use `Capitol Ledger CE` instead of `Capitol Ledger`.
-- Added public `/privacy` and `/support` pages, linked them from Settings, and created `Capitol Ledger App/App Store Connect Setup Packet.md` with the exact bundle ID, product IDs, support/privacy URLs, reviewer notes, screenshot candidates, and Apple-side checklist needed for the next App Store Connect pass.
+- Set the post-TestFlight product sequence: start the standalone Supreme Court sister app next, while keeping state legislation as a future main-app expansion targeted for a later update.
+- Completed a legal-name branding pass so front-facing app copy, public support/privacy pages, native iOS display name, App Store setup copy, active tester docs, and launch-facing checks use `CapitolWonk CE`.
+- Added public `/privacy` and `/support` pages, linked them from Settings, and created the App Store Connect setup packet with the exact bundle ID, product IDs, support/privacy URLs, reviewer notes, screenshot candidates, and Apple-side checklist needed for the next App Store Connect pass.
 - Expanded `pnpm testflight:check` so the App Store setup packet and support/privacy pages are part of the readiness gate.
 - Tightened the App Store billing gate for the app-only launch path: `.env.example` now includes the Apple in-app purchase variables, `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` now treats final bundle ID and stable account-token namespace as blockers, and strict TestFlight/billing checks currently fail only on Apple-side setup values that must come from App Store Connect/host configuration.
 - Added a native iOS StoreKit shell under `ios/CapitolLedgerNative` with a SwiftUI app, WKWebView bridge, Pro monthly/annual product IDs, purchase/restore/manage handling, and native entitlement publishing back into the web subscription state.
 - Added server-side App Store transaction validation at `/api/account/subscription/app-store`, so signed StoreKit transactions can sync validated Pro status into the account subscription record.
-- Added `Capitol Ledger App/TestFlight Readiness Checklist.md` and `pnpm testflight:check` so upcoming work is measured against the App Store/TestFlight path.
+- Added the TestFlight readiness checklist and `pnpm testflight:check` so upcoming work is measured against the App Store/TestFlight path.
 - Continued the final launch-facing text-tone pass across auth/account, dashboard screenshot candidates, Settings, Weekly Brief, live reports, report review, search empty states, member source placeholders, and locked feature cards; expanded `pnpm launch-copy:check` to keep stale beta/demo/payment wording out of those surfaces.
 - Added `pnpm ios-native:check` to guard the native StoreKit bridge contract against the web `/upgrade` paywall.
 - Replaced the legacy `/beta` tester checklist with a redirect into `/feedback?source=live-testing`.
@@ -34,7 +35,7 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 - Began the official-profile polish pass (layout balance + score explanation + interaction clarity) as the active design iteration track after beta plumbing stabilized.
 - Tightened client-side hydration so account profile, party affiliation, gamification, and read-alert state reuse shared browser/account requests instead of asking the same API endpoints multiple times on one page.
 - Added `pnpm video-links:check` as a lightweight readiness check for the speech/video selling point, confirming bill video records, bill-detail rendering, subscription gating, and gamification hooks are still wired.
-- Confirmed speech/video links do not need a special Vercel environment variable in the current demo build. They ship from Capitol Ledger bill/video data and work once the latest code is deployed; live video ingestion remains a later data-expansion step.
+- Confirmed speech/video links do not need a special Vercel environment variable in the current demo build. They ship from CapitolWonk CE bill/video data and work once the latest code is deployed; live video ingestion remains a later data-expansion step.
 - Removed the bright page-level mobile gradients and returned the shared phone shell to a darker navy foundation so the glass cards, white type, and gold controls feel cleaner and more iPhone-native.
 - Reworked `/search` into one unified discovery card: search, result type, quick chips, and Pro refine controls now live together, with the advanced filters collapsed instead of sitting as a separate dated Smart Filters card.
 - Condensed `/account` by removing the full subscription demo and Weekly Brief delivery cards from the profile feed, linking the plan badge to `/upgrade`, adding Weekly Brief to settings, making Account Settings collapsible, and adding a compact Weekly Brief entry on `/dashboard`.
@@ -44,8 +45,8 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 - Fixed `/search?type=bills`, `/search?type=members`, and `/search?type=votes` so category-specific views show the fuller result set instead of only the three-card homepage preview.
 - Fixed the Vercel Prisma deployment issue by adding `prisma generate` to the production build path, so account creation/sign-in can use the generated Prisma client after Vercel dependency caching.
 - Restored the sign-in password visibility control so the eye button toggles password fields between hidden and visible.
-- Pushed the local Capitol Ledger app to GitHub on `main`, giving Vercel a deployable repository source for Phase 1.
-- Vercel deployments are now populating from the GitHub-connected Capitol Ledger project; Phase 1 is ready for deployed smoke testing.
+- Pushed the local CapitolWonk CE app to GitHub on `main`, giving Vercel a deployable repository source for Phase 1.
+- Vercel deployments are now populating from the GitHub-connected CapitolWonk CE project; Phase 1 is ready for deployed smoke testing.
 - Reorganized the remaining work into a phased roadmap and started Phase 1: Web Beta Readiness.
 - Added `Phase 1 Web Beta Launch Checklist.md` so the Vercel/Neon beta setup, terminal checks, tester invite route, and Phase 1 exit criteria are in one place.
 - Local `beta:check` passes the Phase 1 file/core environment checks; the remaining beta setup is setting `BETA_REVIEWER_EMAILS`, using the deployed Vercel URL for `NEXT_PUBLIC_APP_URL`, and running the database-backed production beta checks from the normal Terminal.
@@ -70,7 +71,7 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 - Removed the redundant notification settings icon from `/alerts`; notification preference controls now remain centralized under account settings.
 - Removed the redundant top-right profile settings icon from `/account`, leaving the page header focused and the settings section as the clear control area.
 - Gated Weekly Brief on Free subscriptions: the account preference toggle is locked/inactive, and the delivery card routes Free users to upgrade instead of preparing a brief.
-- Adjusted `/sign-in` account creation visibility: first-time visitors still see Create/New account, while returning users with existing Capitol Ledger browser/account state get a clean login-only screen.
+- Adjusted `/sign-in` account creation visibility: first-time visitors still see Create/New account, while returning users with existing CapitolWonk CE browser/account state get a clean login-only screen.
 - Added production password reset completion: reset-token links can now land on `/sign-in`, accept a new password, clear old sessions, and return the user through a fresh production account session.
 - Added the first checked-in Prisma production migration and deploy/check scripts so a hosted Postgres database can be migrated and verified for auth, account ledger, subscription, and gamification persistence.
 - Added provider-ready auth email delivery plumbing for verification and password reset messages, including webhook payloads, optional webhook secret headers, and mobile landing flows for `/sign-in?verifyToken=...` and `/sign-in?resetToken=...`.
@@ -138,7 +139,7 @@ The app now has a cohesive set of mobile MVP screens for Capitol Ledger. The pri
 - Added Stripe-ready checkout and webhook routes for subscription purchases, with demo fallback when live billing keys are not configured.
 - Added account-backed subscription sync with provider-ready billing fields so selected plans can later connect to Stripe, RevenueCat, or App Store records.
 - Added demo account-backed saved-ledger sync so saved officials, bills, alerts, and issue interests can move from browser fallback into an account session.
-- Added a Congress.gov normalization layer so live members, bills, committees, and official source links can use Capitol Ledger data shapes.
+- Added a Congress.gov normalization layer so live members, bills, committees, and official source links can use CapitolWonk CE data shapes.
 - Replaced bill-level video/speech/comment placeholders with verified official source links and visible verification labels.
 - Rebuilt `/sign-in` as the sign-in / create-account mobile screen.
 - Rebuilt `/` as the public homepage matching the mobile product system.
@@ -190,7 +191,7 @@ Last checked passes:
 - Speech/video links are demo-ready and subscription-gated on bill detail pages through the `speechVideo` entitlement. Vercel only needs the latest deployment for the current source-backed demo links. A future production layer should ingest or verify live committee hearing, floor video, and member statement feeds before this becomes fully automated.
 - The app has no polling loops in the current mobile flow. Shared hydration now avoids several duplicate profile/gamification/read-alert requests, which keeps the app lighter as we add more civic data.
 - Subscription demo mode can now be switched from `/account` or `/upgrade`, and those plan states visibly affect dashboard, bill details, alerts, search, and map. The switcher and locked previews have been polished for investor walkthroughs, the demo script lives in `Subscription Demo Guide.md`, and live billing readiness can be checked with `pnpm billing:check`.
-- The App Store subscription path now has a direct StoreKit native shell plus a server validation endpoint for account-wide Pro sync. The remaining production setup is App Store Connect products, App Store Server API credentials in the host, and sandbox/TestFlight purchase QA.
+- The App Store subscription path now has a direct StoreKit native shell plus a server validation endpoint for account-wide Pro and Team sync. The remaining production setup is App Store Connect products, App Store Server API credentials in the host, and sandbox/TestFlight purchase QA.
 - App Store-required local gates are intentionally strict now: before sandbox/TestFlight purchase QA, configure `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY` in the host environment.
 - TestFlight is now the active prep direction. The launch-facing text-tone pass now covers auth/account, dashboard, settings, upgrade, feedback, alerts, brief, search empty states, member source placeholders, locked feature cards, and bill/member detail sub-tabs. The next major step is App Store Connect setup and sandbox/TestFlight purchase QA.
 - Production auth routes now exist and are wired to `/sign-in`. Real accounts require `DATABASE_URL`; deployed HTTPS should set `AUTH_COOKIE_SECURE=true`; the checked-in migration can be applied with `pnpm prisma:migrate:deploy`; `pnpm production-auth:check` verifies the required tables; password reset completion is ready for `/sign-in?resetToken=...` links; verification is ready for `/sign-in?verifyToken=...` links; auth email delivery can use `AUTH_EMAIL_DELIVERY=webhook` once a provider bridge is chosen. Use `pnpm auth-email:check` before production email QA. See `Auth Integration Notes.md`.

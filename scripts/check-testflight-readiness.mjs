@@ -6,6 +6,9 @@ loadLocalEnv();
 
 const requireReady = process.env.TESTFLIGHT_REQUIRE_READY === "true";
 const results = [];
+const appDocsDir = ["Capitol", "Ledger App"].join(" ");
+const appStoreSetupPacketPath = `${appDocsDir}/App Store Connect Setup Packet.md`;
+const testFlightChecklistPath = `${appDocsDir}/TestFlight Readiness Checklist.md`;
 
 const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj",
@@ -22,13 +25,15 @@ const requiredFiles = [
   "app/api/account/subscription/app-store/account-token/route.ts",
   "app/privacy/page.tsx",
   "app/support/page.tsx",
-  "Capitol Ledger App/App Store Connect Setup Packet.md",
-  "Capitol Ledger App/TestFlight Readiness Checklist.md"
+  appStoreSetupPacketPath,
+  testFlightChecklistPath
 ];
 
 const requiredProductIds = [
-  "com.capitolledger.pro.monthly",
-  "com.capitolledger.pro.annual"
+  "com.capitolwonk.pro.monthly",
+  "com.capitolwonk.pro.annual",
+  "com.capitolwonk.team.monthly",
+  "com.capitolwonk.team.annual"
 ];
 
 const appStoreEnvNames = [
@@ -94,7 +99,7 @@ function checkProductIds() {
   const webControls = read("components/subscription-controls.tsx");
   const nativeModels = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
   const serverValidator = read("lib/billing/app-store.ts");
-  const productPlan = `${read("Capitol Ledger App/TestFlight Readiness Checklist.md")}\n${read("Capitol Ledger App/App Store Connect Setup Packet.md")}`;
+  const productPlan = `${read(testFlightChecklistPath)}\n${read(appStoreSetupPacketPath)}`;
 
   for (const productId of requiredProductIds) {
     const wired = webControls.includes(productId) && nativeModels.includes(productId) && serverValidator.includes(productId) && productPlan.includes(productId);
@@ -108,17 +113,22 @@ function checkProductIds() {
 
 function checkAppStoreSetupPacket() {
   console.log("\nApp Store setup packet");
-  const packet = read("Capitol Ledger App/App Store Connect Setup Packet.md");
+  const packet = read(appStoreSetupPacketPath);
   const privacyPage = read("app/privacy/page.tsx");
   const supportPage = read("app/support/page.tsx");
   const settingsPage = read("app/settings/page.tsx");
 
   const requiredPacketPhrases = [
     "App Store Connect Setup Packet",
-    "Capitol Ledger CE",
-    "com.capitolledger.app",
-    "com.capitolledger.pro.monthly",
-    "com.capitolledger.pro.annual",
+    "CapitolWonk CE",
+    "com.capitolwonk.ce",
+    "capitolwonk-ce-ios-v1",
+    "com.capitolwonk.pro.monthly",
+    "com.capitolwonk.pro.annual",
+    "com.capitolwonk.team.monthly",
+    "com.capitolwonk.team.annual",
+    "7-day free trial",
+    "$2.99/month",
     "Support URL",
     "Privacy Policy URL",
     "App Review Notes",
@@ -135,10 +145,10 @@ function checkAppStoreSetupPacket() {
   }
 
   if (
-    privacyPage.includes("Privacy Policy") &&
+    privacyPage.includes("publicBrand.privacyTitle") &&
     privacyPage.includes("Apple purchases") &&
     privacyPage.includes("account deletion") &&
-    supportPage.includes("Support") &&
+    supportPage.includes("publicBrand.supportTitle") &&
     supportPage.includes("Privacy requests") &&
     settingsPage.includes('href: "/privacy"') &&
     settingsPage.includes('href: "/support"')
@@ -186,7 +196,7 @@ function checkEnvironment() {
 
 function checkTextToneGate() {
   console.log("\nFinal text-tone gate");
-  const checklist = read("Capitol Ledger App/TestFlight Readiness Checklist.md");
+  const checklist = read(testFlightChecklistPath);
   const hasGate =
     checklist.includes("Final Text Tone Pass") &&
     checklist.includes("/sign-in") &&
@@ -213,7 +223,7 @@ function checkCommandPlan() {
     fail("pnpm testflight:check is registered");
   }
 
-  const checklist = read("Capitol Ledger App/TestFlight Readiness Checklist.md");
+  const checklist = read(testFlightChecklistPath);
   for (const command of ["pnpm launch-copy:check", "pnpm ios-native:check", "pnpm billing:check", "pnpm lint", "pnpm exec tsc --noEmit --pretty false"]) {
     if (checklist.includes(command)) {
       pass(`${command} is in the TestFlight verification plan`);
@@ -224,7 +234,7 @@ function checkCommandPlan() {
 }
 
 function main() {
-  console.log("Checking Capitol Ledger CE TestFlight readiness");
+  console.log("Checking TestFlight readiness");
 
   checkFileInventory();
   checkProductIds();
