@@ -79,7 +79,7 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Start Pro with 7 days free, then $2.99/month. Cancel anytime."
+            description="Start Pro with 7 days free, then $4.99/month. Cancel anytime."
             eyebrow="Plans"
             title="Choose a plan"
           />
@@ -98,7 +98,7 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Monthly Pro includes the 7-day free trial. Annual Pro and Team purchases begin with the terms shown before confirmation."
+              description="Monthly Pro includes the 7-day free trial. Team is one fixed three-seat workspace; Apple shows all renewal terms before confirmation."
               eyebrow="App Store"
               icon={<Sparkles />}
               title="Subscription cycle"

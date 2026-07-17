@@ -6,12 +6,12 @@ CapitolWonk CE is now app-only for paid upgrades. Pro and Team are purchased thr
 
 ## Current App Path
 
-1. `/upgrade` lets a user choose Pro or Team monthly/annual and starts Apple in-app purchase from the native shell. Monthly Pro presents a 7-day free trial that renews at $2.99/month unless canceled before renewal.
+1. `/upgrade` lets a user choose Pro or Team monthly/annual and starts Apple in-app purchase from the native shell. Monthly Pro presents a 7-day free trial that renews at $4.99/month unless canceled before renewal.
 2. Native StoreKit handles purchase, restore, and App Store subscription management.
 3. The device unlocks the paid plan immediately after StoreKit returns an active entitlement.
 4. `/api/account/subscription/app-store` validates the signed transaction through App Store Server API before writing account subscription state.
 5. The server blocks an Apple original transaction from being linked to a second account when a database-backed owner already exists.
-6. Team App Store products unlock a three-seat starter workspace. Larger Team expansion remains a support/custom-plan workflow.
+6. Team App Store products are fixed-price bundles at $17.99/month or $179.99/year and unlock one three-seat starter workspace. Larger Team expansion remains a support/custom-plan workflow.
 
 ## Required Environment
 
@@ -44,10 +44,10 @@ For the App Store launch path, `BILLING_REQUIRE_APP_STORE=true pnpm billing:chec
 
 ## Product Mapping
 
-- Pro monthly: `com.capitolwonk.pro.monthly` with 7-day free trial, then $2.99/month
-- Pro annual: `com.capitolwonk.pro.annual`
-- Team monthly: `com.capitolwonk.team.monthly`
-- Team annual: `com.capitolwonk.team.annual`
+- Pro monthly: `com.capitolwonk.pro.monthly` with 7-day free trial, then $4.99/month
+- Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
+- Team monthly: `com.capitolwonk.team.monthly` at $17.99 total for the three-seat workspace
+- Team annual: `com.capitolwonk.team.annual` at $179.99 total for the three-seat workspace
 
 Create these products in one App Store Connect subscription group before sandbox or TestFlight purchase QA.
 
@@ -67,6 +67,6 @@ Without App Store Server API credentials, local Xcode StoreKit testing can still
 
 ## Open Decisions
 
-- Whether larger Civic Team seat counts should become additional Apple products or stay a support/custom-plan workflow.
+- Whether larger Civic Team workspaces should become additional Apple products or stay a support/custom-plan workflow.
 - Whether annual Pro should also receive an introductory offer after monthly Pro trial QA is complete.
 - Whether locked feature cards should start the same native StoreKit purchase flow after TestFlight QA proves the main `/upgrade` path.

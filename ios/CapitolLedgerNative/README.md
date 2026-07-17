@@ -25,10 +25,10 @@ When StoreKit returns a signed transaction JWS, the WebView also posts it to `/a
 
 ## Product IDs
 
-- Pro monthly: `com.capitolwonk.pro.monthly` with the App Store Connect 7-day free trial introductory offer, then $2.99/month
-- Pro annual: `com.capitolwonk.pro.annual`
-- Team monthly: `com.capitolwonk.team.monthly`
-- Team annual: `com.capitolwonk.team.annual`
+- Pro monthly: `com.capitolwonk.pro.monthly` with the App Store Connect 7-day free trial introductory offer, then $4.99/month
+- Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
+- Team monthly: `com.capitolwonk.team.monthly` at $17.99 total for one three-seat workspace
+- Team annual: `com.capitolwonk.team.annual` at $179.99 total for one three-seat workspace
 
 Create these products in App Store Connect in one subscription group before TestFlight purchase QA.
 

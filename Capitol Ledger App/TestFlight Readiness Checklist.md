@@ -1,6 +1,6 @@
 # TestFlight Readiness Checklist
 
-Status: active prep as of June 25, 2026.
+Status: active prep as of July 17, 2026.
 
 ## Direction
 
@@ -30,10 +30,10 @@ Use the App Store Connect setup packet as the entry packet for App Store Connect
 
 1. Confirm the final app name, bundle ID, SKU, and product IDs before creating Apple records. The current native default is `com.capitolwonk.ce`; change it only before the first TestFlight purchase, then keep it stable.
 2. Create one subscription group for Pro and Team.
-3. Create Pro monthly with product ID `com.capitolwonk.pro.monthly` and configure the 7-day free trial introductory offer that renews at $2.99/month unless canceled before renewal.
-4. Create Pro annual with product ID `com.capitolwonk.pro.annual`.
-5. Create Team monthly with product ID `com.capitolwonk.team.monthly`.
-6. Create Team annual with product ID `com.capitolwonk.team.annual`.
+3. Create Pro monthly with product ID `com.capitolwonk.pro.monthly` at $4.99 and configure the 7-day free trial introductory offer that renews at $4.99/month unless canceled before renewal.
+4. Create Pro annual with product ID `com.capitolwonk.pro.annual` at $39.99/year.
+5. Create Team monthly with product ID `com.capitolwonk.team.monthly` at $17.99 total for the fixed three-seat workspace.
+6. Create Team annual with product ID `com.capitolwonk.team.annual` at $179.99 total for the fixed three-seat workspace.
 7. Set final display names, review descriptions, prices, and localization.
 8. Create or select the App Store Server API key.
 9. Add host environment variables through the deployment provider, never git:
@@ -52,12 +52,12 @@ Use the App Store Connect setup packet as the entry packet for App Store Connect
 1. Run StoreKit local purchase smoke from Xcode if useful.
 2. Run sandbox/TestFlight purchase QA for monthly and annual Pro and Team.
 3. Verify purchase unlocks the selected paid plan on device.
-4. Verify Pro monthly shows the 7-day free trial terms and the post-trial $2.99/month renewal before confirmation.
+4. Verify Pro monthly shows the 7-day free trial terms and the post-trial $4.99/month renewal before confirmation.
 5. Verify signed transaction sync updates the signed-in account.
 6. Verify restore purchases works after reinstall/sign-out/sign-in.
 7. Verify cancellation/expiration removes paid access after Apple reports inactive entitlement.
 8. Verify an Apple original transaction cannot be linked to a second account.
-9. Verify Team purchases open a three-seat workspace and owner access does not consume a seat.
+9. Verify Team purchases charge the fixed $17.99 monthly or $179.99 annual workspace total, open three teammate seats, and do not consume a seat for the owner.
 
 ## Final Text Tone Pass
 
@@ -101,4 +101,4 @@ BILLING_REQUIRE_APP_STORE=true pnpm billing:check
 
 ## Next Best Step
 
-Confirm the final legal app name first, then finish the Apple setup items that cannot be completed in code using the setup packet: App Store Connect app record, Pro and Team subscription products, final bundle ID/signing, App Store Server API credentials, host env values, and deployed support/privacy URLs. Then run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`; after both pass, run sandbox/TestFlight purchase QA and capture final screenshots from the stable build.
+The app identity, four StoreKit product IDs, prices, and Pro Monthly introductory offer are set. Finish the Paid Apps/Small Business enrollment and App Store Server API credentials outside git, then run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`. After both pass, run sandbox/TestFlight purchase and restore QA for all four products and capture final screenshots from the stable build.

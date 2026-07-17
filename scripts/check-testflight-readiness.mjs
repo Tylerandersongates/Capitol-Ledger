@@ -128,7 +128,10 @@ function checkAppStoreSetupPacket() {
     "com.capitolwonk.team.monthly",
     "com.capitolwonk.team.annual",
     "7-day free trial",
-    "$2.99/month",
+    "$4.99/month",
+    "$39.99",
+    "$17.99",
+    "$179.99",
     "Support URL",
     "Privacy Policy URL",
     "App Review Notes",
@@ -142,6 +145,23 @@ function checkAppStoreSetupPacket() {
     } else {
       fail(`Setup packet includes ${phrase}`, "Required before App Store Connect handoff.");
     }
+  }
+
+  const subscriptionPlans = read("lib/subscription-plans.ts");
+  const subscriptionControls = read("components/subscription-controls.tsx");
+  const pricingAligned =
+    subscriptionPlans.includes('monthly: "$4.99"') &&
+    subscriptionPlans.includes('annual: "$39.99"') &&
+    subscriptionPlans.includes('monthly: "$17.99"') &&
+    subscriptionPlans.includes('annual: "$179.99"') &&
+    subscriptionControls.includes("/ 3-seat workspace") &&
+    !subscriptionControls.includes("/ seat min 3") &&
+    !subscriptionControls.includes("TeamSeatSelector");
+
+  if (pricingAligned) {
+    pass("Pro and fixed-workspace Team prices are aligned");
+  } else {
+    fail("Pro and fixed-workspace Team prices are aligned", "Expected $4.99/$39.99 Pro and $17.99/$179.99 fixed three-seat Team pricing without per-seat StoreKit math.");
   }
 
   if (

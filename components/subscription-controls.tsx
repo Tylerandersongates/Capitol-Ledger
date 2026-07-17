@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Crown, ListChecks, LockKeyhole, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   getSubscriptionFeature,
   isPlanFeatureEnabled,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/subscription-plans";
 import { publicBrand } from "@/lib/brand";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
-import { maximumTeamSeatCount, minimumTeamSeatCount, normalizeOptionalTeamSeatCount, normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
+import { minimumTeamSeatCount, normalizeOptionalTeamSeatCount } from "@/lib/subscription-seat-count";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 const storageKey = "capitol-ledger:subscription";
@@ -374,7 +374,15 @@ export function PlanPrice({
   const planDetails = subscriptionPlans[plan];
   const price = subscription.cycle === "annual" ? planDetails.pricing.annual : planDetails.pricing.monthly;
   const unit =
-    plan === "free" ? "" : subscription.cycle === "annual" ? (plan === "team" ? "/ seat / year min 3" : "/ year") : plan === "team" ? "/ seat min 3" : planDetails.pricing.unit;
+    plan === "free"
+      ? ""
+      : plan === "team"
+        ? subscription.cycle === "annual"
+          ? "/ 3-seat workspace / year"
+          : planDetails.pricing.unit
+        : subscription.cycle === "annual"
+          ? "/ year"
+          : planDetails.pricing.unit;
 
   return (
     <div className={className}>
@@ -552,117 +560,6 @@ export function SubscriptionBadge({ initialSubscription = null }: { initialSubsc
   );
 }
 
-export function TeamSeatSelector({
-  className = "",
-  compact = false,
-  defaultCycle,
-  initialSubscription = null
-}: {
-  className?: string;
-  compact?: boolean;
-  defaultCycle?: SubscriptionDefaultCycle;
-  initialSubscription?: AccountSubscriptionSnapshot | null;
-}) {
-  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
-  const [customPlanRequested, setCustomPlanRequested] = useState(false);
-  const seatCount = normalizeTeamSeatCount(subscription.seatCount);
-  const pricePerSeat = subscription.cycle === "annual" ? 59.99 : 5.99;
-  const totalPrice = formatCurrency(pricePerSeat * seatCount);
-  const seatUnit = subscription.cycle === "annual" ? "seat / year" : "seat / month";
-  const totalUnit = subscription.cycle === "annual" ? "team / year" : "team / month";
-  const showingCustomPlanCue = customPlanRequested || seatCount >= maximumTeamSeatCount;
-
-  function updateSeatCount(value: unknown) {
-    const parsed = typeof value === "number" ? value : Number(value);
-    const overMaximum = Number.isFinite(parsed) && Math.floor(parsed) > maximumTeamSeatCount;
-    setCustomPlanRequested(overMaximum);
-    updateSubscription({ seatCount: normalizeTeamSeatCount(value) });
-  }
-
-  return (
-    <div className={`${className} rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]`}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Team seats</div>
-          <div className="mt-1 text-[13px] leading-snug text-white/56">
-            Choose how many teammates need access. You can start with {minimumTeamSeatCount}-{maximumTeamSeatCount} seats here.
-          </div>
-        </div>
-        <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
-          {seatCount} seats
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2">
-        <button
-          type="button"
-          onClick={() => updateSeatCount(seatCount - 1)}
-          disabled={seatCount <= minimumTeamSeatCount}
-          aria-label="Decrease team seats"
-          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white disabled:opacity-35"
-        >
-          <Minus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-        </button>
-        <input
-          type="number"
-          min={minimumTeamSeatCount}
-          max={maximumTeamSeatCount}
-          step={1}
-          value={seatCount}
-          onChange={(event) => updateSeatCount(event.target.value)}
-          aria-label="Team seats"
-          className="h-10 min-w-0 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-center text-[15px] font-semibold text-white outline-none transition focus:border-[#ffb12b]/60"
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (seatCount >= maximumTeamSeatCount) {
-              setCustomPlanRequested(true);
-              return;
-            }
-
-            updateSeatCount(seatCount + 1);
-          }}
-          aria-label={seatCount >= maximumTeamSeatCount ? "Show custom plan option" : "Increase team seats"}
-          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-        </button>
-      </div>
-
-      {showingCustomPlanCue ? (
-        <div className="mt-3 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-3">
-          <div className="grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#ffb12b]/14 text-[#ffb12b]">
-              <UsersRound className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[13px] font-semibold text-white">Need more than {maximumTeamSeatCount} seats?</div>
-              <div className="mt-1 text-[12px] leading-snug text-white/54">Request a custom Team plan for a larger group.</div>
-            </div>
-            <Link href="/feedback?source=team-custom-plan" className="shrink-0 rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/12 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b] transition hover:bg-[#ffb12b]/18">
-              Request
-            </Link>
-          </div>
-        </div>
-      ) : null}
-
-      <div className={`${compact ? "mt-3" : "mt-4"} grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]`}>
-        <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">Estimated total</div>
-          <div className="mt-1 text-[12px] leading-snug text-white/48">
-            {seatCount} seats at {formatCurrency(pricePerSeat)} / {seatUnit}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className={`${compact ? "text-[22px]" : "text-[26px]"} font-semibold leading-none text-[#ffb12b]`}>{totalPrice}</div>
-          <div className="mt-1 text-[11px] text-white/42">/ {totalUnit}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function TeamWorkspacePreview() {
   return (
     <div>
@@ -711,14 +608,6 @@ export function TeamWorkspacePreview() {
       </Link>
     </div>
   );
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
-    style: "currency"
-  }).format(value);
 }
 
 export function PlanFeatureGate({

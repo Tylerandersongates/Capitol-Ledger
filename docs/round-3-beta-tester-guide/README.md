@@ -96,19 +96,19 @@ If you are testing a Team role, check only the actions that fit your assigned ro
 
 If you are removed from a Team, your dashboard should stop showing Team access after refresh or sign-back-in.
 
-### 4. Review Annual Upgrade And Seat Limits
+### 4. Review Annual Upgrade And The Team Workspace
 
 Do not complete payment unless you were specifically assigned to a billing test.
 
-If you are assigned to billing checkout, use Stripe's fake test card number only: `4242 4242 4242 4242`. Use any future expiration date, any three-digit CVC, and any ZIP code. Never enter your real credit or debit card. If Stripe asks for a real card, stop and report it as High impact feedback.
+If you are assigned to billing checkout, test only from the TestFlight build and confirm Apple presents a sandbox purchase. Never enter a real credit or debit card. If the purchase is not clearly a sandbox/TestFlight transaction, stop and report it as High impact feedback.
 
 1. Open Upgrade.
 2. Confirm Annual is selected by default.
 3. Compare Free, Pro Intelligence, and Civic Team.
 4. Confirm Pro annual pricing reads clearly.
-5. Confirm Civic Team annual pricing reads clearly per seat.
-6. Try Team seat counts from 3 to 25.
-7. Confirm larger teams are directed to a custom plan instead of normal checkout.
+5. Confirm Civic Team annual pricing reads as one $179.99 three-seat workspace total, not a per-seat price.
+6. Confirm the Apple purchase path does not show a variable seat selector.
+7. Confirm larger teams are directed to support for a custom plan instead of normal checkout.
 8. Switch between monthly and annual if the page allows it, then confirm the copy still makes sense.
 
 Report confusing plan names, inconsistent pricing, missing annual language, or anything that sounds like the wrong customer is paying.

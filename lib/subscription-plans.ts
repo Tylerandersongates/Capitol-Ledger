@@ -65,16 +65,16 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
     name: "Pro Intelligence",
     description: "More alerts, summaries, and reports",
     pricing: {
-      monthly: "$2.99",
-      annual: "$29.99",
+      monthly: "$4.99",
+      annual: "$39.99",
       unit: "/ month"
     },
     trial: {
-      conversionPrice: "$2.99/month",
+      conversionPrice: "$4.99/month",
       ctaLabel: "Start 7-day free trial",
       cycle: "monthly",
       days: 7,
-      disclosure: "7 days free, then $2.99/month. Cancel anytime.",
+      disclosure: "7 days free, then $4.99/month. Cancel anytime.",
       label: "7-day free trial"
     },
     highlights: ["Deeper dashboard panels", "Topic and official tracking", "Exportable reports", "Priority vote reminders"],
@@ -82,14 +82,14 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   },
   team: {
     name: "Civic Team",
-    description: "Shared tracking for organizations",
+    description: "A shared three-seat workspace for organizations",
     pricing: {
-      monthly: "$5.99",
-      annual: "$59.99",
-      unit: "/ seat"
+      monthly: "$17.99",
+      annual: "$179.99",
+      unit: "/ 3-seat workspace"
     },
-    highlights: ["Shared workspace", "Team alerts", "Exportable reports", "Shared watchlists"],
-    limits: ["Self-serve Team supports 3 to 25 seats", "Email invites and shared editing are rolling out"]
+    highlights: ["Three teammate seats", "Billing owner access included", "Team alerts", "Shared watchlists"],
+    limits: ["One fixed three-seat workspace", "Larger plans are available through support"]
   }
 };
 

@@ -1,6 +1,6 @@
 # App Store Connect Setup Packet
 
-Status: rename-ready TestFlight prep as of June 25, 2026.
+Status: pricing-aligned TestFlight prep as of July 17, 2026.
 
 ## Scope
 
@@ -32,23 +32,25 @@ Use one auto-renewable subscription group.
 
 | Product | Product ID | Reference name | Display name | Current app price copy |
 | --- | --- | --- | --- | --- |
-| Pro monthly | `com.capitolwonk.pro.monthly` | `CapitolWonk CE Pro Monthly` | Pro Monthly | 7-day free trial, then `$2.99` monthly |
-| Pro annual | `com.capitolwonk.pro.annual` | `CapitolWonk CE Pro Annual` | Pro Annual | `$29.99` annual |
-| Team monthly | `com.capitolwonk.team.monthly` | `CapitolWonk CE Team Monthly` | Team Monthly | `$5.99` per seat monthly; App Store product unlocks a three-seat starter workspace |
-| Team annual | `com.capitolwonk.team.annual` | `CapitolWonk CE Team Annual` | Team Annual | `$59.99` per seat annually; App Store product unlocks a three-seat starter workspace |
+| Pro monthly | `com.capitolwonk.pro.monthly` | `CapitolWonk CE Pro Monthly` | Pro Monthly | 7-day free trial, then `$4.99` monthly |
+| Pro annual | `com.capitolwonk.pro.annual` | `CapitolWonk CE Pro Annual` | Pro Annual | `$39.99` annual |
+| Team monthly | `com.capitolwonk.team.monthly` | `CapitolWonk CE Team Monthly` | Team Monthly | `$17.99` total monthly for one three-seat starter workspace |
+| Team annual | `com.capitolwonk.team.annual` | `CapitolWonk CE Team Annual` | Team Annual | `$179.99` total annually for one three-seat starter workspace |
 
 If the final product IDs change for trademark or naming reasons, update the web controls, native StoreKit models, server validation, setup packet, and readiness checks before creating products in App Store Connect. If the launch price changes in App Store Connect, update `lib/subscription-plans.ts` before sandbox/TestFlight purchase QA so app copy and Apple pricing do not drift.
 
-Configure Pro monthly with an App Store introductory offer: 7-day free trial, then automatic monthly renewal at `$2.99` unless the user cancels before renewal in Apple subscription settings. Keep this offer on the monthly Pro product only unless the app copy and QA plan are intentionally expanded.
+Configure Pro monthly with an App Store introductory offer: 7-day free trial, then automatic monthly renewal at `$4.99` unless the user cancels before renewal in Apple subscription settings. Keep this offer on the monthly Pro product only unless the app copy and QA plan are intentionally expanded.
+
+The Team products are fixed-price three-seat workspace bundles. They are not per-seat products and StoreKit does not multiply their price by a seat quantity. Larger teams remain a support/custom-plan workflow.
 
 ## Product Review Notes
 
 Use this as the starting note for subscription review:
 
 ```text
-CapitolWonk CE Pro unlocks deeper civic tracking features in the app, including expanded dashboard panels, topic and official tracking, exportable reports, priority vote reminders, AI bill summaries, source maps, and Daily Brief access. Monthly Pro includes a 7-day free trial, then renews at $2.99/month unless canceled before renewal.
+CapitolWonk CE Pro unlocks deeper civic tracking features in the app, including expanded dashboard panels, topic and official tracking, exportable reports, priority vote reminders, AI bill summaries, source maps, and Daily Brief access. Monthly Pro includes a 7-day free trial, then renews at $4.99/month unless canceled before renewal.
 
-CapitolWonk CE Team unlocks a three-seat shared workspace with owner access, invites, shared watchlists, Team alerts, and shared tracking. Larger Team plans are handled through support after activation.
+CapitolWonk CE Team unlocks one fixed three-seat shared workspace with owner access, invites, shared watchlists, Team alerts, and shared tracking. Team Monthly is $17.99 total and Team Annual is $179.99 total. Larger Team plans are handled through support after activation.
 
 Purchases and restores are handled through Apple in-app purchase.
 ```
@@ -60,7 +62,7 @@ Use this as the starting note for App Review:
 ```text
 CapitolWonk CE helps users follow federal bills, votes, officials, alerts, and saved legislative updates. Paid upgrades use Apple in-app purchase only.
 
-To test purchases, open Settings > Plan or the Upgrade screen, choose Pro Monthly, Pro Annual, Team Monthly, or Team Annual, and complete the Apple sandbox/TestFlight purchase. Pro Monthly should show a 7-day free trial that converts to $2.99/month unless canceled before renewal. Restore Purchases is available from the Upgrade screen.
+To test purchases, open Settings > Plan or the Upgrade screen, choose Pro Monthly, Pro Annual, Team Monthly, or Team Annual, and complete the Apple sandbox/TestFlight purchase. Pro Monthly should show a 7-day free trial that converts to $4.99/month unless canceled before renewal. Team should show a fixed three-seat workspace at $17.99/month or $179.99/year. Restore Purchases is available from the Upgrade screen.
 
 Team purchases open the Team workspace with three seats. Owner access does not consume a team seat.
 ```
@@ -113,7 +115,7 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 6. Create `com.capitolwonk.pro.annual`.
 7. Create `com.capitolwonk.team.monthly`.
 8. Create `com.capitolwonk.team.annual`.
-9. Confirm prices match app copy or update app copy before QA.
+9. Confirm Pro is `$4.99/month` or `$39.99/year` and Team is a fixed three-seat workspace at `$17.99/month` or `$179.99/year`.
 10. Add support and privacy URLs after deployment.
 11. Create or select the App Store Server API key.
 12. Add required host environment variables.
