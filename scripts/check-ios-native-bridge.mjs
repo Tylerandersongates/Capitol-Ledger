@@ -77,6 +77,9 @@ assert.ok(
   bridge.includes("capitol-ledger:subscription") &&
     bridge.includes("capitol-ledger:subscription-changed") &&
     bridge.includes("capitol-ledger:native-purchase-result") &&
+    webControls.includes('nativePurchaseResultEvent = "capitol-ledger:native-purchase-result"') &&
+    webControls.includes("handleNativePurchaseResult") &&
+    webControls.includes("handleNativeRestoreResult") &&
     bridge.includes('fetch("/api/account/subscription/app-store"') &&
     webControls.includes("appStoreAccountTokenEndpoint") &&
     webControls.includes("appAccountToken") &&

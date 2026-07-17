@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
@@ -27,6 +27,7 @@ import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/ca
 
 const storageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
+const nativePurchaseResultEvent = "capitol-ledger:native-purchase-result";
 const accountSubscriptionEndpoint = "/api/account/subscription";
 const appStoreAccountTokenEndpoint = "/api/account/subscription/app-store/account-token";
 type SubscriptionHydrationScope = "effective" | "personal";
@@ -48,6 +49,15 @@ type NativePurchaseMessage =
 
 type NativePurchaseBridge = {
   postMessage(message: NativePurchaseMessage): void;
+};
+
+type NativePurchaseResult = {
+  action: "entitlement" | "manage" | "purchase" | "restore" | string;
+  message?: string;
+  ok: boolean;
+  productId?: string;
+  serverSynced?: boolean;
+  subscription?: AccountSubscriptionSnapshot;
 };
 
 declare global {
@@ -439,6 +449,7 @@ export function PlanActionButton({
   const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const [pending, setPending] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const pendingProductId = useRef<string | null>(null);
   const active = subscription.plan === plan;
   const activePaidSubscription = subscription.plan !== "free";
   const paidPlan = plan === "pro" || plan === "team";
@@ -446,6 +457,22 @@ export function PlanActionButton({
   const disabled = pending || (active && !managesCurrentSubscription);
   const trial = subscriptionPlans[plan].trial;
   const trialSelected = Boolean(trial && subscription.cycle === trial.cycle);
+
+  useEffect(() => {
+    function handleNativePurchaseResult(event: Event) {
+      if (!(event instanceof CustomEvent) || !pendingProductId.current) return;
+
+      const result = event.detail as NativePurchaseResult | undefined;
+      if (!result || result.action !== "purchase") return;
+      if (result.productId && result.productId !== pendingProductId.current) return;
+
+      setStatusMessage(result.message || (result.ok ? "Purchase completed." : "Purchase could not be completed."));
+      setPending(false);
+    }
+
+    window.addEventListener(nativePurchaseResultEvent, handleNativePurchaseResult);
+    return () => window.removeEventListener(nativePurchaseResultEvent, handleNativePurchaseResult);
+  }, []);
 
   async function handlePlanAction() {
     if (disabled) return;
@@ -460,6 +487,7 @@ export function PlanActionButton({
             ? "Opening App Store subscription management."
             : `Open ${publicBrand.name} in the iOS app or TestFlight to manage App Store purchases.`
         );
+        setPending(false);
         return;
       }
 
@@ -467,11 +495,13 @@ export function PlanActionButton({
         const appAccountToken = window.__capitolLedgerNativeStoreKit ? await readAppStoreAccountToken() : null;
         if (window.__capitolLedgerNativeStoreKit && !appAccountToken) {
           setStatusMessage(`Sign in before upgrading so Apple can link ${subscriptionPlans[plan].name} to this account.`);
+          setPending(false);
           return;
         }
 
         const teamSeatCount = plan === "team" ? normalizeTeamSeatCountForCycle(subscription.seatCount, subscription.cycle) : undefined;
         const productId = plan === "team" ? getTeamAppStoreProductId(subscription.cycle, teamSeatCount) : proAppStoreProductIds[subscription.cycle];
+        pendingProductId.current = productId;
         const opened = postNativePurchaseMessage({
           action: "purchase",
           appAccountToken: appAccountToken ?? undefined,
@@ -489,18 +519,23 @@ export function PlanActionButton({
               ? `Open ${publicBrand.name} in the iOS app or TestFlight to start the ${trial.label}.`
               : `Open ${publicBrand.name} in the iOS app or TestFlight to complete this purchase.`
         );
+        if (!opened) {
+          pendingProductId.current = null;
+          setPending(false);
+        }
         return;
       }
 
       if (plan === "free") {
         updateSubscription({ plan });
         setStatusMessage("Free plan is active.");
+        setPending(false);
         return;
       }
     } catch {
+      pendingProductId.current = null;
       if (plan === "free") updateSubscription({ plan });
       setStatusMessage(plan === "free" ? "Free plan is active." : "Purchase could not open. Try again.");
-    } finally {
       setPending(false);
     }
   }
@@ -524,19 +559,39 @@ export function PlanActionButton({
 export function RestorePurchasesButton({ className }: { className: string }) {
   const [pending, setPending] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const restoreRequested = useRef(false);
+
+  useEffect(() => {
+    function handleNativeRestoreResult(event: Event) {
+      if (!(event instanceof CustomEvent) || !restoreRequested.current) return;
+
+      const result = event.detail as NativePurchaseResult | undefined;
+      if (!result || result.action !== "restore") return;
+
+      setStatusMessage(result.message || (result.ok ? "Purchase restored." : "No active App Store purchase was found."));
+      setPending(false);
+    }
+
+    window.addEventListener(nativePurchaseResultEvent, handleNativeRestoreResult);
+    return () => window.removeEventListener(nativePurchaseResultEvent, handleNativeRestoreResult);
+  }, []);
 
   function handleRestore() {
     if (pending) return;
     setPending(true);
     setStatusMessage("");
 
+    restoreRequested.current = true;
     const opened = postNativePurchaseMessage({ action: "restore" });
     setStatusMessage(
       opened
         ? "Checking App Store purchases."
         : `Open ${publicBrand.name} in the iOS app or TestFlight to restore App Store purchases.`
     );
-    setPending(false);
+    if (!opened) {
+      restoreRequested.current = false;
+      setPending(false);
+    }
   }
 
   return (
