@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Bell, Crown, ListChecks, LockKeyhole, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Bell, Crown, ListChecks, LockKeyhole, Minus, Plus, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   getSubscriptionFeature,
   isPlanFeatureEnabled,
@@ -11,7 +11,18 @@ import {
 } from "@/lib/subscription-plans";
 import { publicBrand } from "@/lib/brand";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
-import { minimumTeamSeatCount, normalizeOptionalTeamSeatCount } from "@/lib/subscription-seat-count";
+import {
+  formatTeamSeatPrice,
+  getTeamAppStoreProductId,
+  getMaximumTeamSeatCount,
+  maximumTeamSeatCount,
+  maximumAnnualTeamSeatCount,
+  minimumTeamSeatCount,
+  normalizeOptionalTeamSeatCount,
+  normalizeTeamSeatCountForCycle,
+  teamAnnualSeatReferencePrice,
+  teamMonthlySeatReferencePrice
+} from "@/lib/subscription-seat-count";
 import type { AccountSubscriptionSnapshot, SubscriptionPlanId } from "@/types/capitol";
 
 const storageKey = "capitol-ledger:subscription";
@@ -30,6 +41,7 @@ type NativePurchaseMessage =
       plan: Exclude<SubscriptionPlanId, "free">;
       productId: string;
       appAccountToken?: string;
+      seatCount?: number;
     }
   | { action: "restore" }
   | { action: "manage" };
@@ -50,23 +62,17 @@ declare global {
   }
 }
 
-const appStoreProductIds: Record<Exclude<SubscriptionPlanId, "free">, Record<SubscriptionDefaultCycle, string>> = {
-  pro: {
-    annual: "com.capitolwonk.pro.annual",
-    monthly: "com.capitolwonk.pro.monthly"
-  },
-  team: {
-    annual: "com.capitolwonk.team.annual",
-    monthly: "com.capitolwonk.team.monthly"
-  }
+const proAppStoreProductIds: Record<SubscriptionDefaultCycle, string> = {
+  annual: "com.capitolwonk.pro.annual",
+  monthly: "com.capitolwonk.pro.monthly"
 };
 
 const teamWorkspaceSignals = [
   {
-    detail: "Start with a shared workspace for three teammates.",
+    detail: `Choose ${minimumTeamSeatCount}-${maximumTeamSeatCount} monthly or ${minimumTeamSeatCount}-${maximumAnnualTeamSeatCount} annual teammate seats.`,
     icon: <ListChecks />,
     label: "Team seats",
-    value: String(minimumTeamSeatCount)
+    value: `${minimumTeamSeatCount}-${maximumTeamSeatCount}`
   },
   {
     detail: "The owner manages subscription access and invites.",
@@ -378,8 +384,8 @@ export function PlanPrice({
       ? ""
       : plan === "team"
         ? subscription.cycle === "annual"
-          ? "/ 3-seat workspace / year"
-          : planDetails.pricing.unit
+          ? "/ seat / year, min 3"
+          : "/ seat / month, min 3"
         : subscription.cycle === "annual"
           ? "/ year"
           : planDetails.pricing.unit;
@@ -464,18 +470,21 @@ export function PlanActionButton({
           return;
         }
 
+        const teamSeatCount = plan === "team" ? normalizeTeamSeatCountForCycle(subscription.seatCount, subscription.cycle) : undefined;
+        const productId = plan === "team" ? getTeamAppStoreProductId(subscription.cycle, teamSeatCount) : proAppStoreProductIds[subscription.cycle];
         const opened = postNativePurchaseMessage({
           action: "purchase",
           appAccountToken: appAccountToken ?? undefined,
           cycle: subscription.cycle,
           plan,
-          productId: appStoreProductIds[plan][subscription.cycle]
+          productId,
+          seatCount: teamSeatCount
         });
         setStatusMessage(
           opened
             ? trialSelected && trial
               ? `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}. Apple will show the ${trial.label} terms before you confirm.`
-              : `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}.`
+              : `Opening Apple in-app purchase for ${teamSeatCount ? `${teamSeatCount}-seat ` : ""}${subscriptionPlans[plan].name}.`
             : trialSelected && trial
               ? `Open ${publicBrand.name} in the iOS app or TestFlight to start the ${trial.label}.`
               : `Open ${publicBrand.name} in the iOS app or TestFlight to complete this purchase.`
@@ -557,6 +566,122 @@ export function SubscriptionBadge({ initialSubscription = null }: { initialSubsc
       <Crown className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
       <span className="min-w-0 truncate">{planName}</span>
     </Link>
+  );
+}
+
+export function TeamSeatSelector({
+  className = "",
+  compact = false,
+  defaultCycle,
+  initialSubscription = null
+}: {
+  className?: string;
+  compact?: boolean;
+  defaultCycle?: SubscriptionDefaultCycle;
+  initialSubscription?: AccountSubscriptionSnapshot | null;
+}) {
+  const [subscription, updateSubscription] = useSubscriptionState(initialSubscription, { defaultCycle });
+  const [customPlanRequested, setCustomPlanRequested] = useState(false);
+  const maximumSeatCount = getMaximumTeamSeatCount(subscription.cycle);
+  const seatCount = normalizeTeamSeatCountForCycle(subscription.seatCount, subscription.cycle);
+  const totalPrice = formatTeamSeatPrice(subscription.cycle, seatCount);
+  const seatReferencePrice = subscription.cycle === "annual" ? teamAnnualSeatReferencePrice : teamMonthlySeatReferencePrice;
+  const seatUnit = subscription.cycle === "annual" ? "seat / year" : "seat / month";
+  const totalUnit = subscription.cycle === "annual" ? "team / year" : "team / month";
+  const showingCustomPlanCue = customPlanRequested || seatCount >= maximumSeatCount;
+
+  function updateSeatCount(value: unknown) {
+    const parsed = typeof value === "number" ? value : Number(value);
+    const overMaximum = Number.isFinite(parsed) && Math.floor(parsed) > maximumSeatCount;
+    setCustomPlanRequested(overMaximum);
+    updateSubscription({ seatCount: normalizeTeamSeatCountForCycle(value, subscription.cycle) });
+  }
+
+  return (
+    <div className={`${className} rounded-2xl border border-white/10 bg-[#071a38]/62 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Team seats</div>
+          <div className="mt-1 text-[13px] leading-snug text-white/56">
+            Choose {minimumTeamSeatCount}-{maximumSeatCount} {subscription.cycle} seats. The billing owner is included and does not use a seat.
+          </div>
+        </div>
+        <span className="shrink-0 rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b]">
+          {seatCount} seats
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2">
+        <button
+          type="button"
+          onClick={() => updateSeatCount(seatCount - 1)}
+          disabled={seatCount <= minimumTeamSeatCount}
+          aria-label="Decrease team seats"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white disabled:opacity-35"
+        >
+          <Minus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+        </button>
+        <input
+          type="number"
+          min={minimumTeamSeatCount}
+          max={maximumSeatCount}
+          step={1}
+          value={seatCount}
+          onChange={(event) => updateSeatCount(event.target.value)}
+          aria-label="Team seats"
+          className="h-10 min-w-0 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-center text-[15px] font-semibold text-white outline-none transition focus:border-[#ffb12b]/60"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            if (seatCount >= maximumSeatCount) {
+              setCustomPlanRequested(true);
+              return;
+            }
+
+            updateSeatCount(seatCount + 1);
+          }}
+          aria-label={seatCount >= maximumSeatCount ? "Show custom plan option" : "Increase team seats"}
+          className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/62 transition hover:text-white"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+        </button>
+      </div>
+
+      {showingCustomPlanCue ? (
+        <div className="mt-3 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-3">
+          <div className="grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#ffb12b]/14 text-[#ffb12b]">
+              <UsersRound className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-white">
+                {subscription.cycle === "annual" ? `Need ${maximumAnnualTeamSeatCount + 1}-${maximumTeamSeatCount} annual seats?` : `Need more than ${maximumTeamSeatCount} seats?`}
+              </div>
+              <div className="mt-1 text-[12px] leading-snug text-white/54">
+                {subscription.cycle === "annual" ? "Work with us on a custom annual Team plan." : "Work with us on a custom Team plan."}
+              </div>
+            </div>
+            <Link href="/feedback?source=team-custom-plan" className="shrink-0 rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/12 px-3 py-1.5 text-[11px] font-semibold text-[#ffb12b] transition hover:bg-[#ffb12b]/18">
+              Contact us
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      <div className={`${compact ? "mt-3" : "mt-4"} grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]`}>
+        <div className="min-w-0">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/42">App Store total</div>
+          <div className="mt-1 text-[12px] leading-snug text-white/48">
+            {seatCount} seats, starting from {seatReferencePrice} / {seatUnit}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className={`${compact ? "text-[22px]" : "text-[26px]"} font-semibold leading-none text-[#ffb12b]`}>{totalPrice}</div>
+          <div className="mt-1 text-[11px] text-white/42">/ {totalUnit}</div>
+        </div>
+      </div>
+    </div>
   );
 }
 

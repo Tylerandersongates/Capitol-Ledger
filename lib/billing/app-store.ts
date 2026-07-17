@@ -1,6 +1,6 @@
 import { createHash, sign as signJwt } from "crypto";
 import { publicBrandName } from "@/lib/brand";
-import { minimumTeamSeatCount } from "@/lib/subscription-seat-count";
+import { getTeamAppStoreProducts } from "@/lib/subscription-seat-count";
 import type { AccountSubscriptionSnapshot, BillingCycle, SubscriptionPlanId } from "@/types/capitol";
 
 type AppStoreEnvironment = "Production" | "Sandbox" | "Xcode";
@@ -58,16 +58,16 @@ const appStoreProducts: Record<
     cycle: "monthly",
     plan: "pro"
   },
-  "com.capitolwonk.team.annual": {
-    cycle: "annual",
-    plan: "team",
-    seatCount: minimumTeamSeatCount
-  },
-  "com.capitolwonk.team.monthly": {
-    cycle: "monthly",
-    plan: "team",
-    seatCount: minimumTeamSeatCount
-  }
+  ...Object.fromEntries(
+    getTeamAppStoreProducts().map(({ cycle, productId, seatCount }) => [
+      productId,
+      {
+        cycle,
+        plan: "team" as const,
+        seatCount
+      }
+    ])
+  )
 };
 
 function base64UrlEncode(value: Buffer | string) {

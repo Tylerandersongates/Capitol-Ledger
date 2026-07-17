@@ -91,7 +91,7 @@ export default function SupportPage() {
             <div className="min-w-0">
               <h2 className="text-[20px] font-medium leading-tight text-white">For App Store review</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
-                Monthly Pro starts with 7 days free, then renews at $4.99/month. Cancel anytime. Team is one three-seat shared workspace at $17.99/month or $179.99/year.
+                Monthly Pro starts with 7 days free, then renews at $4.99/month. Cancel anytime. Team starts at three seats for $17.99/month or $179.99/year. Monthly supports 3-20 seats; annual supports 3-16, with larger annual workspaces and teams above 20 routed to a custom plan.
               </p>
             </div>
           </div>

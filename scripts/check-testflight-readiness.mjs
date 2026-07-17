@@ -99,10 +99,18 @@ function checkProductIds() {
   const webControls = read("components/subscription-controls.tsx");
   const nativeModels = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
   const serverValidator = read("lib/billing/app-store.ts");
+  const teamSeats = read("lib/subscription-seat-count.ts");
   const productPlan = `${read(testFlightChecklistPath)}\n${read(appStoreSetupPacketPath)}`;
 
   for (const productId of requiredProductIds) {
-    const wired = webControls.includes(productId) && nativeModels.includes(productId) && serverValidator.includes(productId) && productPlan.includes(productId);
+    const teamProduct = productId.startsWith("com.capitolwonk.team.");
+    const wired = teamProduct
+      ? webControls.includes("getTeamAppStoreProductId") &&
+        nativeModels.includes(productId) &&
+        serverValidator.includes("getTeamAppStoreProducts") &&
+        teamSeats.includes(productId) &&
+        productPlan.includes(productId)
+      : webControls.includes(productId) && nativeModels.includes(productId) && serverValidator.includes(productId) && productPlan.includes(productId);
     if (wired) {
       pass(`${productId} is wired`);
     } else {
@@ -127,6 +135,7 @@ function checkAppStoreSetupPacket() {
     "com.capitolwonk.pro.annual",
     "com.capitolwonk.team.monthly",
     "com.capitolwonk.team.annual",
+    "com.capitolwonk.team.{seatCount}.{cycle}",
     "7-day free trial",
     "$4.99/month",
     "$39.99",
@@ -149,19 +158,28 @@ function checkAppStoreSetupPacket() {
 
   const subscriptionPlans = read("lib/subscription-plans.ts");
   const subscriptionControls = read("components/subscription-controls.tsx");
+  const seatConfiguration = read("lib/subscription-seat-count.ts");
+  const nativeModels = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
+  const serverValidator = read("lib/billing/app-store.ts");
   const pricingAligned =
     subscriptionPlans.includes('monthly: "$4.99"') &&
     subscriptionPlans.includes('annual: "$39.99"') &&
-    subscriptionPlans.includes('monthly: "$17.99"') &&
-    subscriptionPlans.includes('annual: "$179.99"') &&
-    subscriptionControls.includes("/ 3-seat workspace") &&
-    !subscriptionControls.includes("/ seat min 3") &&
-    !subscriptionControls.includes("TeamSeatSelector");
+    subscriptionPlans.includes('monthly: "$5.99"') &&
+    subscriptionPlans.includes('annual: "$59.99"') &&
+    subscriptionControls.includes("TeamSeatSelector") &&
+    subscriptionControls.includes("getTeamAppStoreProductId") &&
+    seatConfiguration.includes("maximumTeamSeatCount = 20") &&
+    seatConfiguration.includes("maximumAnnualTeamSeatCount = 16") &&
+    seatConfiguration.includes("getTeamAppStoreProducts") &&
+    nativeModels.includes("maximumTeamSeatCount = 20") &&
+    nativeModels.includes("maximumAnnualTeamSeatCount = 16") &&
+    nativeModels.includes("teamProductId") &&
+    serverValidator.includes("getTeamAppStoreProducts");
 
   if (pricingAligned) {
-    pass("Pro and fixed-workspace Team prices are aligned");
+    pass("Pro and supported Team seat prices are aligned");
   } else {
-    fail("Pro and fixed-workspace Team prices are aligned", "Expected $4.99/$39.99 Pro and $17.99/$179.99 fixed three-seat Team pricing without per-seat StoreKit math.");
+    fail("Pro and supported Team seat prices are aligned", "Expected $4.99/$39.99 Pro plus monthly 3-20 and annual 3-16 Team products using $5.99/$59.99 per-seat economics.");
   }
 
   if (

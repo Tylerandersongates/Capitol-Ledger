@@ -24,6 +24,7 @@ import {
   PlanPrice,
   PlanTrialDisclosure,
   RestorePurchasesButton,
+  TeamSeatSelector,
   TeamWorkspacePreview
 } from "@/components/subscription-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
@@ -98,7 +99,7 @@ export default async function UpgradePage() {
         <div id="plans">
           <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
             <PremiumUpgradeHeader
-              description="Monthly Pro includes the 7-day free trial. Team is one fixed three-seat workspace; Apple shows all renewal terms before confirmation."
+              description="Monthly Team supports 3-20 seats and annual Team supports 3-16; larger annual workspaces use a custom plan. Apple shows the selected total before confirmation."
               eyebrow="App Store"
               icon={<Sparkles />}
               title="Subscription cycle"
@@ -324,6 +325,7 @@ function PlanTierCard({
         priceClassName={`${featured ? "text-[36px]" : "text-[30px]"} font-semibold leading-none ${plan === "free" ? "text-white" : "text-[#ffb12b]"}`}
         unitClassName="pb-1 text-[12px] text-white/50"
       />
+      {plan === "team" ? <TeamSeatSelector className="mt-4" compact initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
       {plan === "pro" ? <PlanTrialDisclosure plan={plan} initialSubscription={initialSubscription} defaultCycle={defaultCycle} /> : null}
       <FeatureList items={planDetails.highlights} />
       <PlanActionButton plan={plan} inactiveLabel={inactiveLabel} initialSubscription={initialSubscription} defaultCycle={defaultCycle} className={actionClassName} />

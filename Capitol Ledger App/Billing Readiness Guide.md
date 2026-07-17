@@ -11,7 +11,7 @@ CapitolWonk CE is now app-only for paid upgrades. Pro and Team are purchased thr
 3. The device unlocks the paid plan immediately after StoreKit returns an active entitlement.
 4. `/api/account/subscription/app-store` validates the signed transaction through App Store Server API before writing account subscription state.
 5. The server blocks an Apple original transaction from being linked to a second account when a database-backed owner already exists.
-6. Team App Store products are fixed-price bundles at $17.99/month or $179.99/year and unlock one three-seat starter workspace. Larger Team expansion remains a support/custom-plan workflow.
+6. Team uses seat-specific fixed-total App Store products for 3-20 monthly seats and 3-16 annual seats. The three-seat tier starts at $17.99/month or $179.99/year; the selected product restores the exact seat entitlement. Annual 17-20 and all 21+ workspaces use the custom-plan workflow.
 
 ## Required Environment
 
@@ -46,15 +46,18 @@ For the App Store launch path, `BILLING_REQUIRE_APP_STORE=true pnpm billing:chec
 
 - Pro monthly: `com.capitolwonk.pro.monthly` with 7-day free trial, then $4.99/month
 - Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
-- Team monthly: `com.capitolwonk.team.monthly` at $17.99 total for the three-seat workspace
-- Team annual: `com.capitolwonk.team.annual` at $179.99 total for the three-seat workspace
+- Team monthly, 3 seats: `com.capitolwonk.team.monthly` at $17.99
+- Team annual, 3 seats: `com.capitolwonk.team.annual` at $179.99
+- Team monthly, 4-20 seats; annual, 4-16 seats: `com.capitolwonk.team.{seatCount}.{cycle}` using the fixed totals in the App Store Connect setup packet
 
-Create these products in one App Store Connect subscription group before sandbox or TestFlight purchase QA.
+The group contains 38 records: two Pro, 32 launch-active Team products, and four reserved annual 17-20 Team records. Keep the reserved records unavailable unless Apple grants higher price points and the app is deliberately expanded.
+
+The July 17, 2026 App Store Connect audit configured every additional launch-active product with United States-only availability, its exact fixed-total price, and English (U.S.) metadata. The four annual 17-20 records have no sale availability, price, or localization. Subscription levels still need a final Apple-side reorder because newly created products were assigned sequential levels instead of descending seat-count levels.
 
 ## QA Order
 
 1. Apply Prisma migrations and run `pnpm production-auth:check`.
-2. Create the App Store Connect subscription group and Pro/Team products, including the Pro monthly 7-day free trial introductory offer.
+2. Reorder App Store Connect subscription levels, complete required review information, and re-audit the existing Pro monthly trial. Team monthly 3-20, annual 3-16, and the four unavailable annual 17-20 records are otherwise configured.
 3. Add App Store Server API credentials and a stable `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` to the host environment.
 4. Run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Build the native iOS shell and run purchase, restore, renewal, cancellation, and expiration in sandbox/TestFlight.
@@ -67,6 +70,6 @@ Without App Store Server API credentials, local Xcode StoreKit testing can still
 
 ## Open Decisions
 
-- Whether larger Civic Team workspaces should become additional Apple products or stay a support/custom-plan workflow.
+- Whether organizations above the 20-seat self-service ceiling should receive standardized custom tiers later.
 - Whether annual Pro should also receive an introductory offer after monthly Pro trial QA is complete.
 - Whether locked feature cards should start the same native StoreKit purchase flow after TestFlight QA proves the main `/upgrade` path.

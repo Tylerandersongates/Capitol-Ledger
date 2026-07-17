@@ -14,8 +14,8 @@ Supported messages:
 
 - `{ action: "purchase", plan: "pro", cycle: "monthly", productId: "com.capitolwonk.pro.monthly" }`
 - `{ action: "purchase", plan: "pro", cycle: "annual", productId: "com.capitolwonk.pro.annual" }`
-- `{ action: "purchase", plan: "team", cycle: "monthly", productId: "com.capitolwonk.team.monthly" }`
-- `{ action: "purchase", plan: "team", cycle: "annual", productId: "com.capitolwonk.team.annual" }`
+- `{ action: "purchase", plan: "team", cycle: "monthly", productId: "com.capitolwonk.team.monthly", seatCount: 3 }`
+- `{ action: "purchase", plan: "team", cycle: "annual", productId: "com.capitolwonk.team.20.annual", seatCount: 20 }`
 - `{ action: "restore" }`
 - `{ action: "manage" }`
 
@@ -27,10 +27,10 @@ When StoreKit returns a signed transaction JWS, the WebView also posts it to `/a
 
 - Pro monthly: `com.capitolwonk.pro.monthly` with the App Store Connect 7-day free trial introductory offer, then $4.99/month
 - Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
-- Team monthly: `com.capitolwonk.team.monthly` at $17.99 total for one three-seat workspace
-- Team annual: `com.capitolwonk.team.annual` at $179.99 total for one three-seat workspace
+- Team monthly/annual, 3 seats: `com.capitolwonk.team.monthly` and `com.capitolwonk.team.annual`
+- Team monthly, 4-20 seats; annual, 4-16 seats: `com.capitolwonk.team.{seatCount}.{cycle}`
 
-Create these products in App Store Connect in one subscription group before TestFlight purchase QA.
+The group contains two Pro records, 32 launch-active Team seat/cycle records, and four reserved annual 17-20 records that remain unavailable. Team begins at $17.99/month or $179.99/year for three seats. See the setup packet for each launch price.
 
 ## Build Notes
 

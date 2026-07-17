@@ -130,8 +130,8 @@ Completed for beta:
 
 Remaining before App Store upload:
 
-1. Create final App Store Connect product names, plan copy, prices, and one subscription group for Pro.
-2. Confirm product IDs match `com.capitolwonk.pro.monthly`, `com.capitolwonk.pro.annual`, `com.capitolwonk.team.monthly`, and `com.capitolwonk.team.annual`.
+1. Reorder the paid-plans subscription levels and complete required App Review information. July 17 App Store Connect QA confirmed the 38-record inventory, exact launch-active Team prices, U.S.-only availability, English (U.S.) metadata, and unavailable annual 17-20 reserves.
+2. Confirm Pro IDs, the three-seat Team IDs, and every 4-20 seat `com.capitolwonk.team.{seatCount}.{cycle}` product match the setup packet.
 3. Add App Store Server API variables through Apple/Vercel tooling, not git: `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY`.
 4. Keep Stripe disabled for launch unless a web checkout path is deliberately reintroduced.
 5. Rerun `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`; both should pass after Apple setup.

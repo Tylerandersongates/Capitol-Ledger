@@ -47,11 +47,13 @@ final class CapitolLedgerStoreKitService: ObservableObject {
     }
 
     func purchase(_ message: CapitolLedgerPurchaseMessage) async -> CapitolLedgerNativePurchaseResult {
+        let selectedTeamSeatCount = message.plan == .team ? (message.seatCount ?? CapitolLedgerProduct.minimumTeamSeatCount) : nil
         guard
             let requestedPlan = message.plan,
             let productId = message.productId,
             CapitolLedgerProduct.productIds.contains(productId),
-            CapitolLedgerProduct.plan(for: productId) == requestedPlan
+            CapitolLedgerProduct.plan(for: productId) == requestedPlan,
+            requestedPlan != .team || CapitolLedgerProduct.seatCount(for: productId) == selectedTeamSeatCount
         else {
             return result(action: message.action.rawValue, ok: false, message: "This App Store product is not available for the selected plan.")
         }

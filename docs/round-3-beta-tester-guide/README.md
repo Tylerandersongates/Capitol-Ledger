@@ -41,7 +41,7 @@ Please pay special attention to:
 - Pro customers joining a Team. Their company-paid Team access should take priority while they are on the Team.
 - Pro customers leaving a Team. Their personal Pro account should return to the correct previous state.
 - Upgrade now opens on Annual by default.
-- Team plans now support self-serve seats from 3 to 25. Larger teams should be routed to a custom plan.
+- Team supports 3-20 monthly seats and 3-16 annual seats. Annual 17-20 and all 21+ teams should be routed to a custom plan.
 - Live Congress data is expanded. Bill counts, member profiles, sponsor links, state names, delegate labels, and service history should look credible.
 - AI Policy Lens should match the specific bill you are reading. Report stale or mismatched impact text.
 - Dashboard Bill Tracker cards should handle very long bill titles without overlapping or becoming unreadable.
@@ -106,9 +106,9 @@ If you are assigned to billing checkout, test only from the TestFlight build and
 2. Confirm Annual is selected by default.
 3. Compare Free, Pro Intelligence, and Civic Team.
 4. Confirm Pro annual pricing reads clearly.
-5. Confirm Civic Team annual pricing reads as one $179.99 three-seat workspace total, not a per-seat price.
-6. Confirm the Apple purchase path does not show a variable seat selector.
-7. Confirm larger teams are directed to support for a custom plan instead of normal checkout.
+5. Confirm Civic Team starts at three seats for $17.99/month or $179.99/year.
+6. Change the monthly Team selector between 3 and 20 and the annual selector between 3 and 16; confirm the exact App Store total updates.
+7. Confirm each supported count opens the matching fixed Apple product, annual 17-20 uses custom planning, and 21+ is directed to the custom-plan path.
 8. Switch between monthly and annual if the page allows it, then confirm the copy still makes sense.
 
 Report confusing plan names, inconsistent pricing, missing annual language, or anything that sounds like the wrong customer is paying.
@@ -173,7 +173,7 @@ Good Round 3 feedback includes:
 - "I accepted a Team invite as a Pro user, but my dashboard still looked like personal Pro only."
 - "I was removed from a Team, but the Team Workspace card stayed on my dashboard."
 - "Annual was not selected by default on Upgrade."
-- "The Team seat selector let me go past 25 without showing a custom plan path."
+- "The Team seat selector let me go past 20 without showing a custom plan path."
 - "The member profile says KS instead of Kansas."
 - "This territory official is labeled as House when the role should be Delegate or Resident Commissioner."
 - "AI Policy Lens on this bill talks about a different topic."

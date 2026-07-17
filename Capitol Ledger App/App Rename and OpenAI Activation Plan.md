@@ -25,6 +25,7 @@ Use these values for the upload-ready app, iOS target, App Store records, produc
 | Pro annual product ID | `com.capitolwonk.pro.annual` | Create exactly as shown before purchase QA |
 | Team monthly product ID | `com.capitolwonk.team.monthly` | Create exactly as shown before purchase QA |
 | Team annual product ID | `com.capitolwonk.team.annual` | Create exactly as shown before purchase QA |
+| Team 4-20 seat product IDs | `com.capitolwonk.team.{seatCount}.{cycle}` | Create the 34 additional products from the setup packet |
 | Public email from names | `CapitolWonk CE <...>` | Keep launch-facing sender names aligned |
 | Docs folder/project history | Current docs folder | Keep unless the workspace itself is intentionally renamed |
 | Env prefix | `CAPITOL_LEDGER_*` | Keep through upload unless a compatibility migration is planned |

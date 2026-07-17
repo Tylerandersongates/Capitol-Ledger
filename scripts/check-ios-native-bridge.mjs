@@ -16,6 +16,7 @@ const models = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSu
 const plist = read("ios/CapitolLedgerNative/CapitolLedgerNative/Info.plist");
 const project = read("ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj");
 const appStoreValidator = read("lib/billing/app-store.ts");
+const teamSeats = read("lib/subscription-seat-count.ts");
 const appStoreRoute = read("app/api/account/subscription/app-store/route.ts");
 const appStoreAccountTokenRoute = read("app/api/account/subscription/app-store/account-token/route.ts");
 
@@ -25,7 +26,10 @@ for (const productId of [
   "com.capitolwonk.team.monthly",
   "com.capitolwonk.team.annual"
 ]) {
-  assert.ok(webControls.includes(productId), `web controls should reference ${productId}`);
+  assert.ok(
+    productId.startsWith("com.capitolwonk.team.") ? webControls.includes("getTeamAppStoreProductId") && teamSeats.includes(productId) : webControls.includes(productId),
+    `web controls should reference ${productId}`
+  );
   assert.ok(models.includes(productId), `native models should reference ${productId}`);
 }
 
@@ -46,6 +50,18 @@ assert.ok(
     bridge.includes("storeKitService.restore") &&
     bridge.includes("openSubscriptionManagement"),
   "native bridge should handle purchase, restore, and manage actions"
+);
+
+assert.ok(
+  webControls.includes("getTeamAppStoreProductId") &&
+    webControls.includes("seatCount: teamSeatCount") &&
+    models.includes("maximumTeamSeatCount = 20") &&
+    models.includes("maximumAnnualTeamSeatCount = 16") &&
+    models.includes("teamProductId") &&
+    models.includes("let seatCount: Int?") &&
+    storeKit.includes("selectedTeamSeatCount") &&
+    appStoreValidator.includes("getTeamAppStoreProducts"),
+  "Team purchases should map supported monthly 3-20 and annual 3-16 seat counts to matching web, native, and server product entitlements"
 );
 
 assert.ok(

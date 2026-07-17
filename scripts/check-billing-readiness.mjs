@@ -166,14 +166,38 @@ function checkStoreKitProductIds() {
   const webControls = readIfPresent("components/subscription-controls.tsx");
   const nativeModels = readIfPresent("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
   const appStoreValidator = readIfPresent("lib/billing/app-store.ts");
+  const teamSeats = readIfPresent("lib/subscription-seat-count.ts");
 
   for (const productId of requiredProductIds) {
-    const present = webControls.includes(productId) && nativeModels.includes(productId) && appStoreValidator.includes(productId);
+    const teamProduct = productId.startsWith("com.capitolwonk.team.");
+    const present = teamProduct
+      ? webControls.includes("getTeamAppStoreProductId") &&
+        nativeModels.includes(productId) &&
+        appStoreValidator.includes("getTeamAppStoreProducts") &&
+        teamSeats.includes(productId)
+      : webControls.includes(productId) && nativeModels.includes(productId) && appStoreValidator.includes(productId);
     if (present) {
       pass(`${productId} is wired`);
     } else {
       fail(`${productId} is wired`, "Product ID must match web controls, native StoreKit models, and server validation.");
     }
+  }
+
+  const teamSeatLadderWired =
+    webControls.includes("getTeamAppStoreProductId") &&
+    webControls.includes("seatCount: teamSeatCount") &&
+    nativeModels.includes("maximumTeamSeatCount = 20") &&
+    nativeModels.includes("maximumAnnualTeamSeatCount = 16") &&
+    nativeModels.includes("teamProductId") &&
+    appStoreValidator.includes("getTeamAppStoreProducts") &&
+    teamSeats.includes("maximumTeamSeatCount = 20") &&
+    teamSeats.includes("maximumAnnualTeamSeatCount = 16") &&
+    teamSeats.includes("com.capitolwonk.team.${seats}.${cycle}");
+
+  if (teamSeatLadderWired) {
+    pass("Supported Team StoreKit seat ladders are wired");
+  } else {
+    fail("Supported Team StoreKit seat ladders are wired", "Web, native, server, and seat-limit configuration must agree on monthly 3-20 and annual 3-16 products.");
   }
 }
 

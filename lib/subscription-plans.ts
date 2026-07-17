@@ -82,14 +82,14 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
   },
   team: {
     name: "Civic Team",
-    description: "A shared three-seat workspace for organizations",
+    description: "A scalable shared workspace for organizations",
     pricing: {
-      monthly: "$17.99",
-      annual: "$179.99",
-      unit: "/ 3-seat workspace"
+      monthly: "$5.99",
+      annual: "$59.99",
+      unit: "/ seat / month"
     },
-    highlights: ["Three teammate seats", "Billing owner access included", "Team alerts", "Shared watchlists"],
-    limits: ["One fixed three-seat workspace", "Larger plans are available through support"]
+    highlights: ["Monthly: 3-20 seats", "Annual: 3-16 seats", "Billing owner access included", "Shared watchlists"],
+    limits: ["Three-seat minimum", "Annual 17-20 and all 21+ teams use a custom plan"]
   }
 };
 
