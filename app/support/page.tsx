@@ -69,7 +69,7 @@ export default function SupportPage() {
             <div className="min-w-0">
               <h2 className="text-[22px] font-medium leading-tight text-white">{publicBrand.name} support</h2>
               <p className="mt-2 text-[13px] leading-snug text-white/54">
-                Reports go into the review queue used for TestFlight and launch triage.
+                App reports are sent to our secure monitoring system for TestFlight and launch triage.
               </p>
             </div>
           </div>

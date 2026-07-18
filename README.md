@@ -63,7 +63,9 @@ The helper pins `vercel@54.14.1`, uses the local `.tools` Node/pnpm runtime when
 
 `REGULATIONS_GOV_API_KEY` powers the server-side Regulations.gov public-comment feed on the Civic Petitions page. Keep it server-only and add it in Vercel as a sensitive environment variable for deployed environments.
 
-`DATABASE_URL` powers account, feedback, billing, and persistence paths. Synced Congress content remains demo-first unless `CAPITOL_LEDGER_ENABLE_DATABASE_READS=true`; keep that flag off until the live member/bill sync has been reviewed for current, active records.
+`DATABASE_URL` powers accounts, billing, account-deletion requests, and saved-data persistence. Synced Congress content remains demo-first unless `CAPITOL_LEDGER_ENABLE_DATABASE_READS=true`; keep that flag off until the live member/bill sync has been reviewed for current, active records.
+
+Sentry handles browser/server errors, native iOS crashes, and the in-app `/feedback` form. Configure `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` as deployment values; configure `CAPITOL_LEDGER_SENTRY_DSN` as a protected Xcode/CI build value. Session replay and default PII collection are disabled. Run `pnpm feedback:check` before deployment.
 
 ## MVP Notes
 

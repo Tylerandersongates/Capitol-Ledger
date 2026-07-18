@@ -2,16 +2,16 @@
 
 ## Phase Roadmap
 
-Status: updated June 25, 2026. CapitolWonk CE is in TestFlight prep mode: finish App Store billing setup, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
+Status: updated July 18, 2026. CapitolWonk CE is in TestFlight prep mode: finish protected monitoring setup, App Store billing validation, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
 
 ### Phase Status Snapshot
 
-1. Phase 1: Web Beta Readiness - Complete for controlled beta. Round 1 ran, feedback intake/review works, Vercel and GitHub Actions are green, and the Round 2 guide/download package is live.
+1. Phase 1: Web Beta Readiness - Complete for controlled beta. Round 1 ran, Vercel and GitHub Actions are green, and the earlier internal feedback queue has now been replaced locally by Sentry.
 2. Phase 2: Account and Auth Stability - Complete for web beta, monitor during Round 2. New testers use email verification; returning Round 1 testers sign back into already verified accounts and check profile/gamification persistence.
 3. Phase 3: Design QA and Beta Polish - Round 1 blocker pass complete. Remaining work is feedback-driven polish from Round 2.
 4. Phase 4: Subscription Demo Integration - Demo complete for beta. Direct StoreKit and server-side App Store transaction validation are now in place; App Store Connect products, server credentials, and sandbox/TestFlight QA remain before paid launch.
 5. Phase 5: Core Civic Data Expansion - Partially complete. Live-first search, dashboard, and bill detail paths are connected; more civic surfaces and larger sync passes remain before App Store upload.
-6. Phase 6: External Production Services - Partially complete. Auth/email, billing, push, monitoring, and production rate limiting still need final provider decisions and production checks. Daily Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Daily Brief in app.
+6. Phase 6: External Production Services - Partially complete. Sentry web/native integration is implemented locally; protected project configuration, migration/deployment, and production verification still require approval. Auth/email, billing, push, and production rate limiting also need final production checks. Daily Brief outbound delivery is deferred to the post-launch next build; the beta/App Store v1 path keeps Daily Brief in app.
 7. Phase 7: App Store and TestFlight - Active prep. Native shell, StoreKit bridge, and server validation are in place; remaining work is App Store Connect setup, production env configuration, final text-tone pass, and sandbox/TestFlight QA.
 
 ### Post-Launch Next Build
@@ -26,6 +26,14 @@ Everything going forward should serve the TestFlight path. Defer broad product e
 
 Roadmap sequencing rule: do not pull Supreme Court or state-legislation expansion into the current TestFlight scope. Supreme Court work starts as a sister-app track after TestFlight. State legislation remains a main-app future update.
 
+### Feedback System Replacement - Local, Not Yet Deployed
+
+1. `/feedback` now sends directly to Sentry; the internal `/feedback/review` queue and its API/scripts are retired.
+2. Browser/server error monitoring and native iOS crash monitoring are implemented with session replay and default PII disabled.
+3. Account deletion now uses a dedicated `AccountDeletionRequest` table and remains independent of monitoring.
+4. The old `BetaFeedback` production table must remain as a read-only archive until existing reports are privately exported and verified.
+5. Next actions require protected Sentry project values, a production database migration, a web deploy, and a new TestFlight build. Stop for Tyler's approval immediately before those external changes.
+
 ### Current Waiting State
 
 We are waiting for Round 2 tester activity. The app-facing priority is to avoid unnecessary pushes while testers may be active, except for minor docs updates or blocker fixes.
@@ -34,7 +42,7 @@ Round 2 tester materials:
 
 - Tester guide source: `docs/round-2-beta-tester-guide/README.md`
 - Downloadable tester guide: `https://project-qosv1.vercel.app/downloads/capitol-ledger-round-2-beta-tester-guide.docx`
-- Feedback review queue: `https://project-qosv1.vercel.app/feedback/review`
+- Feedback triage after deployment: private Sentry Issues/User Feedback plus App Store Connect TestFlight feedback
 - Internal returning-user QA: Returning User QA Script
 - Internal Round 2 readiness: Round 2 Beta Readiness Checklist
 
@@ -53,8 +61,8 @@ Completed:
 
 1. Deployed beta is live on Vercel at `https://project-qosv1.vercel.app`.
 2. GitHub Actions quality checks are installed and passing on the latest docs pushes.
-3. `/beta`, `/feedback`, and `/feedback/review` are available for tester intake and reviewer triage.
-4. Reviewer-only access for `/feedback/review` is protected.
+3. `/beta` and `/feedback` were available for tester intake; the local replacement now routes `/feedback` to Sentry.
+4. The retired reviewer-only queue is preserved only in git history and legacy database records.
 5. Round 1 tester guide exists under `docs/beta-tester-guide`.
 6. Round 2 tester guide exists under `docs/round-2-beta-tester-guide` with a public DOCX download.
 7. The active feedback queue was triaged to zero active blockers before the Round 2 handoff.
@@ -63,15 +71,14 @@ Exit criteria:
 
 - Deployed beta loads from the Vercel URL.
 - Sign-in/create account/sign-out flows work in the deployed beta.
-- `/feedback` writes to Neon.
-- `/feedback/review` is available to reviewer accounts only.
-- `beta:check` passes in production-check mode.
-- `beta:triage` shows zero launch blockers and zero untriaged active reports before widening the tester group.
+- `/feedback` creates a private Sentry feedback item after protected values are configured.
+- `SENTRY_REQUIRE_PRODUCTION=true pnpm feedback:check` passes.
+- Sentry and App Store Connect feedback show no unresolved launch blockers before widening the tester group.
 
 Maintenance while Round 2 is active:
 
-1. Run `/feedback/review` after tester sessions.
-2. Run `pnpm beta:triage` before each fix pass.
+1. Review Sentry Issues/User Feedback and App Store Connect TestFlight feedback after tester sessions.
+2. Classify each active report as launch blocker, current-beta fix, or later before each fix pass.
 3. Fix blockers immediately; batch non-blocking polish.
 4. Run a deployed smoke test after any app-facing push.
 
@@ -85,7 +92,7 @@ Completed for beta:
 2. Email verification works for new account creation and was part of Round 1.
 3. Returning-user QA confirmed sign-out, protected `/account` redirect, sign-back-in, profile persistence, saved ledger persistence, and district/interests restoration.
 4. `/settings` party affiliation state now stays synced with account profile changes.
-5. `/feedback/review` action controls are reviewer-only for non-reviewer safety.
+5. Tester reports remain private in Sentry and App Store Connect; the retired shared review route is no longer part of the app.
 6. Auth-sensitive routes have same-origin guards and in-memory rate limiting for beta.
 
 Remaining before App Store upload:

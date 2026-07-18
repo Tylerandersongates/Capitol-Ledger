@@ -26,6 +26,10 @@ const requiredFiles = [
   "app/api/account/deletion-request/route.ts",
   "components/account-deletion-control.tsx",
   "lib/account-deletion.ts",
+  "components/feedback-form.tsx",
+  "instrumentation-client.ts",
+  "sentry.server.config.ts",
+  "sentry.edge.config.ts",
   "app/privacy/page.tsx",
   "app/support/page.tsx",
   appStoreSetupPacketPath,
@@ -270,7 +274,7 @@ function checkCommandPlan() {
   }
 
   const checklist = read(testFlightChecklistPath);
-  for (const command of ["pnpm launch-copy:check", "pnpm ios-native:check", "pnpm billing:check", "pnpm lint", "pnpm exec tsc --noEmit --pretty false"]) {
+  for (const command of ["pnpm launch-copy:check", "pnpm ios-native:check", "pnpm billing:check", "pnpm feedback:check", "pnpm lint", "pnpm exec tsc --noEmit --pretty false"]) {
     if (checklist.includes(command)) {
       pass(`${command} is in the TestFlight verification plan`);
     } else {

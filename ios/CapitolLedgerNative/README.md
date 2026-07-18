@@ -38,6 +38,10 @@ Open `CapitolLedgerNative.xcodeproj` in Xcode, set the signing team, final bundl
 
 The default app URL is configured in `CapitolLedgerNative/Info.plist` as `CapitolLedgerAppURL`.
 
+## Crash Monitoring
+
+The native target uses Sentry Cocoa for crash diagnostics. Set `CAPITOL_LEDGER_SENTRY_DSN` as a protected Xcode or CI build setting; keep the checked-in value blank. Monitoring starts only when a resolved DSN is present, and default PII collection is disabled.
+
 ## Server Account Sync
 
 Account-wide paid subscription sync requires these deployment variables:

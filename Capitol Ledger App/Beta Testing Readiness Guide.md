@@ -2,120 +2,99 @@
 
 ## Goal
 
-Get CapitolWonk CE into the hands of trusted testers before App Store sale or public launch, collect useful feedback, fix the highest-impact issues, then package the Apple/TestFlight version with much less risk.
+Use TestFlight and the in-app report form to collect useful feedback, fix the highest-impact issues, and reduce App Store launch risk.
 
-Current status: first trusted tester intake is planned for June 6, 2026.
+Current status: TestFlight preparation is active as of July 18, 2026. App Store submission is not authorized by this guide.
+
+## Feedback Systems
+
+- TestFlight feedback submitted through Apple is reviewed in App Store Connect under the app's TestFlight feedback area.
+- Reports submitted through `/feedback` are sent to the private Sentry project configured for CapitolWonk CE.
+- Browser, server, and native iOS errors are also sent to Sentry when their protected DSN values are configured.
+- Sentry session replay and default PII collection are disabled.
+- Account deletion uses the dedicated `AccountDeletionRequest` workflow and never enters the feedback system.
+- The retired `BetaFeedback` table is retained temporarily as a read-only archive until its production records are exported and verified.
 
 ## Recommended Order
 
-For the detailed execution checklist, use `Phase 1 Web Beta Launch Checklist.md`.
+1. Apply the production migration that creates `AccountDeletionRequest` and verify account-deletion readiness.
+2. Create the private Sentry organization/project and configure protected deployment and Xcode values without committing secrets.
+3. Run the feedback, account-deletion, TestFlight, billing, lint, type, web-build, and native-build checks.
+4. Deploy the verified web change and upload a new native TestFlight build only after action-time approval.
+5. Verify a test `/feedback` report arrives in Sentry and contains no unintended personal data.
+6. Verify a deliberate browser error, server error, and native test crash arrive in the correct project before inviting testers.
+7. Invite a small TestFlight tester group and direct testers to Apple's TestFlight feedback control or `/feedback`.
+8. Triage Sentry issues and Apple TestFlight feedback after each round as blocker, current-beta fix, or later.
+9. Keep the App Store review submission separate and obtain Tyler's approval immediately before **Submit for Review**.
 
-1. Web beta first: deploy the current Next.js app to Vercel with Neon connected.
-2. Apply production migrations, including `BetaFeedback`.
-3. Set the deployed beta URL and reviewer email environment values.
-4. Run `BETA_REQUIRE_PRODUCTION=true pnpm beta:check`.
-5. Confirm `/feedback` saves records to Neon.
-6. Review tester reports at `/feedback/review` and move them through New, Reviewing, Planned, and Resolved.
-7. Mark active reports as Launch blocker, Beta OK, or Later.
-8. Invite a small tester group and send them to `/beta`.
-9. Review feedback after each round and tag each item as bug, flow issue, missing feature, data issue, design polish, or later.
-10. Copy or export the review queue before each fix pass.
-11. Move to Apple/TestFlight once sign-in, account state, subscriptions, feedback, and core civic data flows are stable.
-12. Start Android packaging after the Apple/core flow is solid.
+## Required Protected Configuration
 
-## Triage Before Each Fix Pass
+Set these in the deployment provider, never in git:
 
-Use `/feedback/review` to filter by:
-
-- `Blockers`: reports that should be fixed before another tester round or store testing.
-- `Untriaged`: active reports that still need a launch decision.
-- `Beta OK`: issues that can remain during the current beta round.
-- `Later`: useful ideas or polish items that should not block beta progress.
-
-Run this after tester sessions to get a database-backed triage snapshot:
-
-```bash
-pnpm beta:triage
+```text
+NEXT_PUBLIC_SENTRY_DSN
+SENTRY_DSN
+SENTRY_ORG
+SENTRY_PROJECT
+SENTRY_AUTH_TOKEN
 ```
 
-To make the command fail when blockers or untriaged reports remain:
+Set this as a protected Xcode or CI build value, never in the checked-in Info.plist:
 
-```bash
-BETA_TRIAGE_FAIL_ON_BLOCKERS=true BETA_TRIAGE_FAIL_ON_UNTRIAGED=true pnpm beta:triage
+```text
+CAPITOL_LEDGER_SENTRY_DSN
 ```
 
-## Required Beta Environment
+`NEXT_PUBLIC_SENTRY_DSN` is a client DSN rather than an account password or auth token, but it should still be managed through the deployment configuration so environments can be separated. `SENTRY_AUTH_TOKEN` is secret and must never appear in logs, screenshots, app code, or commits.
 
-Before inviting testers, set these in Vercel and in any local environment used to run a production beta check:
-
-```bash
-NEXT_PUBLIC_APP_URL=https://your-vercel-beta-url
-BETA_REVIEWER_EMAILS=you@example.com
-```
-
-Use a comma-separated list for multiple reviewers:
+Before a production deploy or TestFlight upload, run:
 
 ```bash
-BETA_REVIEWER_EMAILS=you@example.com,teammate@example.com
+SENTRY_REQUIRE_PRODUCTION=true pnpm feedback:check
+pnpm account-deletion:check
+pnpm testflight:check
+pnpm lint
+pnpm exec tsc --noEmit --pretty false
 ```
-
-`BETA_REVIEWER_EMAILS` controls who can see the full `/feedback/review` queue. Regular tester accounts can submit feedback, but should not see every other tester's reports.
 
 ## Tester Script
 
 Ask testers to complete these tasks:
 
-Open `/beta`, then work through the in-app checklist.
-
 1. Create an account or sign in.
-2. Try forgot password/password reset if they are comfortable testing account recovery.
-3. Set district and policy interests.
-4. Open the dashboard and explain what they think the top cards mean.
-5. Search for bills and officials.
-6. Open a bill, review summary, pros/cons, sources, votes, and video links.
-7. Open an official profile and review voting/accountability sections.
-8. Open alerts, read one alert, and confirm unread behavior makes sense.
-9. Check badges, impact, voter registration, and election participation.
-10. Check Letters Sent and Signed Petitions in the action ledger.
-11. Open `/upgrade`, compare Free/Pro/Team, switch billing cycle, and describe what feels locked or unclear.
-12. Use `/feedback` to report one bug, one confusing flow, and one missing item.
+2. Set district and policy interests.
+3. Open the dashboard and explain what the top cards mean.
+4. Search for bills and officials.
+5. Open a bill and review summary, sources, votes, and video links.
+6. Open alerts and confirm unread behavior makes sense.
+7. Check badges, impact, and the saved action ledger.
+8. Open `/upgrade`, compare Free, Pro, and Team, and report anything unclear.
+9. Force-close and relaunch after a sandbox purchase or restore, then verify entitlement persistence.
+10. Submit one report through TestFlight and one through `/feedback` so both intake paths are verified.
 
-## Feedback Categories
+Do not ask testers to include passwords, Apple credentials, transaction identifiers, or other secrets in reports or screenshots.
 
-- Bug: something breaks or fails.
-- Flow: user gets lost or the next step is unclear.
-- Missing: expected feature or information is not present.
-- Data: record, vote, source, or summary looks wrong.
-- Design: spacing, hierarchy, readability, or polish issue.
-- Other: anything that does not fit cleanly.
+## Triage Before Each Fix Pass
 
-## Android Recommendation
+Use Sentry's Issues and User Feedback views for in-app reports and technical errors. Use App Store Connect's TestFlight feedback view for Apple-submitted screenshots, comments, and crash details. For each item:
 
-Android should wait until the Apple/core app flow is solid. The current app is web-first React/Next.js, so Android does not require starting over. A later Android version can reuse most product screens through a wrapper or shared React code path, but it still needs Android-specific QA, Play Console setup, push notification checks, billing decisions, device-size testing, and store screenshots.
-
-Avoid adding Android-specific work now unless a tester or investor requires it. The efficient path is: web beta, Apple/TestFlight, then Android.
+- confirm it is reproducible or supported by diagnostics;
+- classify it as launch blocker, current-beta fix, or later;
+- link duplicates instead of maintaining a second in-app review queue;
+- avoid copying tester identity or diagnostic identifiers into public tickets;
+- verify the fix in the same environment and close it only after retesting.
 
 ## Readiness Checklist
 
-- Vercel deployment connected to Neon.
-- `NEXT_PUBLIC_APP_URL` points to the deployed beta URL, not the local preview URL.
-- `BETA_REVIEWER_EMAILS` includes your reviewer account email.
+- Sentry project access is restricted to approved maintainers.
+- Protected Sentry values are configured in Vercel and Xcode/CI.
+- `/feedback` successfully creates a Sentry feedback item.
+- Browser/server errors and native crashes reach Sentry with replay and default PII disabled.
+- Apple's TestFlight feedback area is visible and monitored for the active build.
+- Account deletion persists to `AccountDeletionRequest` and completes independently of Sentry.
+- Legacy feedback records are preserved until a private export is verified; no tester data is exposed in source control.
 - Production auth QA passes.
-- Password reset/forgot-password is verified working for the beta pass.
-- Email verification delivery is confirmed if testers are creating new accounts.
-- Congress.gov sync can run safely with conservative limits.
-- Subscription demo modes are clear.
-- `/feedback` saves tester reports.
-- `/feedback/review` shows the reports you expect.
-- `/feedback/review` can update report status for reviewer accounts.
-- `/feedback/review` filters reports by All, Open, New, Reviewing, Planned, and Resolved.
-- `/feedback/review` can classify active reports as Launch blocker, Beta OK, or Later.
-- `/feedback/review` can filter active reports by Blockers, Untriaged, Beta OK, and Later.
-- `/feedback/review` can copy a triage summary and export a filtered CSV.
-- `pnpm beta:triage` summarizes blockers, untriaged reports, status counts, severity counts, and category counts from the database.
-- `/beta` gives testers the checklist and routes them into feedback.
-- `/beta` includes subscription/upgrade testing.
-- `pnpm beta:check` passes for the deployed beta environment.
-- `BETA_CHECK_DATABASE=true pnpm beta:check` confirms the feedback table exists when you want a direct database check.
-- Dashboard, search, bill details, profile, alerts, badges, impact, account, upgrade, and sign-in have been tested on mobile width.
+- Subscription purchase, relaunch persistence, restore, account-token association, and server validation are verified.
+- Dashboard, search, bill details, profile, alerts, account, upgrade, and sign-in have been tested at iPhone and iPad sizes.
 - Known issues are sorted into launch-blocking, beta-acceptable, and later.
+- Tyler has not yet authorized **Submit for Review** unless that approval is recorded immediately before submission.

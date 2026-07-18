@@ -1,5 +1,13 @@
 # Current Status
 
+## July 18, 2026 Feedback and Monitoring Update
+
+- The local branch replaces the custom feedback API/review queue with Sentry for browser/server errors, native iOS crashes, and in-app reports.
+- Session replay and default PII collection are disabled. Protected Sentry values have not been entered, and nothing from this change has been deployed or uploaded.
+- Account deletion now has a dedicated `AccountDeletionRequest` model and migration instead of sharing the feedback table.
+- The old `BetaFeedback` production table is intentionally retained as a read-only archive until existing records are privately exported and verified.
+- The next external steps are protected Sentry project setup, production migration/deploy, App Store privacy review, and a new TestFlight build. Each requires action-time approval.
+
 ## What We Built
 
 The app now has a cohesive set of mobile MVP screens for CapitolWonk CE. The primary experience is an iPhone-style product demo with a consistent dark navy/gold visual system.
@@ -168,12 +176,12 @@ Useful pages:
 - `http://127.0.0.1:3023/account`
 - `http://127.0.0.1:3023/beta`
 - `http://127.0.0.1:3023/feedback`
-- `http://127.0.0.1:3023/feedback/review`
 
 ## Build Status
 
 Last checked passes:
 
+- `pnpm feedback:check`
 - `pnpm launch-copy:check`
 - `pnpm testflight:check`
 - `pnpm lint`
@@ -214,7 +222,7 @@ Last checked passes:
 - Congress.gov member, bill, committee, official source-link, bill-summary, bill-cosponsor, House vote, and House member-vote upserts are now available behind `CONGRESS_SYNC_WRITE=true`; keep House vote ingestion explicit with `CONGRESS_SYNC_HOUSE_VOTES=true` and small limits until Neon records are inspected.
 - Search/discovery, dashboard, and bill detail pages now read synced Neon civic records first and keep demo records as fallback. The next live-data UI move is extending that pattern into member detail, vote detail, alerts, and Weekly Brief inputs.
 - Smart Filters are now useful as a high-volume discovery pattern. The live-data version should add broader facets such as policy area, bill status, committee, vote result, and source availability after Congress.gov records are fully synced.
-- Beta testing now has an in-app tester checklist, feedback intake path, actionable filtered review queue, readiness check, first-round tester guide, and subscription testing path. The next beta-readiness step is to run the June 6, 2026 trusted tester intake, triage `BetaFeedback` records after each session, and only then package the Apple/TestFlight build.
+- Beta testing now uses the in-app `/feedback` path with Sentry plus Apple's separate TestFlight feedback channel. The former custom review queue is retired, and legacy `BetaFeedback` records remain archived until a private export is verified.
 - Bill details now separate the formal bill summary from the AI Policy Lens personal-impact read. Both longer description areas use fixed-height scroll boxes so cards stay visually consistent as bill text changes.
 - `/bills` now routes to the searchable bills list instead of relying only on individual bill detail URLs.
 - The mobile app now uses a darker shared navy background instead of page-level blue/gold gradients. If we later build a native iOS shell, this visual system should map cleanly into Apple-style Liquid Glass surfaces because cards already rely on translucent backgrounds, borders, and blur.

@@ -1,4 +1,4 @@
-import { BetaFeedbackForm } from "@/components/beta-feedback-form";
+import { FeedbackForm } from "@/components/feedback-form";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
 import Link from "next/link";
@@ -17,21 +17,21 @@ export default function FeedbackPage({ searchParams }: { searchParams?: { source
         <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
           <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
         </Link>
-        <Link href="/feedback/review" className={mobileViewAllClass}>
-          Review
+        <Link href="/support" className={mobileViewAllClass}>
+          Support
         </Link>
       </header>
 
       <section className="mt-10">
-        <div className="text-[18px] uppercase tracking-wide text-white/54">Live app testing</div>
-        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Report an issue</h1>
+        <div className="text-[18px] uppercase tracking-wide text-white/54">Feedback</div>
+        <h1 className="mt-1 text-[28px] font-medium leading-none text-white">Help improve the app</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Send a quick report when something breaks, feels confusing, looks wrong, or needs clearer wording.
+          Send a focused report when something breaks, feels confusing, looks wrong, or needs clearer wording.
         </p>
       </section>
 
       <main className="mt-7 pb-8">
-        <BetaFeedbackForm initialSource={source} />
+        <FeedbackForm initialSource={source} />
       </main>
 
       <MobileBottomNav

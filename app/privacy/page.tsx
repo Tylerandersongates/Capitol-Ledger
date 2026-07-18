@@ -23,7 +23,7 @@ const policySections = [
   {
     title: "Reports and support",
     body:
-      "Issue reports may include the selected app area, message, severity, page context, and optional contact email so reports can be reviewed and resolved."
+      "Issue reports and diagnostics may include your message, page context, app version, device and operating-system details, technical error data, and an optional contact email so reports can be reviewed and resolved. We use Sentry to process this information. Session replay is disabled."
   },
   {
     title: "How data is used",
@@ -33,7 +33,7 @@ const policySections = [
   {
     title: "What we do not do",
     body:
-      `${publicBrand.name} does not sell personal data and does not use third-party advertising trackers. Official civic data is used for public legislative context, not ad targeting.`
+      `${publicBrand.name} does not sell personal data, use third-party advertising trackers, or enable Sentry session replay. Official civic data is used for public legislative context, not ad targeting.`
   },
   {
     title: "Choices",
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
         <div className="text-[18px] uppercase tracking-wide text-white/54">Privacy</div>
         <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">{publicBrand.privacyTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Last updated July 17, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, live reports, and Apple purchases.
+          Last updated July 18, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, diagnostics, live reports, and Apple purchases.
         </p>
       </section>
 

@@ -50,10 +50,7 @@
     "video-links:check": "node scripts/check-video-links.mjs",
     "youtube-statements:sync": "tsx scripts/sync-youtube-bill-statements.ts",
     "youtube-statements:check": "node scripts/check-youtube-bill-statements.mjs",
-    "reports:check": "node scripts/check-beta-readiness.mjs",
-    "reports:triage": "node scripts/check-beta-triage.mjs",
-    "beta:check": "node scripts/check-beta-readiness.mjs",
-    "beta:triage": "node scripts/check-beta-triage.mjs",
+    "feedback:check": "node scripts/check-feedback-readiness.mjs",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",
     "db:seed": "prisma db seed",
@@ -61,6 +58,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
+    "@sentry/nextjs": "10.42.0",
     "lucide-react": "^0.468.0",
     "next": "^14.2.3",
     "prisma": "^5.14.0",
@@ -69,10 +67,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@next/swc-wasm-nodejs": "14.2.33",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
-    "@next/swc-wasm-nodejs": "14.2.33",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.3",
@@ -83,14 +81,5 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "prisma",
-      "unrs-resolver"
-    ]
   }
 }

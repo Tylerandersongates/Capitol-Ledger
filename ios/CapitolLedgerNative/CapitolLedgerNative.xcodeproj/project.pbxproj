@@ -13,6 +13,7 @@
 		A00000000000000000000023 /* CapitolLedgerPurchaseBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* CapitolLedgerPurchaseBridge.swift */; };
 		A00000000000000000000024 /* CapitolLedgerWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000014 /* CapitolLedgerWebView.swift */; };
 		A00000000000000000000025 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000016 /* Assets.xcassets */; };
+		B00000000000000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000003 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00000000000000000000001 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +85,9 @@
 			dependencies = (
 			);
 			name = CapitolLedgerNative;
+			packageProductDependencies = (
+				B00000000000000000000003 /* Sentry */,
+			);
 			productName = CapitolLedgerNative;
 			productReference = A00000000000000000000006 /* CapitolLedgerNative.app */;
 			productType = "com.apple.product-type.application";
@@ -112,6 +117,9 @@
 			);
 			mainGroup = A00000000000000000000002;
 			productRefGroup = A00000000000000000000003 /* Products */;
+			packageReferences = (
+				B00000000000000000000002 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -266,6 +274,7 @@
 			buildSettings = {
 				APP_DISPLAY_NAME = "CapitolWonk CE";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CAPITOL_LEDGER_SENTRY_DSN = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -294,6 +303,7 @@
 			buildSettings = {
 				APP_DISPLAY_NAME = "CapitolWonk CE";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CAPITOL_LEDGER_SENTRY_DSN = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -340,6 +350,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B00000000000000000000002 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B00000000000000000000003 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B00000000000000000000002 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A00000000000000000000001 /* Project object */;
 }

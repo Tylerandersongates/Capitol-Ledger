@@ -58,7 +58,7 @@ model User {
   teamInvitesCreated      TeamInvite[]            @relation("TeamInvitesCreated")
   updateEvents            UpdateEvent[]
   weeklyBriefDeliveries   WeeklyBriefDelivery[]
-  betaFeedback            BetaFeedback[]
+  accountDeletionRequests AccountDeletionRequest[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 }
@@ -380,25 +380,19 @@ model WeeklyBriefDelivery {
   @@index([status])
 }
 
-model BetaFeedback {
-  id           String   @id
-  userId       String?
-  category     String
-  severity     String
-  status       String   @default("new")
-  releaseDecision String?
-  title        String
-  message      String
-  pageUrl      String?
-  contactEmail String?
-  context      Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+model AccountDeletionRequest {
+  id                              String    @id
+  userId                          String?
+  status                          String    @default("new")
+  requestedAt                     DateTime  @default(now())
+  completionBy                    DateTime
+  appleSubscriptionAcknowledged   Boolean   @default(true)
+  completedAt                     DateTime?
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  user                            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([status, createdAt])
-  @@index([category])
-  @@index([releaseDecision])
+  @@index([status, requestedAt])
   @@index([userId])
 }
 

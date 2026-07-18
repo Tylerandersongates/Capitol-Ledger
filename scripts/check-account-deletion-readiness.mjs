@@ -15,8 +15,9 @@ const privacy = read("app/privacy/page.tsx");
 
 assert.ok(route.includes('body.confirmation !== "DELETE"'), "deletion requests should require explicit DELETE confirmation");
 assert.ok(route.includes("subscriptionAcknowledged"), "deletion requests should require the Apple billing acknowledgement");
-assert.ok(service.includes('requestType: accountDeletionRequestType'), "deletion requests should enter the durable account review queue");
+assert.ok(service.includes('INSERT INTO "AccountDeletionRequest"'), "deletion requests should use dedicated durable storage");
 assert.ok(service.includes("accountDeletionCompletionDays = 7"), "deletion requests should state a seven-day completion target");
+assert.ok(fs.existsSync("prisma/migrations/20260718154000_account_deletion_requests/migration.sql"), "account deletion migration should be checked in");
 assert.ok(control.includes("Request account deletion"), "settings should provide an in-app deletion request action");
 assert.ok(control.includes("Deleting CapitolWonk does not cancel an Apple subscription"), "the flow should explain Apple billing continuity");
 assert.ok(settings.includes("AccountDeletionControl"), "settings should expose the account deletion control");

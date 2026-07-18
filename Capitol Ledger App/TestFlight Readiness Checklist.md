@@ -1,6 +1,6 @@
 # TestFlight Readiness Checklist
 
-Status: active prep as of July 17, 2026.
+Status: active prep as of July 18, 2026.
 
 ## Direction
 
@@ -72,12 +72,11 @@ Review launch-facing copy for clarity, trust, and App Store reviewer comprehensi
 3. `/settings`: account sync, notification preferences, plan/purchases, feedback entry, and confirmed in-app account deletion requests.
 4. `/privacy` and `/support`: App Store support/privacy copy, deletion-request routing, privacy requests, purchase help, and review clarity.
 5. `/upgrade`: Apple purchase, 7-day Pro trial disclosure, restore purchases, monthly 3-20 and annual 3-16 Team selection/totals, custom-plan paths, Free/Pro language.
-6. `/feedback`: live issue reporting, severity/category labels, successful submit state.
-7. `/feedback/review`: reviewer-only copy, release decisions, empty states.
-8. `/alerts`: action-needed labels, unread/read states, priority gating language.
-9. `/brief`: in-app Daily Brief wording and locked/pro states.
-10. `/search`, bill detail, and member detail: empty states, source placeholders, and screenshot-visible labels.
-11. Empty states and error states across auth, purchase sync, feedback, alerts, and account persistence.
+6. `/feedback`: secure Sentry issue reporting, optional contact details, and successful/error states.
+7. `/alerts`: action-needed labels, unread/read states, priority gating language.
+8. `/brief`: in-app Daily Brief wording and locked/pro states.
+9. `/search`, bill detail, and member detail: empty states, source placeholders, and screenshot-visible labels.
+10. Empty states and error states across auth, purchase sync, feedback, alerts, and account persistence.
 
 ## Verification Plan
 
@@ -86,6 +85,7 @@ Run these before treating the build as TestFlight-ready:
 ```bash
 pnpm testflight:check
 pnpm account-deletion:check
+pnpm feedback:check
 pnpm launch-copy:check
 pnpm ios-native:check
 pnpm billing:check
@@ -100,6 +100,7 @@ After App Store Connect products and server variables are configured, run:
 ```bash
 TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check
 BILLING_REQUIRE_APP_STORE=true pnpm billing:check
+SENTRY_REQUIRE_PRODUCTION=true pnpm feedback:check
 ```
 
 ## Next Best Step

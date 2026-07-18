@@ -1,46 +1,58 @@
+import { randomUUID } from "crypto";
 import type { AuthUser } from "@/lib/auth-database";
-import { getBetaFeedbackRecords, saveBetaFeedback, type BetaFeedbackRecord, type BetaFeedbackStatus } from "@/lib/beta-feedback";
+import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 
-const accountDeletionRequestType = "account-deletion";
-const accountDeletionCompletionDays = 7;
+export type AccountDeletionRequestStatus = "new" | "reviewing" | "planned" | "resolved";
 
 export type AccountDeletionRequestSummary = {
   completionBy: string;
   id: string;
   requestedAt: string;
-  status: BetaFeedbackStatus;
+  status: AccountDeletionRequestStatus;
 };
 
-function contextString(record: BetaFeedbackRecord, key: string) {
-  const value = record.context?.[key];
-  return typeof value === "string" ? value : "";
-}
+type AccountDeletionRequestRow = {
+  completionBy: Date;
+  id: string;
+  requestedAt: Date;
+  status: AccountDeletionRequestStatus;
+};
 
-function isAccountDeletionRequest(record: BetaFeedbackRecord, userId: string) {
-  return record.userId === userId && contextString(record, "requestType") === accountDeletionRequestType;
-}
+const accountDeletionCompletionDays = 7;
 
-function completionDateFrom(requestedAt: string) {
-  return new Date(new Date(requestedAt).getTime() + accountDeletionCompletionDays * 24 * 60 * 60 * 1000).toISOString();
-}
-
-function toSummary(record: BetaFeedbackRecord): AccountDeletionRequestSummary {
+function toSummary(record: AccountDeletionRequestRow): AccountDeletionRequestSummary {
   return {
-    completionBy: contextString(record, "completionBy") || completionDateFrom(record.createdAt),
+    completionBy: record.completionBy.toISOString(),
     id: record.id,
-    requestedAt: record.createdAt,
+    requestedAt: record.requestedAt.toISOString(),
     status: record.status
   };
 }
 
 export async function getActiveAccountDeletionRequest(user: AuthUser) {
-  const feedback = await getBetaFeedbackRecords(user, { onlyUser: true });
-  const request = feedback.records.find((record) => isAccountDeletionRequest(record, user.id) && record.status !== "resolved");
+  if (!hasDatabaseUrl()) return null;
 
-  return request ? toSummary(request) : null;
+  const rows = await getPrisma()
+    .$queryRaw<AccountDeletionRequestRow[]>`
+      SELECT "id", "status", "requestedAt", "completionBy"
+      FROM "AccountDeletionRequest"
+      WHERE "userId" = ${user.id} AND "status" <> 'resolved'
+      ORDER BY "requestedAt" DESC
+      LIMIT 1
+    `
+    .catch(() => []);
+
+  return rows[0] ? toSummary(rows[0]) : null;
 }
 
 export async function createAccountDeletionRequest(user: AuthUser) {
+  if (!hasDatabaseUrl()) {
+    return {
+      error: "Account deletion requests need durable account storage. Please try again shortly.",
+      status: 503 as const
+    };
+  }
+
   const existingRequest = await getActiveAccountDeletionRequest(user);
   if (existingRequest) {
     return {
@@ -50,47 +62,53 @@ export async function createAccountDeletionRequest(user: AuthUser) {
   }
 
   const requestedAt = new Date();
-  const completionBy = new Date(requestedAt.getTime() + accountDeletionCompletionDays * 24 * 60 * 60 * 1000).toISOString();
-  const result = await saveBetaFeedback(
-    {
-      category: "other",
-      context: {
-        appleSubscriptionAcknowledged: true,
-        completionBy,
-        reportSource: "account",
-        requestType: accountDeletionRequestType,
-        requestedAt: requestedAt.toISOString()
-      },
-      message:
-        "Delete this CapitolWonk CE account and its associated personal data, except information that must be retained for legal, security, or financial obligations.",
-      pageUrl: "/settings#delete-account",
-      severity: "high",
-      title: "Account deletion request"
-    },
-    user
-  );
+  const completionBy = new Date(requestedAt.getTime() + accountDeletionCompletionDays * 24 * 60 * 60 * 1000);
+  const id = `account-deletion-${randomUUID()}`;
 
-  if ("error" in result && result.error) {
-    return {
-      error: result.error,
-      status: result.status
-    };
-  }
-  if (!("record" in result)) {
+  const rows = await getPrisma()
+    .$queryRaw<AccountDeletionRequestRow[]>`
+      INSERT INTO "AccountDeletionRequest" (
+        "id",
+        "userId",
+        "status",
+        "requestedAt",
+        "completionBy",
+        "appleSubscriptionAcknowledged",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES (
+        ${id},
+        ${user.id},
+        'new',
+        ${requestedAt},
+        ${completionBy},
+        true,
+        ${requestedAt},
+        ${requestedAt}
+      )
+      RETURNING "id", "status", "requestedAt", "completionBy"
+    `
+    .catch(() => []);
+
+  const record = rows[0];
+  if (!record) {
+    const concurrentRequest = await getActiveAccountDeletionRequest(user);
+    if (concurrentRequest) {
+      return {
+        mode: "existing" as const,
+        request: concurrentRequest
+      };
+    }
+
     return {
       error: "Account deletion request could not be recorded. Please try again shortly.",
       status: 503 as const
     };
   }
-  if (result.mode !== "database") {
-    return {
-      error: "Account deletion requests need durable account storage. Please try again shortly.",
-      status: 503 as const
-    };
-  }
 
   return {
-    mode: result.mode,
-    request: toSummary(result.record)
+    mode: "database" as const,
+    request: toSummary(record)
   };
 }
