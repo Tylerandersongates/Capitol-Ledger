@@ -72,6 +72,8 @@ Generated for Friday, July 17, 2026. This extends the Wednesday, July 15 handoff
   - Refreshed the page and confirmed the screenshot persisted.
   - Added Pro Monthly to a draft review submission. Its status changed from `Prepare for Submission` to `Ready for Review`.
   - Nothing was submitted to App Review.
+- After the Apple metadata change propagated, Tyler retried Pro Monthly in the physical TestFlight app and successfully upgraded the current signed-in CapitolWonk account from Free to Pro through the sandbox purchase flow.
+- The successful upgrade confirms that StoreKit can now return `com.capitolwonk.pro.monthly`, open the Apple purchase flow, complete the transaction, and deliver enough entitlement state for the app to move the account to Pro. Pro Monthly product availability is no longer the active blocker.
 
 ## Diagnostics
 - Code delta from the July 15 EOD commit through `0303871`:
@@ -80,7 +82,8 @@ Generated for Friday, July 17, 2026. This extends the Wednesday, July 15 handoff
   - 149 deletions
 - The StoreKit failure is not currently explained by a product-ID typo, bundle-ID mismatch, missing U.S. availability, missing price, missing localization, missing trial, unsigned Paid Apps Agreement, or an unsigned-in sandbox tester.
 - The native error is thrown only after StoreKit returns an empty product list for the requested ID.
-- Apple states that product metadata changes may take up to one hour to appear in sandbox. The Pro Monthly screenshot/readiness change was completed around 7:35 PM Pacific on July 17; the next session must retest before declaring the issue unresolved.
+- Apple states that product metadata changes may take up to one hour to appear in sandbox. The Pro Monthly screenshot/readiness change was completed around 7:35 PM Pacific on July 17, and the later device retest succeeded after the propagation window began.
+- The evidence is consistent with Apple metadata readiness/propagation causing the earlier empty StoreKit response, but it does not prove which individual Apple-side change resolved it. Do not revert the product ID, bundle ID, screenshot, trial, pricing, or draft-readiness configuration.
 - App Store Connect currently contains 38 subscription records. The app intentionally requests 34 of them:
   - 2 Pro products
   - 2 base 3-seat Team products
@@ -107,9 +110,11 @@ Generated for Friday, July 17, 2026. This extends the Wednesday, July 15 handoff
   - Confirmed the production page sends the native Pro Monthly product ID when opened inside the TestFlight shell.
 - TestFlight purchase flow:
   - Before sandbox sign-in: `This App Store product is not available.`
-  - After successful sandbox sign-in: the same message remained.
-  - No Apple purchase sheet opened and no transaction was created.
-  - No real charge occurred and the account remains Free.
+  - Immediately after successful sandbox sign-in: the same message remained.
+  - After Pro Monthly received its review screenshot, moved to `Ready for Review`, and had time to propagate: Tyler successfully completed the sandbox upgrade.
+  - The current signed-in CapitolWonk account changed from Free to Pro.
+  - No real charge occurred.
+  - Purchase persistence, the stored App Store subscription ledger, Restore Purchases, renewal, cancellation, and expiry behavior still need explicit verification.
 - Sandbox tester:
   - Country/storefront is United States.
   - iPhone Media & Purchases was signed out for sandbox-control testing.
@@ -131,51 +136,57 @@ Generated for Friday, July 17, 2026. This extends the Wednesday, July 15 handoff
 - Production is running the current implementation and the native TestFlight build continues to load production web content dynamically.
 - Pro Monthly is the only subscription moved to `Ready for Review`; the subscription group and the remaining products are still in preparation states.
 - A draft review submission exists with Pro Monthly but has not been submitted.
-- The Pro Monthly sandbox purchase remains unverified. The latest Apple metadata change needs propagation time before the next device test.
+- The Pro Monthly sandbox purchase path is verified on the physical TestFlight build: the current signed-in account successfully moved from Free to Pro.
+- Post-purchase persistence, server-side transaction/account-token evidence, restore, renewal, cancellation, and expiry transitions remain unverified.
 - The App Store version record still needs listing screenshots, build selection, copyright, reviewer credentials/contact details, review notes, and the subscription group before final submission.
 - App Store Server API credentials are configured only in protected production settings. No secret is committed.
-- Free is the default for new users and testers. Paid access must come from a verified StoreKit purchase/restore or an explicitly controlled test fixture; do not grant every tester Pro automatically.
+- Free remains the default for new users and testers. The current test account is now Pro because it completed a sandbox StoreKit purchase; do not grant every tester Pro automatically.
 - Daily Brief remains the user-facing name. Weekly Brief remains only as internal compatibility naming.
 - Live OpenAI multi-bill QA remains outside the completed upload-critical work.
 
 ## Tomorrow Pickup Tasks
-1. Start with the controlled Pro Monthly device retest; do not change code first:
-   - Confirm iPhone Settings -> Developer -> Sandbox Apple Account still shows the replacement tester signed in.
-   - Keep Media & Purchases signed out during this sandbox-control test.
-   - Force-close CapitolWonk CE, reopen it directly from the Home Screen, open Upgrade, keep Monthly selected, and tap Start 7-day free trial.
-   - Record whether the Apple purchase sheet opens or the exact error repeats.
-2. If the Apple purchase sheet opens:
-   - Complete the sandbox purchase.
-   - Confirm the signed-in CapitolWonk account changes from Free to Pro.
-   - Verify the product ID, transaction/original transaction IDs, App Account Token association, server validation, and persisted account subscription.
-   - Verify Restore Purchases, relaunch persistence, sandbox renewal, cancellation/expiry behavior, and return to Free when the entitlement is no longer active.
-3. If `This App Store product is not available` still appears after a full hour of propagation:
-   - Recheck Apple Developer System Status and TN3186.
-   - Capture the iPhone model, iOS version, TestFlight build number, sandbox storefront, exact timestamp, and product ID.
-   - Confirm Pro Monthly still reads `Ready for Review` and remains in Draft Submissions.
-   - Escalate to Apple Developer Support with the verified bundle/product/status evidence rather than changing identifiers.
-4. Continue App Store review preparation without submitting:
+1. Begin with post-purchase Pro entitlement verification; do not repurchase first:
+   - Force-close and reopen CapitolWonk CE directly from the Home Screen.
+   - Confirm the current signed-in CapitolWonk account still shows Pro after relaunch.
+   - Confirm the Upgrade and Settings/Profile surfaces identify Pro as the current plan and no longer offer a duplicate Pro purchase action.
+   - Confirm Pro-gated features are available on the current account.
+2. Verify the server/account subscription record for the successful purchase:
+   - Confirm provider is App Store and the product/entitlement ID is `com.capitolwonk.pro.monthly`.
+   - Confirm a transaction ID, original transaction ID, and App Account Token association were received and persisted without exposing them in git or chat.
+   - Confirm the production server validated the sandbox transaction and did not rely only on temporary client state.
+3. Verify Restore Purchases and lifecycle behavior:
+   - Run Restore Purchases with the same sandbox tester and CapitolWonk account; confirm it returns Pro without creating a duplicate subscription.
+   - Verify entitlement survives another force-close/relaunch.
+   - Inspect the sandbox renewal result and confirm the account remains Pro while the entitlement is active.
+   - Later test cancellation/expiry and return to Free. Ask Tyler before clearing sandbox purchase history or taking another destructive sandbox action.
+4. Test the remaining required purchase paths in a controlled order:
+   - Pro Annual crossgrade after the monthly lifecycle test is complete.
+   - Base 3-seat Team Monthly, then a representative larger monthly seat count.
+   - Base 3-seat Team Annual, then a representative supported annual seat count no higher than 16.
+   - Verify totals, plan/seat persistence, restore, and Team workspace access after each transaction.
+5. Continue App Store review preparation without submitting:
    - Add the subscription group to the draft submission.
    - Decide which remaining Pro/Team products are required for version 1.0 and prepare/upload a review screenshot for each required product.
    - Keep annual Team 17-20 products unused unless Tyler approves a pricing/product redesign.
-5. Finish the iOS App Version 1.0 record:
+6. Finish the iOS App Version 1.0 record:
    - Select TestFlight build 1.
    - Prepare and upload required iPhone App Store screenshots.
    - Fill copyright.
    - Create or select a durable App Review demo account and enter review sign-in details without committing credentials.
    - Fill App Review contact information and concise review notes covering the login, upgrade, Daily Brief, bill analysis, and account deletion paths.
    - Confirm manual versus automatic release with Tyler.
-6. Add the completed iOS app version to the draft review submission and clear every App Store Connect readiness warning.
-7. Ask Tyler immediately before clicking the final Submit for Review action.
-8. After purchase/readiness work, return to live OpenAI multi-bill QA and the prioritized competitive-product improvements.
+7. Add the completed iOS app version to the draft review submission and clear every App Store Connect readiness warning.
+8. Ask Tyler immediately before clicking the final Submit for Review action.
+9. After purchase/readiness work, return to live OpenAI multi-bill QA and the prioritized competitive-product improvements.
 
 ## Tomorrow Start Sequence
 1. Read this file completely.
 2. Check `git status --short --branch` and confirm the EOD commit is synchronized with `origin/main`.
 3. Open App Store Connect directly to Pro Monthly: `https://appstoreconnect.apple.com/apps/6788196048/distribution/subscriptions/6791260010`.
 4. Confirm `Ready for Review`, the review screenshot, and Draft Submissions (1).
-5. Run the controlled iPhone Pro Monthly retest before making code or identifier changes.
-6. Continue with the matching branch under Tomorrow Pickup Tasks.
+5. Reopen the physical TestFlight app and confirm the successful Pro entitlement persists; do not purchase again first.
+6. Verify the production account subscription record and Restore Purchases before moving to another product.
+7. Continue with Tomorrow Pickup Tasks in order.
 
 ## Resume Prompt For New Thread
 ```text
@@ -194,9 +205,9 @@ North star: TestFlight/App Store upload readiness.
 
 Public brand is CapitolWonk CE. Free remains the default plan. Pro is $4.99 monthly/$39.99 annual. Team is $5.99 per seat monthly/$59.99 per seat annual, minimum 3 seats; monthly supports 3-20 and annual supports 3-16 before custom pricing.
 
-The replacement U.S. Sandbox Apple Account is signed in under iPhone Developer settings, but TestFlight still returned `This App Store product is not available` before Pro Monthly’s Apple metadata was completed. Pro Monthly now has a persisted App Review screenshot, a one-week free introductory offer, U.S. availability, and `Ready for Review` status in Draft Submissions. Nothing has been submitted. Apple metadata may take up to one hour to propagate.
+The replacement U.S. Sandbox Apple Account is signed in under iPhone Developer settings. TestFlight initially returned `This App Store product is not available`, but Pro Monthly later received its App Review screenshot, one-week free introductory offer, U.S. availability, and `Ready for Review` status in Draft Submissions. After propagation, Tyler successfully completed the sandbox Pro Monthly upgrade and the current CapitolWonk account changed from Free to Pro. Nothing has been submitted to App Review.
 
-Start by retesting Pro Monthly on the physical iPhone before changing code. If the purchase sheet opens, complete sandbox purchase/restore/account-sync QA. If the exact unavailable-product error remains after the propagation window, follow TN3186 and prepare an Apple Developer Support escalation with the verified evidence.
+Start by confirming Pro persists after a force-close/relaunch. Then verify the production App Store subscription ledger, transaction/account-token association, server validation, and Restore Purchases before testing another product. Continue with renewal, cancellation/expiry, Pro Annual, and representative Team seat purchases in the order listed under Tomorrow Pickup Tasks.
 
 The draft cannot be submitted until its subscription group and an iOS app version are added. App Version 1.0 still needs build selection, App Store screenshots, copyright, review credentials/contact information, and notes. Ask Tyler immediately before final Submit for Review.
 
