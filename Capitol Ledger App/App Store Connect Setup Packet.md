@@ -129,7 +129,8 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 - Support page: `/support`
 - Privacy page: `/privacy`
 - Privacy copy is launch-prep copy and should be reviewed against the exact production services enabled at submission.
-- Account deletion, export, and correction requests currently route through Support. If App Review requires in-app self-service deletion before public launch, build that before submission.
+- Signed-in users initiate permanent account deletion from Settings > Your data. The flow requires explicit confirmation, explains that Apple subscription billing continues until separately canceled, and enters a durable review queue with a seven-day completion target.
+- Export, correction, and other privacy questions continue to route through Support.
 
 ## Apple-Side Checklist
 
@@ -145,7 +146,7 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 10. Before review, reorder subscription levels so Team 20 is highest, lower seat counts descend through Team 3, monthly and annual products for the same seat count share a level, and Pro is lowest. App Store Connect initially placed the additional records in creation order.
 11. Confirm Pro is `$4.99/month` or `$39.99/year`; confirm every launch-active Team product matches its seat count and matrix price.
 12. Add support and privacy URLs after deployment.
-13. Create or select the App Store Server API key.
+13. Use the `CapitolWonk Server API` In-App Purchase key generated July 17, 2026; keep the one-time `.p8` download outside git.
 14. Add required host environment variables.
 15. Run strict local readiness checks.
 16. Run sandbox/TestFlight purchase, restore, renewal, cancellation, expiration, plan-switching, Team workspace, and second-account-linking QA.

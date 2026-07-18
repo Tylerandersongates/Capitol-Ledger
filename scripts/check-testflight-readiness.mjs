@@ -23,6 +23,9 @@ const requiredFiles = [
   "lib/billing/app-store.ts",
   "app/api/account/subscription/app-store/route.ts",
   "app/api/account/subscription/app-store/account-token/route.ts",
+  "app/api/account/deletion-request/route.ts",
+  "components/account-deletion-control.tsx",
+  "lib/account-deletion.ts",
   "app/privacy/page.tsx",
   "app/support/page.tsx",
   appStoreSetupPacketPath,
@@ -125,6 +128,8 @@ function checkAppStoreSetupPacket() {
   const privacyPage = read("app/privacy/page.tsx");
   const supportPage = read("app/support/page.tsx");
   const settingsPage = read("app/settings/page.tsx");
+  const accountDeletionRoute = read("app/api/account/deletion-request/route.ts");
+  const accountDeletionControl = read("components/account-deletion-control.tsx");
 
   const requiredPacketPhrases = [
     "App Store Connect Setup Packet",
@@ -186,14 +191,17 @@ function checkAppStoreSetupPacket() {
     privacyPage.includes("publicBrand.privacyTitle") &&
     privacyPage.includes("Apple purchases") &&
     privacyPage.includes("account deletion") &&
+    accountDeletionRoute.includes('body.confirmation !== "DELETE"') &&
+    accountDeletionControl.includes("Request account deletion") &&
+    accountDeletionControl.includes("Deleting CapitolWonk does not cancel an Apple subscription") &&
     supportPage.includes("publicBrand.supportTitle") &&
     supportPage.includes("Privacy requests") &&
     settingsPage.includes('href: "/privacy"') &&
     settingsPage.includes('href: "/support"')
   ) {
-    pass("Support and privacy pages are linked for App Store setup");
+    pass("Support, privacy, and in-app account deletion are linked for App Store setup");
   } else {
-    fail("Support and privacy pages are linked for App Store setup", "Expected /privacy, /support, and Settings entry points.");
+    fail("Support, privacy, and in-app account deletion are linked for App Store setup", "Expected /privacy, /support, and a confirmed deletion-request entry point in Settings.");
   }
 }
 

@@ -2,6 +2,7 @@ import {
   AccountDistrictSettingRow,
   NotificationPreferencesEditor
 } from "@/components/account-profile-controls";
+import { AccountDeletionControl } from "@/components/account-deletion-control";
 import { DemoSignOutButton } from "@/components/demo-auth-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileShell } from "@/components/mobile-shell";
@@ -25,6 +26,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Trash2,
   UserRound
 } from "lucide-react";
 
@@ -58,6 +60,12 @@ const settingRows = [
     value: "Recent briefs",
     href: "/brief",
     icon: <CalendarClock />
+  },
+  {
+    label: "Delete account",
+    value: "Permanent account deletion",
+    href: "#delete-account",
+    icon: <Trash2 />
   }
 ];
 
@@ -72,6 +80,7 @@ const premiumHeaderGreenIconClass =
 export default async function SettingsPage() {
   const session = await getCurrentSession();
   const authenticated = Boolean(session);
+  const hasProductionAccount = session?.mode === "production";
 
   return (
     <MobileShell
@@ -167,6 +176,7 @@ export default async function SettingsPage() {
                 Support requests
               </Link>
             </div>
+            <AccountDeletionControl authenticated={hasProductionAccount} />
           </MobileCard>
         </div>
       </main>

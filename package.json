@@ -26,6 +26,7 @@
     "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs",
     "launch-copy:check": "node scripts/check-launch-copy-tone.mjs",
     "testflight:check": "node scripts/check-testflight-readiness.mjs",
+    "account-deletion:check": "node scripts/check-account-deletion-readiness.mjs",
     "policy-edge:check": "node scripts/check-policy-edge-routes.mjs && node scripts/check-policy-edge-feed.mjs",
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
     "search-filters:check": "node scripts/check-search-filter-collapse.mjs",

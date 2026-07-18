@@ -38,7 +38,7 @@ const policySections = [
   {
     title: "Choices",
     body:
-      "Users can change district, interest, notification, and plan settings in the app. For privacy, export, correction, or account deletion requests, use the support page."
+      "Users can change district, interest, notification, and plan settings in the app. Start permanent account deletion from Settings > Your data. Use Support for export, correction, or other privacy requests."
   }
 ];
 
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
         <div className="text-[18px] uppercase tracking-wide text-white/54">Privacy</div>
         <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">{publicBrand.privacyTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Last updated June 25, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, live reports, and Apple purchases.
+          Last updated July 17, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, live reports, and Apple purchases.
         </p>
       </section>
 
@@ -96,10 +96,10 @@ export default function PrivacyPage() {
             <div className="min-w-0">
               <h2 className="text-[20px] font-medium leading-tight text-white">Privacy requests</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
-                Use support to request account deletion, data correction, or help with saved account data.
+                Start permanent account deletion in Settings. Deletion requests are completed within 7 days. Use Support for data correction, export, or help with saved account data.
               </p>
-              <Link href="/support" className={`${mobileViewAllClass} mt-4 inline-flex`}>
-                Open support
+              <Link href="/settings#delete-account" className={`${mobileViewAllClass} mt-4 inline-flex`}>
+                Delete account
               </Link>
             </div>
           </div>

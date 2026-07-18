@@ -259,10 +259,10 @@ function canPreviewAllBetaFeedbackLocally(user?: AuthUser | null) {
   );
 }
 
-export async function getBetaFeedbackRecords(user?: AuthUser | null) {
+export async function getBetaFeedbackRecords(user?: AuthUser | null, options: { onlyUser?: boolean } = {}) {
   if (await ensureBetaFeedbackSchema().catch(() => false)) {
     const prisma = getPrisma();
-    const includeAll = canReviewAllBetaFeedback(user) || canPreviewAllBetaFeedbackLocally(user);
+    const includeAll = !options.onlyUser && (canReviewAllBetaFeedback(user) || canPreviewAllBetaFeedbackLocally(user));
     const rows = includeAll
       ? await prisma.$queryRaw<DbBetaFeedbackRow[]>`
           SELECT "id", "userId", "category", "severity", "status", "releaseDecision", "title", "message", "pageUrl", "contactEmail", "context", "createdAt"
@@ -299,7 +299,7 @@ export async function getBetaFeedbackRecords(user?: AuthUser | null) {
 
   return {
     mode: "demo" as const,
-    records: getBetaFeedbackDemoRecords()
+    records: options.onlyUser ? betaFeedbackStore.filter((record) => record.userId === user?.id).slice(0, 25) : getBetaFeedbackDemoRecords()
   };
 }
 

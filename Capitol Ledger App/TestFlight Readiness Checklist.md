@@ -36,7 +36,7 @@ Use the App Store Connect setup packet as the entry packet for App Store Connect
 5. Keep Team monthly product ID `com.capitolwonk.team.monthly` at $17.99 for three seats and Team annual `com.capitolwonk.team.annual` at $179.99 for three seats.
 6. July 17, 2026 audit complete: monthly 4-20 and annual 4-16 use `com.capitolwonk.team.{seatCount}.{cycle}`, are U.S.-only, and match the exact matrix; annual 17-20 are reserved and unavailable.
 7. English (U.S.) display names, subscription descriptions, and prices are set for the 30 additional launch-active Team products. Still reorder the subscription levels and complete any required App Review screenshots/notes before adding the products for review.
-8. Create or select the App Store Server API key.
+8. July 17, 2026: generated the `CapitolWonk Server API` In-App Purchase key. Keep its one-time `.p8` download outside git and configure it only through deployment secrets.
 9. Add host environment variables through the deployment provider, never git:
    - `APP_STORE_BUNDLE_ID`
    - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`
@@ -69,8 +69,8 @@ Review launch-facing copy for clarity, trust, and App Store reviewer comprehensi
 
 1. `/sign-in`: account creation, verification, reset, and errors.
 2. `/account`: profile, saved ledger, privacy, plan status, and sign-out.
-3. `/settings`: account sync, notification preferences, plan/purchases, feedback entry.
-4. `/privacy` and `/support`: App Store support/privacy copy, privacy requests, purchase help, and review clarity.
+3. `/settings`: account sync, notification preferences, plan/purchases, feedback entry, and confirmed in-app account deletion requests.
+4. `/privacy` and `/support`: App Store support/privacy copy, deletion-request routing, privacy requests, purchase help, and review clarity.
 5. `/upgrade`: Apple purchase, 7-day Pro trial disclosure, restore purchases, monthly 3-20 and annual 3-16 Team selection/totals, custom-plan paths, Free/Pro language.
 6. `/feedback`: live issue reporting, severity/category labels, successful submit state.
 7. `/feedback/review`: reviewer-only copy, release decisions, empty states.
@@ -85,6 +85,7 @@ Run these before treating the build as TestFlight-ready:
 
 ```bash
 pnpm testflight:check
+pnpm account-deletion:check
 pnpm launch-copy:check
 pnpm ios-native:check
 pnpm billing:check
@@ -103,4 +104,4 @@ BILLING_REQUIRE_APP_STORE=true pnpm billing:check
 
 ## Next Best Step
 
-The app identity, four StoreKit product IDs, prices, and Pro Monthly introductory offer are set. Finish the Paid Apps/Small Business enrollment and App Store Server API credentials outside git, then run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`. After both pass, run sandbox/TestFlight purchase and restore QA for all four products and capture final screenshots from the stable build.
+The app identity, StoreKit products, prices, Pro Monthly introductory offer, Paid Apps Agreement, and In-App Purchase key are set. Configure the five App Store environment values outside git, then run `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check` and `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`. After both pass, run sandbox/TestFlight purchase and restore QA for all four core products and representative Team tiers, then capture final screenshots from the stable build.

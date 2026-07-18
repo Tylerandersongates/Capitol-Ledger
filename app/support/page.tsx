@@ -23,8 +23,14 @@ const supportOptions = [
     cta: "Open plans"
   },
   {
+    title: "Account deletion",
+    body: "Start permanent account deletion directly in Settings. Requests are completed within 7 days.",
+    href: "/settings#delete-account",
+    cta: "Delete account"
+  },
+  {
     title: "Privacy requests",
-    body: "For account deletion, data correction, or saved-data questions, submit a report with \"Privacy request\" in the title.",
+    body: "For data correction, export, or saved-data questions, submit a report with \"Privacy request\" in the title.",
     href: "/feedback?source=privacy-request",
     cta: "Start request"
   }
