@@ -38,8 +38,8 @@ type AppStoreValidationResult =
     };
 
 const appStoreServerApiBaseUrl: Record<Exclude<AppStoreEnvironment, "Xcode">, string> = {
-  Production: "https://api.storekit.itunes.apple.com",
-  Sandbox: "https://api.storekit-sandbox.itunes.apple.com"
+  Production: "https://api.storekit.apple.com",
+  Sandbox: "https://api.storekit-sandbox.apple.com"
 };
 
 const appStoreProducts: Record<
