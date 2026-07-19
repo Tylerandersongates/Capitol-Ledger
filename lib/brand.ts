@@ -7,7 +7,7 @@ export function getPublicBrandName() {
 export const publicBrandName = getPublicBrandName();
 
 export const publicBrand = {
-  accountabilityLabel: `${publicBrandName} Accountability v0.2`,
+  accountabilityLabel: `${publicBrandName} Accountability v1.0`,
   accountLabel: `${publicBrandName} account`,
   citizenLabel: `${publicBrandName} Citizen`,
   name: publicBrandName,

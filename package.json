@@ -39,6 +39,7 @@
     "member-roles:check": "node scripts/check-member-roles.mjs",
     "member-profile:check": "node scripts/check-member-profile-actions.mjs",
     "member-issues:check": "node scripts/check-member-issue-topics.mjs",
+    "member-accountability:check": "tsx scripts/check-member-accountability-score.ts",
     "bill-timeline:check": "node scripts/check-bill-timeline.mjs",
     "bill-votes:check": "node scripts/check-bill-vote-history.mjs",
     "vote-positions:check": "node scripts/check-vote-positions-scroll.mjs",

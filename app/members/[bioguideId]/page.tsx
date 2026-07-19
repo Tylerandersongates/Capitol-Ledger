@@ -171,20 +171,6 @@ type ChamberRankSummary = {
   trackedCount: number;
 };
 
-type AccountabilityTrendPoint = {
-  label: string;
-  value: number;
-};
-
-type AccountabilityTrendModel = {
-  baseline: number;
-  current: number;
-  delta: number;
-  driverDelta: number;
-  driverLabel: string;
-  points: AccountabilityTrendPoint[];
-};
-
 const partyLeadershipRolesByChamber: Record<Member["chamber"], PartyLeadershipRoleDefinition[]> = {
   House: [
     {
@@ -426,46 +412,6 @@ function memberDisplayNameClass(displayName: string) {
 
 function tabHref(bioguideId: string, tab: MemberTab) {
   return tab === "overview" ? `/members/${bioguideId}` : `/members/${bioguideId}?tab=${tab}`;
-}
-
-function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function alignmentComponentValue(scoreModel: MemberScoreModel, label: MemberScoreModel["constituentAlignment"]["components"][number]["label"]) {
-  return scoreModel.constituentAlignment.components.find((component) => component.label === label)?.value ?? scoreModel.overallScore;
-}
-
-function buildAccountabilityTrend(scoreModel: MemberScoreModel): AccountabilityTrendModel {
-  const pollAverage = scoreModel.constituentAlignment.components.find((component) => component.label === "Poll Average")?.value ?? scoreModel.overallScore;
-  const voteAlignment = alignmentComponentValue(scoreModel, "Vote Alignment");
-  const publicPositioning = alignmentComponentValue(scoreModel, "Public Positioning");
-  const timeInOffice = alignmentComponentValue(scoreModel, "Time in Office");
-  const current =
-    scoreModel.factors.find((factor) => factor.key === "constituentAlignment")?.value ??
-    clampPercent((pollAverage * 40 + voteAlignment * 35 + publicPositioning * 15 + timeInOffice * 10) / 100);
-  const voteStep = clampPercent((pollAverage * 40 + voteAlignment * 35) / 75);
-  const signalStep = clampPercent((pollAverage * 40 + voteAlignment * 35 + publicPositioning * 15) / 90);
-  const drivers = [
-    { delta: voteAlignment - pollAverage, label: "Vote record" },
-    { delta: publicPositioning - pollAverage, label: "Public activity" },
-    { delta: timeInOffice - pollAverage, label: "Tenure" }
-  ].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-  const driver = drivers[0] ?? { delta: 0, label: "Issue match" };
-
-  return {
-    baseline: pollAverage,
-    current,
-    delta: current - pollAverage,
-    driverDelta: driver.delta,
-    driverLabel: driver.label,
-    points: [
-      { label: "Polling", value: pollAverage },
-      { label: "Votes", value: voteStep },
-      { label: "Activity", value: signalStep },
-      { label: "Now", value: current }
-    ]
-  };
 }
 
 function fallbackNextElectionDate(chamber: Member["chamber"]) {
@@ -717,69 +663,76 @@ function OverviewTab({
   member: Member;
   scoreModel: MemberScoreModel;
 }) {
-  const alignmentFactor = scoreModel.factors.find((factor) => factor.key === "constituentAlignment");
-  const accountabilityTrend = buildAccountabilityTrend(scoreModel);
-  const topScoreFactors = [...scoreModel.factors].sort((a, b) => b.value - a.value).slice(0, 3);
-  const topScoreFactor = topScoreFactors[0];
-  const issueMatchValue = alignmentFactor?.value ?? accountabilityTrend.current;
-  const sortedIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.topicScore - a.topicScore);
+  const sortedIssueTopics = [...scoreModel.constituentAlignment.topics].sort((a, b) => b.signalCount - a.signalCount);
   const localOfficialLabel = member.chamber === "Senate" ? "Senator" : "Representative";
+  const chamberProfileLabel = member.chamber === "Senate" ? "Senate profiles" : "House profiles";
+  const scoreAvailable = scoreModel.overallScore !== null;
 
   return (
     <>
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description={`What does the public record say about your ${localOfficialLabel} right now.`}
-          eyebrow="At a glance"
+          description={`Verified public records about this ${localOfficialLabel}, with missing evidence kept visible.`}
+          eyebrow="Public record"
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
           iconTone="green"
           title="Accountability snapshot"
           titleAccessory={<AccountabilityInfoPopover />}
         />
 
-        <div className="mt-5 grid grid-cols-[1fr_auto] items-end gap-4">
-          <div>
-            <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white/44">Overall score</div>
-            <div className="text-[48px] font-semibold leading-none text-[#ffb12b]">{scoreModel.overallScore}%</div>
-            <div className="mt-3 text-[22px] font-medium text-[#65ec68]">{scoreModel.rating}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-[14px] uppercase tracking-[0.06em] text-white/52">Standing in chamber</div>
-            <div className="mt-1 text-[24px] font-medium text-white">
-              <span className="text-[#ffb12b]">{chamberRank.rank}</span> / {chamberRank.seatTotal}
+        <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/44">Overall accountability score</div>
+              {scoreAvailable ? (
+                <div className="mt-2 text-[42px] font-semibold leading-none text-[#ffb12b]">{scoreModel.overallScore}%</div>
+              ) : (
+                <div className="mt-2 text-[25px] font-medium leading-tight text-white">Not scored yet</div>
+              )}
             </div>
-            <div className="mt-2 max-w-[178px] text-[13px] leading-snug text-white/54">
-              {chamberRank.label} among {chamberRank.trackedCount} tracked {member.chamber === "Senate" ? "senators" : "House members"}
-            </div>
+            <span className="shrink-0 rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#ffcf54]">
+              {scoreModel.status}
+            </span>
           </div>
+          <p className="mt-3 text-[13px] leading-relaxed text-white/54">
+            {scoreAvailable ? scoreModel.summary : scoreModel.scoreEligibilityDetail}
+          </p>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2">
-          <OverviewMetricTile label="Issue match" value={`${issueMatchValue}%`} detail={scoreModel.constituentAlignment.viewerState} />
           <OverviewMetricTile
-            label="Top signal"
-            value={topScoreFactor ? `${topScoreFactor.value}%` : `${scoreModel.overallScore}%`}
-            detail={topScoreFactor ? plainFactorLabel(topScoreFactor.label) : "Public record"}
+            label="Verified data"
+            value={`${scoreModel.coveredFactorCount} / ${scoreModel.totalFactorCount}`}
+            detail="categories"
           />
           <OverviewMetricTile
-            label="Movement"
-            value={`${accountabilityTrend.delta >= 0 ? "+" : ""}${accountabilityTrend.delta} pts`}
-            detail={accountabilityTrend.driverLabel}
-            tone={accountabilityTrend.delta >= 0 ? "green" : "gold"}
+            label="Records"
+            value={`${scoreModel.evidenceRecordCount}`}
+            detail="linked evidence"
           />
+          <OverviewMetricTile
+            label="Cohort"
+            value={`${chamberRank.trackedCount}`}
+            detail={chamberProfileLabel}
+          />
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] leading-snug text-white/40">
+          <span>{scoreModel.methodologyLabel}</span>
+          <span>Missing data never receives points</span>
         </div>
       </MobileCard>
 
       <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
         <PremiumCardHeader
-          description={`What is shaping your ${localOfficialLabel}'s accountability score right now.`}
-          eyebrow="Key signals"
+          description={`What verified evidence is currently available for this ${localOfficialLabel}.`}
+          eyebrow="Evidence ledger"
           icon={<FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
-          title="What matters now"
+          title="Verified public record"
           titleAccessory={<ScoreDetailsPopover factors={scoreModel.factors} />}
         />
         <div className="mt-5 space-y-3">
-          {topScoreFactors.map((factor) => (
+          {scoreModel.factors.map((factor) => (
             <OverviewSignalRow key={factor.key} factor={factor} />
           ))}
         </div>
@@ -787,23 +740,29 @@ function OverviewTab({
         <div className={`mt-5 ${premiumPanelClass} px-4 py-4`}>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-[16px] font-medium text-white">Issue topics</h3>
+              <h3 className="text-[16px] font-medium text-white">Your issue evidence</h3>
               <p className="mt-1 text-[12px] leading-snug text-white/46">
-                How aligned is your {localOfficialLabel} with the issues you care about.
+                Saved interests surface relevant records without guessing your policy position.
               </p>
             </div>
-            <IssueMatchInfoPopover />
+            <IssueEvidenceInfoPopover />
           </div>
-          <MobileGlassScrollFrame
-            ariaLabel="Issue topic match scores"
-            className="grid gap-2"
-            frameClassName="mt-3"
-            heightClassName="max-h-[176px]"
-          >
-            {sortedIssueTopics.map((topic) => (
-              <OverviewTopicChip key={topic.topic} topic={topic} />
-            ))}
-          </MobileGlassScrollFrame>
+          {sortedIssueTopics.length ? (
+            <MobileGlassScrollFrame
+              ariaLabel="Issue evidence by saved topic"
+              className="grid gap-2"
+              frameClassName="mt-3"
+              heightClassName="max-h-[176px]"
+            >
+              {sortedIssueTopics.map((topic) => (
+                <OverviewTopicChip key={topic.topic} topic={topic} />
+              ))}
+            </MobileGlassScrollFrame>
+          ) : (
+            <div className="mt-3 rounded-xl border border-white/10 bg-[#071a38]/62 px-3.5 py-3 text-[12px] leading-relaxed text-white/52">
+              Choose issue interests in <Link href="/settings" className="font-semibold text-[#ffcf54] underline decoration-[#ffb12b]/40 underline-offset-2">Settings</Link> to surface matching public records.
+            </div>
+          )}
         </div>
       </MobileCard>
     </>
@@ -812,19 +771,10 @@ function OverviewTab({
 
 type AlignmentTopic = MemberScoreModel["constituentAlignment"]["topics"][number];
 
-function plainFactorLabel(label: string) {
-  if (label === "Voting Record") return "Votes";
-  if (label === "Public Engagement") return "Public activity";
-  if (label === "Sponsored Bills") return "Bill activity";
-  if (label === "Ethics & Compliance") return "Public sources";
-  if (label === "Constituent Alignment") return "Issue match";
-  return label;
-}
-
 function plainStatusLabel(status: MemberScoreFactor["status"]) {
-  if (status === "source-linked") return "Records available";
-  if (status === "partial") return "Some records available";
-  return "Not available yet";
+  if (status === "verified") return "Verified records";
+  if (status === "limited") return "Limited evidence";
+  return "Evidence unavailable";
 }
 
 function OverviewMetricTile({
@@ -848,18 +798,25 @@ function OverviewMetricTile({
 }
 
 function OverviewSignalRow({ factor }: { factor: MemberScoreFactor }) {
+  const displayValue = factor.value === null ? "—" : `${factor.value}%`;
+
   return (
     <div className={`${premiumPanelClass} px-4 py-3.5`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-[16px] font-medium text-white">{plainFactorLabel(factor.label)}</div>
-          <div className="mt-1 text-[12px] leading-none text-white/42">{plainStatusLabel(factor.status)}</div>
+          <div className="truncate text-[16px] font-medium text-white">{factor.label}</div>
+          <div className="mt-1 text-[12px] leading-none text-white/42">
+            {plainStatusLabel(factor.status)} · {factor.evidenceCount} record{factor.evidenceCount === 1 ? "" : "s"}
+          </div>
         </div>
-        <div className="shrink-0 text-[18px] font-semibold text-[#ffb12b]">{factor.value}%</div>
+        <div className={`shrink-0 text-[18px] font-semibold ${factor.value === null ? "text-white/34" : "text-[#ffb12b]"}`}>{displayValue}</div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-[linear-gradient(90deg,#a96a09_0%,#ffb12b_68%,#ffcf54_100%)]" style={{ width: `${factor.value}%` }} />
-      </div>
+      <p className="mt-3 text-[12px] leading-relaxed text-white/48">{factor.detail}</p>
+      {factor.value !== null ? (
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-[linear-gradient(90deg,#a96a09_0%,#ffb12b_68%,#ffcf54_100%)]" style={{ width: `${factor.value}%` }} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -869,9 +826,11 @@ function OverviewTopicChip({ topic }: { topic: AlignmentTopic }) {
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/10 bg-[#071a38]/62 px-3.5 py-3">
       <div className="min-w-0">
         <div className="truncate text-[15px] font-medium text-white">{topic.topic}</div>
-        <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched record{topic.signalCount === 1 ? "" : "s"}</div>
+        <div className="mt-1 text-[11px] leading-none text-white/42">{topic.signalCount} matched public record{topic.signalCount === 1 ? "" : "s"}</div>
       </div>
-      <div className="text-[17px] font-semibold text-[#ffb12b]">{topic.topicScore}%</div>
+      <div className={`text-right text-[12px] font-semibold ${topic.signalCount ? "text-[#ffcf54]" : "text-white/34"}`}>
+        {topic.signalCount ? "Evidence found" : "No score"}
+      </div>
     </div>
   );
 }
@@ -908,32 +867,33 @@ function MemberInfoPopover({
 function AccountabilityInfoPopover() {
   return (
     <MemberInfoPopover align="right" ariaLabel="What the accountability score means" title="What this score means">
-      <p>One public-record score combining votes, public activity, bill activity, public sources, and issue match.</p>
-      <p>Use it as a starting point, not a final grade.</p>
+      <p>A score appears only when at least three categories have enough verified, scorable evidence.</p>
+      <p>Missing or planned records never receive points. Personal issue interests are reported separately.</p>
     </MemberInfoPopover>
   );
 }
 
 function ScoreDetailsPopover({ factors }: { factors: MemberScoreFactor[] }) {
   return (
-    <MemberInfoPopover align="center" ariaLabel="How the score is calculated" title="Score inputs">
+    <MemberInfoPopover align="center" ariaLabel="How evidence coverage is calculated" title="Evidence categories">
       <div className="space-y-1.5">
         {factors.map((factor) => (
           <div key={`${factor.key}-popover`} className="flex items-center justify-between gap-3">
-            <span>{plainFactorLabel(factor.label)}</span>
+            <span>{factor.label}</span>
             <span className="font-semibold text-[#ffcf54]">{factor.weight}%</span>
           </div>
         ))}
       </div>
+      <p>Weights describe the model coverage required for a future score; unavailable categories are excluded and shown explicitly.</p>
     </MemberInfoPopover>
   );
 }
 
-function IssueMatchInfoPopover() {
+function IssueEvidenceInfoPopover() {
   return (
-    <MemberInfoPopover align="right" ariaLabel="How issue match is estimated" title="Issue match estimate">
-      <p>Saved interests are grouped into broad topics, then compared with state polling snapshots and public records.</p>
-      <p>Issue match weighs polling, vote record, public activity, and time in office.</p>
+    <MemberInfoPopover align="right" ariaLabel="How issue evidence is selected" title="Issue evidence">
+      <p>Saved interests are grouped into broad topics and used to find matching votes, bills, and official roles.</p>
+      <p>An interest does not reveal your policy position, so the app does not infer a match percentage.</p>
     </MemberInfoPopover>
   );
 }
