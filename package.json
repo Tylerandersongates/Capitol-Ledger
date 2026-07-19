@@ -54,6 +54,7 @@
     "feedback:check": "node scripts/check-feedback-readiness.mjs",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",
+    "congress-roster:check": "tsx scripts/check-congress-member-roster.ts",
     "db:seed": "prisma db seed",
     "sync:congress": "tsx scripts/sync-congress.ts"
   },

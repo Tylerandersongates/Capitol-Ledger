@@ -145,6 +145,43 @@ function checkData() {
     warn("CONGRESS_SYNC_LIMIT is valid", "Use an integer from 1 to 250.");
   }
 
+  const fullRoster = process.env.CONGRESS_SYNC_FULL_MEMBER_ROSTER ?? "false";
+  if (fullRoster === "true" || fullRoster === "false") {
+    pass("CONGRESS_SYNC_FULL_MEMBER_ROSTER is valid", fullRoster);
+  } else {
+    warn("CONGRESS_SYNC_FULL_MEMBER_ROSTER is valid", "Use true or false.");
+  }
+
+  const memberPageLimit = Number(process.env.CONGRESS_SYNC_MEMBER_PAGE_LIMIT ?? 250);
+  if (Number.isInteger(memberPageLimit) && memberPageLimit >= 1 && memberPageLimit <= 250) {
+    pass("CONGRESS_SYNC_MEMBER_PAGE_LIMIT is valid", String(memberPageLimit));
+  } else {
+    warn("CONGRESS_SYNC_MEMBER_PAGE_LIMIT is valid", "Use an integer from 1 to 250.");
+  }
+
+  const memberMaxPages = Number(process.env.CONGRESS_SYNC_MEMBER_MAX_PAGES ?? 10);
+  if (Number.isInteger(memberMaxPages) && memberMaxPages >= 1 && memberMaxPages <= 25) {
+    pass("CONGRESS_SYNC_MEMBER_MAX_PAGES is valid", String(memberMaxPages));
+  } else {
+    warn("CONGRESS_SYNC_MEMBER_MAX_PAGES is valid", "Use an integer from 1 to 25.");
+  }
+
+  const memberMinimumCount = Number(process.env.CONGRESS_SYNC_MEMBER_MIN_COUNT ?? 500);
+  if (Number.isInteger(memberMinimumCount) && memberMinimumCount >= 500 && memberMinimumCount <= 600) {
+    pass("CONGRESS_SYNC_MEMBER_MIN_COUNT is valid", String(memberMinimumCount));
+  } else {
+    warn("CONGRESS_SYNC_MEMBER_MIN_COUNT is valid", "Use an integer from 500 to 600.");
+  }
+
+  const reconcileRoster = process.env.CONGRESS_SYNC_RECONCILE_ROSTER ?? "false";
+  if (reconcileRoster !== "true" && reconcileRoster !== "false") {
+    warn("CONGRESS_SYNC_RECONCILE_ROSTER is valid", "Use true or false.");
+  } else if (reconcileRoster === "true" && fullRoster !== "true") {
+    warn("Congress roster reconciliation guard", "Enable the full member roster before reconciliation.");
+  } else {
+    pass("Congress roster reconciliation guard", reconcileRoster === "true" ? "enabled with full roster" : "disabled");
+  }
+
   if (process.env.CONGRESS_SYNC_WRITE === "true") {
     pass("CONGRESS_SYNC_WRITE mode", "Write mode enabled for sync:congress.");
   } else {

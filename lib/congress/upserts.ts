@@ -196,6 +196,29 @@ export async function upsertCongressMembers(
   };
 }
 
+export async function reconcileCongressMemberRoster(prisma: PrismaClient, activeMemberIds: string[]) {
+  const uniqueActiveMemberIds = Array.from(new Set(activeMemberIds));
+  if (uniqueActiveMemberIds.length < 500) {
+    throw new Error(`Refusing roster reconciliation with only ${uniqueActiveMemberIds.length} active member IDs.`);
+  }
+
+  const result = await prisma.member.updateMany({
+    data: {
+      active: false
+    },
+    where: {
+      active: true,
+      bioguideId: {
+        notIn: uniqueActiveMemberIds
+      }
+    }
+  });
+
+  return {
+    deactivated: result.count
+  };
+}
+
 export async function upsertCongressCosponsors(
   prisma: PrismaClient,
   cosponsors: NormalizedCongressCosponsor[]

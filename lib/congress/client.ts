@@ -7,7 +7,8 @@ const CongressResponseSchema = z.object({
   pagination: z.record(z.unknown()).optional()
 });
 
-type CongressFetchOptions = {
+export type CongressFetchOptions = {
+  currentMember?: boolean;
   offset?: number;
   format?: "json" | "xml";
   limit?: number;
@@ -44,6 +45,7 @@ export async function congressFetch<T>(path: string, options: CongressFetchOptio
 
   if (options.limit) url.searchParams.set("limit", String(options.limit));
   if (options.offset) url.searchParams.set("offset", String(options.offset));
+  if (options.currentMember !== undefined) url.searchParams.set("currentMember", String(options.currentMember));
 
   const controller = options.timeoutMs ? new AbortController() : undefined;
   const timeout = controller && options.timeoutMs ? setTimeout(() => controller.abort(), options.timeoutMs) : undefined;
@@ -338,6 +340,10 @@ export type CongressCommitteeListItem = NonNullable<CongressCommitteeListRespons
 
 export async function fetchMembers(options: CongressFetchOptions = {}) {
   return congressFetch<CongressMemberListResponse>("/member", options);
+}
+
+export async function fetchMembersByCongress(congress: number, options: CongressFetchOptions = {}) {
+  return congressFetch<CongressMemberListResponse>(`/member/congress/${congress}`, options);
 }
 
 export async function fetchBills(congress: number, options: CongressFetchOptions = {}) {

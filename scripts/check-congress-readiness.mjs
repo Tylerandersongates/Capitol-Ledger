@@ -173,6 +173,18 @@ async function main() {
 
   const congress = readIntegerEnv("CONGRESS_SYNC_CONGRESS", 119, { min: 1, max: 999 });
   const limit = readIntegerEnv("CONGRESS_SYNC_LIMIT", 25, { min: 1, max: 250 });
+  const fullMemberRoster = process.env.CONGRESS_SYNC_FULL_MEMBER_ROSTER ?? "false";
+  const reconcileRoster = process.env.CONGRESS_SYNC_RECONCILE_ROSTER ?? "false";
+  checkBooleanEnv("CONGRESS_SYNC_FULL_MEMBER_ROSTER", false);
+  readIntegerEnv("CONGRESS_SYNC_MEMBER_PAGE_LIMIT", 250, { min: 1, max: 250 });
+  readIntegerEnv("CONGRESS_SYNC_MEMBER_MAX_PAGES", 10, { min: 1, max: 25 });
+  readIntegerEnv("CONGRESS_SYNC_MEMBER_MIN_COUNT", 500, { min: 500, max: 600 });
+  checkBooleanEnv("CONGRESS_SYNC_RECONCILE_ROSTER", false);
+  if (reconcileRoster === "true" && fullMemberRoster !== "true") {
+    fail("Roster reconciliation guard", "CONGRESS_SYNC_RECONCILE_ROSTER=true requires CONGRESS_SYNC_FULL_MEMBER_ROSTER=true.");
+  } else {
+    pass("Roster reconciliation guard", reconcileRoster === "true" ? "full-roster validation required" : "reconciliation disabled");
+  }
   if (process.env.CONGRESS_SYNC_WRITE === "true") {
     pass("CONGRESS_SYNC_WRITE mode", "Write mode enabled for sync:congress.");
   } else {
