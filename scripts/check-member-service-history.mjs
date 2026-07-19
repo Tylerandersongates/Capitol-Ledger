@@ -60,6 +60,18 @@ assert.ok(
   detailResolutionBlock.includes("await getLiveMemberDetailData(bioguideId)"),
   "Member detail should fall back to a bounded live Congress.gov profile when optional database reads time out."
 );
+assert.ok(
+  detailResolutionBlock.includes("const [profile, legislation, votes] = await Promise.all(["),
+  "Independent member profile, legislation, and vote enrichments should run concurrently."
+);
+assert.ok(
+  detailResolutionBlock.includes("hydrateMemberDetailWithLiveVotes(detail)"),
+  "Member detail should request only the vote source for the member's chamber."
+);
+assert.ok(
+  !detailResolutionBlock.includes("const detailWithProfile = await hydrateMemberDetailWithLiveProfile"),
+  "Member detail should not serialize independent live enrichment requests."
+);
 
 assert.ok(memberRenderBlock.includes("const termsInOffice = member.termsInOffice;"), "Member profile display should use hydrated service history directly.");
 assert.ok(

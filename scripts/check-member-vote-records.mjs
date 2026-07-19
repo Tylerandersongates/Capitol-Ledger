@@ -14,8 +14,12 @@ const houseHydratorEnd = data.indexOf("async function hydrateMemberDetailWithLiv
 const houseHydratorBlock = data.slice(houseHydratorStart, houseHydratorEnd);
 
 const senateHydratorStart = data.indexOf("async function hydrateMemberDetailWithLiveSenateVotes");
-const senateHydratorEnd = data.indexOf("export async function getMemberDetailWithLiveData");
+const senateHydratorEnd = data.indexOf("function hydrateMemberDetailWithLiveVotes");
 const senateHydratorBlock = data.slice(senateHydratorStart, senateHydratorEnd);
+
+const voteHydratorStart = data.indexOf("function hydrateMemberDetailWithLiveVotes");
+const voteHydratorEnd = data.indexOf("export async function getMemberDetailWithLiveData");
+const voteHydratorBlock = data.slice(voteHydratorStart, voteHydratorEnd);
 
 const memberDetailStart = data.indexOf("export async function getMemberDetailWithLiveData");
 const memberDetailEnd = data.indexOf("async function getDatabaseActiveMembers");
@@ -39,8 +43,11 @@ assert.ok(voteSelectorBlock.includes("Date.parse(b.vote?.voteDate"), "Member vot
 assert.ok(houseHydratorBlock.includes("fetchHouseMemberVotes(detail.member, 12, houseVotesFetchTimeoutMs)"), "House profiles should hydrate recent official roll-call positions.");
 assert.ok(houseHydratorBlock.includes("selectMemberVoteRecords(liveVotes, detail.memberVotes, 20)"), "House live votes should merge with stored vote records.");
 assert.ok(senateHydratorBlock.includes("selectMemberVoteRecords(liveVotes, detail.memberVotes, 20)"), "Senate live votes should use the shared sorted/deduped selector.");
-assert.ok(memberDetailBlock.includes("const detailWithHouseVotes = await hydrateMemberDetailWithLiveHouseVotes(detailWithLegislation);"), "Member details should hydrate House votes before rendering.");
-assert.ok(memberDetailBlock.includes("return hydrateMemberDetailWithLiveSenateVotes(detailWithHouseVotes);"), "Member details should keep Senate vote hydration active.");
+assert.ok(voteHydratorBlock.includes('detail.member.chamber === "House"'), "Member details should choose vote hydration by chamber.");
+assert.ok(voteHydratorBlock.includes("hydrateMemberDetailWithLiveHouseVotes(detail)"), "Member details should keep House vote hydration active.");
+assert.ok(voteHydratorBlock.includes("hydrateMemberDetailWithLiveSenateVotes(detail)"), "Member details should keep Senate vote hydration active.");
+assert.ok(memberDetailBlock.includes("hydrateMemberDetailWithLiveVotes(detail)"), "Member details should hydrate recent official vote positions before rendering.");
+assert.ok(memberDetailBlock.includes("memberVotes: votes.memberVotes"), "Member details should preserve the selected chamber's hydrated vote records.");
 
 assert.ok(votesTabBlock.includes("const linkedRecords = memberVotes.filter"), "Votes tab should only render records with linked vote data.");
 assert.ok(votesTabBlock.includes("const countLabel = linkedRecords.length > records.length"), "Votes tab should disclose when more vote records are available than shown.");

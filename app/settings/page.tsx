@@ -6,7 +6,7 @@ import { AccountDeletionControl } from "@/components/account-deletion-control";
 import { DemoSignOutButton } from "@/components/demo-auth-controls";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { MobileShell } from "@/components/mobile-shell";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileProfileShortcutClass } from "@/components/mobile-ui";
 import { PartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { SettingsAccountSyncStatus } from "@/components/settings-account-sync-status";
 import { getCurrentSession } from "@/lib/auth";

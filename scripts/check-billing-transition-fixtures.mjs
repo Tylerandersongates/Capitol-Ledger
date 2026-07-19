@@ -83,7 +83,8 @@ assert.ok(
     subscriptionControlsSource.includes('action: "purchase"') &&
     subscriptionControlsSource.includes('action: "restore"') &&
     subscriptionControlsSource.includes('action: "manage"') &&
-    subscriptionControlsSource.includes("appStoreProductIds"),
+    subscriptionControlsSource.includes("proAppStoreProductIds") &&
+    subscriptionControlsSource.includes("getTeamAppStoreProductId"),
   "visible subscription controls should use the native Apple purchase bridge"
 );
 assert.ok(

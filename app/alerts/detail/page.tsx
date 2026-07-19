@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Bell,
   CalendarDays,
-  CheckCircle2,
   FileText,
   Home,
   Landmark,

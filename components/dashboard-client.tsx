@@ -2,7 +2,7 @@
 
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileProfileShortcutClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileProfileShortcutClass, mobileViewAllClass } from "@/components/mobile-ui";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import { VoteSpreadPanel } from "@/components/vote-spread-panel";

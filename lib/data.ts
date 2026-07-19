@@ -1323,6 +1323,12 @@ async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData):
   };
 }
 
+function hydrateMemberDetailWithLiveVotes(detail: MemberDetailData) {
+  return detail.member.chamber === "House"
+    ? hydrateMemberDetailWithLiveHouseVotes(detail)
+    : hydrateMemberDetailWithLiveSenateVotes(detail);
+}
+
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
   const detail =
     (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ??
@@ -1330,10 +1336,20 @@ export async function getMemberDetailWithLiveData(bioguideId: string): Promise<M
     (await getLiveMemberDetailData(bioguideId));
   if (!detail) return null;
 
-  const detailWithProfile = await hydrateMemberDetailWithLiveProfile(detail);
-  const detailWithLegislation = await hydrateMemberDetailWithLiveLegislation(detailWithProfile);
-  const detailWithHouseVotes = await hydrateMemberDetailWithLiveHouseVotes(detailWithLegislation);
-  return hydrateMemberDetailWithLiveSenateVotes(detailWithHouseVotes);
+  const [profile, legislation, votes] = await Promise.all([
+    hydrateMemberDetailWithLiveProfile(detail),
+    hydrateMemberDetailWithLiveLegislation(detail),
+    hydrateMemberDetailWithLiveVotes(detail)
+  ]);
+
+  return {
+    ...detail,
+    chamberMembers: profile.chamberMembers,
+    cosponsoredBills: legislation.cosponsoredBills,
+    member: profile.member,
+    memberVotes: votes.memberVotes,
+    sponsoredBills: legislation.sponsoredBills
+  };
 }
 
 async function getDatabaseActiveMembers(): Promise<Member[] | null> {
@@ -1871,10 +1887,11 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
   const dashboardBills = dedupeDashboardBills(sourceBills);
   const sortedBills = [...dashboardBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
+  const billsById = new Map(sourceBills.map((bill) => [bill.id, bill]));
   const recentVote = sortedVotes[0];
-  const recentVoteBill = recentVote?.billId ? sourceBills.find((bill) => bill.id === recentVote.billId) : undefined;
+  const recentVoteBill = recentVote?.billId ? billsById.get(recentVote.billId) : undefined;
   const voteFeed = sortedVotes.map((vote) => ({
-    bill: vote.billId ? sourceBills.find((bill) => bill.id === vote.billId) : undefined,
+    bill: vote.billId ? billsById.get(vote.billId) : undefined,
     memberBioguideIds: getVoteMemberBioguideIds(vote),
     sourceKind: dashboardVoteSourceKind(vote),
     totals: getVoteTotals(vote),
