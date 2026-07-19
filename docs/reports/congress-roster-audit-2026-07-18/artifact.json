@@ -1,0 +1,258 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "Congress Roster Data Quality Audit",
+    "description": "Production-readiness assessment of the current House and Senate roster.",
+    "generatedAt": "2026-07-19T01:04:45Z",
+    "cards": [
+      {
+        "id": "current_members",
+        "description": "Current members advertised by Congress.gov and returned by the audited roster.",
+        "dataset": "audit_summary",
+        "sourceId": "roster_audit_sql",
+        "metrics": [
+          { "label": "Current members", "field": "currentMembers", "format": "number" }
+        ]
+      },
+      {
+        "id": "database_matches",
+        "description": "Current official members with matching active production database records.",
+        "dataset": "audit_summary",
+        "sourceId": "roster_audit_sql",
+        "metrics": [
+          { "label": "Database matches", "field": "databaseMatches", "format": "number" }
+        ]
+      },
+      {
+        "id": "source_coverage",
+        "description": "Share of current members with a canonical Congress.gov source link.",
+        "dataset": "audit_summary",
+        "sourceId": "roster_audit_sql",
+        "metrics": [
+          { "label": "Source-link coverage", "field": "sourceCoverage", "format": "percent" }
+        ]
+      },
+      {
+        "id": "critical_failures",
+        "description": "Critical integrity failures detected by the read-only audit.",
+        "dataset": "audit_summary",
+        "sourceId": "roster_audit_sql",
+        "metrics": [
+          { "label": "Critical failures", "field": "criticalFailures", "format": "number" }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "roster_by_chamber",
+        "title": "Current roster by chamber",
+        "subtitle": "The official roster and production database agree exactly on all 537 current members.",
+        "type": "bar",
+        "dataset": "chamber_composition",
+        "sourceId": "roster_audit_sql",
+        "valueFormat": "number",
+        "layout": "full",
+        "encodings": {
+          "x": { "field": "chamber", "type": "nominal", "label": "Chamber" },
+          "y": { "field": "memberCount", "type": "quantitative", "label": "Current members" },
+          "tooltip": [
+            { "field": "shareOfRoster", "type": "quantitative", "label": "Share of roster", "format": "percent" },
+            { "field": "databaseCount", "type": "quantitative", "label": "Database matches", "format": "number" },
+            { "field": "advertisedTotal", "type": "quantitative", "label": "Official total", "format": "number" }
+          ]
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "quality_gaps",
+        "title": "Non-blocking data gaps",
+        "subtitle": "Fields intentionally hidden or safely substituted pending stronger sources.",
+        "dataset": "quality_gaps",
+        "sourceId": "roster_audit_sql",
+        "defaultSort": { "field": "impactedMembers", "direction": "desc" },
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          { "field": "field", "label": "Field", "type": "text" },
+          { "field": "impactedMembers", "label": "Members", "format": "number" },
+          { "field": "shareOfRoster", "label": "Share", "format": "percent" },
+          { "field": "currentBehavior", "label": "Current behavior", "type": "text" }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "roster_audit_snapshot",
+        "label": "Roster audit snapshot",
+        "path": "docs/reports/congress-roster-audit-2026-07-18/audit-results.json"
+      },
+      {
+        "id": "roster_audit_sql",
+        "label": "Read-only roster audit query",
+        "path": "docs/reports/congress-roster-audit-2026-07-18/roster-audit.sql"
+      },
+      {
+        "id": "roster_audit_implementation",
+        "label": "Roster audit implementation",
+        "path": "scripts/audit-congress-roster-data-quality.ts"
+      },
+      {
+        "id": "congress_gov_members",
+        "label": "Congress.gov current members API",
+        "href": "https://api.congress.gov/v3/member?currentMember=true&limit=250"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# Congress Roster Data Quality Audit\n\nProduction-readiness assessment · July 18, 2026 Pacific"
+      },
+      {
+        "id": "executive_summary",
+        "type": "markdown",
+        "sourceId": "roster_audit_snapshot",
+        "body": "## Executive Summary\n\nThe current-member dataset passes every critical integrity check. Congress.gov advertises and returns 537 current members, and the protected production ledger contains the same 537 active bioguide IDs with no extra active records. All current members have a canonical Congress.gov source link, and the app's roster/search layer now excludes demo-only identities when the official roster is complete.\n\nThe remaining gaps are non-blocking presentation fields: 2 portraits use the explicit Capitol Ledger logo fallback, 516 official-site links depend on live profile hydration or the saved Congress.gov source URL, and 522 election dates remain hidden because Congress.gov service intervals are not verified election dates."
+      },
+      {
+        "id": "headline_metrics",
+        "type": "metric-strip",
+        "cardIds": ["current_members", "database_matches", "source_coverage", "critical_failures"]
+      },
+      {
+        "id": "integrity_findings",
+        "type": "markdown",
+        "sourceId": "roster_audit_snapshot",
+        "body": "## Integrity Findings\n\nThe chamber totals reconcile exactly: 437 House members and 100 Senators. Read-only reconciliation also found zero extra active records and zero orphaned current-member source links. Nineteen former members remain as inactive historical records, preserving history without leaking into the current roster."
+      },
+      {
+        "id": "chamber_chart",
+        "type": "chart",
+        "chartId": "roster_by_chamber"
+      },
+      {
+        "id": "quality_findings",
+        "type": "markdown",
+        "sourceId": "roster_audit_snapshot",
+        "body": "## Data Quality Gaps\n\nNo required identity, chamber, party, state, district, raw-source, or source-link field failed validation. The remaining gaps are visible and fail safely: unavailable portraits show the app logo; unavailable official links retain Congress.gov provenance; and unverified election dates display as “Not listed” instead of fabricated dates."
+      },
+      {
+        "id": "gaps_table",
+        "type": "table",
+        "tableId": "quality_gaps"
+      },
+      {
+        "id": "recommendations",
+        "type": "markdown",
+        "sourceId": "roster_audit_snapshot",
+        "body": "## Recommendations\n\n1. Ship the roster-authority, canonical-member, bounded-fallback, and election-date corrections before enabling production reads.\n2. After deployment, repeat representative, delegate, senator, search, legacy-route, and inactive-member browser QA against production.\n3. Enable production database reads only after that deployment check and an explicit owner approval.\n4. Treat verified election dates and direct official-site coverage as follow-up enrichment work, not launch blockers."
+      },
+      {
+        "id": "caveats",
+        "type": "markdown",
+        "sourceId": "roster_audit_snapshot",
+        "body": "## Caveats\n\nThis is a point-in-time snapshot of Congress.gov and the protected production ledger. Congress.gov member detail hydration can still be unavailable during network or upstream outages; the app therefore uses a bounded current-member fallback and refuses inactive historical IDs. The audit confirms roster integrity, not editorial accuracy for every biography or future vote record."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "body": "## Further Questions\n\n- Which verified source should own exact first-election and next-election dates?\n- Should the two logo-fallback portraits be curated before launch?\n- What monitoring threshold should pause production reads if Congress.gov and the ledger diverge after launch?"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-07-19T01:04:45Z",
+    "status": "ready",
+    "datasets": {
+      "audit_summary": [
+        {
+          "currentMembers": 537,
+          "databaseMatches": 537,
+          "sourceCoverage": 1,
+          "criticalFailures": 0,
+          "extraActive": 0,
+          "inactiveHistorical": 19,
+          "houseMembers": 437,
+          "senateMembers": 100,
+          "stateAndTerritoryCount": 56,
+          "auditDate": "July 18, 2026 Pacific",
+          "status": "passed_with_warnings"
+        }
+      ],
+      "chamber_composition": [
+        {
+          "chamber": "House",
+          "memberCount": 437,
+          "shareOfRoster": 0.8137802607,
+          "databaseCount": 437,
+          "advertisedTotal": 537,
+          "sourcePageCount": 3,
+          "stateAndTerritoryCount": 56,
+          "auditDate": "July 18, 2026 Pacific"
+        },
+        {
+          "chamber": "Senate",
+          "memberCount": 100,
+          "shareOfRoster": 0.1862197393,
+          "databaseCount": 100,
+          "advertisedTotal": 537,
+          "sourcePageCount": 3,
+          "stateAndTerritoryCount": 56,
+          "auditDate": "July 18, 2026 Pacific"
+        }
+      ],
+      "quality_gaps": [
+        {
+          "field": "Verified election dates",
+          "impactedMembers": 522,
+          "shareOfRoster": 0.9720670391,
+          "currentBehavior": "Hidden as Not listed pending a verified election source",
+          "severity": "non-blocking",
+          "requiredForRoster": false
+        },
+        {
+          "field": "Direct official-site URL",
+          "impactedMembers": 516,
+          "shareOfRoster": 0.9608938547,
+          "currentBehavior": "Hydrated live or replaced by the canonical Congress.gov source link",
+          "severity": "non-blocking",
+          "requiredForRoster": false
+        },
+        {
+          "field": "Member portrait",
+          "impactedMembers": 2,
+          "shareOfRoster": 0.0037243948,
+          "currentBehavior": "Displays the explicit Capitol Ledger logo fallback",
+          "severity": "non-blocking",
+          "requiredForRoster": false
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "roster_audit_snapshot",
+      "label": "Roster audit snapshot",
+      "path": "docs/reports/congress-roster-audit-2026-07-18/audit-results.json"
+    },
+    {
+      "id": "roster_audit_sql",
+      "label": "Read-only roster audit query",
+      "path": "docs/reports/congress-roster-audit-2026-07-18/roster-audit.sql"
+    },
+    {
+      "id": "roster_audit_implementation",
+      "label": "Roster audit implementation",
+      "path": "scripts/audit-congress-roster-data-quality.ts"
+    },
+    {
+      "id": "congress_gov_members",
+      "label": "Congress.gov current members API",
+      "href": "https://api.congress.gov/v3/member?currentMember=true&limit=250"
+    }
+  ]
+}

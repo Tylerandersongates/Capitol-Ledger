@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import type { PrismaClient } from "@prisma/client";
-import { fetchPaginatedMemberRoster, validateCurrentMemberRoster } from "@/lib/congress/member-roster";
+import {
+  fetchPaginatedMemberRoster,
+  hasCompleteMemberRosterCounts,
+  mergeMemberRosterWithFallback,
+  validateCurrentMemberRoster
+} from "@/lib/congress/member-roster";
 import { reconcileCongressMemberRoster } from "@/lib/congress/upserts";
 import type { CongressMemberListItem } from "@/lib/congress/client";
 import type { Member } from "@/types/capitol";
@@ -88,6 +93,27 @@ async function main() {
   assert.equal(validation.memberCount, 505, "Complete roster validation should report the active member count.");
   assert.equal(validation.houseCount, 410, "Complete roster validation should report House records separately.");
   assert.equal(validation.senateCount, 95, "Complete roster validation should report Senate records separately.");
+  assert.equal(
+    hasCompleteMemberRosterCounts({ houseCount: validation.houseCount, memberCount: validation.memberCount, senateCount: validation.senateCount }),
+    true,
+    "Validated chamber totals should satisfy the reusable roster readiness guard."
+  );
+
+  const fallbackDuplicate = { ...completeRoster[0], fullName: "Fallback duplicate" };
+  const fallbackOnly = normalizedMember(999, "House");
+  assert.deepEqual(
+    mergeMemberRosterWithFallback(completeRoster, [fallbackDuplicate, fallbackOnly]),
+    completeRoster,
+    "A complete live roster must exclude fallback-only and fallback-override records."
+  );
+  const partialLiveMember = { ...completeRoster[0], fullName: "Authoritative live member" };
+  const partialMerge = mergeMemberRosterWithFallback([partialLiveMember], [fallbackDuplicate, fallbackOnly]);
+  assert.equal(partialMerge.length, 2, "An incomplete live roster should retain fallback-only records.");
+  assert.equal(
+    partialMerge.find((member) => member.bioguideId === partialLiveMember.bioguideId)?.fullName,
+    "Authoritative live member",
+    "Live data must win when an incomplete roster overlaps a fallback record."
+  );
 
   assert.throws(
     () => validateCurrentMemberRoster(completeRoster.slice(0, 100)),

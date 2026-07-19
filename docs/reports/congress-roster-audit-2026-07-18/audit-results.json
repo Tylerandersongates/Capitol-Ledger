@@ -1,0 +1,60 @@
+{
+  "auditDate": "July 18, 2026 Pacific",
+  "generatedAt": "2026-07-19T01:04:45Z",
+  "status": "passed_with_warnings",
+  "officialRoster": {
+    "advertisedCount": 537,
+    "memberCount": 537,
+    "houseCount": 437,
+    "senateCount": 100,
+    "pageCount": 3
+  },
+  "databaseIntegrity": {
+    "databaseMatches": 537,
+    "extraActive": 0,
+    "inactiveHistorical": 19,
+    "sourceLinkCoverage": 537,
+    "sourceLinkOrphans": 0
+  },
+  "appReadiness": {
+    "appMemberCount": 537,
+    "appNonOfficialCount": 0,
+    "friedmanSearchCount": 1,
+    "friedmanSuggestionCount": 1
+  },
+  "completeness": {
+    "houseMissingDistrict": 0,
+    "invalidState": 0,
+    "missingName": 0,
+    "missingOfficialUrl": 516,
+    "missingPhotoUrl": 2,
+    "missingRawJson": 0,
+    "missingSourceUrl": 0,
+    "senateWithDistrict": 0,
+    "unknownParty": 0
+  },
+  "temporalValidity": {
+    "futureFirstElectionDates": 0,
+    "pastNextElectionDates": 0,
+    "missingFirstElectionDates": 522,
+    "missingNextElectionDates": 522
+  },
+  "distributions": {
+    "party": {
+      "Republican": 274,
+      "Democrat": 260,
+      "Independent": 3
+    },
+    "stateAndTerritoryCount": 56
+  },
+  "freshness": {
+    "oldestUpdatedAt": "2026-07-19T00:21:22.951Z",
+    "newestUpdatedAt": "2026-07-19T00:26:49.333Z"
+  },
+  "criticalFailures": [],
+  "warnings": [
+    "2 current member records use the explicit app-logo portrait fallback.",
+    "516 current member records rely on live profile hydration or their Congress.gov source URL.",
+    "522 first-election and 522 next-election dates remain hidden until a verified election source is connected."
+  ]
+}

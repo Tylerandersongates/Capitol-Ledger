@@ -30,6 +30,12 @@ type ValidateMemberRosterOptions = {
   minimumSenateCount?: number;
 };
 
+type MemberRosterCounts = {
+  houseCount: number;
+  memberCount: number;
+  senateCount: number;
+};
+
 function paginationOffset(value?: string) {
   if (!value) return undefined;
 
@@ -157,4 +163,23 @@ export function validateCurrentMemberRoster(
     memberCount: members.length,
     senateCount
   };
+}
+
+export function hasCompleteMemberRosterCounts({ houseCount, memberCount, senateCount }: MemberRosterCounts) {
+  return memberCount >= 500 && memberCount <= 600 && houseCount >= 400 && senateCount >= 90;
+}
+
+export function isCompleteCurrentMemberRoster(members: Member[]) {
+  try {
+    validateCurrentMemberRoster(members);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function mergeMemberRosterWithFallback(liveMembers: Member[], fallbackMembers: Member[]) {
+  if (isCompleteCurrentMemberRoster(liveMembers)) return liveMembers;
+
+  return Array.from(new Map([...fallbackMembers, ...liveMembers].map((member) => [member.bioguideId, member])).values());
 }

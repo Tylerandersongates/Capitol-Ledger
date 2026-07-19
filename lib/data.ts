@@ -2,6 +2,7 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { hasCompleteMemberRosterCounts, mergeMemberRosterWithFallback } from "@/lib/congress/member-roster";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -11,7 +12,7 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
 import { fetchSenateMemberVotes } from "@/lib/senate-votes";
-import { currentCongressLabel, federalElectionDateIso } from "@/lib/utils";
+import { currentCongressLabel } from "@/lib/utils";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
@@ -33,6 +34,10 @@ export type BillSummaryResolution = {
 };
 
 export type SearchRecordsResult = ReturnType<typeof searchRecords>;
+
+type DatabaseSearchRecordsResult = SearchRecordsResult & {
+  completeMemberRoster: boolean;
+};
 
 export type VoteMemberPositionRecord = {
   member?: Member;
@@ -692,36 +697,12 @@ function deriveTermsFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber) {
   return Math.max(1, Math.ceil(servedYears / 6));
 }
 
-function deriveElectionDatesFromRaw(rawTerms: RawMemberTermRecord[], chamber: Chamber) {
-  const chamberTerms = rawTerms.filter((term) => {
-    const rawChamber = normalizeRawChamber(term.chamber);
-    return !rawChamber || rawChamber === chamber;
-  });
-  const workingTerms = chamberTerms.length ? chamberTerms : rawTerms;
-  const starts = workingTerms.map((term) => term.startYear).filter((value): value is number => Number.isFinite(value));
-  if (!starts.length) return { firstElectedDate: undefined, nextElectionDate: undefined } as const;
-
-  const firstStart = Math.min(...starts);
-  const activeTerm =
-    workingTerms.find((term) => !Number.isFinite(term.endYear) && Number.isFinite(term.startYear)) ??
-    [...workingTerms]
-      .filter((term): term is RawMemberTermRecord & { endYear: number; startYear: number } => Number.isFinite(term.endYear) && Number.isFinite(term.startYear))
-      .sort((a, b) => b.startYear - a.startYear)[0];
-
-  const termLength = chamber === "Senate" ? 6 : 2;
-  const activeStart = Number.isFinite(activeTerm?.startYear) ? (activeTerm?.startYear as number) : firstStart;
-  const activeEnd = Number.isFinite(activeTerm?.endYear) ? (activeTerm?.endYear as number) : activeStart + termLength;
-  const firstElectionYear = firstStart % 2 === 0 ? firstStart : firstStart - 1;
-  let nextElectionYear = activeEnd - 1;
-  const currentYear = new Date().getUTCFullYear();
-
-  while (nextElectionYear < currentYear - 1) {
-    nextElectionYear += termLength;
-  }
-
+function deriveElectionDatesFromRaw(_rawTerms: RawMemberTermRecord[], _chamber: Chamber) {
+  // Congress.gov term years describe congressional service intervals, not exact election dates or Senate classes.
+  // Keep dates absent unless a separately verified source has supplied them.
   return {
-    firstElectedDate: federalElectionDateIso(firstElectionYear),
-    nextElectionDate: federalElectionDateIso(nextElectionYear)
+    firstElectedDate: undefined,
+    nextElectionDate: undefined
   } as const;
 }
 
@@ -1061,6 +1042,25 @@ function getDemoMemberDetailData(bioguideId: string): MemberDetailData | null {
   };
 }
 
+async function getLiveMemberDetailData(bioguideId: string): Promise<MemberDetailData | null> {
+  if (!/^[A-Z][0-9]{6}$/.test(bioguideId)) return null;
+
+  const member = await getLiveMemberProfile(bioguideId);
+  if (!member?.active) return null;
+
+  return {
+    caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
+    chamberMembers: mergeMemberRosterWithFallback(
+      [member],
+      getAllMembers().filter((candidate) => candidate.chamber === member.chamber)
+    ),
+    cosponsoredBills: [],
+    member,
+    memberVotes: [],
+    sponsoredBills: []
+  };
+}
+
 async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDetailData | null> {
   if (!hasDatabaseUrl()) return null;
 
@@ -1324,7 +1324,10 @@ async function hydrateMemberDetailWithLiveSenateVotes(detail: MemberDetailData):
 }
 
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
-  const detail = (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ?? getDemoMemberDetailData(bioguideId);
+  const detail =
+    (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ??
+    getDemoMemberDetailData(bioguideId) ??
+    (await getLiveMemberDetailData(bioguideId));
   if (!detail) return null;
 
   const detailWithProfile = await hydrateMemberDetailWithLiveProfile(detail);
@@ -1357,7 +1360,7 @@ export async function getAllMembersWithLiveData() {
 
   if (!liveMembers) return members;
 
-  return mergeBy(liveMembers, members, (member) => member.bioguideId);
+  return mergeMemberRosterWithFallback(liveMembers, members);
 }
 
 export function getBillVotes(billId: string) {
@@ -2062,7 +2065,7 @@ export function searchRecords(filters: SearchFilters) {
   };
 }
 
-async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchRecordsResult | null> {
+async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSearchRecordsResult | null> {
   if (!hasDatabaseUrl()) return null;
 
   try {
@@ -2076,8 +2079,9 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
     const states = normalizeSearchStateFilters(filters.state);
     const type = filters.type ?? "all";
 
-    const [memberRows, billRows, voteRows] = await Promise.all([
-      type === "all" || type === "members"
+    const shouldSearchMembers = type === "all" || type === "members";
+    const [memberRows, billRows, voteRows, memberChamberCounts] = await Promise.all([
+      shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
             take: 30,
@@ -2140,13 +2144,31 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<SearchReco
               ]
             }
           })
+        : Promise.resolve([]),
+      shouldSearchMembers
+        ? prisma.member.groupBy({
+            _count: {
+              _all: true
+            },
+            by: ["chamber"],
+            where: {
+              active: true
+            }
+          })
         : Promise.resolve([])
     ]);
 
     const mappedBills = billRows.map(mapDatabaseBill);
+    const houseCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.HOUSE)?._count._all ?? 0;
+    const senateCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.SENATE)?._count._all ?? 0;
 
     return {
       bills: statusFilter ? mappedBills.filter((bill) => matchesBillStatusFilter(bill, statusFilter)) : mappedBills,
+      completeMemberRoster: hasCompleteMemberRosterCounts({
+        houseCount,
+        memberCount: houseCount + senateCount,
+        senateCount
+      }),
       members: memberRows.map(mapDatabaseMember),
       votes: voteRows.map(mapDatabaseVote)
     };
@@ -2170,7 +2192,9 @@ export async function searchRecordsWithLiveData(filters: SearchFilters) {
     mode: "live+demo" as const,
     results: {
       bills: mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
-      members: mergeBy(liveResults.members, demoResults.members, (member) => member.bioguideId),
+      members: liveResults.completeMemberRoster
+        ? liveResults.members
+        : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
       votes: mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
     }
   };

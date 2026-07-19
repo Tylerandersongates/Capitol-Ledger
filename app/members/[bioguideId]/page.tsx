@@ -26,7 +26,7 @@ import { getCurrentSession } from "@/lib/auth";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { memberDisplayLocation, memberOfficeLabel, memberSeatTag } from "@/lib/member-display";
-import { estimateTermsInOfficeFromCongressLabel, federalElectionDateIso, formatDate, positionTone } from "@/lib/utils";
+import { estimateTermsInOfficeFromCongressLabel, formatDate, positionTone } from "@/lib/utils";
 import type { Bill, Member } from "@/types/capitol";
 import type { ReactNode } from "react";
 
@@ -414,18 +414,6 @@ function tabHref(bioguideId: string, tab: MemberTab) {
   return tab === "overview" ? `/members/${bioguideId}` : `/members/${bioguideId}?tab=${tab}`;
 }
 
-function fallbackNextElectionDate(chamber: Member["chamber"]) {
-  const nowYear = new Date().getUTCFullYear();
-  const termLength = chamber === "Senate" ? 6 : 2;
-  let electionYear = nowYear % 2 === 0 ? nowYear : nowYear + 1;
-
-  while (electionYear < nowYear - 1) {
-    electionYear += termLength;
-  }
-
-  return federalElectionDateIso(electionYear);
-}
-
 async function getViewerScoreContext() {
   const session = await getCurrentSession();
   if (!session) return { viewerIssueInterests: [] as string[] };
@@ -441,7 +429,8 @@ async function getViewerScoreContext() {
 }
 
 export default async function MemberPage({ params, searchParams }: MemberPageProps) {
-  const detail = await getMemberDetailWithLiveData(params.bioguideId);
+  const canonicalBioguideId = params.bioguideId === "FCA030" ? "F000483" : params.bioguideId;
+  const detail = await getMemberDetailWithLiveData(canonicalBioguideId);
   if (!detail) notFound();
 
   const { caucusMemberships, chamberMembers, cosponsoredBills, member, memberVotes, sponsoredBills } = detail;
@@ -462,8 +451,8 @@ export default async function MemberPage({ params, searchParams }: MemberPagePro
   const state = stateNames[member.state] ?? member.state;
   const districtLabel = memberDisplayLocation(member, state);
   const seatTag = memberSeatTag(member);
-  const nextElectionDate = member.nextElectionDate ?? fallbackNextElectionDate(member.chamber);
-  const nextElection = formatDate(nextElectionDate);
+  const nextElectionDate = member.nextElectionDate;
+  const nextElection = nextElectionDate ? formatDate(nextElectionDate) : "Not listed";
   const firstElectedDate = member.firstElectedDate;
   const firstElected = firstElectedDate ? formatDate(firstElectedDate) : "Not listed";
   const officialWebsiteUrl = member.officialUrl ?? member.sourceUrl;

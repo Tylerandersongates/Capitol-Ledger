@@ -11,7 +11,7 @@ import type {
   CongressMemberListItem
 } from "./client";
 import { publicBrandName } from "../brand";
-import { currentCongressLabel, federalElectionDateIso } from "../utils";
+import { currentCongressLabel } from "../utils";
 import type { Bill, BillAction, BillActionKind, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
 
 const VERIFIED_AT = "2026-05-19";
@@ -328,16 +328,7 @@ function deriveMemberServiceFromTerms(
   );
   const servedYears = Math.max(1, latestEnd - firstStart + 1);
   const termsInOffice = Math.max(1, Math.ceil(servedYears / termLength));
-  const activeTerm =
-    workingTerms.find((term) => !Number.isFinite(term.endYear) && Number.isFinite(term.startYear)) ??
-    [...workingTerms].filter((term) => Number.isFinite(term.startYear)).sort((a, b) => (b.startYear ?? 0) - (a.startYear ?? 0))[0];
-  const activeStart = Number.isFinite(activeTerm?.startYear) ? (activeTerm?.startYear as number) : firstStart;
-  const activeEnd = Number.isFinite(activeTerm?.endYear) ? (activeTerm?.endYear as number) : activeStart + termLength;
-  const firstElectionYear = firstStart % 2 === 0 ? firstStart : firstStart - 1;
-
   return {
-    firstElectedDate: federalElectionDateIso(firstElectionYear),
-    nextElectionDate: federalElectionDateIso(activeEnd - 1),
     termsInOffice
   };
 }

@@ -119,7 +119,7 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 - `/dashboard`
 - `/search?type=bills&focus=results`
 - `/bills/demo-hr-22`
-- `/members/FCA030`
+- `/members/F000483`
 - `/alerts`
 - `/brief`
 - `/upgrade`
