@@ -16,6 +16,7 @@ import {
   type CongressMemberDetailItem,
   type CongressMemberListItem
 } from "../lib/congress/client";
+import { fetchPaginatedBillCatalog, validateCurrentBillCatalog } from "../lib/congress/bill-catalog";
 import { fetchPaginatedMemberRoster, validateCurrentMemberRoster } from "../lib/congress/member-roster";
 import { getPrisma, hasDatabaseUrl } from "../lib/prisma";
 import {
@@ -32,6 +33,7 @@ import {
   resolveCongressBillSummary
 } from "../lib/congress/normalizers";
 import {
+  upsertCongressBillCatalog,
   upsertCongressBills,
   upsertCongressBillSummaries,
   upsertCongressCommittees,
@@ -319,6 +321,11 @@ async function main() {
   const congress = readIntegerEnv("CONGRESS_SYNC_CONGRESS", 119, 1, 999);
   const limit = readIntegerEnv("CONGRESS_SYNC_LIMIT", 5, 1, 250);
   const shouldSyncBatch = readBooleanEnv("CONGRESS_SYNC_BATCH", true);
+  const shouldSyncFullBillCatalog = readBooleanEnv("CONGRESS_SYNC_FULL_BILL_CATALOG", false);
+  const billPageLimit = readIntegerEnv("CONGRESS_SYNC_BILL_PAGE_LIMIT", 250, 1, 250);
+  const billMaxPages = readIntegerEnv("CONGRESS_SYNC_BILL_MAX_PAGES", 100, 1, 250);
+  const billMinimumCount = readIntegerEnv("CONGRESS_SYNC_BILL_MIN_COUNT", 10_000, 1, 50_000);
+  const billEnrichmentLimit = readIntegerEnv("CONGRESS_SYNC_BILL_ENRICHMENT_LIMIT", 25, 0, 250);
   const shouldSyncFullMemberRoster = readBooleanEnv("CONGRESS_SYNC_FULL_MEMBER_ROSTER", false);
   const memberPageLimit = readIntegerEnv("CONGRESS_SYNC_MEMBER_PAGE_LIMIT", 250, 1, 250);
   const memberMaxPages = readIntegerEnv("CONGRESS_SYNC_MEMBER_MAX_PAGES", 10, 1, 25);
@@ -345,6 +352,9 @@ async function main() {
   if (shouldSyncFullMemberRoster && !shouldSyncBatch) {
     throw new Error("CONGRESS_SYNC_FULL_MEMBER_ROSTER=true requires CONGRESS_SYNC_BATCH=true.");
   }
+  if (shouldSyncFullBillCatalog && !shouldSyncBatch) {
+    throw new Error("CONGRESS_SYNC_FULL_BILL_CATALOG=true requires CONGRESS_SYNC_BATCH=true.");
+  }
   if (shouldReconcileMemberRoster && !shouldSyncFullMemberRoster) {
     throw new Error("CONGRESS_SYNC_RECONCILE_ROSTER=true requires CONGRESS_SYNC_FULL_MEMBER_ROSTER=true.");
   }
@@ -353,6 +363,14 @@ async function main() {
   console.log(`Congress: ${congress}`);
   console.log(`Limit: ${limit}`);
   console.log(`Batch sync: ${shouldSyncBatch ? "enabled" : "skipped"}`);
+  console.log(
+    `Current bill catalog: ${
+      shouldSyncFullBillCatalog
+        ? `full pagination enabled, ${billPageLimit} per page, ${billMaxPages}-page safety limit`
+        : `single page, up to ${limit}`
+    }`
+  );
+  console.log(`Bill enrichment: ${billEnrichmentLimit ? `up to ${billEnrichmentLimit} recent catalog records plus targeted bills` : "targeted bills only"}`);
   console.log(
     `Current member roster: ${
       shouldSyncFullMemberRoster ? `full pagination enabled, ${memberPageLimit} per page, ${memberMaxPages}-page safety limit` : `single page, up to ${limit}`
@@ -395,19 +413,47 @@ async function main() {
         pageCount: 0,
         rawRecordCount: 0
       });
-  const [memberRoster, billsResponse, committeesResponse] = await Promise.all([
+  const billCatalogPromise = shouldSyncBatch
+    ? shouldSyncFullBillCatalog
+      ? fetchPaginatedBillCatalog({
+          fetchPage: (offset, pageSize) => fetchBills(congress, { limit: pageSize, offset }),
+          maxPages: billMaxPages,
+          pageSize: billPageLimit
+        })
+      : fetchBills(congress, { limit }).then((response) => ({
+          bills: response.bills ?? [],
+          expectedCount: response.pagination?.count,
+          pageCount: 1,
+          rawRecordCount: response.bills?.length ?? 0
+        }))
+    : Promise.resolve({
+        bills: [] as CongressBillListItem[],
+        expectedCount: undefined,
+        pageCount: 0,
+        rawRecordCount: 0
+      });
+  const [memberRoster, billCatalog, committeesResponse] = await Promise.all([
     memberRosterPromise,
-    shouldSyncBatch ? fetchBills(congress, { limit }) : Promise.resolve({ bills: [] }),
+    billCatalogPromise,
     shouldSyncBatch ? fetchCommittees(undefined, { limit }) : Promise.resolve({ committees: [] })
   ]);
 
-  const listedBills = (billsResponse.bills ?? []).map(normalizeCongressBill).filter((bill) => bill !== null);
-  const listedBillDetails = await fetchResolvedBillDetails(listedBills);
+  const listedBills = billCatalog.bills.map(normalizeCongressBill).filter((bill) => bill !== null);
+  const billCatalogValidation = shouldSyncFullBillCatalog
+    ? validateCurrentBillCatalog(listedBills, {
+        congress,
+        expectedCount: billCatalog.expectedCount,
+        minimumBillCount: billMinimumCount
+      })
+    : null;
+  const listedBillsForEnrichment = shouldSyncFullBillCatalog ? listedBills.slice(0, billEnrichmentLimit) : listedBills;
+  const listedBillDetails = await fetchResolvedBillDetails(listedBillsForEnrichment);
   const targetBillDetails = await fetchResolvedTargetBillDetails(targetBillKeys);
   const billDetails = [...listedBillDetails, ...targetBillDetails];
   const detailedBills = billDetails.map(normalizeCongressBill).filter((bill) => bill !== null);
   const bills = Array.from(new Map([...listedBills, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
-  const rawBills = [...(billsResponse.bills ?? []), ...billDetails];
+  const enrichedBills = Array.from(new Map([...listedBillsForEnrichment, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
+  const rawBills = [...billCatalog.bills, ...billDetails];
   const listedMembers = memberRoster.members.map(normalizeCongressMember).filter((member) => member !== null);
   const rosterValidation = shouldSyncFullMemberRoster
     ? validateCurrentMemberRoster(listedMembers, { minimumMemberCount: memberMinimumCount })
@@ -416,8 +462,8 @@ async function main() {
   const members = uniqueMembers([...listedMembers, ...supplementalMembers.map((record) => record.member)]);
   const rawMembers: Array<CongressMemberListItem | CongressMemberDetailItem> = [...memberRoster.members, ...supplementalMembers.map((record) => record.raw)];
   const committees = (committeesResponse.committees ?? []).map(normalizeCongressCommittee).filter((committee) => committee !== null);
-  const sponsorMembers = await fetchResolvedBillSponsors(bills);
-  const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(bills, cosponsorLimit) : [];
+  const sponsorMembers = await fetchResolvedBillSponsors(enrichedBills);
+  const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(enrichedBills, cosponsorLimit) : [];
   const cosponsorMembers = uniqueMembers(billCosponsors.map((cosponsor) => cosponsor.member));
   const recentHouseVotes = shouldSyncHouseVotes ? await fetchResolvedHouseVotes(congress, houseVoteSession, houseVoteLimit) : [];
   const targetedHouseVotes = targetHouseVoteNumbers.length ? await fetchResolvedTargetHouseVotes(congress, houseVoteSession, targetHouseVoteNumbers) : [];
@@ -429,7 +475,7 @@ async function main() {
     ...sponsorMembers.flatMap(buildMemberSourceLinks),
     ...cosponsorMembers.flatMap(buildMemberSourceLinks),
     ...houseVoteMembers.flatMap(buildMemberSourceLinks),
-    ...bills.flatMap((bill) => buildBillSourceLinks(bill)),
+    ...enrichedBills.flatMap((bill) => buildBillSourceLinks(bill)),
     ...committees.flatMap(buildCommitteeSourceLinks)
   ]);
 
@@ -444,6 +490,20 @@ async function main() {
   }
   console.log(`Resolved ${supplementalMembers.length} supplemental member detail records.`);
   console.log(`Normalized ${bills.length} bills from the ${congress}th Congress.`);
+  if (billCatalogValidation) {
+    console.log(
+      `Validated complete bill catalog: ${billCatalogValidation.billCount} bills across ${billCatalog.pageCount} API pages (${Object.entries(
+        billCatalogValidation.billTypeCounts
+      )
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([billType, count]) => `${billType} ${count}`)
+        .join(", ")}).`
+    );
+    if (billCatalog.expectedCount !== undefined) {
+      console.log(`Congress.gov advertised ${billCatalog.expectedCount} bill records; received ${billCatalog.rawRecordCount}.`);
+    }
+  }
+  console.log(`Selected ${enrichedBills.length} bills for bounded detail, sponsor, summary, and cosponsor enrichment.`);
   console.log(`Resolved ${targetBillDetails.length} targeted bill detail records.`);
   console.log(`Resolved ${billDetails.length} bill detail records.`);
   console.log(`Normalized ${committees.length} committees.`);
@@ -456,7 +516,7 @@ async function main() {
   }
   console.log(`Prepared ${sourceLinks.length} official source links.`);
 
-  const billSummaries = shouldSyncSummaries ? await fetchResolvedBillSummaries(bills) : [];
+  const billSummaries = shouldSyncSummaries ? await fetchResolvedBillSummaries(enrichedBills) : [];
   if (shouldSyncSummaries) {
     const resolvedSummaryCount = billSummaries.filter((record) => record.summary?.text).length;
     console.log(`Resolved ${resolvedSummaryCount} official bill summaries.`);
@@ -481,7 +541,12 @@ async function main() {
       ? await reconcileCongressMemberRoster(prisma, rosterValidation.activeMemberIds)
       : { deactivated: 0 };
   const sponsorMemberResult = await upsertCongressMembers(prisma, sponsorMembers);
-  const billResult = await upsertCongressBills(prisma, bills, rawBills);
+  const billCatalogResult = shouldSyncFullBillCatalog
+    ? await upsertCongressBillCatalog(prisma, listedBills, billCatalog.bills)
+    : { createdOrUpdated: 0, skipped: 0 };
+  const billResult = shouldSyncFullBillCatalog
+    ? await upsertCongressBills(prisma, enrichedBills, billDetails, { preserveExistingEnrichment: true })
+    : await upsertCongressBills(prisma, bills, rawBills);
   const committeeResult = await upsertCongressCommittees(prisma, committees, committeesResponse.committees ?? []);
   const cosponsorMemberResult = shouldSyncCosponsors ? await upsertCongressMembers(prisma, cosponsorMembers) : { createdOrUpdated: 0, skipped: 0 };
   const cosponsorResult = shouldSyncCosponsors ? await upsertCongressCosponsors(prisma, billCosponsors) : { createdOrUpdated: 0, skipped: 0 };
@@ -496,7 +561,12 @@ async function main() {
     console.log(`Deactivated ${rosterReconciliationResult.deactivated} member record(s) absent from the validated current roster.`);
   }
   console.log(`Upserted ${sponsorMemberResult.createdOrUpdated} sponsor member records.`);
-  console.log(`Upserted ${billResult.createdOrUpdated} bill records.`);
+  if (shouldSyncFullBillCatalog) {
+    console.log(`Upserted ${billCatalogResult.createdOrUpdated} bill catalog records in guarded batches.`);
+    console.log(`Enriched ${billResult.createdOrUpdated} bill records.`);
+  } else {
+    console.log(`Upserted ${billResult.createdOrUpdated} bill records.`);
+  }
   console.log(`Upserted ${committeeResult.createdOrUpdated} committee records.`);
   if (shouldSyncCosponsors) {
     console.log(`Upserted ${cosponsorMemberResult.createdOrUpdated} cosponsor member records.`);
@@ -515,6 +585,9 @@ async function main() {
   }
   if (billResult.skipped) {
     console.log(`Skipped ${billResult.skipped} bill sponsor references because the sponsor member was not synced yet.`);
+  }
+  if (billCatalogResult.skipped) {
+    console.log(`Skipped ${billCatalogResult.skipped} catalog sponsor references because the sponsor member was not synced yet.`);
   }
   if (summaryResult.skipped) {
     console.log(`Skipped ${summaryResult.skipped} bill summaries because Congress.gov had no summary yet or the bill was not synced.`);

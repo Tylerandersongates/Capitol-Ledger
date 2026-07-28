@@ -6,7 +6,8 @@ import { DiscoverySearchForm } from "@/components/discovery-search-form";
 import { SearchSetupChips } from "@/components/search-setup-chips";
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { Fragment, type ReactNode } from "react";
 import {
   Bell,
   CalendarDays,
@@ -21,7 +22,7 @@ import {
   Settings,
   Vote
 } from "lucide-react";
-import { getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
+import { billSearchPageSize, getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { memberResultMeta } from "@/lib/member-display";
 import { officialStateOptions } from "@/lib/official-states";
@@ -33,6 +34,7 @@ type SearchParamValue = string | string[] | undefined;
 type SearchPageProps = {
   searchParams: {
     q?: SearchParamValue;
+    page?: SearchParamValue;
     status?: SearchParamValue;
     type?: SearchParamValue;
     chamber?: SearchParamValue;
@@ -44,6 +46,7 @@ type SearchPageProps = {
 
 type SmartFilterKey = "chamber" | "party" | "state";
 type SearchResultsData = Awaited<ReturnType<typeof searchRecordsWithLiveData>>["results"];
+type SearchResultCounts = Awaited<ReturnType<typeof searchRecordsWithLiveData>>["resultCounts"];
 
 const searchTabs = [
   { label: "All", value: "all" },
@@ -62,6 +65,15 @@ const premiumPillClass =
 
 function firstSearchParamValue(value: SearchParamValue) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function positivePage(value: SearchParamValue) {
+  const page = Number(firstSearchParamValue(value));
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function formatSearchCount(value: number) {
+  return value.toLocaleString("en-US");
 }
 
 function normalizeStateParamValues(value: SearchParamValue) {
@@ -113,11 +125,23 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = firstSearchParamValue(searchParams.q) ?? "";
   const chamber = firstSearchParamValue(searchParams.chamber);
   const focus = firstSearchParamValue(searchParams.focus);
+  const billPage = positivePage(searchParams.page);
   const party = firstSearchParamValue(searchParams.party);
   const status = firstSearchParamValue(searchParams.status);
   const stateValues = normalizeStateParamValues(searchParams.state);
-  const [{ results }, initialSubscription] = await Promise.all([
+  if (activeType === "bills" && (firstSearchParamValue(searchParams.state) || chamber || party)) {
+    redirect(
+      searchHref(searchParams, {
+        chamber: undefined,
+        party: undefined,
+        state: undefined,
+        type: "bills"
+      })
+    );
+  }
+  const [{ resultCounts, results }, initialSubscription] = await Promise.all([
     searchRecordsWithLiveData({
+      billPage,
       chamber,
       party,
       q: query || undefined,
@@ -127,7 +151,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     }),
     getCurrentEffectiveAccountSubscription()
   ]);
-  const resultCount = results.members.length + results.bills.length + results.votes.length;
+  const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
+  if ((activeType === "all" || activeType === "bills") && billPage > totalBillPages) {
+    redirect(searchHref(searchParams, { page: totalBillPages > 1 ? String(totalBillPages) : undefined }));
+  }
+  const resultCount = resultCounts.members + resultCounts.bills + resultCounts.votes;
   const hasSmartFilters = Boolean(chamber || party || stateValues.length);
   const prioritizeResults = focus === "results";
 
@@ -156,7 +184,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             <main className="mt-7 space-y-5 pb-8">
               {prioritizeResults ? (
-                <SearchResultBlocks activeType={activeType} results={results} />
+                <SearchResultBlocks
+                  activeType={activeType}
+                  billPage={billPage}
+                  resultCounts={resultCounts}
+                  results={results}
+                  searchParams={searchParams}
+                />
               ) : null}
 
               <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -181,8 +215,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <Link
                       key={tab.value}
                       href={searchHref(searchParams, {
+                        chamber: tab.value === "bills" ? undefined : searchParams.chamber,
+                        party: tab.value === "members" || tab.value === "all" ? searchParams.party : undefined,
+                        state: tab.value === "members" || tab.value === "all" ? searchParams.state : undefined,
                         type: tab.value,
-                        status: tab.value === "bills" || tab.value === "all" ? status : undefined
+                        status: tab.value === "bills" || tab.value === "all" ? status : undefined,
+                        page: undefined
                       })}
                       className={`h-10 rounded-xl pt-3 text-[13px] font-semibold leading-none transition ${
                         activeType === tab.value || (!firstSearchParamValue(searchParams.type) && tab.value === "all")
@@ -227,7 +265,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         <SmartFilterRow key={group.key} group={group} searchParams={searchParams} />
                       ))}
                       <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#071a38]/65 px-4 py-3 text-[12px] font-medium text-white/48 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                        <span>{results.members.length} officials match</span>
+                        <span>{formatSearchCount(resultCounts.members)} officials match</span>
                         {hasSmartFilters ? (
                           <Link href={searchHref(searchParams, { type: "members", chamber: undefined, party: undefined, state: undefined })} className="text-[#ffb12b]">
                             Clear filters
@@ -242,9 +280,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </MobileCard>
 
               <div className="grid grid-cols-3 gap-3">
-                <MiniMetric value={String(resultCount)} label="Results" />
-                <MiniMetric value={String(results.members.length)} label="Officials" />
-                <MiniMetric value={String(results.bills.length)} label="Bills" />
+                <MiniMetric value={formatSearchCount(resultCount)} label="Results" />
+                <MiniMetric value={formatSearchCount(resultCounts.members)} label="Officials" />
+                <MiniMetric value={formatSearchCount(resultCounts.bills)} label="Bills" />
               </div>
 
               <PlanFeatureGate feature="exportReports" initialSubscription={initialSubscription}>
@@ -268,7 +306,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </PlanFeatureGate>
 
               {!prioritizeResults ? (
-                <SearchResultBlocks activeType={activeType} results={results} />
+                <SearchResultBlocks
+                  activeType={activeType}
+                  billPage={billPage}
+                  resultCounts={resultCounts}
+                  results={results}
+                  searchParams={searchParams}
+                />
               ) : null}
             </main>
 
@@ -296,11 +340,18 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
 
 function SearchResultBlocks({
   activeType,
-  results
+  billPage,
+  resultCounts,
+  results,
+  searchParams
 }: {
   activeType: string;
+  billPage: number;
+  resultCounts: SearchResultCounts;
   results: SearchResultsData;
+  searchParams: SearchPageProps["searchParams"];
 }) {
+  const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
   const sectionOrder: Array<"members" | "bills" | "votes"> =
     activeType === "members" || activeType === "bills" || activeType === "votes"
       ? [activeType, ...(["members", "bills", "votes"] as const).filter((kind) => kind !== activeType)]
@@ -314,7 +365,8 @@ function SearchResultBlocks({
             <ResultSection
               key="members"
               title="Officials"
-              count={results.members.length}
+              totalCount={resultCounts.members}
+              visibleCount={results.members.length}
             >
               {results.members.length ? (
                 results.members.map((member) => (
@@ -340,39 +392,68 @@ function SearchResultBlocks({
 
         if (sectionType === "bills") {
           return (
-            <ResultSection
-              key="bills"
-              title="Bills"
-              count={results.bills.length}
-            >
-              {results.bills.length ? (
-                results.bills.map((bill) => {
-                  const sponsor = getBillSponsor(bill);
-                  return (
-                    <Link key={bill.id} href={`/bills/${bill.id}`} className={`block p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">{bill.displayNumber}</div>
-                          <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
-                          <div className="mt-2 text-[13px] text-white/52">
-                            {sponsor?.fullName ?? "Congress"} · {bill.policyArea}
+            <Fragment key="bills">
+              <ResultSection
+                title="Bills"
+                totalCount={resultCounts.bills}
+                visibleCount={results.bills.length}
+              >
+                {results.bills.length ? (
+                  results.bills.map((bill) => {
+                    const sponsor = getBillSponsor(bill);
+                    return (
+                      <Link key={bill.id} href={`/bills/${bill.id}`} className={`block p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#ffb12b]">{bill.displayNumber}</div>
+                            <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
+                            <div className="mt-2 text-[13px] text-white/52">
+                              {sponsor?.fullName ?? "Congress"} · {bill.policyArea}
+                            </div>
                           </div>
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
+                            <FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                          </span>
                         </div>
-                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
-                          <FileText className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-                        </span>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2 text-[13px] text-white/52">
-                        <CalendarDays className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                        {formatDate(bill.latestActionDate)}
-                      </div>
+                        <div className="mt-3 flex items-center gap-2 text-[13px] text-white/52">
+                          <CalendarDays className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                          {formatDate(bill.latestActionDate)}
+                        </div>
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <EmptyState label="No bills match this search. Try a broader keyword or clear one filter." />
+                )}
+              </ResultSection>
+              {resultCounts.bills > billSearchPageSize ? (
+                <MobileCard variant="rust" className="flex items-center justify-between gap-3 px-5 py-4">
+                  {billPage > 1 ? (
+                    <Link
+                      href={searchHref(searchParams, { page: billPage > 2 ? String(billPage - 1) : undefined })}
+                      className="rounded-full border border-white/12 bg-white/[0.045] px-4 py-2 text-[12px] font-semibold text-white/72"
+                    >
+                      Previous
                     </Link>
-                  );
-                })
-              ) : (
-                <EmptyState label="No bills match this search. Try a broader keyword or clear one filter." />
-              )}
-            </ResultSection>
+                  ) : (
+                    <span className="px-4 py-2 text-[12px] font-semibold text-white/26">Previous</span>
+                  )}
+                  <span className="text-[12px] font-medium text-white/52">
+                    Page {formatSearchCount(billPage)} of {formatSearchCount(totalBillPages)}
+                  </span>
+                  {billPage < totalBillPages ? (
+                    <Link
+                      href={searchHref(searchParams, { page: String(billPage + 1) })}
+                      className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-4 py-2 text-[12px] font-semibold text-[#ffb12b]"
+                    >
+                      Next
+                    </Link>
+                  ) : (
+                    <span className="px-4 py-2 text-[12px] font-semibold text-white/26">Next</span>
+                  )}
+                </MobileCard>
+              ) : null}
+            </Fragment>
           );
         }
 
@@ -380,7 +461,8 @@ function SearchResultBlocks({
           <ResultSection
             key="votes"
             title="Votes"
-            count={results.votes.length}
+            totalCount={resultCounts.votes}
+            visibleCount={results.votes.length}
           >
             {results.votes.length ? (
               results.votes.map((vote) => (
@@ -411,7 +493,7 @@ function searchHref(searchParams: SearchPageProps["searchParams"], updates: Part
   const nextParams = { ...searchParams, ...updates };
   const params = new URLSearchParams();
 
-  (["q", "type", "status", "chamber", "party", "state", "focus"] as const).forEach((key) => {
+  (["q", "type", "status", "chamber", "party", "state", "focus", "page"] as const).forEach((key) => {
     const value = nextParams[key];
     if (Array.isArray(value)) {
       value.filter(Boolean).forEach((item) => params.append(key, item));
@@ -434,12 +516,14 @@ function smartFilterHref(searchParams: SearchPageProps["searchParams"], key: Sma
       : undefined;
 
     return searchHref(searchParams, {
+      page: undefined,
       type: "members",
       state: nextStates?.length ? nextStates : "all"
     });
   }
 
   return searchHref(searchParams, {
+    page: undefined,
     type: "members",
     [key]: value
   });
@@ -502,13 +586,16 @@ function FilterChip({ active, href, label }: { active?: boolean; href: string; l
 
 function ResultSection({
   children,
-  count,
+  totalCount,
+  visibleCount,
   title
 }: {
   children: ReactNode;
-  count: number;
+  totalCount: number;
+  visibleCount: number;
   title: string;
 }) {
+  const count = visibleCount;
   const shouldScroll = count > 2;
 
   return (
@@ -517,7 +604,7 @@ function ResultSection({
         <div>
           <div className={premiumEyebrowClass}>Results</div>
           <h2 className="mt-2 text-[22px] font-medium leading-none">{title}</h2>
-          <div className="mt-2 text-[13px] text-white/46">{count} results</div>
+          <div className="mt-2 text-[13px] text-white/46">{formatSearchCount(totalCount)} results</div>
         </div>
         {shouldScroll ? <span className={premiumPillClass}>Scroll</span> : null}
       </div>
@@ -531,7 +618,11 @@ function ResultSection({
       {shouldScroll ? (
         <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-white/42">
           <span>Scroll results</span>
-          <span>{count} total</span>
+          <span>
+            {totalCount > visibleCount
+              ? `${formatSearchCount(visibleCount)} shown · ${formatSearchCount(totalCount)} total`
+              : `${formatSearchCount(totalCount)} total`}
+          </span>
         </div>
       ) : null}
     </MobileCard>

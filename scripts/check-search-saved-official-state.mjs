@@ -15,6 +15,8 @@ assert.equal(new Set(stateCodes).size, stateCodes.length, "Saved Officials state
 assert.ok(searchPage.includes("<SearchSetupChips activeType={activeType}"), "Search should give saved topics the active result type");
 assert.ok(searchPage.includes("state={searchParams.state}"), "Search should give saved topics the current state override");
 assert.ok(searchPage.includes('state: nextStates?.length ? nextStates : "all"'), "The State filter's All option should explicitly save the all-officials selection");
+assert.ok(searchPage.includes('activeType === "bills" && (firstSearchParamValue(searchParams.state) || chamber || party)'), "Bills search should remove Officials-only filters from stale URLs");
+assert.ok(searchPage.includes('state: tab.value === "members" || tab.value === "all" ? searchParams.state : undefined'), "Bills navigation should not carry Officials state filters");
 assert.ok(searchSetupChips.includes('id="officials-state"'), "Edit topics should expose an Officials state selector");
 assert.ok(searchSetupChips.includes('<option value="all">All</option>'), "The Officials state selector should include All");
 assert.ok(searchSetupChips.includes("officialStateOptions.map"), "The Officials state selector should render every supported state");

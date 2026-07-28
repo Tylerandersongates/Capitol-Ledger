@@ -173,6 +173,17 @@ async function main() {
 
   const congress = readIntegerEnv("CONGRESS_SYNC_CONGRESS", 119, { min: 1, max: 999 });
   const limit = readIntegerEnv("CONGRESS_SYNC_LIMIT", 25, { min: 1, max: 250 });
+  const fullBillCatalog = process.env.CONGRESS_SYNC_FULL_BILL_CATALOG ?? "false";
+  checkBooleanEnv("CONGRESS_SYNC_FULL_BILL_CATALOG", false);
+  const billPageLimit = readIntegerEnv("CONGRESS_SYNC_BILL_PAGE_LIMIT", 250, { min: 1, max: 250 });
+  const billMaxPages = readIntegerEnv("CONGRESS_SYNC_BILL_MAX_PAGES", 100, { min: 1, max: 250 });
+  const billMinimumCount = readIntegerEnv("CONGRESS_SYNC_BILL_MIN_COUNT", 10_000, { min: 1, max: 50_000 });
+  readIntegerEnv("CONGRESS_SYNC_BILL_ENRICHMENT_LIMIT", 25, { min: 0, max: 250 });
+  if (fullBillCatalog === "true" && billMaxPages * billPageLimit < billMinimumCount) {
+    fail("Full bill catalog page capacity", "Configured page limits cannot reach the minimum catalog count.");
+  } else {
+    pass("Full bill catalog page capacity", fullBillCatalog === "true" ? "pagination capacity is sufficient" : "full catalog disabled");
+  }
   const fullMemberRoster = process.env.CONGRESS_SYNC_FULL_MEMBER_ROSTER ?? "false";
   const reconcileRoster = process.env.CONGRESS_SYNC_RECONCILE_ROSTER ?? "false";
   checkBooleanEnv("CONGRESS_SYNC_FULL_MEMBER_ROSTER", false);

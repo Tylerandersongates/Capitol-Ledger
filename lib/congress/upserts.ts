@@ -13,6 +13,14 @@ type BillSummaryUpsertInput = {
   summary: NormalizedCongressBillSummary | null;
 };
 
+type BillCatalogUpsertOptions = {
+  batchSize?: number;
+};
+
+type CongressBillUpsertOptions = {
+  preserveExistingEnrichment?: boolean;
+};
+
 const chamberMap = {
   House: Chamber.HOUSE,
   Senate: Chamber.SENATE
@@ -397,7 +405,8 @@ export async function upsertCongressMemberVotes(
 export async function upsertCongressBills(
   prisma: PrismaClient,
   bills: Bill[],
-  rawBills: CongressBillListItem[] = []
+  rawBills: CongressBillListItem[] = [],
+  { preserveExistingEnrichment = false }: CongressBillUpsertOptions = {}
 ): Promise<UpsertResult> {
   const rawByKey = billRawByKey(rawBills);
   const sponsorIds = bills.map((bill) => bill.sponsorBioguideId).filter((value): value is string => Boolean(value));
@@ -421,12 +430,12 @@ export async function upsertCongressBills(
       update: {
         latestActionDate,
         latestActionText: bill.latestActionText,
-        policyArea: bill.policyArea,
+        policyArea: preserveExistingEnrichment && bill.policyArea === "Legislation" ? undefined : bill.policyArea,
         rawJson: toJson(raw),
         shortTitle: bill.shortTitle,
         sourceUrl: bill.sourceUrl,
-        sponsorBioguideId,
-        summary: bill.summary,
+        sponsorBioguideId: preserveExistingEnrichment && !sponsorBioguideId ? undefined : sponsorBioguideId,
+        summary: preserveExistingEnrichment ? undefined : bill.summary,
         title: bill.title
       },
       create: {
@@ -447,6 +456,120 @@ export async function upsertCongressBills(
 
     createdOrUpdated += 1;
     if (bill.sponsorBioguideId && !sponsorBioguideId) skipped += 1;
+  }
+
+  return {
+    createdOrUpdated,
+    skipped
+  };
+}
+
+export async function upsertCongressBillCatalog(
+  prisma: PrismaClient,
+  bills: Bill[],
+  rawBills: CongressBillListItem[] = [],
+  { batchSize = 250 }: BillCatalogUpsertOptions = {}
+): Promise<UpsertResult> {
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1_000) {
+    throw new Error("Bill catalog database batch size must be an integer from 1 to 1000.");
+  }
+
+  const rawByKey = billRawByKey(rawBills);
+  const sponsorIds = bills.map((bill) => bill.sponsorBioguideId).filter((value): value is string => Boolean(value));
+  const validSponsorIds = await existingMemberIds(prisma, sponsorIds);
+  let createdOrUpdated = 0;
+  let skipped = 0;
+
+  for (let offset = 0; offset < bills.length; offset += batchSize) {
+    const batch = bills.slice(offset, offset + batchSize);
+    const records = batch.map((bill) => {
+      const sponsorBioguideId = bill.sponsorBioguideId && validSponsorIds.has(bill.sponsorBioguideId) ? bill.sponsorBioguideId : null;
+      if (bill.sponsorBioguideId && !sponsorBioguideId) skipped += 1;
+
+      return {
+        billNumber: bill.billNumber,
+        billType: bill.billType,
+        congress: bill.congress,
+        id: bill.id,
+        latestActionDate: dateOrNull(bill.latestActionDate)?.toISOString() ?? null,
+        latestActionText: bill.latestActionText,
+        policyArea: bill.policyArea,
+        rawJson: rawByKey.get(billKey(bill)) ?? bill,
+        shortTitle: bill.shortTitle,
+        sourceUrl: bill.sourceUrl,
+        sponsorBioguideId,
+        summary: bill.summary,
+        title: bill.title
+      };
+    });
+    const recordsJson = JSON.stringify(records);
+
+    await prisma.$executeRaw`
+      INSERT INTO "Bill" (
+        "id",
+        "congress",
+        "billType",
+        "billNumber",
+        "title",
+        "shortTitle",
+        "sponsorBioguideId",
+        "policyArea",
+        "latestActionText",
+        "latestActionDate",
+        "summary",
+        "sourceUrl",
+        "rawJson",
+        "createdAt",
+        "updatedAt"
+      )
+      SELECT
+        record."id",
+        record."congress",
+        record."billType",
+        record."billNumber",
+        record."title",
+        record."shortTitle",
+        record."sponsorBioguideId",
+        record."policyArea",
+        record."latestActionText",
+        record."latestActionDate",
+        record."summary",
+        record."sourceUrl",
+        record."rawJson",
+        NOW(),
+        NOW()
+      FROM jsonb_to_recordset(${recordsJson}::jsonb) AS record(
+        "id" TEXT,
+        "congress" INTEGER,
+        "billType" TEXT,
+        "billNumber" TEXT,
+        "title" TEXT,
+        "shortTitle" TEXT,
+        "sponsorBioguideId" TEXT,
+        "policyArea" TEXT,
+        "latestActionText" TEXT,
+        "latestActionDate" TIMESTAMP,
+        "summary" TEXT,
+        "sourceUrl" TEXT,
+        "rawJson" JSONB
+      )
+      ON CONFLICT ("congress", "billType", "billNumber") DO UPDATE SET
+        "title" = EXCLUDED."title",
+        "shortTitle" = EXCLUDED."shortTitle",
+        "sponsorBioguideId" = COALESCE(EXCLUDED."sponsorBioguideId", "Bill"."sponsorBioguideId"),
+        "policyArea" = CASE
+          WHEN EXCLUDED."policyArea" = 'Legislation' THEN "Bill"."policyArea"
+          ELSE EXCLUDED."policyArea"
+        END,
+        "latestActionText" = EXCLUDED."latestActionText",
+        "latestActionDate" = EXCLUDED."latestActionDate",
+        "summary" = COALESCE("Bill"."summary", EXCLUDED."summary"),
+        "sourceUrl" = EXCLUDED."sourceUrl",
+        "rawJson" = COALESCE("Bill"."rawJson", EXCLUDED."rawJson"),
+        "updatedAt" = NOW()
+    `;
+
+    createdOrUpdated += records.length;
   }
 
   return {

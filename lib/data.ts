@@ -18,6 +18,7 @@ import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
 
 export type SearchFilters = {
+  billPage?: number;
   q?: string;
   status?: string;
   chamber?: string;
@@ -36,6 +37,7 @@ export type BillSummaryResolution = {
 export type SearchRecordsResult = ReturnType<typeof searchRecords>;
 
 type DatabaseSearchRecordsResult = SearchRecordsResult & {
+  billResultCount?: number;
   completeMemberRoster: boolean;
 };
 
@@ -1852,6 +1854,42 @@ function matchesBillStatusFilter(bill: Bill, filter?: BillStatusFilter) {
   return status === "In Progress" || status === "On Floor";
 }
 
+function databaseBillActionMatches(terms: string[]): Prisma.BillWhereInput {
+  return {
+    OR: terms.map((term) => ({
+      latestActionText: {
+        contains: term,
+        mode: "insensitive"
+      }
+    }))
+  };
+}
+
+function databaseBillStatusWhere(filter?: BillStatusFilter): Prisma.BillWhereInput {
+  if (!filter) return {};
+
+  const passedOrEnacted = databaseBillActionMatches([
+    "passed",
+    "public law",
+    "private law",
+    "became law",
+    "signed by president",
+    "signed by the president",
+    "enacted"
+  ]);
+  const committee = databaseBillActionMatches(["committee", "hearing", "reported"]);
+
+  if (filter === "passed") return passedOrEnacted;
+  if (filter === "in-committee") {
+    return {
+      AND: [{ NOT: passedOrEnacted }, committee]
+    };
+  }
+  return {
+    AND: [{ NOT: passedOrEnacted }, { NOT: committee }]
+  };
+}
+
 export function getVoteTotals(vote?: Vote) {
   if (!vote) {
     return {
@@ -1961,6 +1999,8 @@ export function getDashboardData() {
   return buildDashboardData(bills, votes);
 }
 
+const maximumDashboardBillResults = 50;
+
 async function getDatabaseDashboardRecords() {
   if (!hasDatabaseUrl()) return null;
 
@@ -1968,7 +2008,8 @@ async function getDatabaseDashboardRecords() {
     const prisma = getPrisma();
     const [billRows, voteRows] = await Promise.all([
       prisma.bill.findMany({
-        orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }]
+        orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
+        take: maximumDashboardBillResults
       }),
       prisma.vote.findMany({
         include: {
@@ -2036,6 +2077,7 @@ function normalizeSearchStateFilters(value?: string | string[]) {
 }
 
 const maximumMemberSearchResults = 600;
+export const billSearchPageSize = 50;
 
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
@@ -2097,9 +2139,21 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
     const prismaParty = isOfficialSearchParty(party) ? filterPartyMap[party] : undefined;
     const states = normalizeSearchStateFilters(filters.state);
     const type = filters.type ?? "all";
+    const billPage = Number.isInteger(filters.billPage) && Number(filters.billPage) > 0 ? Number(filters.billPage) : 1;
+    const shouldSearchBills = type === "all" || type === "bills";
+    const billWhere: Prisma.BillWhereInput = {
+      AND: [
+        q
+          ? {
+              OR: databaseBillSearchClauses(q, billSearchTerms)
+            }
+          : {},
+        databaseBillStatusWhere(statusFilter)
+      ]
+    };
 
     const shouldSearchMembers = type === "all" || type === "members";
-    const [memberRows, billRows, voteRows, memberChamberCounts] = await Promise.all([
+    const [memberRows, billRows, voteRows, memberChamberCounts, billResultCount] = await Promise.all([
       shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
@@ -2123,15 +2177,12 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
             }
           })
         : Promise.resolve([]),
-      type === "all" || type === "bills"
+      shouldSearchBills
         ? prisma.bill.findMany({
             orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
-            take: 30,
-            where: q
-              ? {
-                  OR: databaseBillSearchClauses(q, billSearchTerms)
-                }
-              : {}
+            skip: (billPage - 1) * billSearchPageSize,
+            take: billSearchPageSize,
+            where: billWhere
           })
         : Promise.resolve([]),
       type === "all" || type === "votes"
@@ -2174,7 +2225,8 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
               active: true
             }
           })
-        : Promise.resolve([])
+        : Promise.resolve([]),
+      shouldSearchBills ? prisma.bill.count({ where: billWhere }) : Promise.resolve(undefined)
     ]);
 
     const mappedBills = billRows.map(mapDatabaseBill);
@@ -2182,7 +2234,8 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
     const senateCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.SENATE)?._count._all ?? 0;
 
     return {
-      bills: statusFilter ? mappedBills.filter((bill) => matchesBillStatusFilter(bill, statusFilter)) : mappedBills,
+      billResultCount,
+      bills: mappedBills,
       completeMemberRoster: hasCompleteMemberRosterCounts({
         houseCount,
         memberCount: houseCount + senateCount,
@@ -2203,19 +2256,34 @@ export async function searchRecordsWithLiveData(filters: SearchFilters) {
   if (!liveResults) {
     return {
       mode: "demo" as const,
+      resultCounts: {
+        bills: demoResults.bills.length,
+        members: demoResults.members.length,
+        votes: demoResults.votes.length
+      },
       results: demoResults
     };
   }
 
+  const mergedResults = {
+    bills:
+      liveResults.billResultCount !== undefined
+        ? liveResults.bills
+        : mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
+    members: liveResults.completeMemberRoster
+      ? liveResults.members
+      : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
+    votes: mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
+  };
+
   return {
     mode: "live+demo" as const,
-    results: {
-      bills: mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
-      members: liveResults.completeMemberRoster
-        ? liveResults.members
-        : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
-      votes: mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
-    }
+    resultCounts: {
+      bills: liveResults.billResultCount ?? mergedResults.bills.length,
+      members: mergedResults.members.length,
+      votes: mergedResults.votes.length
+    },
+    results: mergedResults
   };
 }
 

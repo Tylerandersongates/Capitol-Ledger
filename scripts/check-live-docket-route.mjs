@@ -31,5 +31,7 @@ assert.ok(data.includes("const dashboardBills = dedupeDashboardBills(sourceBills
 assert.ok(data.includes("billsInAction: dashboardBills.length"), "Live docket counts should not include duplicate live/demo bill identities");
 assert.ok(data.includes("bills: dashboardBills.map"), "Live docket favorite targets should render deduped bill identities");
 assert.ok(data.includes("mergeBillsByRecordKey"), "Live+demo bill merges should use a stable bill identity key");
+assert.ok(data.includes("const maximumDashboardBillResults = 50;"), "The live docket should have an explicit moving-bill ceiling");
+assert.ok(data.includes("take: maximumDashboardBillResults"), "The dashboard should not load the full searchable bill catalog");
 
 console.log("Live docket route check passed.");
