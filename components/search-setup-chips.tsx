@@ -2,19 +2,22 @@
 
 import { Check, CheckCircle2, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
   accountProfileChangedEvent,
-  defaultDistrictProfile,
   fetchAccountProfile,
   readLocalDistrictProfile,
+  readLocalOfficialSearchState,
   writeLocalDistrictProfile,
-  type LocalDistrictProfile
+  writeLocalOfficialSearchState
 } from "@/lib/browser-account-profile";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { stateCodeFromDistrictCode } from "@/lib/beta-district-presets";
 import { issueSignals } from "@/lib/issue-signals";
+import { memberStateCode } from "@/lib/member-display";
+import { normalizeOfficialStatePreference, officialStateOptions, officialStatePreferenceLabel } from "@/lib/official-states";
 import type { AccountLedgerSnapshot } from "@/types/capitol";
 
 const issueInterestsKey = "capitol-ledger:issue-interests";
@@ -22,18 +25,6 @@ const issueInterestsPendingSyncKey = "capitol-ledger:issue-interests-pending-syn
 const persistenceEvent = "capitol-ledger:persistence-changed";
 const accountLedgerEndpoint = "/api/account/ledger";
 let issueInterestSyncVersion = 0;
-
-const stateCodeByName: Record<string, string> = {
-  Alaska: "AK",
-  Arkansas: "AR",
-  California: "CA",
-  Georgia: "GA",
-  Massachusetts: "MA",
-  "New York": "NY",
-  "South Carolina": "SC",
-  Texas: "TX",
-  Vermont: "VT"
-};
 
 type SetupChip = {
   href: string;
@@ -44,19 +35,40 @@ type SetupChip = {
 
 type SyncState = "saved" | "syncing";
 
-export function SearchSetupChips({ focus }: { focus?: string }) {
+type SearchSetupChipsProps = {
+  activeType: string;
+  focus?: string;
+  state?: string | string[];
+};
+
+export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsProps) {
+  const router = useRouter();
   const [interests, setInterests] = useState<string[]>([]);
-  const [district, setDistrict] = useState<Required<LocalDistrictProfile>>(defaultDistrictProfile);
+  const [officialState, setOfficialState] = useState("all");
   const [editing, setEditing] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>("saved");
+  const stateParamValues = normalizeStateParamValues(state);
+  const explicitOfficialState = activeType === "members" && stateParamValues.length === 1 ? normalizeOfficialStatePreference(stateParamValues[0]) : null;
+  const hasExplicitStateParam = activeType === "members" && stateParamValues.length > 0;
 
   useEffect(() => {
     let active = true;
 
     function refreshSetup() {
-      setDistrict(readLocalDistrictProfile());
+      const nextDistrict = readLocalDistrictProfile();
+      const savedOfficialState = readLocalOfficialSearchState();
+      const districtState = stateCodeFromDistrictCode(nextDistrict.districtCode) ?? normalizeOfficialStatePreference(memberStateCode(nextDistrict.districtState));
+      const nextOfficialState = explicitOfficialState ?? savedOfficialState ?? districtState ?? "all";
+
+      setOfficialState(nextOfficialState);
       setInterests(readLocalIssueInterests());
       setSyncState(hasPendingIssueInterestSync() ? "syncing" : "saved");
+
+      if (explicitOfficialState) {
+        writeLocalOfficialSearchState(explicitOfficialState);
+      } else if (activeType === "members" && !hasExplicitStateParam && nextOfficialState !== "all") {
+        router.replace(officialsStateHref(nextOfficialState));
+      }
     }
 
     refreshSetup();
@@ -81,9 +93,9 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
       window.removeEventListener(accountProfileChangedEvent, refreshSetup);
       window.removeEventListener(persistenceEvent, refreshSetup);
     };
-  }, []);
+  }, [activeType, explicitOfficialState, hasExplicitStateParam, router]);
 
-  const chips = useMemo(() => buildSetupChips(interests, district, focus), [district, focus, interests]);
+  const chips = useMemo(() => buildSetupChips(interests, officialState, focus), [focus, interests, officialState]);
   const selectedInterestSet = useMemo(() => new Set(interests), [interests]);
 
   function toggleInterest(interest: string) {
@@ -96,13 +108,21 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
     void syncIssueInterestsToAccount(next);
   }
 
+  function selectOfficialState(nextState: string) {
+    const normalizedState = normalizeOfficialStatePreference(nextState) ?? "all";
+    setOfficialState(normalizedState);
+    writeLocalOfficialSearchState(normalizedState);
+
+    if (activeType === "members") router.replace(officialsStateHref(normalizedState));
+  }
+
   return (
     <div className="mt-4 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.18)_0%,rgba(7,23,50,0.58)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Your saved topics</div>
           <div className="mt-1 text-[12px] leading-snug text-white/52">
-            Use your saved interests and district state{district.districtState ? `, currently ${district.districtState}` : ""}.
+            Use your saved interests and Officials state, currently {officialStatePreferenceLabel(officialState)}.
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -115,13 +135,32 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
             }`}
             aria-pressed={editing}
           >
-            {editing ? "Done" : "Edit topics"}
+            {editing ? "Save" : "Edit topics"}
           </button>
         </div>
       </div>
 
       {editing ? (
-        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[154px]">
+        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[220px]">
+          <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+            <label htmlFor="officials-state" className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-white/46">
+              Officials state
+            </label>
+            <select
+              id="officials-state"
+              value={officialState}
+              onChange={(event) => selectOfficialState(event.target.value)}
+              className="mt-2 h-10 w-full rounded-xl border border-white/12 bg-[#071a38] px-3 text-[13px] font-semibold text-white outline-none focus:border-[#ffb12b]/55"
+            >
+              <option value="all">All</option>
+              {officialStateOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/46">Issue topics</div>
           <div className="flex flex-wrap gap-2">
             {issueSignals.map((interest) => {
               const active = selectedInterestSet.has(interest);
@@ -279,7 +318,7 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
-function buildSetupChips(interests: string[], district: Required<LocalDistrictProfile>, focus?: string): SetupChip[] {
+function buildSetupChips(interests: string[], officialState: string, focus?: string): SetupChip[] {
   const setupChips = interests.map((interest) => ({
     href: searchShortcutHref({ focus, q: interest, type: "all" }),
     id: `interest-${interest}`,
@@ -287,17 +326,27 @@ function buildSetupChips(interests: string[], district: Required<LocalDistrictPr
     tone: "interest" as const
   }));
 
-  const stateCode = stateCodeFromDistrictCode(district.districtCode) ?? stateCodeByName[district.districtState];
-  const districtChip = stateCode
-    ? {
-        href: searchShortcutHref({ focus, state: stateCode, type: "members" }),
-        id: `district-${stateCode}`,
-        label: district.districtState,
-        tone: "district" as const
-      }
-    : undefined;
+  const officialsStateChip = {
+    href: searchShortcutHref({ focus, state: officialState, type: "members" }),
+    id: `officials-${officialState}`,
+    label: officialStatePreferenceLabel(officialState),
+    tone: "district" as const
+  };
 
-  return districtChip ? [...setupChips, districtChip] : setupChips;
+  return [...setupChips, officialsStateChip];
+}
+
+function normalizeStateParamValues(value?: string | string[]) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.flatMap((item) => item.split(",")).map((item) => item.trim()).filter(Boolean);
+}
+
+function officialsStateHref(state: string) {
+  const params = new URLSearchParams(window.location.search);
+  params.set("type", "members");
+  params.delete("state");
+  params.set("state", state);
+  return `/search?${params.toString()}`;
 }
 
 function searchShortcutHref({

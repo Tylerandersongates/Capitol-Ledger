@@ -32,6 +32,7 @@
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
     "search-filters:check": "node scripts/check-search-filter-collapse.mjs",
     "search-results:check": "node scripts/check-search-results-scroll.mjs",
+    "search-state:check": "node scripts/check-search-saved-official-state.mjs",
     "bill-status:check": "node scripts/check-bill-law-status.mjs",
     "bill-actions:check": "node scripts/check-bill-action-log.mjs",
     "bill-details:check": "node scripts/check-bill-details-summary.mjs",

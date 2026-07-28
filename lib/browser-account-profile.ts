@@ -1,15 +1,18 @@
 import type { AccountNotificationPreferences, AccountProfileSnapshot } from "@/types/capitol";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { normalizeOfficialStatePreference } from "@/lib/official-states";
 
 export const accountProfileChangedEvent = "capitol-ledger:account-profile-changed";
 
 const districtProfileKey = "capitol-ledger:district-profile";
 const notificationPreferencesKey = "capitol-ledger:notification-preferences";
 const partyAffiliationKey = "capitol-ledger:party-affiliation";
+const officialSearchStateKey = "capitol-ledger:official-search-state";
 const localAccountStateKeys = [
   districtProfileKey,
   notificationPreferencesKey,
   partyAffiliationKey,
+  officialSearchStateKey,
   "capitol-ledger:follows",
   "capitol-ledger:gamification",
   "capitol-ledger:gamification:anonymous",
@@ -110,6 +113,21 @@ export function writeLocalDistrictProfile(value: LocalDistrictProfile) {
   };
 
   writeJson(districtProfileKey, next);
+}
+
+export function readLocalOfficialSearchState() {
+  if (typeof window === "undefined") return null;
+  return normalizeOfficialStatePreference(window.localStorage.getItem(officialSearchStateKey));
+}
+
+export function writeLocalOfficialSearchState(value: string) {
+  if (typeof window === "undefined") return;
+
+  const normalized = normalizeOfficialStatePreference(value);
+  if (!normalized || window.localStorage.getItem(officialSearchStateKey) === normalized) return;
+
+  window.localStorage.setItem(officialSearchStateKey, normalized);
+  window.dispatchEvent(new Event(accountProfileChangedEvent));
 }
 
 export function readLocalAccountProfile(): Partial<AccountProfileSnapshot> {
