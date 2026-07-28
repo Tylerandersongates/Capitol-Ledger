@@ -26,8 +26,8 @@ Generated Tuesday, July 28, 2026. This handoff extends the July 22 EOD and close
 - **Repo:** `/Users/tylergates/Documents/Capitol Ledger`
 - **Branch:** `main`
 - **Verified app-source HEAD:** `84d3ae9` — `Prioritize dashboard logo for LCP`
-- **Origin sync:** `main` matched the live origin before the two closeout commits. The source fix and this EOD are pushed together at handoff.
-- **Worktree:** Source is clean after the closeout commits. The July 19, July 22, and July 28 EOD handoffs are tracked.
+- **Origin sync:** `main` matched the live origin before the two local closeout commits. Publishing those commits is pending explicit approval because the payload includes internal recovery handoffs.
+- **Worktree:** Source is clean after the closeout commits. The July 19, July 22, and July 28 EOD handoffs are tracked locally.
 - **Production target:** `https://project-qosv1.vercel.app`
 - **Latest deployment:** The production target responded successfully and presented the CapitolWonk sign-in page. Deployment identifiers are intentionally omitted.
 - **Browser state:** A fresh local CapitolWonk dashboard preview is left open at `http://127.0.0.1:3023/dashboard`.
