@@ -264,7 +264,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </div>
                   }
                 >
-                  <details className={`mt-4 px-4 py-3 ${premiumPanelClass}`} open={hasSmartFilters && !prioritizeResults}>
+                  <details
+                    className={`mt-4 px-4 py-3 ${premiumPanelClass}`}
+                    open={(activeType === "members" || hasSmartFilters) && !prioritizeResults}
+                  >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-medium text-white/64 [&::-webkit-details-marker]:hidden">
                       <span className="flex items-center gap-2">
                         <Filter className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
