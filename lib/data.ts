@@ -2035,6 +2035,8 @@ function normalizeSearchStateFilters(value?: string | string[]) {
   );
 }
 
+const maximumMemberSearchResults = 600;
+
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
   const billSearchTerms = q ? getBillSearchTerms(q) : [];
@@ -2101,7 +2103,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
       shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
-            take: 30,
+            take: maximumMemberSearchResults,
             where: {
               AND: [
                 { active: true },

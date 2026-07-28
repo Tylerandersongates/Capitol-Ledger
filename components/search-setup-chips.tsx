@@ -100,9 +100,9 @@ export function SearchSetupChips({ focus }: { focus?: string }) {
     <div className="mt-4 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.18)_0%,rgba(7,23,50,0.58)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Saved search shortcuts</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Your saved topics</div>
           <div className="mt-1 text-[12px] leading-snug text-white/52">
-            Shortcuts use your saved interests and district state{district.districtState ? `, currently ${district.districtState}` : ""}. They filter only when selected.
+            Use your saved interests and district state{district.districtState ? `, currently ${district.districtState}` : ""}.
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -292,7 +292,7 @@ function buildSetupChips(interests: string[], district: Required<LocalDistrictPr
     ? {
         href: searchShortcutHref({ focus, state: stateCode, type: "members" }),
         id: `district-${stateCode}`,
-        label: `${district.districtState} officials`,
+        label: district.districtState,
         tone: "district" as const
       }
     : undefined;
