@@ -1,7 +1,6 @@
 const baseUrl = (
   process.env.WEEKLY_BRIEF_QA_BASE_URL ||
   process.env.AUTH_QA_BASE_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
   "http://127.0.0.1:3020"
 ).replace(/\/$/, "");
 const taskSecret = process.env.WEEKLY_BRIEF_CRON_SECRET || process.env.CAPITOL_LEDGER_TASK_SECRET || process.env.CRON_SECRET;
@@ -43,7 +42,7 @@ function hasRunnerShape(data) {
 async function assertStatus(name, path, options, allowedStatuses) {
   const { data, response } = await request(path, options);
   const ok = allowedStatuses.includes(response.status);
-  record(name, ok, `status ${response.status}${data.error ? `, ${data.error}` : data.message ? `, ${data.message}` : ""}`);
+  record(name, ok, `status ${response.status}`);
   return { data, ok, response };
 }
 
@@ -105,7 +104,7 @@ async function runLiveDeliveryCheck() {
 }
 
 async function main() {
-  console.log(`Running CapitolWonk CE Weekly Brief task QA against ${baseUrl}`);
+  console.log("Running CapitolWonk CE Weekly Brief task QA against the configured target");
   await runSafeChecks();
 
   if (shouldRunLiveDelivery) {

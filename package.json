@@ -2,6 +2,7 @@
   "name": "capitol-ledger",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "node scripts/check-local-preview-runtime.mjs && next dev",
     "dev:preview": "node scripts/check-local-preview-runtime.mjs && next dev -H 127.0.0.1 -p 3023",

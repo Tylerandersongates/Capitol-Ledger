@@ -90,7 +90,7 @@ function checkAppUrl() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   if (isValidUrl(appUrl)) {
-    pass("NEXT_PUBLIC_APP_URL is configured", appUrl);
+    pass("NEXT_PUBLIC_APP_URL is configured");
     return;
   }
 
@@ -115,7 +115,7 @@ function checkAppStoreBundleId() {
       return;
     }
 
-    warn("APP_STORE_BUNDLE_ID is configured", `Using default ${bundleId}; set it explicitly before launch.`);
+    warn("APP_STORE_BUNDLE_ID is configured", "Using the built-in default; set it explicitly before launch.");
     return;
   }
 
@@ -170,6 +170,7 @@ function checkStoreKitProductIds() {
 
   for (const productId of requiredProductIds) {
     const teamProduct = productId.startsWith("com.capitolwonk.team.");
+    const productLabel = `${teamProduct ? "Team" : "Pro"} ${productId.endsWith(".annual") ? "annual" : "monthly"} StoreKit product`;
     const present = teamProduct
       ? webControls.includes("getTeamAppStoreProductId") &&
         nativeModels.includes(productId) &&
@@ -177,9 +178,9 @@ function checkStoreKitProductIds() {
         teamSeats.includes(productId)
       : webControls.includes(productId) && nativeModels.includes(productId) && appStoreValidator.includes(productId);
     if (present) {
-      pass(`${productId} is wired`);
+      pass(`${productLabel} is wired`);
     } else {
-      fail(`${productId} is wired`, "Product ID must match web controls, native StoreKit models, and server validation.");
+      fail(`${productLabel} is wired`, "Product ID must match web controls, native StoreKit models, and server validation.");
     }
   }
 
