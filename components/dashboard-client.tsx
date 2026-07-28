@@ -376,6 +376,7 @@ export function DashboardClient({
                     alt=""
                     width={92}
                     height={92}
+                    priority
                     className="h-[90px] w-[90px] rounded-full object-cover"
                   />
                 </div>
