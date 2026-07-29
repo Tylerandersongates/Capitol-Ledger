@@ -17,6 +17,7 @@ const partyMap = {
 const positionMap = {
   Yes: VotePosition.YES,
   No: VotePosition.NO,
+  Other: VotePosition.OTHER,
   Present: VotePosition.PRESENT,
   "Not Voting": VotePosition.NOT_VOTING
 } as const;
@@ -126,15 +127,17 @@ async function main() {
   for (const vote of votes) {
     await prisma.vote.upsert({
       where: {
-        congress_chamber_rollCall: {
+        congress_chamber_session_rollCall: {
           congress: vote.congress,
           chamber: chamberMap[vote.chamber],
-          rollCall: vote.rollCall
+          rollCall: vote.rollCall,
+          session: vote.session ?? "1"
         }
       },
       update: {
         question: vote.question,
         result: vote.result,
+        session: vote.session ?? "1",
         voteDate: new Date(vote.voteDate),
         sourceUrl: vote.sourceUrl,
         billId: vote.billId,
@@ -147,6 +150,7 @@ async function main() {
         rollCall: vote.rollCall,
         question: vote.question,
         result: vote.result,
+        session: vote.session ?? "1",
         voteDate: new Date(vote.voteDate),
         sourceUrl: vote.sourceUrl,
         billId: vote.billId,
@@ -164,12 +168,14 @@ async function main() {
         }
       },
       update: {
-        position: positionMap[memberVote.position]
+        position: positionMap[memberVote.position],
+        positionLabel: memberVote.positionLabel
       },
       create: {
         voteId: memberVote.voteId,
         memberBioguideId: memberVote.memberBioguideId,
-        position: positionMap[memberVote.position]
+        position: positionMap[memberVote.position],
+        positionLabel: memberVote.positionLabel
       }
     });
   }

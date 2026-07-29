@@ -18,6 +18,23 @@ import {
 } from "../lib/congress/client";
 import { fetchPaginatedBillCatalog, validateCurrentBillCatalog } from "../lib/congress/bill-catalog";
 import { fetchPaginatedMemberRoster, validateCurrentMemberRoster } from "../lib/congress/member-roster";
+import {
+  fetchOfficialVoteXml,
+  fetchPaginatedHouseVoteCatalog,
+  houseClerkVotePageUrl,
+  houseClerkVoteXmlUrl,
+  mapWithConcurrency,
+  parseHouseClerkVoteXml,
+  parseSenateVoteMenu,
+  parseSenateVoteXml,
+  senatePositionMemberKey,
+  senateVoteMenuUrl,
+  validateVoteCatalog,
+  voteMemberKey,
+  type ParsedSenateVoteCatalog,
+  type ParsedVotePositionCatalog,
+  type SenateMenuVote
+} from "../lib/congress/vote-catalog";
 import { getPrisma, hasDatabaseUrl } from "../lib/prisma";
 import {
   buildBillSourceLinks,
@@ -59,6 +76,17 @@ type ResolvedSupplementalMemberRecord = {
 type ResolvedBillCosponsorRecord = NonNullable<ReturnType<typeof normalizeCongressBillCosponsor>>;
 type ResolvedHouseVoteRecord = NonNullable<ReturnType<typeof normalizeCongressHouseVote>>;
 type ResolvedHouseMemberVoteRecord = NonNullable<ReturnType<typeof normalizeCongressHouseMemberVote>>;
+type HistoricalVoteMemberRecord = {
+  member: Member;
+  raw: CongressMemberDetailItem | CongressMemberListItem;
+};
+type CompleteVoteCatalog = {
+  historicalMembers: HistoricalVoteMemberRecord[];
+  memberVotes: ResolvedHouseMemberVoteRecord[];
+  senateVoteDetails: ParsedSenateVoteCatalog[];
+  voteDetails: ParsedVotePositionCatalog[];
+  votes: ResolvedHouseVoteRecord[];
+};
 
 const territoryDelegateMemberIds = ["N000147", "H001103", "M001219", "P000610", "R000600", "K000404"];
 
@@ -79,6 +107,20 @@ function readStringListEnv(name: string) {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+}
+
+function readVoteSessionsEnv(name: string, fallback = "1,2") {
+  const values = uniqueStrings(
+    (process.env[name] ?? fallback)
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+  const sessions = values.map(Number);
+  if (!sessions.length || sessions.some((session) => session !== 1 && session !== 2)) {
+    throw new Error(`${name} must contain session 1, session 2, or both.`);
+  }
+  return sessions;
 }
 
 type TargetBillKey = {
@@ -134,7 +176,7 @@ function billSyncKey(bill: Pick<Bill, "billNumber" | "billType" | "congress">) {
 }
 
 function houseVoteSyncKey(vote: ResolvedHouseVoteRecord) {
-  return `${vote.congress}:${vote.chamber}:${vote.rollCall}`;
+  return `${vote.congress}:${vote.chamber}:${vote.session}:${vote.rollCall}`;
 }
 
 async function fetchResolvedBillSummaries(bills: Bill[]) {
@@ -297,6 +339,176 @@ async function fetchResolvedHouseMemberVotes(votes: ResolvedHouseVoteRecord[], l
   return records;
 }
 
+async function fetchCompleteVoteCatalog({
+  allCongressMembers,
+  concurrency,
+  congress,
+  currentMembers,
+  houseMaxPages,
+  housePageLimit,
+  minimumVoteCount,
+  sessions,
+  timeoutMs
+}: {
+  allCongressMembers: CongressMemberListItem[];
+  concurrency: number;
+  congress: number;
+  currentMembers: Member[];
+  houseMaxPages: number;
+  housePageLimit: number;
+  minimumVoteCount: number;
+  sessions: number[];
+  timeoutMs: number;
+}): Promise<CompleteVoteCatalog> {
+  const houseCatalog = await fetchPaginatedHouseVoteCatalog({
+    congress,
+    fetchPage: (session, offset, pageSize) => fetchHouseVotes(congress, session, { limit: pageSize, offset, timeoutMs }),
+    maxPages: houseMaxPages,
+    pageSize: housePageLimit,
+    sessions
+  });
+
+  const houseVotes = houseCatalog.rawVotes
+    .map((raw) => normalizeCongressHouseVote(raw, congress, Number(raw.sessionNumber ?? 1)))
+    .filter((vote): vote is ResolvedHouseVoteRecord => Boolean(vote))
+    .map((vote) => ({
+      ...vote,
+      sourceUrl: houseClerkVotePageUrl(vote)
+    }));
+  const voteDetails = await mapWithConcurrency(houseVotes, concurrency, async (vote) => {
+    const xml = await fetchOfficialVoteXml(houseClerkVoteXmlUrl(vote), timeoutMs);
+    return parseHouseClerkVoteXml(xml, vote);
+  });
+  const resolvedHouseVotes = voteDetails.map((detail) => detail.vote);
+  const houseExpectedCounts = {
+    ...Object.fromEntries(Object.entries(houseCatalog.expectedCounts).map(([session, count]) => [`House:${session}`, count])),
+  };
+  validateVoteCatalog(resolvedHouseVotes, {
+    congress,
+    expectedCounts: houseExpectedCounts,
+    minimumVoteCount: Object.values(houseExpectedCounts).reduce((sum, count) => sum + count, 0)
+  });
+
+  const senateMenusBySession = await Promise.all(
+    sessions.map(async (session) => {
+      const xml = await fetchOfficialVoteXml(senateVoteMenuUrl(congress, session), timeoutMs);
+      return parseSenateVoteMenu(xml);
+    })
+  );
+  const senateMenus = senateMenusBySession.flat();
+  const senateVoteDetails = await mapWithConcurrency(senateMenus, concurrency, async (menuVote) => {
+    const xml = await fetchOfficialVoteXml(menuVote.sourceUrl, timeoutMs);
+    return parseSenateVoteXml(xml, menuVote);
+  });
+  const senateVotes = senateVoteDetails.map((detail) => detail.vote);
+  const senateExpectedCounts = {
+    ...Object.fromEntries(
+      sessions.map((session) => [`Senate:${session}`, senateMenus.filter((vote) => vote.session === session).length])
+    )
+  };
+  validateVoteCatalog(senateVotes, {
+    congress,
+    expectedCounts: senateExpectedCounts,
+    minimumVoteCount: Object.values(senateExpectedCounts).reduce((sum, count) => sum + count, 0)
+  });
+
+  const votes = [...resolvedHouseVotes, ...senateVotes];
+  const expectedCounts = { ...houseExpectedCounts, ...senateExpectedCounts };
+  validateVoteCatalog(votes, {
+    congress,
+    expectedCounts,
+    minimumVoteCount: Math.max(minimumVoteCount, Object.values(expectedCounts).reduce((sum, count) => sum + count, 0))
+  });
+
+  const currentMemberIds = new Set(currentMembers.map((member) => member.bioguideId));
+  const allMemberRecords = allCongressMembers.flatMap<HistoricalVoteMemberRecord>((raw) => {
+    const member = normalizeCongressMember(raw);
+    if (!member) return [];
+    return [
+      {
+        member: {
+          ...member,
+          active: currentMemberIds.has(member.bioguideId)
+        },
+        raw
+      }
+    ];
+  });
+  const houseMemberVotes = voteDetails.flatMap((detail) => detail.positions);
+  const listedMemberIds = new Set(allMemberRecords.map((record) => record.member.bioguideId));
+  const missingHouseMemberIds = Array.from(
+    new Set(
+      houseMemberVotes
+        .map((position) => position.memberBioguideId)
+        .filter((memberBioguideId) => !listedMemberIds.has(memberBioguideId))
+    )
+  );
+  const supplementalHouseMemberRecords = await mapWithConcurrency(
+    missingHouseMemberIds,
+    Math.min(concurrency, 3),
+    async (memberBioguideId): Promise<HistoricalVoteMemberRecord> => {
+      const response = await fetchMember(memberBioguideId, { timeoutMs });
+      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      if (!member) {
+        throw new Error("An official House vote member could not be resolved through Congress.gov.");
+      }
+      return {
+        member: {
+          ...member,
+          active: currentMemberIds.has(member.bioguideId)
+        },
+        raw: response.member as CongressMemberDetailItem
+      };
+    }
+  );
+  allMemberRecords.push(...supplementalHouseMemberRecords);
+
+  const membersById = new Map(allMemberRecords.map((record) => [record.member.bioguideId, record.member]));
+  const senateMembersByKey = new Map(
+    allMemberRecords
+      .filter((record) => record.member.chamber === "Senate")
+      .map((record) => [voteMemberKey(record.member), record.member])
+  );
+
+  const unknownHousePositions = houseMemberVotes.filter((position) => !membersById.has(position.memberBioguideId));
+  const unknownHouseMemberPositions = unknownHousePositions.length;
+  const senateMemberVotes = senateVoteDetails.flatMap((detail) =>
+    detail.positions.flatMap<ResolvedHouseMemberVoteRecord>((position) => {
+      const member = senateMembersByKey.get(senatePositionMemberKey(position));
+      if (!member) return [];
+      return [
+        {
+          memberBioguideId: member.bioguideId,
+          position: position.position,
+          positionLabel: position.positionLabel,
+          vote: {
+            chamber: detail.vote.chamber,
+            congress: detail.vote.congress,
+            rollCall: detail.vote.rollCall,
+            session: detail.vote.session
+          }
+        }
+      ];
+    })
+  );
+  const expectedSenatePositionCount = senateVoteDetails.reduce((sum, detail) => sum + detail.expectedPositionCount, 0);
+  const missingSenateMemberPositions = expectedSenatePositionCount - senateMemberVotes.length;
+
+  if (unknownHouseMemberPositions || missingSenateMemberPositions) {
+    throw new Error(
+      `Vote catalog member mapping is incomplete: ${unknownHouseMemberPositions} House and ${missingSenateMemberPositions} Senate position(s) could not be mapped.`
+    );
+  }
+
+  return {
+    historicalMembers: allMemberRecords.filter((record) => !record.member.active),
+    memberVotes: [...houseMemberVotes, ...senateMemberVotes],
+    senateVoteDetails,
+    voteDetails,
+    votes
+  };
+}
+
 function uniqueMembers(members: Member[]) {
   return Array.from(new Map(members.map((member) => [member.bioguideId, member])).values());
 }
@@ -335,6 +547,14 @@ async function main() {
   const shouldSyncCosponsors = readBooleanEnv("CONGRESS_SYNC_COSPONSORS", true);
   const cosponsorLimit = readIntegerEnv("CONGRESS_SYNC_COSPONSOR_LIMIT", 50, 1, 250);
   const shouldSyncHouseVotes = readBooleanEnv("CONGRESS_SYNC_HOUSE_VOTES", false);
+  const shouldSyncFullVoteCatalog = readBooleanEnv("CONGRESS_SYNC_FULL_VOTE_CATALOG", false);
+  const voteSessions = readVoteSessionsEnv("CONGRESS_SYNC_VOTE_SESSIONS");
+  const voteMinimumCount = readIntegerEnv("CONGRESS_SYNC_VOTE_MIN_COUNT", 1_000, 1, 5_000);
+  const houseVotePageLimit = readIntegerEnv("CONGRESS_SYNC_VOTE_PAGE_LIMIT", 250, 1, 250);
+  const houseVoteMaxPages = readIntegerEnv("CONGRESS_SYNC_VOTE_MAX_PAGES", 10, 1, 25);
+  const voteFetchConcurrency = readIntegerEnv("CONGRESS_SYNC_VOTE_CONCURRENCY", 6, 1, 20);
+  const voteFetchTimeoutMs = readIntegerEnv("CONGRESS_SYNC_VOTE_TIMEOUT_MS", 20_000, 1_000, 60_000);
+  const votePositionBatchSize = readIntegerEnv("CONGRESS_SYNC_VOTE_POSITION_BATCH_SIZE", 2_000, 1, 5_000);
   const houseVoteSession = readIntegerEnv("CONGRESS_SYNC_HOUSE_SESSION", 1, 1, 2);
   const houseVoteLimit = readIntegerEnv("CONGRESS_SYNC_HOUSE_VOTE_LIMIT", 5, 1, 100);
   const shouldSyncHouseMemberVotes = readBooleanEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTES", true);
@@ -347,13 +567,16 @@ async function main() {
     ...readStringListEnv("CONGRESS_SYNC_MEMBER_IDS")
   ]);
   const shouldWrite = process.env.CONGRESS_SYNC_WRITE === "true";
-  const shouldFetchHouseVotes = shouldSyncHouseVotes || targetHouseVoteNumbers.length > 0;
+  const shouldFetchHouseVotes = shouldSyncFullVoteCatalog || shouldSyncHouseVotes || targetHouseVoteNumbers.length > 0;
 
   if (shouldSyncFullMemberRoster && !shouldSyncBatch) {
     throw new Error("CONGRESS_SYNC_FULL_MEMBER_ROSTER=true requires CONGRESS_SYNC_BATCH=true.");
   }
   if (shouldSyncFullBillCatalog && !shouldSyncBatch) {
     throw new Error("CONGRESS_SYNC_FULL_BILL_CATALOG=true requires CONGRESS_SYNC_BATCH=true.");
+  }
+  if (shouldSyncFullVoteCatalog && !shouldSyncBatch) {
+    throw new Error("CONGRESS_SYNC_FULL_VOTE_CATALOG=true requires CONGRESS_SYNC_BATCH=true.");
   }
   if (shouldReconcileMemberRoster && !shouldSyncFullMemberRoster) {
     throw new Error("CONGRESS_SYNC_RECONCILE_ROSTER=true requires CONGRESS_SYNC_FULL_MEMBER_ROSTER=true.");
@@ -373,13 +596,22 @@ async function main() {
   console.log(`Bill enrichment: ${billEnrichmentLimit ? `up to ${billEnrichmentLimit} recent catalog records plus targeted bills` : "targeted bills only"}`);
   console.log(
     `Current member roster: ${
-      shouldSyncFullMemberRoster ? `full pagination enabled, ${memberPageLimit} per page, ${memberMaxPages}-page safety limit` : `single page, up to ${limit}`
+      shouldSyncFullMemberRoster || shouldSyncFullVoteCatalog
+        ? `full pagination enabled, ${memberPageLimit} per page, ${memberMaxPages}-page safety limit`
+        : `single page, up to ${limit}`
     }`
   );
   console.log(`Roster reconciliation: ${shouldReconcileMemberRoster ? "enabled after full validation" : "skipped"}`);
   console.log(`Target bill sync: ${targetBillKeys.length ? targetBillKeys.map(billSyncKey).join(", ") : "skipped"}`);
   console.log(`Summary sync: ${shouldSyncSummaries ? "enabled" : "skipped"}`);
   console.log(`Cosponsor sync: ${shouldSyncCosponsors ? `enabled, up to ${cosponsorLimit} per bill` : "skipped"}`);
+  console.log(
+    `Complete vote catalog: ${
+      shouldSyncFullVoteCatalog
+        ? `House and Senate sessions ${voteSessions.join(", ")}, ${voteFetchConcurrency}-request concurrency, ${voteMinimumCount}-vote minimum`
+        : "skipped"
+    }`
+  );
   console.log(
     `House vote sync: ${
       shouldFetchHouseVotes
@@ -389,13 +621,21 @@ async function main() {
         : "skipped"
     }`
   );
-  console.log(`House member vote sync: ${shouldFetchHouseVotes && shouldSyncHouseMemberVotes ? `enabled, up to ${houseMemberVoteLimit} positions per vote` : "skipped"}`);
+  console.log(
+    `Member vote sync: ${
+      shouldSyncFullVoteCatalog
+        ? `complete official positions, ${votePositionBatchSize}-record database batches`
+        : shouldFetchHouseVotes && shouldSyncHouseMemberVotes
+          ? `House only, up to ${houseMemberVoteLimit} positions per vote`
+          : "skipped"
+    }`
+  );
   console.log(`Territory delegate supplemental sync: ${shouldSyncTerritoryDelegates ? "enabled" : "skipped"}`);
   console.log(`Supplemental member sync: ${supplementalMemberIds.length ? `${supplementalMemberIds.length} targeted records` : "skipped"}`);
   console.log(`Write mode: ${shouldWrite ? "enabled" : "dry run"}`);
 
   const memberRosterPromise = shouldSyncBatch
-    ? shouldSyncFullMemberRoster
+    ? shouldSyncFullMemberRoster || shouldSyncFullVoteCatalog
       ? fetchPaginatedMemberRoster({
           fetchPage: (offset, pageSize) => fetchMembersByCongress(congress, { currentMember: true, limit: pageSize, offset }),
           maxPages: memberMaxPages,
@@ -407,6 +647,18 @@ async function main() {
           pageCount: 1,
           rawRecordCount: response.members?.length ?? 0
         }))
+    : Promise.resolve({
+        expectedCount: undefined,
+        members: [] as CongressMemberListItem[],
+        pageCount: 0,
+        rawRecordCount: 0
+      });
+  const voteMemberRosterPromise = shouldSyncFullVoteCatalog
+    ? fetchPaginatedMemberRoster({
+        fetchPage: (offset, pageSize) => fetchMembersByCongress(congress, { currentMember: false, limit: pageSize, offset }),
+        maxPages: memberMaxPages,
+        pageSize: memberPageLimit
+      })
     : Promise.resolve({
         expectedCount: undefined,
         members: [] as CongressMemberListItem[],
@@ -432,8 +684,9 @@ async function main() {
         pageCount: 0,
         rawRecordCount: 0
       });
-  const [memberRoster, billCatalog, committeesResponse] = await Promise.all([
+  const [memberRoster, voteMemberRoster, billCatalog, committeesResponse] = await Promise.all([
     memberRosterPromise,
+    voteMemberRosterPromise,
     billCatalogPromise,
     shouldSyncBatch ? fetchCommittees(undefined, { limit }) : Promise.resolve({ committees: [] })
   ]);
@@ -455,7 +708,7 @@ async function main() {
   const enrichedBills = Array.from(new Map([...listedBillsForEnrichment, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
   const rawBills = [...billCatalog.bills, ...billDetails];
   const listedMembers = memberRoster.members.map(normalizeCongressMember).filter((member) => member !== null);
-  const rosterValidation = shouldSyncFullMemberRoster
+  const rosterValidation = shouldSyncFullMemberRoster || shouldSyncFullVoteCatalog
     ? validateCurrentMemberRoster(listedMembers, { minimumMemberCount: memberMinimumCount })
     : null;
   const supplementalMembers = await fetchResolvedSupplementalMembers(supplementalMemberIds);
@@ -465,13 +718,36 @@ async function main() {
   const sponsorMembers = await fetchResolvedBillSponsors(enrichedBills);
   const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(enrichedBills, cosponsorLimit) : [];
   const cosponsorMembers = uniqueMembers(billCosponsors.map((cosponsor) => cosponsor.member));
-  const recentHouseVotes = shouldSyncHouseVotes ? await fetchResolvedHouseVotes(congress, houseVoteSession, houseVoteLimit) : [];
-  const targetedHouseVotes = targetHouseVoteNumbers.length ? await fetchResolvedTargetHouseVotes(congress, houseVoteSession, targetHouseVoteNumbers) : [];
+  const completeVoteCatalog = shouldSyncFullVoteCatalog
+    ? await fetchCompleteVoteCatalog({
+        allCongressMembers: voteMemberRoster.members,
+        concurrency: voteFetchConcurrency,
+        congress,
+        currentMembers: listedMembers,
+        houseMaxPages: houseVoteMaxPages,
+        housePageLimit: houseVotePageLimit,
+        minimumVoteCount: voteMinimumCount,
+        sessions: voteSessions,
+        timeoutMs: voteFetchTimeoutMs
+      })
+    : null;
+  const recentHouseVotes = !completeVoteCatalog && shouldSyncHouseVotes ? await fetchResolvedHouseVotes(congress, houseVoteSession, houseVoteLimit) : [];
+  const targetedHouseVotes =
+    !completeVoteCatalog && targetHouseVoteNumbers.length
+      ? await fetchResolvedTargetHouseVotes(congress, houseVoteSession, targetHouseVoteNumbers)
+      : [];
   const houseVotes = Array.from(new Map([...recentHouseVotes, ...targetedHouseVotes].map((vote) => [houseVoteSyncKey(vote), vote])).values());
-  const houseMemberVotes = shouldFetchHouseVotes && shouldSyncHouseMemberVotes ? await fetchResolvedHouseMemberVotes(houseVotes, houseMemberVoteLimit) : [];
-  const houseVoteMembers = uniqueMembers(houseMemberVotes.map((memberVote) => memberVote.member));
+  const houseMemberVotes =
+    !completeVoteCatalog && shouldFetchHouseVotes && shouldSyncHouseMemberVotes
+      ? await fetchResolvedHouseMemberVotes(houseVotes, houseMemberVoteLimit)
+      : [];
+  const houseVoteMembers = uniqueMembers(houseMemberVotes.map((memberVote) => memberVote.member).filter((member): member is Member => Boolean(member)));
+  const historicalVoteMembers = completeVoteCatalog?.historicalMembers ?? [];
+  const votesToWrite = completeVoteCatalog?.votes ?? houseVotes;
+  const memberVotesToWrite = completeVoteCatalog?.memberVotes ?? houseMemberVotes;
   const sourceLinks = uniqueSourceLinks([
     ...members.flatMap(buildMemberSourceLinks),
+    ...historicalVoteMembers.flatMap((record) => buildMemberSourceLinks(record.member)),
     ...sponsorMembers.flatMap(buildMemberSourceLinks),
     ...cosponsorMembers.flatMap(buildMemberSourceLinks),
     ...houseVoteMembers.flatMap(buildMemberSourceLinks),
@@ -480,7 +756,7 @@ async function main() {
   ]);
 
   console.log(`Normalized ${members.length} members.`);
-  if (shouldSyncFullMemberRoster && rosterValidation) {
+  if ((shouldSyncFullMemberRoster || shouldSyncFullVoteCatalog) && rosterValidation) {
     console.log(
       `Validated complete current roster: ${rosterValidation.memberCount} members (${rosterValidation.houseCount} House, ${rosterValidation.senateCount} Senate) across ${memberRoster.pageCount} API pages.`
     );
@@ -512,7 +788,16 @@ async function main() {
     console.log(`Resolved ${billCosponsors.length} bill cosponsor links and ${cosponsorMembers.length} cosponsor member records.`);
   }
   if (shouldFetchHouseVotes) {
-    console.log(`Resolved ${houseVotes.length} House vote records and ${houseMemberVotes.length} member vote positions.`);
+    if (completeVoteCatalog) {
+      console.log(
+        `Validated complete vote catalog: ${completeVoteCatalog.voteDetails.length} House and ${completeVoteCatalog.senateVoteDetails.length} Senate roll calls.`
+      );
+      console.log(
+        `Resolved ${completeVoteCatalog.memberVotes.length} official member positions and ${historicalVoteMembers.length} inactive historical member record(s).`
+      );
+    } else {
+      console.log(`Resolved ${houseVotes.length} House vote records and ${houseMemberVotes.length} member vote positions.`);
+    }
   }
   console.log(`Prepared ${sourceLinks.length} official source links.`);
 
@@ -526,7 +811,9 @@ async function main() {
     if (shouldReconcileMemberRoster && rosterValidation) {
       console.log(`Dry run verified ${rosterValidation.activeMemberIds.length} active IDs for guarded roster reconciliation.`);
     }
-    console.log("Dry run complete. Set CONGRESS_SYNC_WRITE=true with DATABASE_URL to persist members, bills, committees, cosponsors, House votes, member vote positions, official source links, and resolved summaries.");
+    console.log(
+      "Dry run complete. Set CONGRESS_SYNC_WRITE=true with DATABASE_URL to persist members, bills, committees, cosponsors, House and Senate votes, member vote positions, official source links, and resolved summaries."
+    );
     return;
   }
 
@@ -536,6 +823,13 @@ async function main() {
 
   const prisma = getPrisma();
   const memberResult = await upsertCongressMembers(prisma, members, rawMembers);
+  const historicalVoteMemberResult = completeVoteCatalog
+    ? await upsertCongressMembers(
+        prisma,
+        historicalVoteMembers.map((record) => record.member),
+        historicalVoteMembers.map((record) => record.raw)
+      )
+    : { createdOrUpdated: 0, skipped: 0 };
   const rosterReconciliationResult =
     shouldReconcileMemberRoster && rosterValidation
       ? await reconcileCongressMemberRoster(prisma, rosterValidation.activeMemberIds)
@@ -550,13 +844,22 @@ async function main() {
   const committeeResult = await upsertCongressCommittees(prisma, committees, committeesResponse.committees ?? []);
   const cosponsorMemberResult = shouldSyncCosponsors ? await upsertCongressMembers(prisma, cosponsorMembers) : { createdOrUpdated: 0, skipped: 0 };
   const cosponsorResult = shouldSyncCosponsors ? await upsertCongressCosponsors(prisma, billCosponsors) : { createdOrUpdated: 0, skipped: 0 };
-  const houseVoteMemberResult = shouldFetchHouseVotes && shouldSyncHouseMemberVotes ? await upsertCongressMembers(prisma, houseVoteMembers) : { createdOrUpdated: 0, skipped: 0 };
-  const houseVoteResult = shouldFetchHouseVotes ? await upsertCongressVotes(prisma, houseVotes) : { createdOrUpdated: 0, skipped: 0 };
-  const houseMemberVoteResult = shouldFetchHouseVotes && shouldSyncHouseMemberVotes ? await upsertCongressMemberVotes(prisma, houseMemberVotes) : { createdOrUpdated: 0, skipped: 0 };
+  const houseVoteMemberResult =
+    !completeVoteCatalog && shouldFetchHouseVotes && shouldSyncHouseMemberVotes
+      ? await upsertCongressMembers(prisma, houseVoteMembers)
+      : { createdOrUpdated: 0, skipped: 0 };
+  const voteResult = shouldFetchHouseVotes ? await upsertCongressVotes(prisma, votesToWrite) : { createdOrUpdated: 0, skipped: 0 };
+  const memberVoteResult =
+    shouldFetchHouseVotes && (shouldSyncHouseMemberVotes || Boolean(completeVoteCatalog))
+      ? await upsertCongressMemberVotes(prisma, memberVotesToWrite, { batchSize: votePositionBatchSize })
+      : { createdOrUpdated: 0, skipped: 0 };
   const sourceLinkResult = await upsertOfficialSourceLinks(prisma, sourceLinks);
   const summaryResult = shouldSyncSummaries ? await upsertCongressBillSummaries(prisma, billSummaries) : { createdOrUpdated: 0, skipped: 0 };
 
   console.log(`Upserted ${memberResult.createdOrUpdated} member records.`);
+  if (completeVoteCatalog) {
+    console.log(`Upserted ${historicalVoteMemberResult.createdOrUpdated} inactive historical member records needed for vote positions.`);
+  }
   if (shouldReconcileMemberRoster) {
     console.log(`Deactivated ${rosterReconciliationResult.deactivated} member record(s) absent from the validated current roster.`);
   }
@@ -573,10 +876,10 @@ async function main() {
     console.log(`Upserted ${cosponsorResult.createdOrUpdated} bill cosponsor links.`);
   }
   if (shouldFetchHouseVotes) {
-    console.log(`Upserted ${houseVoteResult.createdOrUpdated} House vote records.`);
-    if (shouldSyncHouseMemberVotes) {
+    console.log(`Upserted ${voteResult.createdOrUpdated} ${completeVoteCatalog ? "House and Senate" : "House"} vote records.`);
+    if (shouldSyncHouseMemberVotes || completeVoteCatalog) {
       console.log(`Upserted ${houseVoteMemberResult.createdOrUpdated} House vote member records.`);
-      console.log(`Upserted ${houseMemberVoteResult.createdOrUpdated} House member vote positions.`);
+      console.log(`Upserted ${memberVoteResult.createdOrUpdated} member vote positions.`);
     }
   }
   console.log(`Upserted ${sourceLinkResult.createdOrUpdated} official source links.`);
@@ -595,13 +898,13 @@ async function main() {
   if (cosponsorResult.skipped) {
     console.log(`Skipped ${cosponsorResult.skipped} bill cosponsor links because the bill or member was not synced yet.`);
   }
-  if (houseVoteResult.skipped) {
-    console.log(`Skipped ${houseVoteResult.skipped} House votes because the vote date was missing or invalid.`);
+  if (voteResult.skipped) {
+    console.log(`Skipped ${voteResult.skipped} votes because the session or vote date was missing or invalid.`);
   }
-  if (houseMemberVoteResult.skipped) {
-    console.log(`Skipped ${houseMemberVoteResult.skipped} House member vote positions because the vote or member was not synced yet.`);
+  if (memberVoteResult.skipped) {
+    console.log(`Skipped ${memberVoteResult.skipped} member vote positions because the vote or member was not synced yet.`);
   }
-  console.log("Congress.gov upsert complete. Senate vote ingestion remains a future blended-source step.");
+  console.log("Congress.gov and official chamber-source upsert complete.");
 }
 
 main().catch((error) => {

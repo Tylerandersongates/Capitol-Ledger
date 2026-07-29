@@ -550,16 +550,17 @@ export type NormalizedCongressVote = {
   question: string;
   result?: string;
   rollCall: string;
-  session?: string;
+  session: string;
   sourceUrl?: string;
   voteDate: string;
 };
 
 export type NormalizedCongressMemberVote = {
-  member: Member;
+  member?: Member;
   memberBioguideId: string;
   position: VotePosition;
-  vote: Pick<NormalizedCongressVote, "chamber" | "congress" | "rollCall">;
+  positionLabel?: string;
+  vote: Pick<NormalizedCongressVote, "chamber" | "congress" | "rollCall" | "session">;
 };
 
 export function normalizeCongressBillCosponsor(raw: CongressBillCosponsorItem, bill: Bill): NormalizedCongressCosponsor | null {
@@ -601,10 +602,10 @@ export function normalizeCongressHouseVote(raw: CongressHouseVoteItem, fallbackC
   const congress = Number(raw.congress ?? fallbackCongress);
   const rollCall = normalizeStringNumber(raw.rollCallNumber);
   const session = normalizeStringNumber(raw.sessionNumber ?? fallbackSession);
-  const question = raw.voteQuestion ?? raw.question;
+  const question = raw.voteQuestion ?? raw.question ?? raw.voteType ?? (rollCall ? `House roll call ${rollCall}` : undefined);
   const voteDate = normalizeDate(raw.startDate ?? raw.voteDate ?? raw.updateDate);
 
-  if (!Number.isInteger(congress) || !rollCall || !question || !voteDate) return null;
+  if (!Number.isInteger(congress) || !rollCall || !session || !question || !voteDate) return null;
 
   const billType = normalizeBillType(raw.legislationType);
   const billNumber = normalizeStringNumber(raw.legislationNumber);

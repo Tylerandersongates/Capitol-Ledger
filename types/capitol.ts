@@ -1,6 +1,6 @@
 export type Chamber = "House" | "Senate";
 export type Party = "Democrat" | "Republican" | "Independent";
-export type VotePosition = "Yes" | "No" | "Present" | "Not Voting";
+export type VotePosition = "Yes" | "No" | "Present" | "Not Voting" | "Other";
 export type FollowTargetType = "member" | "bill";
 export type SourceLinkTargetType = "member" | "bill" | "vote" | "committee";
 export type BillingCycle = "monthly" | "annual";
@@ -224,10 +224,12 @@ export type Vote = {
   question: string;
   result: string;
   voteDate: string;
+  session?: string;
   yesCount?: number;
   noCount?: number;
   presentCount?: number;
   notVotingCount?: number;
+  otherCount?: number;
   billId?: string;
   memberBioguideIds?: string[];
   explanation: string;
@@ -238,6 +240,7 @@ export type MemberVote = {
   voteId: string;
   memberBioguideId: string;
   position: VotePosition;
+  positionLabel?: string;
 };
 
 export type UpdateEvent = {

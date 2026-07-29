@@ -24,6 +24,7 @@ enum VotePosition {
   NO
   PRESENT
   NOT_VOTING
+  OTHER
 }
 
 enum FollowTargetType {
@@ -168,7 +169,7 @@ model Vote {
   congress    Int
   chamber     Chamber
   rollCall    String
-  session     String?
+  session     String
   question    String
   result      String?
   voteDate    DateTime
@@ -180,7 +181,7 @@ model Vote {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  @@unique([congress, chamber, rollCall])
+  @@unique([congress, chamber, session, rollCall])
   @@index([billId])
 }
 
@@ -189,6 +190,7 @@ model MemberVote {
   voteId          String
   memberBioguideId String
   position        VotePosition
+  positionLabel   String?
   vote            Vote         @relation(fields: [voteId], references: [id], onDelete: Cascade)
   member          Member       @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
 

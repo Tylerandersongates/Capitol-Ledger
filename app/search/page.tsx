@@ -22,7 +22,7 @@ import {
   Settings,
   Vote
 } from "lucide-react";
-import { billSearchPageSize, getBillSponsor, searchRecordsWithLiveData } from "@/lib/data";
+import { billSearchPageSize, getBillSponsor, searchRecordsWithLiveData, voteSearchPageSize } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { memberResultMeta } from "@/lib/member-display";
 import { officialStateOptions } from "@/lib/official-states";
@@ -125,7 +125,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = firstSearchParamValue(searchParams.q) ?? "";
   const chamber = firstSearchParamValue(searchParams.chamber);
   const focus = firstSearchParamValue(searchParams.focus);
-  const billPage = positivePage(searchParams.page);
+  const page = positivePage(searchParams.page);
+  const billPage = activeType === "votes" ? 1 : page;
+  const votePage = activeType === "votes" ? page : 1;
   const party = firstSearchParamValue(searchParams.party);
   const status = firstSearchParamValue(searchParams.status);
   const stateValues = normalizeStateParamValues(searchParams.state);
@@ -147,13 +149,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       q: query || undefined,
       state: stateValues.length ? stateValues : undefined,
       status,
-      type: activeType
+      type: activeType,
+      votePage
     }),
     getCurrentEffectiveAccountSubscription()
   ]);
   const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
   if ((activeType === "all" || activeType === "bills") && billPage > totalBillPages) {
     redirect(searchHref(searchParams, { page: totalBillPages > 1 ? String(totalBillPages) : undefined }));
+  }
+  const totalVotePages = Math.max(1, Math.ceil(resultCounts.votes / voteSearchPageSize));
+  if (activeType === "votes" && votePage > totalVotePages) {
+    redirect(searchHref(searchParams, { page: totalVotePages > 1 ? String(totalVotePages) : undefined }));
   }
   const resultCount = resultCounts.members + resultCounts.bills + resultCounts.votes;
   const hasSmartFilters = Boolean(chamber || party || stateValues.length);
@@ -187,6 +194,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <SearchResultBlocks
                   activeType={activeType}
                   billPage={billPage}
+                  votePage={votePage}
                   resultCounts={resultCounts}
                   results={results}
                   searchParams={searchParams}
@@ -309,6 +317,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <SearchResultBlocks
                   activeType={activeType}
                   billPage={billPage}
+                  votePage={votePage}
                   resultCounts={resultCounts}
                   results={results}
                   searchParams={searchParams}
@@ -341,17 +350,20 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
 function SearchResultBlocks({
   activeType,
   billPage,
+  votePage,
   resultCounts,
   results,
   searchParams
 }: {
   activeType: string;
   billPage: number;
+  votePage: number;
   resultCounts: SearchResultCounts;
   results: SearchResultsData;
   searchParams: SearchPageProps["searchParams"];
 }) {
   const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
+  const totalVotePages = Math.max(1, Math.ceil(resultCounts.votes / voteSearchPageSize));
   const sectionOrder: Array<"members" | "bills" | "votes"> =
     activeType === "members" || activeType === "bills" || activeType === "votes"
       ? [activeType, ...(["members", "bills", "votes"] as const).filter((kind) => kind !== activeType)]
@@ -458,34 +470,76 @@ function SearchResultBlocks({
         }
 
         return (
-          <ResultSection
-            key="votes"
-            title="Votes"
-            totalCount={resultCounts.votes}
-            visibleCount={results.votes.length}
-          >
-            {results.votes.length ? (
-              results.votes.map((vote) => (
-                <Link key={vote.id} href={`/votes/${vote.id}`} className={`flex items-start gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
-                    <Vote className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-medium text-white">{vote.question}</div>
-                    <div className="mt-2 text-[13px] text-white/52">
-                      {vote.chamber} roll call {vote.rollCall} · {formatDate(vote.voteDate)}
+          <Fragment key="votes">
+            <ResultSection
+              title="Votes"
+              totalCount={resultCounts.votes}
+              visibleCount={results.votes.length}
+            >
+              {results.votes.length ? (
+                results.votes.map((vote) => (
+                  <Link key={vote.id} href={`/votes/${vote.id}`} className={`flex items-start gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]">
+                      <Vote className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[15px] font-medium text-white">{vote.question}</div>
+                      <div className="mt-2 text-[13px] text-white/52">
+                        {vote.chamber} roll call {vote.rollCall} · {formatDate(vote.voteDate)}
+                      </div>
+                      <div className="mt-2 text-[13px] font-semibold text-[#43ed74]">{vote.result}</div>
                     </div>
-                    <div className="mt-2 text-[13px] font-semibold text-[#43ed74]">{vote.result}</div>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <EmptyState label="No votes match this search. Try a broader keyword or clear one filter." />
-            )}
-          </ResultSection>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState label="No votes match this search. Try a broader keyword or clear one filter." />
+              )}
+            </ResultSection>
+            {activeType === "votes" && resultCounts.votes > voteSearchPageSize ? (
+              <SearchPagination currentPage={votePage} totalPages={totalVotePages} searchParams={searchParams} />
+            ) : null}
+          </Fragment>
         );
       })}
     </>
+  );
+}
+
+function SearchPagination({
+  currentPage,
+  searchParams,
+  totalPages
+}: {
+  currentPage: number;
+  searchParams: SearchPageProps["searchParams"];
+  totalPages: number;
+}) {
+  return (
+    <MobileCard variant="rust" className="flex items-center justify-between gap-3 px-5 py-4">
+      {currentPage > 1 ? (
+        <Link
+          href={searchHref(searchParams, { page: currentPage > 2 ? String(currentPage - 1) : undefined })}
+          className="rounded-full border border-white/12 bg-white/[0.045] px-4 py-2 text-[12px] font-semibold text-white/72"
+        >
+          Previous
+        </Link>
+      ) : (
+        <span className="px-4 py-2 text-[12px] font-semibold text-white/26">Previous</span>
+      )}
+      <span className="text-[12px] font-medium text-white/52">
+        Page {formatSearchCount(currentPage)} of {formatSearchCount(totalPages)}
+      </span>
+      {currentPage < totalPages ? (
+        <Link
+          href={searchHref(searchParams, { page: String(currentPage + 1) })}
+          className="rounded-full border border-[#ffb12b]/28 bg-[#ffb12b]/10 px-4 py-2 text-[12px] font-semibold text-[#ffb12b]"
+        >
+          Next
+        </Link>
+      ) : (
+        <span className="px-4 py-2 text-[12px] font-semibold text-white/26">Next</span>
+      )}
+    </MobileCard>
   );
 }
 

@@ -34,6 +34,7 @@ const voteFilters: Array<{ label: string; value: VoteFilter }> = [
   { label: "Yes", value: "Yes" },
   { label: "No", value: "No" },
   { label: "Present", value: "Present" },
+  { label: "Other", value: "Other" },
   { label: "Not Voting", value: "Not Voting" }
 ];
 
@@ -207,7 +208,8 @@ function positionWeight(position: VotePosition) {
   if (position === "Yes") return 0;
   if (position === "No") return 1;
   if (position === "Present") return 2;
-  return 3;
+  if (position === "Other") return 3;
+  return 4;
 }
 
 function countPositions(positions: VoteMemberPositionRecord[], filter: VoteFilter) {
@@ -239,12 +241,12 @@ function MemberVoteRow({ pinned, record }: { pinned?: boolean; record: VoteMembe
           {pinned ? " / Pinned" : ""}
         </span>
       </span>
-      <PositionPill position={record.position} />
+      <PositionPill position={record.position} positionLabel={record.positionLabel} />
     </Link>
   );
 }
 
-function PositionPill({ position }: { position: VotePosition }) {
+function PositionPill({ position, positionLabel }: { position: VotePosition; positionLabel?: string }) {
   const classes =
     position === "Yes"
       ? "border-[#43ed74]/22 bg-[#43ed74]/10 text-[#43ed74]"
@@ -254,5 +256,5 @@ function PositionPill({ position }: { position: VotePosition }) {
           ? "border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b]"
           : "border-white/10 bg-white/[0.045] text-white/60";
 
-  return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${classes}`}>{position}</span>;
+  return <span className={`max-w-28 truncate rounded-full border px-2.5 py-1 text-[11px] font-semibold ${classes}`}>{positionLabel ?? position}</span>;
 }

@@ -119,10 +119,10 @@ function checkSchema() {
     fail("Bill upsert key is available", "Bill model needs a stable unique key before live sync.");
   }
 
-  if (schema.includes("@@unique([congress, chamber, rollCall])")) {
-    pass("Vote upsert key is available", "congress + chamber + rollCall");
+  if (schema.includes("@@unique([congress, chamber, session, rollCall])")) {
+    pass("Vote upsert key is available", "congress + chamber + session + rollCall");
   } else {
-    warn("Vote upsert key is available", "Vote sync will need a stable unique key.");
+    fail("Vote upsert key is available", "Vote model needs a session-aware unique key before full live sync.");
   }
 
   if (schema.includes("model OfficialSourceLink") && schema.includes("@@index([targetType, targetId])")) {
@@ -209,6 +209,25 @@ async function main() {
   readIntegerEnv("CONGRESS_SYNC_HOUSE_VOTE_LIMIT", 5, { min: 1, max: 100 });
   checkBooleanEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTES", true);
   readIntegerEnv("CONGRESS_SYNC_HOUSE_MEMBER_VOTE_LIMIT", 500, { min: 1, max: 500 });
+  const fullVoteCatalog = process.env.CONGRESS_SYNC_FULL_VOTE_CATALOG ?? "false";
+  checkBooleanEnv("CONGRESS_SYNC_FULL_VOTE_CATALOG", false);
+  const voteSessions = process.env.CONGRESS_SYNC_VOTE_SESSIONS ?? "1,2";
+  if (/^(1|2)(,(1|2))*$/.test(voteSessions) && new Set(voteSessions.split(",")).size === voteSessions.split(",").length) {
+    pass("CONGRESS_SYNC_VOTE_SESSIONS is valid", voteSessions);
+  } else {
+    fail("CONGRESS_SYNC_VOTE_SESSIONS is valid", "Use 1, 2, or 1,2 without duplicate sessions.");
+  }
+  const voteMinimumCount = readIntegerEnv("CONGRESS_SYNC_VOTE_MIN_COUNT", 1_000, { min: 1, max: 5_000 });
+  const votePageLimit = readIntegerEnv("CONGRESS_SYNC_VOTE_PAGE_LIMIT", 250, { min: 1, max: 250 });
+  const voteMaxPages = readIntegerEnv("CONGRESS_SYNC_VOTE_MAX_PAGES", 10, { min: 1, max: 25 });
+  readIntegerEnv("CONGRESS_SYNC_VOTE_CONCURRENCY", 6, { min: 1, max: 20 });
+  readIntegerEnv("CONGRESS_SYNC_VOTE_TIMEOUT_MS", 20_000, { min: 1_000, max: 60_000 });
+  readIntegerEnv("CONGRESS_SYNC_VOTE_POSITION_BATCH_SIZE", 2_000, { min: 1, max: 5_000 });
+  if (fullVoteCatalog === "true" && voteMaxPages * votePageLimit < voteMinimumCount) {
+    fail("Full vote catalog page capacity", "Configured House page limits cannot reach the minimum catalog count.");
+  } else {
+    pass("Full vote catalog page capacity", fullVoteCatalog === "true" ? "pagination capacity is sufficient" : "full catalog disabled");
+  }
 
   checkApiKey();
   checkDatabase();

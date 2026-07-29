@@ -19,7 +19,7 @@ import {
   Settings,
   UsersRound
 } from "lucide-react";
-import { getBill, getVote, getVoteMemberPositions, getVoteTotals } from "@/lib/data";
+import { getVoteDetailWithLiveData, getVoteTotals } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 
 type VotePageProps = {
@@ -28,13 +28,12 @@ type VotePageProps = {
   };
 };
 
-export default function VoteDetailPage({ params }: VotePageProps) {
-  const vote = getVote(params.voteId);
-  if (!vote) notFound();
+export default async function VoteDetailPage({ params }: VotePageProps) {
+  const detail = await getVoteDetailWithLiveData(params.voteId);
+  if (!detail) notFound();
 
-  const bill = vote.billId ? getBill(vote.billId) : undefined;
+  const { bill, memberPositions, vote } = detail;
   const totals = getVoteTotals(vote);
-  const memberPositions = getVoteMemberPositions(vote.id);
   const displayRollCall = `${vote.chamber} Roll Call ${vote.rollCall}`;
 
   return (
@@ -75,10 +74,16 @@ export default function VoteDetailPage({ params }: VotePageProps) {
               <p className="mt-2 text-[18px] text-white/52">{displayRollCall}</p>
             </div>
             <span className="shrink-0 rounded-full bg-white/8 px-3 py-2 text-[16px] font-medium leading-none text-white/60">
-              {totals.yes + totals.no + totals.present + totals.notVoting}
+              {totals.yes + totals.no + totals.present + totals.notVoting + totals.other}
             </span>
           </div>
-          <VoteSpreadPanel className="mt-5" totals={totals} />
+          {totals.yes + totals.no + totals.notVoting > 0 ? (
+            <VoteSpreadPanel className="mt-5" totals={totals} />
+          ) : (
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-4 text-[14px] leading-snug text-white/58">
+              This roll call used named or non-binary choices. The official member selections are listed below.
+            </div>
+          )}
         </MobileCard>
 
         <MobileCard variant="dashboard" className="px-5 py-5">

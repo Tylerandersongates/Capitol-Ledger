@@ -19,6 +19,7 @@ import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Par
 
 export type SearchFilters = {
   billPage?: number;
+  votePage?: number;
   q?: string;
   status?: string;
   chamber?: string;
@@ -39,18 +40,21 @@ export type SearchRecordsResult = ReturnType<typeof searchRecords>;
 type DatabaseSearchRecordsResult = SearchRecordsResult & {
   billResultCount?: number;
   completeMemberRoster: boolean;
+  voteResultCount?: number;
 };
 
 export type VoteMemberPositionRecord = {
   member?: Member;
   memberBioguideId: string;
   position: VotePosition;
+  positionLabel?: string;
   voteId: string;
 };
 
 export type MemberVoteRecord = {
   memberBioguideId: string;
   position: VotePosition;
+  positionLabel?: string;
   vote?: Vote;
   voteId: string;
 };
@@ -73,6 +77,12 @@ export type MemberDetailData = {
   member: Member;
   memberVotes: MemberVoteRecord[];
   sponsoredBills: Bill[];
+};
+
+export type VoteDetailData = {
+  bill?: Bill;
+  memberPositions: VoteMemberPositionRecord[];
+  vote: Vote;
 };
 
 export type MemberCaucusMembership = {
@@ -396,6 +406,7 @@ const dbPartyMap = {
 const dbVotePositionMap = {
   NO: "No",
   NOT_VOTING: "Not Voting",
+  OTHER: "Other",
   PRESENT: "Present",
   YES: "Yes"
 } as const;
@@ -768,9 +779,10 @@ function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVot
       if (position === "No") counts.no += 1;
       if (position === "Present") counts.present += 1;
       if (position === "Not Voting") counts.notVoting += 1;
+      if (position === "Other") counts.other += 1;
       return counts;
     },
-    { no: 0, notVoting: 0, present: 0, yes: 0 }
+    { no: 0, notVoting: 0, other: 0, present: 0, yes: 0 }
   );
 
   return {
@@ -782,10 +794,12 @@ function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVot
     memberBioguideIds: uniqueStrings((vote.memberVotes ?? []).map((memberVote) => memberVote.memberBioguideId)),
     noCount: positionCounts.no,
     notVotingCount: positionCounts.notVoting,
+    otherCount: positionCounts.other,
     presentCount: positionCounts.present,
     question: vote.question,
     result: vote.result ?? "Recorded",
     rollCall: vote.rollCall,
+    session: vote.session,
     sourceUrl: vote.sourceUrl ?? "https://api.congress.gov/",
     voteDate: normalizeDateString(vote.voteDate),
     yesCount: positionCounts.yes
@@ -989,6 +1003,62 @@ export function getVote(id: string) {
   return votes.find((vote) => vote.id === id);
 }
 
+function getDemoVoteDetailData(voteId: string): VoteDetailData | null {
+  const vote = getVote(voteId);
+  if (!vote) return null;
+
+  return {
+    bill: vote.billId ? getBill(vote.billId) : undefined,
+    memberPositions: getVoteMemberPositions(vote.id) as VoteMemberPositionRecord[],
+    vote
+  };
+}
+
+async function getDatabaseVoteDetailData(voteId: string): Promise<VoteDetailData | null> {
+  if (!hasDatabaseUrl()) return null;
+
+  try {
+    const prisma = getPrisma();
+    const voteRow = await prisma.vote.findUnique({
+      include: {
+        bill: true,
+        memberVotes: {
+          include: {
+            member: true
+          },
+          orderBy: [{ position: "asc" }, { memberBioguideId: "asc" }]
+        }
+      },
+      where: {
+        id: voteId
+      }
+    });
+
+    if (!voteRow) return null;
+
+    return {
+      bill: voteRow.bill ? mapDatabaseBill(voteRow.bill) : undefined,
+      memberPositions: voteRow.memberVotes.map((memberVote) => ({
+        member: mapDatabaseMember(memberVote.member),
+        memberBioguideId: memberVote.memberBioguideId,
+        position: dbVotePositionMap[memberVote.position],
+        positionLabel: memberVote.positionLabel ?? undefined,
+        voteId: voteRow.id
+      })),
+      vote: mapDatabaseVote(voteRow)
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getVoteDetailWithLiveData(voteId: string): Promise<VoteDetailData | null> {
+  const demoDetail = getDemoVoteDetailData(voteId);
+  if (voteId.startsWith("demo-") && demoDetail) return demoDetail;
+
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseVoteDetailData(voteId))) ?? demoDetail;
+}
+
 export function getBillSponsor(bill: Bill) {
   if (!bill.sponsorBioguideId) return undefined;
   return getMember(bill.sponsorBioguideId);
@@ -1131,6 +1201,7 @@ async function getDatabaseMemberDetailData(bioguideId: string): Promise<MemberDe
         memberRow.memberVotes.map((memberVote) => ({
           memberBioguideId: memberVote.memberBioguideId,
           position: dbVotePositionMap[memberVote.position],
+          positionLabel: memberVote.positionLabel ?? undefined,
           vote: mapDatabaseVote(memberVote.vote),
           voteId: memberVote.voteId
         })),
@@ -1772,6 +1843,7 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
             member: mapDatabaseMember(memberVote.member),
             memberBioguideId: memberVote.memberBioguideId,
             position: dbVotePositionMap[memberVote.position],
+            positionLabel: memberVote.positionLabel ?? undefined,
             voteId: vote.id
           }))
         ])
@@ -1896,7 +1968,8 @@ export function getVoteTotals(vote?: Vote) {
       yes: 0,
       no: 0,
       present: 0,
-      notVoting: 0
+      notVoting: 0,
+      other: 0
     };
   }
 
@@ -1906,7 +1979,8 @@ export function getVoteTotals(vote?: Vote) {
     yes: vote.yesCount ?? recordedVotes.filter((record) => record.position === "Yes").length,
     no: vote.noCount ?? recordedVotes.filter((record) => record.position === "No").length,
     present: vote.presentCount ?? recordedVotes.filter((record) => record.position === "Present").length,
-    notVoting: vote.notVotingCount ?? recordedVotes.filter((record) => record.position === "Not Voting").length
+    notVoting: vote.notVotingCount ?? recordedVotes.filter((record) => record.position === "Not Voting").length,
+    other: vote.otherCount ?? recordedVotes.filter((record) => record.position === "Other").length
   };
 }
 
@@ -2078,6 +2152,7 @@ function normalizeSearchStateFilters(value?: string | string[]) {
 
 const maximumMemberSearchResults = 600;
 export const billSearchPageSize = 50;
+export const voteSearchPageSize = 50;
 
 export function searchRecords(filters: SearchFilters) {
   const q = filters.q?.trim() ?? "";
@@ -2140,7 +2215,9 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
     const states = normalizeSearchStateFilters(filters.state);
     const type = filters.type ?? "all";
     const billPage = Number.isInteger(filters.billPage) && Number(filters.billPage) > 0 ? Number(filters.billPage) : 1;
+    const votePage = Number.isInteger(filters.votePage) && Number(filters.votePage) > 0 ? Number(filters.votePage) : 1;
     const shouldSearchBills = type === "all" || type === "bills";
+    const shouldSearchVotes = type === "all" || type === "votes";
     const billWhere: Prisma.BillWhereInput = {
       AND: [
         q
@@ -2151,9 +2228,23 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
         databaseBillStatusWhere(statusFilter)
       ]
     };
+    const voteWhere: Prisma.VoteWhereInput = {
+      AND: [
+        q
+          ? {
+              OR: [
+                { question: { contains: q, mode: "insensitive" } },
+                { result: { contains: q, mode: "insensitive" } },
+                { rollCall: { contains: q, mode: "insensitive" } }
+              ]
+            }
+          : {},
+        chamber ? { chamber } : {}
+      ]
+    };
 
     const shouldSearchMembers = type === "all" || type === "members";
-    const [memberRows, billRows, voteRows, memberChamberCounts, billResultCount] = await Promise.all([
+    const [memberRows, billRows, voteRows, memberChamberCounts, billResultCount, voteResultCount] = await Promise.all([
       shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
@@ -2185,7 +2276,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
             where: billWhere
           })
         : Promise.resolve([]),
-      type === "all" || type === "votes"
+      shouldSearchVotes
         ? prisma.vote.findMany({
             include: {
               memberVotes: {
@@ -2195,24 +2286,10 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
                 }
               }
             },
-            orderBy: {
-              voteDate: "desc"
-            },
-            take: 30,
-            where: {
-              AND: [
-                q
-                  ? {
-                      OR: [
-                        { question: { contains: q, mode: "insensitive" } },
-                        { result: { contains: q, mode: "insensitive" } },
-                        { rollCall: { contains: q, mode: "insensitive" } }
-                      ]
-                    }
-                  : {},
-                chamber ? { chamber } : {}
-              ]
-            }
+            orderBy: [{ voteDate: "desc" }, { chamber: "asc" }, { rollCall: "desc" }],
+            skip: (votePage - 1) * voteSearchPageSize,
+            take: voteSearchPageSize,
+            where: voteWhere
           })
         : Promise.resolve([]),
       shouldSearchMembers
@@ -2226,7 +2303,8 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
             }
           })
         : Promise.resolve([]),
-      shouldSearchBills ? prisma.bill.count({ where: billWhere }) : Promise.resolve(undefined)
+      shouldSearchBills ? prisma.bill.count({ where: billWhere }) : Promise.resolve(undefined),
+      shouldSearchVotes ? prisma.vote.count({ where: voteWhere }) : Promise.resolve(undefined)
     ]);
 
     const mappedBills = billRows.map(mapDatabaseBill);
@@ -2242,6 +2320,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
         senateCount
       }),
       members: memberRows.map(mapDatabaseMember),
+      voteResultCount,
       votes: voteRows.map(mapDatabaseVote)
     };
   } catch {
@@ -2273,7 +2352,10 @@ export async function searchRecordsWithLiveData(filters: SearchFilters) {
     members: liveResults.completeMemberRoster
       ? liveResults.members
       : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
-    votes: mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
+    votes:
+      liveResults.voteResultCount !== undefined
+        ? liveResults.votes
+        : mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
   };
 
   return {
@@ -2281,7 +2363,7 @@ export async function searchRecordsWithLiveData(filters: SearchFilters) {
     resultCounts: {
       bills: liveResults.billResultCount ?? mergedResults.bills.length,
       members: mergedResults.members.length,
-      votes: mergedResults.votes.length
+      votes: liveResults.voteResultCount ?? mergedResults.votes.length
     },
     results: mergedResults
   };

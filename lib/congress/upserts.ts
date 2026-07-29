@@ -21,6 +21,10 @@ type CongressBillUpsertOptions = {
   preserveExistingEnrichment?: boolean;
 };
 
+type CongressVoteUpsertOptions = {
+  batchSize?: number;
+};
+
 const chamberMap = {
   House: Chamber.HOUSE,
   Senate: Chamber.SENATE
@@ -35,6 +39,7 @@ const partyMap = {
 const votePositionMap = {
   "Not Voting": PrismaVotePosition.NOT_VOTING,
   No: PrismaVotePosition.NO,
+  Other: PrismaVotePosition.OTHER,
   Present: PrismaVotePosition.PRESENT,
   Yes: PrismaVotePosition.YES
 } as const;
@@ -277,7 +282,15 @@ export async function upsertCongressCosponsors(
   };
 }
 
-export async function upsertCongressVotes(prisma: PrismaClient, votes: NormalizedCongressVote[]): Promise<UpsertResult> {
+export async function upsertCongressVotes(
+  prisma: PrismaClient,
+  votes: NormalizedCongressVote[],
+  { batchSize = 250 }: CongressVoteUpsertOptions = {}
+): Promise<UpsertResult> {
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1_000) {
+    throw new Error("Vote database batch size must be an integer from 1 to 1000.");
+  }
+
   const billIdsByKey = await existingBillsByKey(
     prisma,
     votes.map((vote) => vote.bill).filter((bill): bill is Pick<Bill, "billNumber" | "billType" | "congress"> => Boolean(bill))
@@ -285,45 +298,88 @@ export async function upsertCongressVotes(prisma: PrismaClient, votes: Normalize
   let createdOrUpdated = 0;
   let skipped = 0;
 
-  for (const vote of votes) {
-    const billId = vote.bill ? billIdsByKey.get(billKey(vote.bill)) ?? null : null;
-    const voteDate = dateOrNull(vote.voteDate);
+  for (let offset = 0; offset < votes.length; offset += batchSize) {
+    const records = votes.slice(offset, offset + batchSize).flatMap((vote) => {
+      const voteDate = dateOrNull(vote.voteDate);
+      if (!voteDate || !vote.session) {
+        skipped += 1;
+        return [];
+      }
 
-    if (!voteDate) {
-      skipped += 1;
-      continue;
-    }
-
-    await prisma.vote.upsert({
-      where: {
-        congress_chamber_rollCall: {
+      return [
+        {
+          billId: vote.bill ? billIdsByKey.get(billKey(vote.bill)) ?? null : null,
           chamber: chamberMap[vote.chamber],
           congress: vote.congress,
-          rollCall: vote.rollCall
+          id: `vote-${vote.congress}-${vote.chamber.toLowerCase()}-${vote.session}-${vote.rollCall}`,
+          question: vote.question,
+          rawJson: vote,
+          result: vote.result ?? null,
+          rollCall: vote.rollCall,
+          session: vote.session,
+          sourceUrl: vote.sourceUrl ?? null,
+          voteDate: voteDate.toISOString()
         }
-      },
-      update: {
-        billId,
-        question: vote.question,
-        result: vote.result,
-        session: vote.session,
-        sourceUrl: vote.sourceUrl,
-        voteDate
-      },
-      create: {
-        billId,
-        chamber: chamberMap[vote.chamber],
-        congress: vote.congress,
-        question: vote.question,
-        result: vote.result,
-        rollCall: vote.rollCall,
-        session: vote.session,
-        sourceUrl: vote.sourceUrl,
-        voteDate
-      }
+      ];
     });
 
-    createdOrUpdated += 1;
+    if (!records.length) continue;
+    const recordsJson = JSON.stringify(records);
+
+    await prisma.$executeRaw`
+      INSERT INTO "Vote" (
+        "id",
+        "congress",
+        "chamber",
+        "rollCall",
+        "session",
+        "question",
+        "result",
+        "voteDate",
+        "sourceUrl",
+        "billId",
+        "rawJson",
+        "createdAt",
+        "updatedAt"
+      )
+      SELECT
+        record."id",
+        record."congress",
+        record."chamber"::"Chamber",
+        record."rollCall",
+        record."session",
+        record."question",
+        record."result",
+        record."voteDate",
+        record."sourceUrl",
+        record."billId",
+        record."rawJson",
+        NOW(),
+        NOW()
+      FROM jsonb_to_recordset(${recordsJson}::jsonb) AS record(
+        "id" TEXT,
+        "congress" INTEGER,
+        "chamber" TEXT,
+        "rollCall" TEXT,
+        "session" TEXT,
+        "question" TEXT,
+        "result" TEXT,
+        "voteDate" TIMESTAMP,
+        "sourceUrl" TEXT,
+        "billId" TEXT,
+        "rawJson" JSONB
+      )
+      ON CONFLICT ("congress", "chamber", "session", "rollCall") DO UPDATE SET
+        "question" = EXCLUDED."question",
+        "result" = EXCLUDED."result",
+        "voteDate" = EXCLUDED."voteDate",
+        "sourceUrl" = EXCLUDED."sourceUrl",
+        "billId" = COALESCE(EXCLUDED."billId", "Vote"."billId"),
+        "rawJson" = EXCLUDED."rawJson",
+        "updatedAt" = NOW()
+    `;
+
+    createdOrUpdated += records.length;
   }
 
   return {
@@ -334,8 +390,12 @@ export async function upsertCongressVotes(prisma: PrismaClient, votes: Normalize
 
 export async function upsertCongressMemberVotes(
   prisma: PrismaClient,
-  memberVotes: NormalizedCongressMemberVote[]
+  memberVotes: NormalizedCongressMemberVote[],
+  { batchSize = 2_000 }: CongressVoteUpsertOptions = {}
 ): Promise<UpsertResult> {
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 5_000) {
+    throw new Error("Member vote database batch size must be an integer from 1 to 5000.");
+  }
   if (!memberVotes.length) {
     return {
       createdOrUpdated: 0,
@@ -348,52 +408,91 @@ export async function upsertCongressMemberVotes(
     memberVotes.map((memberVote) => memberVote.memberBioguideId)
   );
   const uniqueVotes = Array.from(
-    new Map(memberVotes.map((memberVote) => [`${memberVote.vote.congress}:${memberVote.vote.chamber}:${memberVote.vote.rollCall}`, memberVote.vote])).values()
+    new Map(
+      memberVotes.map((memberVote) => [
+        `${memberVote.vote.congress}:${memberVote.vote.chamber}:${memberVote.vote.session}:${memberVote.vote.rollCall}`,
+        memberVote.vote
+      ])
+    ).values()
+  );
+  const votePartitions = Array.from(
+    new Map(
+      uniqueVotes.map((vote) => [
+        `${vote.congress}:${vote.chamber}:${vote.session}`,
+        {
+          chamber: chamberMap[vote.chamber],
+          congress: vote.congress,
+          session: vote.session
+        }
+      ])
+    ).values()
   );
   const voteRows = await prisma.vote.findMany({
     select: {
       chamber: true,
       congress: true,
       id: true,
-      rollCall: true
+      rollCall: true,
+      session: true
     },
     where: {
-      OR: uniqueVotes.map((vote) => ({
-        chamber: chamberMap[vote.chamber],
-        congress: vote.congress,
-        rollCall: vote.rollCall
-      }))
+      OR: votePartitions
     }
   });
-  const voteIdsByKey = new Map(voteRows.map((vote) => [`${vote.congress}:${vote.chamber}:${vote.rollCall}`, vote.id]));
+  const voteIdsByKey = new Map(voteRows.map((vote) => [`${vote.congress}:${vote.chamber}:${vote.session}:${vote.rollCall}`, vote.id]));
   let createdOrUpdated = 0;
   let skipped = 0;
 
-  for (const memberVote of memberVotes) {
-    const voteId = voteIdsByKey.get(`${memberVote.vote.congress}:${chamberMap[memberVote.vote.chamber]}:${memberVote.vote.rollCall}`);
+  const records = memberVotes.flatMap((memberVote) => {
+    const voteId = voteIdsByKey.get(
+      `${memberVote.vote.congress}:${chamberMap[memberVote.vote.chamber]}:${memberVote.vote.session}:${memberVote.vote.rollCall}`
+    );
     if (!voteId || !validMemberIds.has(memberVote.memberBioguideId)) {
       skipped += 1;
-      continue;
+      return [];
     }
 
-    await prisma.memberVote.upsert({
-      where: {
-        voteId_memberBioguideId: {
-          memberBioguideId: memberVote.memberBioguideId,
-          voteId
-        }
-      },
-      update: {
-        position: votePositionMap[memberVote.position]
-      },
-      create: {
+    return [
+      {
+        id: `member-vote-${voteId}-${memberVote.memberBioguideId}`,
         memberBioguideId: memberVote.memberBioguideId,
         position: votePositionMap[memberVote.position],
+        positionLabel: memberVote.positionLabel ?? null,
         voteId
       }
-    });
+    ];
+  });
 
-    createdOrUpdated += 1;
+  for (let offset = 0; offset < records.length; offset += batchSize) {
+    const recordsJson = JSON.stringify(records.slice(offset, offset + batchSize));
+
+    await prisma.$executeRaw`
+      INSERT INTO "MemberVote" (
+        "id",
+        "voteId",
+        "memberBioguideId",
+        "position",
+        "positionLabel"
+      )
+      SELECT
+        record."id",
+        record."voteId",
+        record."memberBioguideId",
+        record."position"::"VotePosition",
+        record."positionLabel"
+      FROM jsonb_to_recordset(${recordsJson}::jsonb) AS record(
+        "id" TEXT,
+        "voteId" TEXT,
+        "memberBioguideId" TEXT,
+        "position" TEXT,
+        "positionLabel" TEXT
+      )
+      ON CONFLICT ("voteId", "memberBioguideId") DO UPDATE SET
+        "position" = EXCLUDED."position",
+        "positionLabel" = EXCLUDED."positionLabel"
+    `;
+
+    createdOrUpdated += Math.min(batchSize, records.length - offset);
   }
 
   return {

@@ -18,6 +18,7 @@ type SavedOfficialPosition = {
   member?: Member;
   memberBioguideId: string;
   position: VotePosition;
+  positionLabel?: string;
   voteId: string;
 };
 
@@ -92,7 +93,7 @@ export function VoteSavedOfficialPositions({ memberPositions }: VoteSavedOfficia
                   <span className="block truncate text-[16px] font-semibold text-white">{record.member.fullName}</span>
                   <span className="mt-1 block text-[13px] text-white/52">{record.member.state} · {record.member.party}</span>
                 </span>
-                <PositionPill position={record.position} />
+                <PositionPill position={record.position} positionLabel={record.positionLabel} />
               </Link>
             );
           })}
@@ -119,7 +120,7 @@ function readSavedMemberIds() {
   return ids;
 }
 
-function PositionPill({ position }: { position: VotePosition }) {
+function PositionPill({ position, positionLabel }: { position: VotePosition; positionLabel?: string }) {
   const classes =
     position === "Yes"
       ? "bg-[#43ed74]/12 text-[#43ed74]"
@@ -132,7 +133,7 @@ function PositionPill({ position }: { position: VotePosition }) {
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium leading-none ${classes}`}>
       {position === "Yes" ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> : <Vote className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />}
-      {position}
+      {positionLabel ?? position}
     </span>
   );
 }

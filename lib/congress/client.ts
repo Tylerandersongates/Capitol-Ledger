@@ -285,6 +285,7 @@ export type CongressHouseVoteItem = {
   startDate?: string;
   voteDate?: string;
   updateDate?: string;
+  voteType?: string;
   legislationNumber?: number | string;
   legislationType?: string;
   legislationUrl?: string;

@@ -194,6 +194,7 @@ function parseSenateVoteDetail(xml: string, sourceUrl: string, member: Member): 
     question,
     result: tagValue(xml, "vote_result") ?? tagValue(xml, "vote_result_text") ?? "Recorded",
     rollCall,
+    session: String(session),
     sourceUrl,
     voteDate,
     yesCount: numericTagValue(xml, "yeas")
@@ -227,6 +228,7 @@ function getSnapshotMemberVotes(member: Member, limit: number): SenateMemberVote
         question: snapshot.question,
         result: snapshot.result,
         rollCall: snapshot.rollCall,
+        session: String(snapshot.session),
         sourceUrl: snapshot.sourceUrl,
         voteDate: snapshot.voteDate,
         yesCount: snapshot.yesCount

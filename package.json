@@ -59,6 +59,7 @@
     "congress-roster:check": "tsx scripts/check-congress-member-roster.ts",
     "congress-roster:audit": "tsx scripts/audit-congress-roster-data-quality.ts",
     "congress-bills:check": "tsx scripts/check-congress-bill-catalog.ts",
+    "congress-votes:check": "tsx scripts/check-congress-vote-catalog.ts",
     "db:seed": "prisma db seed",
     "sync:congress": "tsx scripts/sync-congress.ts"
   },

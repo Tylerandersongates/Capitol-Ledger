@@ -1,10 +1,11 @@
 import { fetchHouseVoteMembers, fetchHouseVotes, type CongressHouseVoteMemberItem } from "@/lib/congress/client";
 import { normalizeCongressHouseMemberVote, normalizeCongressHouseVote, type NormalizedCongressVote } from "@/lib/congress/normalizers";
-import type { Member, Vote } from "@/types/capitol";
+import type { Member, Vote, VotePosition } from "@/types/capitol";
 
 export type HouseMemberVoteRecord = {
   memberBioguideId: string;
-  position: "Yes" | "No" | "Present" | "Not Voting";
+  position: VotePosition;
+  positionLabel?: string;
   vote?: Vote;
   voteId: string;
 };
@@ -46,6 +47,7 @@ function toVote(vote: NormalizedCongressVote, member: Member): Vote {
     question: vote.question,
     result: vote.result ?? "Recorded",
     rollCall: vote.rollCall,
+    session,
     sourceUrl: vote.sourceUrl ?? clerkVoteUrl(vote),
     voteDate: vote.voteDate
   };
