@@ -34,7 +34,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: "9.15.9"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --store-dir .pnpm-store --package-import-method=copy
@@ -48,8 +48,8 @@ jobs:
       - name: Lint
         run: node_modules/.bin/next lint
 
-      - name: Beta readiness
-        run: pnpm run beta:check
+      - name: Feedback readiness
+        run: pnpm run feedback:check
 
       - name: Build
         run: pnpm run build
