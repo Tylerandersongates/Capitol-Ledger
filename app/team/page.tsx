@@ -69,7 +69,8 @@ type AlertQueueRow = {
 
 type TeamPageSearchParams = Record<string, string | string[] | undefined>;
 
-export default async function TeamWorkspacePage({ searchParams }: { searchParams?: TeamPageSearchParams }) {
+export default async function TeamWorkspacePage(props: { searchParams?: Promise<TeamPageSearchParams> }) {
+  const searchParams = await props.searchParams;
   const session = await requireAccountSession("/team");
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
   const [subscription, databaseLedger] = await Promise.all([

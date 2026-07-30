@@ -4,7 +4,8 @@ import { MobileBottomNav, mobileIconButtonClass, mobileViewAllClass } from "@/co
 import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, Search, Settings } from "lucide-react";
 
-export default function FeedbackPage({ searchParams }: { searchParams?: { source?: string | string[] } }) {
+export default async function FeedbackPage(props: { searchParams?: Promise<{ source?: string | string[] }> }) {
+  const searchParams = await props.searchParams;
   const source = Array.isArray(searchParams?.source) ? searchParams.source[0] : searchParams?.source;
 
   return (

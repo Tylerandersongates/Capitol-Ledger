@@ -2,6 +2,8 @@
 
 Status: active prep as of July 18, 2026.
 
+> Public/external release-candidate status is tracked in `docs/public-testflight-release-candidate-checklist.md`. This file remains an implementation reference and does not authorize build upload, tester distribution, TestFlight Beta App Review, or App Review.
+
 ## Direction
 
 Everything going forward should reduce risk on the path to TestFlight and App Store review. Defer broad product expansion unless it fixes a launch blocker, account/payment risk, review risk, or final user-facing text issue.

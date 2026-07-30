@@ -21,7 +21,8 @@ type TeamAcceptSearchParams = {
   token?: string;
 };
 
-export default async function TeamInviteAcceptPage({ searchParams }: { searchParams?: TeamAcceptSearchParams }) {
+export default async function TeamInviteAcceptPage(props: { searchParams?: Promise<TeamAcceptSearchParams> }) {
+  const searchParams = await props.searchParams;
   const token = searchParams?.token ?? "";
   const session = await getCurrentSession();
   const preview = await readPreview(token);

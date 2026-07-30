@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   const result = await verifyEmailToken({
     code: body.code,
-    sessionToken: cookies().get(authSessionCookie)?.value,
+    sessionToken: (await cookies()).get(authSessionCookie)?.value,
     token: body.token
   }).catch((error: unknown) => ({
     configured: true as const,

@@ -25,9 +25,9 @@ export const revalidate = 0;
 type LiveDocketStatusFilter = "passed" | "in-committee" | "in-progress";
 
 type LiveDocketPageProps = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
-  };
+  }>;
 };
 
 const panelClass =
@@ -35,7 +35,8 @@ const panelClass =
 const metricClass =
   "rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(25,73,130,0.28)_0%,rgba(6,22,49,0.72)_100%)] px-3 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_10px_24px_rgba(1,8,24,0.3)]";
 
-export default async function LiveDocketPage({ searchParams }: LiveDocketPageProps) {
+export default async function LiveDocketPage(props: LiveDocketPageProps) {
+  const searchParams = await props.searchParams;
   const data = await getDashboardDataWithLiveData();
   const activeStatus = normalizeLiveDocketStatus(searchParams.status);
   const allBills = [...data.favoriteTargets.bills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));

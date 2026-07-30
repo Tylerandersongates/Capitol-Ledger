@@ -31,17 +31,19 @@ import { formatDate } from "@/lib/utils";
 
 type SearchParamValue = string | string[] | undefined;
 
+type SearchParams = {
+  q?: SearchParamValue;
+  page?: SearchParamValue;
+  status?: SearchParamValue;
+  type?: SearchParamValue;
+  chamber?: SearchParamValue;
+  focus?: SearchParamValue;
+  party?: SearchParamValue;
+  state?: SearchParamValue;
+};
+
 type SearchPageProps = {
-  searchParams: {
-    q?: SearchParamValue;
-    page?: SearchParamValue;
-    status?: SearchParamValue;
-    type?: SearchParamValue;
-    chamber?: SearchParamValue;
-    focus?: SearchParamValue;
-    party?: SearchParamValue;
-    state?: SearchParamValue;
-  };
+  searchParams: Promise<SearchParams>;
 };
 
 type SmartFilterKey = "chamber" | "party" | "state";
@@ -120,7 +122,8 @@ const smartFilterGroups: Array<{
   }
 ];
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage(props: SearchPageProps) {
+  const searchParams = await props.searchParams;
   const activeType = firstSearchParamValue(searchParams.type) ?? "all";
   const query = firstSearchParamValue(searchParams.q) ?? "";
   const chamber = firstSearchParamValue(searchParams.chamber);
@@ -360,7 +363,7 @@ function SearchResultBlocks({
   votePage: number;
   resultCounts: SearchResultCounts;
   results: SearchResultsData;
-  searchParams: SearchPageProps["searchParams"];
+  searchParams: SearchParams;
 }) {
   const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
   const totalVotePages = Math.max(1, Math.ceil(resultCounts.votes / voteSearchPageSize));
@@ -511,7 +514,7 @@ function SearchPagination({
   totalPages
 }: {
   currentPage: number;
-  searchParams: SearchPageProps["searchParams"];
+  searchParams: SearchParams;
   totalPages: number;
 }) {
   return (
@@ -543,7 +546,7 @@ function SearchPagination({
   );
 }
 
-function searchHref(searchParams: SearchPageProps["searchParams"], updates: Partial<SearchPageProps["searchParams"]>) {
+function searchHref(searchParams: SearchParams, updates: Partial<SearchParams>) {
   const nextParams = { ...searchParams, ...updates };
   const params = new URLSearchParams();
 
@@ -560,7 +563,7 @@ function searchHref(searchParams: SearchPageProps["searchParams"], updates: Part
   return queryString ? `/search?${queryString}` : "/search";
 }
 
-function smartFilterHref(searchParams: SearchPageProps["searchParams"], key: SmartFilterKey, value?: string) {
+function smartFilterHref(searchParams: SearchParams, key: SmartFilterKey, value?: string) {
   if (key === "state") {
     const activeStates = normalizeStateParamValues(searchParams.state);
     const nextStates = value
@@ -588,7 +591,7 @@ function SmartFilterRow({
   searchParams
 }: {
   group: (typeof smartFilterGroups)[number];
-  searchParams: SearchPageProps["searchParams"];
+  searchParams: SearchParams;
 }) {
   const currentValue = firstSearchParamValue(searchParams[group.key]);
   const currentStates = group.key === "state" ? normalizeStateParamValues(searchParams.state) : [];

@@ -54,11 +54,12 @@ function composeContactBody({
 
 export async function POST(
   request: NextRequest,
-  context: { params: { bioguideId: string } }
+  context: { params: Promise<{ bioguideId: string }> }
 ) {
+  const params = await context.params;
   const rawBody = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const guard = guardMutationRequest(request, "member-contact-email", {
-    key: `${context.params.bioguideId}:${typeof rawBody.fromEmail === "string" ? rawBody.fromEmail : "anonymous"}`,
+    key: `${params.bioguideId}:${typeof rawBody.fromEmail === "string" ? rawBody.fromEmail : "anonymous"}`,
     limit: 10,
     windowMs: 60 * 60 * 1000
   });
@@ -69,7 +70,7 @@ export async function POST(
     return NextResponse.json({ error: "Enter a valid email message before sending." }, { status: 400 });
   }
 
-  const detail = await getMemberDetailWithLiveData(context.params.bioguideId);
+  const detail = await getMemberDetailWithLiveData(params.bioguideId);
   if (!detail) {
     return NextResponse.json({ error: "Official profile not found." }, { status: 404 });
   }
