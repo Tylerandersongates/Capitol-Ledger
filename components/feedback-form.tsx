@@ -15,6 +15,14 @@ const sourceLabels: Record<string, string> = {
   "team-custom-plan": "Team custom plan"
 };
 
+const feedbackErrorMessages = {
+  ERROR_EMPTY_MESSAGE: "feedback-message-missing",
+  ERROR_FORBIDDEN: "feedback-origin-blocked",
+  ERROR_GENERIC: "feedback-delivery-failed",
+  ERROR_NO_CLIENT: "feedback-client-unavailable",
+  ERROR_TIMEOUT: "feedback-delivery-timeout"
+} as const;
+
 export function FeedbackForm({ initialSource = "" }: { initialSource?: string }) {
   const [contactEmail, setContactEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -48,7 +56,10 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
           },
           url: window.location.href
         },
-        { includeReplay: false }
+        {
+          errorMessages: feedbackErrorMessages,
+          includeReplay: false
+        }
       );
 
       setContactEmail("");
@@ -56,9 +67,9 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
       setState("sent");
       setStatusText("Feedback sent securely. Thank you for helping improve CapitolWonk CE.");
       setTitle("");
-    } catch {
+    } catch (error) {
       setState("error");
-      setStatusText("Feedback could not be sent. Check your connection and try again.");
+      setStatusText(feedbackFailureText(error));
     }
   }
 
@@ -161,4 +172,22 @@ function FieldLabel({ label }: { label: string }) {
 
 function normalizeSource(value: string) {
   return value === "round-3" ? "live-testing" : value;
+}
+
+function feedbackFailureText(error: unknown) {
+  const code = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+
+  if (code === feedbackErrorMessages.ERROR_NO_CLIENT) {
+    return "Feedback monitoring did not initialize. Reload the app and try once more.";
+  }
+
+  if (code === feedbackErrorMessages.ERROR_FORBIDDEN) {
+    return "Feedback delivery is not authorized for this app address. Please report this setup issue through TestFlight.";
+  }
+
+  if (code === feedbackErrorMessages.ERROR_TIMEOUT) {
+    return "Feedback delivery timed out. Check your connection and try once more.";
+  }
+
+  return "Feedback could not be sent. Check your connection and try again.";
 }
