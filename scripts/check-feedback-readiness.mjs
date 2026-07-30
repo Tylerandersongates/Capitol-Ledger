@@ -41,6 +41,24 @@ function requireValue(name, value, detail) {
   record(false, `${name} is not configured`, detail, !requireProduction);
 }
 
+function requireDsn(name, value, detail) {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  let valid = false;
+
+  try {
+    const parsed = new URL(candidate);
+    valid =
+      parsed.protocol === "https:" &&
+      parsed.username.length > 0 &&
+      parsed.hostname.length > 0 &&
+      parsed.pathname.split("/").filter(Boolean).length > 0;
+  } catch {
+    valid = false;
+  }
+
+  record(valid, `${name} is a valid Sentry DSN`, detail, !requireProduction);
+}
+
 function requireFile(path) {
   record(existsSync(path), `${path} exists`);
 }
@@ -83,12 +101,12 @@ function main() {
   record(deletionService.includes('INSERT INTO "AccountDeletionRequest"'), "Account deletion no longer uses the feedback queue");
 
   console.log("\nProtected configuration");
-  requireValue("NEXT_PUBLIC_SENTRY_DSN", process.env.NEXT_PUBLIC_SENTRY_DSN, "Required for browser and WKWebView feedback delivery.");
-  requireValue("SENTRY_DSN", process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN, "Required for server and edge error monitoring.");
+  requireDsn("NEXT_PUBLIC_SENTRY_DSN", process.env.NEXT_PUBLIC_SENTRY_DSN, "Required for browser and WKWebView feedback delivery.");
+  requireDsn("SENTRY_DSN", process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN, "Required for server and edge error monitoring.");
   requireValue("SENTRY_ORG", process.env.SENTRY_ORG, "Required for source-map ownership.");
   requireValue("SENTRY_PROJECT", process.env.SENTRY_PROJECT, "Required for source-map ownership.");
   requireValue("SENTRY_AUTH_TOKEN", process.env.SENTRY_AUTH_TOKEN, "Required for protected source-map upload.");
-  requireValue("CAPITOL_LEDGER_SENTRY_DSN", process.env.CAPITOL_LEDGER_SENTRY_DSN, "Set as a protected Xcode build value for native crash delivery.");
+  requireDsn("CAPITOL_LEDGER_SENTRY_DSN", process.env.CAPITOL_LEDGER_SENTRY_DSN, "Set as a protected Xcode build value for native crash delivery.");
 
   const failures = checks.filter((check) => !check.ok);
   if (failures.length) {

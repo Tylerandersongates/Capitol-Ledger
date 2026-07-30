@@ -35,7 +35,8 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] Vercel Production contains all five required Apple server/account-sync variables by presence. Their values were not viewed, copied, or exposed, and they remain unavailable to the local strict checks.
 - [x] All eight retired Stripe launch variables were removed from Vercel Production and Preview, and the removal is active in the Ready production redeployment.
 - [x] A free Sentry organization with separate Next.js and iOS projects is configured without billing or an upgrade. High-priority email alerts are enabled, session replay and default PII remain disabled in CapitolWonk, and the release-upload token is limited to organization read, project read/write, and release-upload scopes.
-- [x] All six protected Sentry values are stored as sensitive Vercel Production-and-Preview variables. The strict feedback readiness gate passes without exposing values, and the resulting production deployment plus dashboard smoke test pass.
+- [x] All six protected Sentry values are stored as sensitive Vercel Production-and-Preview variables. A live probe exposed placeholder web DSNs that the former presence-only gate accepted; both web DSNs were corrected through Vercel's dedicated sensitive-value rotation flow, the web project received an explicit production/branch-preview domain allowlist, and the corrected production deployment is Ready.
+- [x] A non-sensitive synthetic report submitted through the production `/feedback` form succeeded with email omitted, replay disabled, and default PII disabled. Sentry usage recorded one accepted feedback event and zero filtered, rate-limited, or invalid feedback events.
 - [x] Tyler approved provisioning updates, and a local signed-archive attempt was made with the existing Xcode signing configuration unchanged. It failed before archive creation because the preserved Xcode account session could not authenticate and no matching profile was available.
 - [x] The sanitized external/public guide is prepared at `docs/public-testflight-tester-guide.md` with current feature coverage, assigned-scenario-only subscription testing, severity definitions, privacy-safe reporting, and immediate-stop rules.
 - [x] No Apple account, team, bundle, capability, signing, subscription, tester, upload, or review state was changed during diagnostics or the approved provisioning attempt.
@@ -60,7 +61,7 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 Do not print, copy to chat, or commit protected values or identifiers.
 
 - [x] Tyler approved the current protected-configuration work. In Vercel, set secure-cookie mode and remove all eight retired Stripe launch variables from Production and Preview without viewing or copying protected values.
-- [ ] Finish the intended production/TestFlight environment outside git. The five Apple server variables exist in Vercel Production by presence, and all six Sentry values are configured and pass the strict gate. The native Sentry value must still be supplied as a protected Xcode build setting and verified on the exact signed/device candidate.
+- [ ] Finish the intended production/TestFlight environment outside git. The five Apple server variables exist in Vercel Production by presence. The two web Sentry DSNs are corrected and production feedback delivery is verified; the native Sentry value must still be supplied as a protected Xcode build setting and verified on the exact signed/device candidate.
 - [ ] Run the strict gates without exposing values:
   - `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check`
   - `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`
@@ -68,12 +69,12 @@ Do not print, copy to chat, or commit protected values or identifiers.
 - [ ] Resolve the July 29 strict-gate results:
   - The preserved local file is missing five protected App Store values, so local TestFlight and Billing strict checks still fail. Vercel Production contains all five by presence, but their value shape and live App Store Server API behavior have not been validated.
   - Billing readiness confirms retired Stripe configuration is absent when run with the approved launch-path overrides. All eight retired Vercel variables were removed from Production and Preview.
-  - Sentry readiness passes with six protected browser/server/source-map/native values. The free Next.js and iOS projects plus least-privilege release-upload token are configured; web/feedback and native runtime-event delivery remain to be verified.
+  - The free Next.js and iOS projects plus least-privilege release-upload token are configured. Production web feedback delivery is verified end to end. The readiness gate now validates Sentry DSN URL shape instead of accepting any non-empty placeholder; server, edge, source-map association, and native runtime-event delivery still require their focused verification.
   - Production authentication reaches the ready database schema and passes with secure-cookie mode. The updated production deployment is Ready and the dashboard smoke test passes.
   - Weekly/Daily Brief delivery configuration passes.
 - [x] Redeploy the current `main` production commit once with the completed web protected configuration. The deployment is Ready and the dashboard smoke test passes.
 - [ ] Verify production authentication and Daily Brief delivery in their intended protected environment.
-- [ ] Verify one non-sensitive in-app feedback report plus browser, server, edge, and native diagnostics with PII and replay safeguards intact.
+- [ ] Verify one non-sensitive in-app feedback report plus browser, server, edge, and native diagnostics with PII and replay safeguards intact. The production feedback report and browser transport are verified; server, edge, and native diagnostics remain.
 - [ ] On the exact physical-device candidate, verify:
   - sign-in, verification, sign-out, relaunch, and persistence;
   - dashboard, Daily Brief, Officials, bills, votes, alerts, feedback, privacy, support, and account deletion;
