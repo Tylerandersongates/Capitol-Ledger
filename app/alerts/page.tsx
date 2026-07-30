@@ -63,7 +63,8 @@ function teamInviteAlert(invite: TeamWorkspacePendingInvite): AlertsInboxItem {
   };
 }
 
-export default async function AlertsPage({ searchParams }: { searchParams?: { filter?: string } }) {
+export default async function AlertsPage(props: { searchParams?: Promise<{ filter?: string }> }) {
+  const searchParams = await props.searchParams;
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
   const [dashboardData, initialSubscription, session] = await Promise.all([getDashboardDataWithLiveData(), getCurrentEffectiveAccountSubscription(), getCurrentSession()]);
   const pendingTeamInvites = session?.user

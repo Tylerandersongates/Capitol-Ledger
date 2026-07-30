@@ -2,7 +2,37 @@
 
 ## Status
 
-Planning and read-only assessment are complete. Do not begin the framework or dependency upgrade until Tyler explicitly approves it.
+Tyler approved the framework and dependency upgrade on July 29, 2026. The
+implementation is complete on `codex/next15-security-upgrade` and is awaiting
+branch CI, preview-deployment evidence, risk review, and merge approval.
+
+## Implementation Outcome
+
+- Next.js and `eslint-config-next` are aligned on 15.5.22, the patched 15.5
+  maintenance release available when implementation began.
+- React, React DOM, their TypeScript types, the SWC WASM fallback, Sentry, and
+  PostCSS were aligned within the approved scope.
+- The official async request API codemod was reviewed in dry-run mode before it
+  was applied. Required `cookies()`, `params`, and `searchParams` compatibility
+  edits are complete.
+- Server fetch and route-handler caching was reviewed. Existing explicit
+  `no-store` and revalidation behavior was preserved; no new cache overrides
+  were required.
+- Frozen install, TypeScript, ESLint, optimized production build, offline
+  release/readiness checks, visible browser regression, native bridge gates,
+  and a signing-disabled generic iOS Simulator Release build pass.
+- The production audit improved from 28 advisories to four: three high and one
+  moderate, with zero critical advisories. The remaining findings are transitive
+  through Next.js-bundled PostCSS and its optional sharp range.
+- The remaining PostCSS paths require attacker-controlled CSS, which the app
+  does not accept. The remaining sharp path requires untrusted image decoding;
+  the app does not accept image uploads, remote images are restricted to
+  official Congress sources, and production image optimization is handled by
+  the hosting platform.
+- The original zero-high acceptance target is not met. Do not merge or treat the
+  exception as resolved until Tyler explicitly accepts the documented residual
+  risk or an upstream-compatible patch removes the findings. No dependency
+  override was added merely to silence the audit.
 
 ## Verified Baseline
 
@@ -35,7 +65,7 @@ Do not add dependency overrides merely to silence the audit. Prefer patched dire
 5. Verify Sentry initialization, source maps, and build instrumentation after the framework update.
 6. Confirm the native SWC and pinned WASM fallback versions match the selected Next.js release.
 
-## Execution Sequence After Approval
+## Executed Sequence
 
 1. Create a dedicated upgrade branch from clean `main`.
 2. Record the pre-upgrade audit and full validation baseline without printing protected values.

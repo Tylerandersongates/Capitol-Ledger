@@ -23,7 +23,7 @@ function shouldUseSecureCookies() {
 }
 
 export async function getDemoSession(): Promise<DemoSession | null> {
-  const session = cookies().get(demoSessionCookie)?.value;
+  const session = (await cookies()).get(demoSessionCookie)?.value;
   if (session !== "active") return null;
 
   return {
@@ -33,7 +33,7 @@ export async function getDemoSession(): Promise<DemoSession | null> {
 }
 
 export async function getProductionSession(options: { includeUnverified?: boolean } = {}): Promise<DemoSession | null> {
-  const sessionToken = cookies().get(authSessionCookie)?.value;
+  const sessionToken = (await cookies()).get(authSessionCookie)?.value;
   if (!sessionToken) return null;
 
   const session = await readProductionSession(sessionToken).catch(() => null);
@@ -109,7 +109,7 @@ export function clearAuthCookies(response: NextResponse) {
 }
 
 export async function clearCurrentAuthSession(response: NextResponse) {
-  const sessionToken = cookies().get(authSessionCookie)?.value;
+  const sessionToken = (await cookies()).get(authSessionCookie)?.value;
   if (sessionToken) {
     await deleteProductionSession(sessionToken).catch(() => undefined);
   }

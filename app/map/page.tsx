@@ -52,7 +52,8 @@ const mapPoints = [
   ["84%", "48%", "#ffb12b"]
 ] as const;
 
-export default async function MapPage({ searchParams }: { searchParams?: { level?: string } }) {
+export default async function MapPage(props: { searchParams?: Promise<{ level?: string }> }) {
+  const searchParams = await props.searchParams;
   const activeLevel = levelFilters.some((level) => level.value === searchParams?.level) ? searchParams?.level : "federal";
   const initialSubscription = await getCurrentEffectiveAccountSubscription();
   const stats = getDemoStats();

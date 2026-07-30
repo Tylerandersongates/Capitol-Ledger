@@ -23,12 +23,13 @@ import { getVoteDetailWithLiveData, getVoteTotals } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 
 type VotePageProps = {
-  params: {
+  params: Promise<{
     voteId: string;
-  };
+  }>;
 };
 
-export default async function VoteDetailPage({ params }: VotePageProps) {
+export default async function VoteDetailPage(props: VotePageProps) {
+  const params = await props.params;
   const detail = await getVoteDetailWithLiveData(params.voteId);
   if (!detail) notFound();
 

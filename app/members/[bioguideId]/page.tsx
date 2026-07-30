@@ -31,12 +31,12 @@ import type { Bill, Member } from "@/types/capitol";
 import type { ReactNode } from "react";
 
 type MemberPageProps = {
-  params: {
+  params: Promise<{
     bioguideId: string;
-  };
-  searchParams?: {
+  }>;
+  searchParams?: Promise<{
     tab?: string;
-  };
+  }>;
 };
 
 type MemberTab = "overview" | "votes" | "bills" | "committees" | "finance";
@@ -428,7 +428,9 @@ async function getViewerScoreContext() {
   };
 }
 
-export default async function MemberPage({ params, searchParams }: MemberPageProps) {
+export default async function MemberPage(props: MemberPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const canonicalBioguideId = params.bioguideId === "FCA030" ? "F000483" : params.bioguideId;
   const detail = await getMemberDetailWithLiveData(canonicalBioguideId);
   if (!detail) notFound();

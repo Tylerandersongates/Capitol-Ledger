@@ -9,6 +9,7 @@ const results = [];
 const appDocsDir = ["Capitol", "Ledger App"].join(" ");
 const appStoreSetupPacketPath = `${appDocsDir}/App Store Connect Setup Packet.md`;
 const testFlightChecklistPath = `${appDocsDir}/TestFlight Readiness Checklist.md`;
+const publicReleaseCandidateChecklistPath = "docs/public-testflight-release-candidate-checklist.md";
 
 const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj",
@@ -33,7 +34,8 @@ const requiredFiles = [
   "app/privacy/page.tsx",
   "app/support/page.tsx",
   appStoreSetupPacketPath,
-  testFlightChecklistPath
+  testFlightChecklistPath,
+  publicReleaseCandidateChecklistPath
 ];
 
 const requiredProductIds = [
@@ -263,6 +265,29 @@ function checkTextToneGate() {
   }
 }
 
+function checkPublicReleaseCandidateChecklist() {
+  console.log("\nPublic TestFlight release candidate");
+  const checklist = read(publicReleaseCandidateChecklistPath);
+  const requiredSections = [
+    "Completed Evidence",
+    "Beta Blockers",
+    "Protected Configuration And Device QA",
+    "Build-Upload Approval",
+    "Tester-Distribution Approval",
+    "Hard Stop Before Review",
+    "TestFlight Beta App Review",
+    "App Review"
+  ];
+
+  for (const section of requiredSections) {
+    if (checklist.includes(section)) {
+      pass(`Public release-candidate checklist includes ${section}`);
+    } else {
+      fail(`Public release-candidate checklist includes ${section}`, "Required before external/public TestFlight preparation.");
+    }
+  }
+}
+
 function checkCommandPlan() {
   console.log("\nVerification plan");
   const packageJson = read("package.json");
@@ -292,6 +317,7 @@ function main() {
   checkEnvironment();
   checkAppStoreSetupPacket();
   checkTextToneGate();
+  checkPublicReleaseCandidateChecklist();
   checkCommandPlan();
 
   const failures = results.filter((result) => result.kind === "error" && !result.ok);

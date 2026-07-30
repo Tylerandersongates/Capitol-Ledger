@@ -49,12 +49,12 @@ import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
 
 type BillPageProps = {
-  params: {
+  params: Promise<{
     billId: string;
-  };
-  searchParams?: {
+  }>;
+  searchParams?: Promise<{
     tab?: string;
-  };
+  }>;
 };
 
 type BillTab = "overview" | "votes" | "timeline" | "details";
@@ -476,7 +476,9 @@ function hasRecordedVoteTotals(event: BillVoteEvent) {
   return event.totals.yes + event.totals.no + event.totals.present + event.totals.notVoting > 0;
 }
 
-export default async function BillPage({ params, searchParams }: BillPageProps) {
+export default async function BillPage(props: BillPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
   if (!detail) notFound();
 
