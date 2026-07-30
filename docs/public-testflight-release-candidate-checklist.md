@@ -2,11 +2,11 @@
 
 Status: preparation only. Updated July 29, 2026 from the July 28 EOD handoff.
 
-This is the go/no-go checklist for public or external TestFlight testing. The July 28 EOD handoff remains the source of truth. App Store Connect setup notes and earlier beta guides are reference material only.
+This is the go/no-go checklist for public or external TestFlight testing. The July 29 EOD handoff is the source of truth. App Store Connect setup notes and earlier beta guides are reference material only.
 
 ## Candidate Snapshot
 
-- Release source: `main` at merge commit `4f9fdf6`
+- Verified app release source before the documentation-only EOD merge: `main` at `2004e4f`
 - Native candidate branch: `codex/testflight-build-2-rc`
 - Clean synchronized baseline before release work: `b2e11b4`
 - Production web target: `https://project-qosv1.vercel.app`
@@ -40,7 +40,9 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] Sentry created and finalized the `a381b9b` production release, associated the Vercel production deployment, and reports 518 source-map artifacts. Browser, Node.js, and Edge delivery have been exercised end to end; synthetic diagnostic issues were permanently deleted after evidence capture.
 - [x] Temporary, secret-gated Preview diagnostics verified Node.js and Edge runtime delivery. Unauthorized requests returned 404; fixed synthetic events were accepted and flushed. The one-time Preview secrets and all diagnostic routes were removed afterward and were never merged to `main`.
 - [x] A fresh Edge-only verification ran after enabling new-event IP storage prevention on both Sentry projects. The raw request IP was no longer stored. The fixed event still contained derived geography, and all expanded stack frames remained generated `vc/edge/function` frames with no route-source mapping. Temporary-commit CI and Vercel Preview passed, the synthetic issue was permanently deleted, and the Preview secret plus probe code were removed.
-- [ ] Resolve or explicitly accept the remaining Sentry privacy and mapping findings before external testing: configure an approved rule that removes derived geography from new events and reverify it, then remediate or accept the limited Edge stack mapping. The Node.js diagnostic mapped to route source and did not show the same stored IP context.
+- [x] Tyler approved and both Sentry projects now store a narrowly scoped advanced rule to remove anything from `user.geo` for new events. One authorized Edge retest proved the rule does not remove Sentry's server-derived geography; raw IP remained absent. The synthetic issue, Preview secret, and probe code were removed after evidence capture.
+- [x] Tyler explicitly accepted generated-only Vercel Edge stack frames as a public-beta monitoring limitation. The expanded retest still contained only `vc/edge/function` frames; Node.js mapping to route source remains verified.
+- [ ] Resolve or explicitly accept Sentry's remaining server-derived geography retention before external testing. Do not run another probe or make broader privacy/configuration changes without a new explicit approval.
 - [x] Tyler approved provisioning updates, and a local signed-archive attempt was made with the existing Xcode signing configuration unchanged. It failed before archive creation because the preserved Xcode account session could not authenticate and no matching profile was available.
 - [x] The sanitized external/public guide is prepared at `docs/public-testflight-tester-guide.md` with current feature coverage, assigned-scenario-only subscription testing, severity definitions, privacy-safe reporting, and immediate-stop rules.
 - [x] No Apple account, team, bundle, capability, signing, subscription, tester, upload, or review state was changed during diagnostics or the approved provisioning attempt.
@@ -53,7 +55,7 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 - [x] Explicitly accept the remaining production-audit exception. The upgrade reduced the audit from 28 advisories to four, but Next.js still pins three high and one moderate advisory through its bundled PostCSS and sharp dependencies. CapitolWonk does not accept user CSS or image uploads, production images are restricted to official Congress sources, and Vercel handles production image optimization. Tyler accepted this limited-reachability residual risk for public-beta preparation; do not add unsafe package overrides merely to silence the audit.
 - [x] Pass strict production authentication readiness in the intended deployed environment. The database schema and secure-cookie configuration pass, the updated production deployment is Ready, and the dashboard smoke test passes.
 - [x] Pass strict Weekly/Daily Brief delivery readiness with protected database, task secret, provider, sender, and deployed URL configuration.
-- [ ] Complete protected Sentry privacy/mapping remediation and native crash-delivery verification. Browser transport, feedback delivery, Node.js and Edge runtime ingestion, production release creation, and source-map artifact upload are verified. Raw Edge request-IP storage is remediated for new events; derived geography retention and generated-only Edge stack frames remain blocking.
+- [ ] Complete protected Sentry privacy remediation and native crash-delivery verification. Browser transport, feedback delivery, Node.js and Edge runtime ingestion, production release creation, and source-map artifact upload are verified. Raw Edge request-IP storage is remediated, and Tyler accepted generated-only Edge stack frames for public beta. Server-derived geography retention remains blocking until resolved or explicitly accepted.
 - [x] Confirm marketing version `1.0` and unused build number `2`.
 - [ ] Create and validate a signed Release archive. Tyler approved provisioning updates, but the approved attempt still found no usable Xcode account session or matching profile. The current App Store Connect account also has no existing API-key access to reuse. Do not repair or replace the preserved Xcode/Keychain account credential, request organization API access, or change signing configuration without a new explicit approval.
 - [ ] Complete physical-device QA on the exact release candidate.
@@ -65,7 +67,7 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 Do not print, copy to chat, or commit protected values or identifiers.
 
 - [x] Tyler approved the current protected-configuration work. In Vercel, set secure-cookie mode and remove all eight retired Stripe launch variables from Production and Preview without viewing or copying protected values.
-- [ ] Finish the intended production/TestFlight environment outside git. The five Apple server variables exist in Vercel Production by presence. The two web Sentry DSNs are corrected, new-event IP storage prevention is enabled for both Sentry projects, and production feedback delivery is verified; the native Sentry value must still be supplied as a protected Xcode build setting and verified on the exact signed/device candidate.
+- [ ] Finish the intended production/TestFlight environment outside git. The five Apple server variables exist in Vercel Production by presence. The two web Sentry DSNs are corrected, new-event IP storage prevention and the `user.geo` removal rule are enabled for both Sentry projects, and production feedback delivery is verified. The rule did not remove server-derived geography in an Edge retest. The native Sentry value must still be supplied as a protected Xcode build setting and verified on the exact signed/device candidate.
 - [ ] Run the strict gates without exposing values:
   - `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check`
   - `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`
@@ -73,12 +75,12 @@ Do not print, copy to chat, or commit protected values or identifiers.
 - [ ] Resolve the July 29 strict-gate results:
   - The preserved local file is missing five protected App Store values, so local TestFlight and Billing strict checks still fail. Vercel Production contains all five by presence, but their value shape and live App Store Server API behavior have not been validated.
   - Billing readiness confirms retired Stripe configuration is absent when run with the approved launch-path overrides. All eight retired Vercel variables were removed from Production and Preview.
-  - The free Next.js and iOS projects plus least-privilege release-upload token are configured. Production web feedback delivery is verified end to end. The readiness gate now validates Sentry DSN URL shape instead of accepting any non-empty placeholder. Production release creation, 518 source-map artifacts, and secret-gated Preview Node.js/Edge runtime ingestion are verified. New-event IP storage prevention removes the raw Edge request IP, but derived geography and generated-only Edge stack frames require remediation or explicit acceptance; native runtime-event delivery still requires focused verification.
+  - The free Next.js and iOS projects plus least-privilege release-upload token are configured. Production web feedback delivery is verified end to end. The readiness gate now validates Sentry DSN URL shape instead of accepting any non-empty placeholder. Production release creation, 518 source-map artifacts, and secret-gated Preview Node.js/Edge runtime ingestion are verified. New-event IP storage prevention removes the raw Edge request IP. The approved `user.geo` rule does not remove server-derived geography. Tyler accepted generated-only Edge stack frames for public beta; native runtime-event delivery still requires focused verification.
   - Production authentication reaches the ready database schema and passes with secure-cookie mode. The updated production deployment is Ready and the dashboard smoke test passes.
   - Weekly/Daily Brief delivery configuration passes.
 - [x] Redeploy the current `main` production commit once with the completed web protected configuration. The deployment is Ready and the dashboard smoke test passes.
 - [ ] Verify production authentication and Daily Brief delivery in their intended protected environment.
-- [ ] Verify one non-sensitive in-app feedback report plus browser, server, edge, and native diagnostics with PII and replay safeguards intact. Production feedback, browser transport, and Preview Node.js/Edge ingestion are verified. Raw Edge request-IP storage is remediated, but derived geography retention and generated-only Edge stack frames remain blocking; native diagnostics remain.
+- [ ] Verify one non-sensitive in-app feedback report plus browser, server, edge, and native diagnostics with PII and replay safeguards intact. Production feedback, browser transport, and Preview Node.js/Edge ingestion are verified. Raw Edge request-IP storage is remediated, generated-only Edge stack frames are accepted for public beta, server-derived geography remains unresolved, and native diagnostics remain.
 - [ ] On the exact physical-device candidate, verify:
   - sign-in, verification, sign-out, relaunch, and persistence;
   - dashboard, Daily Brief, Officials, bills, votes, alerts, feedback, privacy, support, and account deletion;
@@ -112,7 +114,8 @@ Do not print, copy to chat, or commit protected values or identifiers.
 
 | Document | Use for this release candidate |
 | --- | --- |
-| `docs/eod-handoff-2026-07-28.md` | Source of truth. |
+| `docs/eod-handoff-2026-07-29.md` | Source of truth for the next clean continuation. |
+| `docs/eod-handoff-2026-07-28.md` | Historical source for the original release-readiness task list. |
 | `docs/dependency-security-upgrade-plan-2026-07-28.md` | Approved upgrade scope and regression plan. |
 | `docs/public-testflight-tester-guide.md` | Sanitized tester-facing guide for the approved external/public TestFlight build and scope. Reverify against enabled services before distribution. |
 | `Capitol Ledger App/App Store Connect Setup Packet.md` | Apple field and subscription reference only; dated July 17 and subordinate to the EOD handoff and this checklist. |
