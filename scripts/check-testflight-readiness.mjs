@@ -10,6 +10,7 @@ const appDocsDir = ["Capitol", "Ledger App"].join(" ");
 const appStoreSetupPacketPath = `${appDocsDir}/App Store Connect Setup Packet.md`;
 const testFlightChecklistPath = `${appDocsDir}/TestFlight Readiness Checklist.md`;
 const publicReleaseCandidateChecklistPath = "docs/public-testflight-release-candidate-checklist.md";
+const publicTesterGuidePath = "docs/public-testflight-tester-guide.md";
 
 const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj",
@@ -35,7 +36,8 @@ const requiredFiles = [
   "app/support/page.tsx",
   appStoreSetupPacketPath,
   testFlightChecklistPath,
-  publicReleaseCandidateChecklistPath
+  publicReleaseCandidateChecklistPath,
+  publicTesterGuidePath
 ];
 
 const requiredProductIds = [
@@ -288,6 +290,56 @@ function checkPublicReleaseCandidateChecklist() {
   }
 }
 
+function checkPublicTesterGuide() {
+  console.log("\nPublic TestFlight tester guide");
+  const guide = read(publicTesterGuidePath);
+  const checklist = read(publicReleaseCandidateChecklistPath);
+  const requiredPhrases = [
+    "Before You Start",
+    "Core Test Pass",
+    "Officials, Bills, and Votes",
+    "Daily Brief and Alerts",
+    "Actions, Impact, and Badges",
+    "Privacy and Support",
+    "Request Account Deletion",
+    "Force-close",
+    "Subscriptions: Assigned Scenarios Only",
+    "Send Beta Feedback",
+    "`/feedback`",
+    "Severity",
+    "Stop Testing and Report Immediately",
+    "real charge",
+    "unexpected credential request",
+    "privacy exposure",
+    "repeated crash",
+    "lost paid entitlement",
+    "data corruption"
+  ];
+
+  for (const phrase of requiredPhrases) {
+    if (guide.includes(phrase)) {
+      pass(`Public tester guide includes ${phrase}`);
+    } else {
+      fail(`Public tester guide includes ${phrase}`, "Required before external/public TestFlight distribution.");
+    }
+  }
+
+  const retiredPhrases = ["Stripe", "web checkout", "feedback queue", "App Review preparation"];
+  for (const phrase of retiredPhrases) {
+    if (guide.toLowerCase().includes(phrase.toLowerCase())) {
+      fail(`Public tester guide excludes ${phrase}`, "Retired or private operator material must not be distributed to testers.");
+    } else {
+      pass(`Public tester guide excludes ${phrase}`);
+    }
+  }
+
+  if (checklist.includes(publicTesterGuidePath) && checklist.includes("[x] Prepare and verify the sanitized external TestFlight tester guide")) {
+    pass("Public release-candidate checklist marks the sanitized tester guide complete");
+  } else {
+    fail("Public release-candidate checklist marks the sanitized tester guide complete");
+  }
+}
+
 function checkCommandPlan() {
   console.log("\nVerification plan");
   const packageJson = read("package.json");
@@ -318,6 +370,7 @@ function main() {
   checkAppStoreSetupPacket();
   checkTextToneGate();
   checkPublicReleaseCandidateChecklist();
+  checkPublicTesterGuide();
   checkCommandPlan();
 
   const failures = results.filter((result) => result.kind === "error" && !result.ok);

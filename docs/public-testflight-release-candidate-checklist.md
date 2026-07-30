@@ -25,6 +25,7 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] The complete offline route, search, bill, member, vote, accountability, video, AI fixture, Congress catalog, native bridge, mobile UI, launch copy, account deletion, billing-transition, feedback, and demo-safe readiness checks pass.
 - [x] Xcode 26.6 resolves the shared native target, Debug and Release configurations, and supported simulator runtimes without changing signing state.
 - [x] A generic iOS Simulator Release build passes with `CODE_SIGNING_ALLOWED=NO` and `CODE_SIGNING_REQUIRED=NO`.
+- [x] The sanitized external/public guide is prepared at `docs/public-testflight-tester-guide.md` with current feature coverage, assigned-scenario-only subscription testing, severity definitions, privacy-safe reporting, and immediate-stop rules.
 - [x] No Apple account, team, bundle, capability, signing, subscription, tester, upload, or review state was changed during diagnostics.
 
 ## Beta Blockers
@@ -39,7 +40,7 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 - [ ] Confirm the intended marketing version and an unused build number.
 - [ ] Complete physical-device QA on the exact release candidate.
 - [ ] Establish the existing subscription baseline without repurchase and complete the approved transition matrix: Pro to Free, Team to Pro, and Team to Free.
-- [ ] Prepare a sanitized external TestFlight tester guide. Existing Round 1–3 guides are web-beta references and are not approved for public TestFlight distribution.
+- [x] Prepare and verify the sanitized external TestFlight tester guide at `docs/public-testflight-tester-guide.md`. Existing Round 1–3 guides remain historical web-beta references and are not approved for public TestFlight distribution.
 
 ## Protected Configuration And Device QA
 
@@ -87,6 +88,7 @@ Do not print, copy to chat, or commit protected values or identifiers.
 | --- | --- |
 | `docs/eod-handoff-2026-07-28.md` | Source of truth. |
 | `docs/dependency-security-upgrade-plan-2026-07-28.md` | Approved upgrade scope and regression plan. |
+| `docs/public-testflight-tester-guide.md` | Sanitized tester-facing guide for the approved external/public TestFlight build and scope. Reverify against enabled services before distribution. |
 | `Capitol Ledger App/App Store Connect Setup Packet.md` | Apple field and subscription reference only; dated July 17 and subordinate to the EOD handoff and this checklist. |
 | `Capitol Ledger App/TestFlight Readiness Checklist.md` | Implementation reference only; dated July 18 and subordinate to this checklist. |
 | `docs/beta-tester-guide/README.md` and generated PDF/DOCX | Historical first-round web-beta material; feedback routing is stale. Do not distribute for public TestFlight. |
