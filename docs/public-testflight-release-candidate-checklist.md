@@ -6,7 +6,7 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 
 ## Candidate Snapshot
 
-- Release source: `main` at merge commit `8cce4c0`
+- Release source: `main` at merge commit `a381b9b`
 - Native candidate branch: `codex/testflight-build-2-rc`
 - Clean synchronized baseline before release work: `b2e11b4`
 - Production web target: `https://project-qosv1.vercel.app`
@@ -22,9 +22,9 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] The production Congress catalog was visibly verified: 537 officials, 17,941 bills, 1,515 votes, and a current House vote with 434 named member positions and an official source.
 - [x] The approved Next.js 15 maintenance upgrade was applied locally with aligned React, Sentry, ESLint config, PostCSS, and SWC packages.
 - [x] Async `cookies()`, `params`, and `searchParams` compatibility updates pass TypeScript and ESLint.
-- [x] Frozen pnpm 9.15.9 install passes under supported Node 22.
+- [x] Frozen pnpm 9.15.9 installs pass under supported Node 22 in pull-request and post-merge `main` CI. A July 29 local reinstall was stopped by the workspace minimum-package-age policy for 17 recently published lockfile entries; the policy was not bypassed, and the local reinstall must be repeated after its age window expires.
 - [x] The optimized Next.js 15 production build passes.
-- [x] Pull request CI, Vercel preview, merge to `main`, post-merge `main` CI, automatic production deployment, and production dashboard smoke testing pass.
+- [x] Pull request #2 CI, merge to `main` at `a381b9b`, post-merge `main` CI, automatic production deployment, and production feedback-page smoke testing pass.
 - [x] Tyler explicitly accepted the documented residual PostCSS/sharp dependency risk for public-beta preparation.
 - [x] The complete offline route, search, bill, member, vote, accountability, video, AI fixture, Congress catalog, native bridge, mobile UI, launch copy, account deletion, billing-transition, feedback, and demo-safe readiness checks pass.
 - [x] Xcode 26.6 resolves the shared native target, Debug and Release configurations, and supported simulator runtimes without changing signing state.
@@ -37,6 +37,7 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] A free Sentry organization with separate Next.js and iOS projects is configured without billing or an upgrade. High-priority email alerts are enabled, session replay and default PII remain disabled in CapitolWonk, and the release-upload token is limited to organization read, project read/write, and release-upload scopes.
 - [x] All six protected Sentry values are stored as sensitive Vercel Production-and-Preview variables. A live probe exposed placeholder web DSNs that the former presence-only gate accepted; both web DSNs were corrected through Vercel's dedicated sensitive-value rotation flow, the web project received an explicit production/branch-preview domain allowlist, and the corrected production deployment is Ready.
 - [x] A non-sensitive synthetic report submitted through the production `/feedback` form succeeded with email omitted, replay disabled, and default PII disabled. Sentry usage recorded one accepted feedback event and zero filtered, rate-limited, or invalid feedback events.
+- [x] Sentry created and finalized the `a381b9b` production release, associated the Vercel production deployment, and reports 518 source-map artifacts. The release currently has zero handled or unhandled issues; server and edge exception delivery have not yet been exercised end to end.
 - [x] Tyler approved provisioning updates, and a local signed-archive attempt was made with the existing Xcode signing configuration unchanged. It failed before archive creation because the preserved Xcode account session could not authenticate and no matching profile was available.
 - [x] The sanitized external/public guide is prepared at `docs/public-testflight-tester-guide.md` with current feature coverage, assigned-scenario-only subscription testing, severity definitions, privacy-safe reporting, and immediate-stop rules.
 - [x] No Apple account, team, bundle, capability, signing, subscription, tester, upload, or review state was changed during diagnostics or the approved provisioning attempt.
@@ -49,7 +50,7 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 - [x] Explicitly accept the remaining production-audit exception. The upgrade reduced the audit from 28 advisories to four, but Next.js still pins three high and one moderate advisory through its bundled PostCSS and sharp dependencies. CapitolWonk does not accept user CSS or image uploads, production images are restricted to official Congress sources, and Vercel handles production image optimization. Tyler accepted this limited-reachability residual risk for public-beta preparation; do not add unsafe package overrides merely to silence the audit.
 - [x] Pass strict production authentication readiness in the intended deployed environment. The database schema and secure-cookie configuration pass, the updated production deployment is Ready, and the dashboard smoke test passes.
 - [x] Pass strict Weekly/Daily Brief delivery readiness with protected database, task secret, provider, sender, and deployed URL configuration.
-- [ ] Complete protected Sentry browser, server, edge, feedback, source-map, and native crash-delivery setup and end-to-end verification.
+- [ ] Complete protected Sentry server, edge, and native crash-delivery verification. Browser transport, feedback delivery, production release creation, and source-map artifact upload are verified.
 - [x] Confirm marketing version `1.0` and unused build number `2`.
 - [ ] Create and validate a signed Release archive. Tyler approved provisioning updates, but the approved attempt still found no usable Xcode account session or matching profile. The current App Store Connect account also has no existing API-key access to reuse. Do not repair or replace the preserved Xcode/Keychain account credential, request organization API access, or change signing configuration without a new explicit approval.
 - [ ] Complete physical-device QA on the exact release candidate.
@@ -69,7 +70,7 @@ Do not print, copy to chat, or commit protected values or identifiers.
 - [ ] Resolve the July 29 strict-gate results:
   - The preserved local file is missing five protected App Store values, so local TestFlight and Billing strict checks still fail. Vercel Production contains all five by presence, but their value shape and live App Store Server API behavior have not been validated.
   - Billing readiness confirms retired Stripe configuration is absent when run with the approved launch-path overrides. All eight retired Vercel variables were removed from Production and Preview.
-  - The free Next.js and iOS projects plus least-privilege release-upload token are configured. Production web feedback delivery is verified end to end. The readiness gate now validates Sentry DSN URL shape instead of accepting any non-empty placeholder; server, edge, source-map association, and native runtime-event delivery still require their focused verification.
+  - The free Next.js and iOS projects plus least-privilege release-upload token are configured. Production web feedback delivery is verified end to end. The readiness gate now validates Sentry DSN URL shape instead of accepting any non-empty placeholder. Production release creation and 518 source-map artifacts are verified; server, edge, and native runtime-event delivery still require focused verification.
   - Production authentication reaches the ready database schema and passes with secure-cookie mode. The updated production deployment is Ready and the dashboard smoke test passes.
   - Weekly/Daily Brief delivery configuration passes.
 - [x] Redeploy the current `main` production commit once with the completed web protected configuration. The deployment is Ready and the dashboard smoke test passes.
