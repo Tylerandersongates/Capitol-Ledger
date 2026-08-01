@@ -1,8 +1,8 @@
 # CapitolWonk Public TestFlight Release-Candidate Checklist
 
-Status: preparation only; current build-upload decision is no-go. Updated July 30, 2026 from the July 29 EOD handoff.
+Status: preparation only; current build-upload decision is no-go. Updated July 31, 2026 from the July 31 EOD handoff.
 
-This is the go/no-go checklist for public or external TestFlight testing. The July 29 EOD handoff is the source of truth. App Store Connect setup notes and earlier beta guides are reference material only.
+This is the go/no-go checklist for public or external TestFlight testing. The July 31 EOD handoff is the source of truth. App Store Connect setup notes and earlier beta guides are reference material only.
 
 ## Candidate Snapshot
 
@@ -14,7 +14,7 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - The native target loads the production web target.
 - Bundle and development-team settings are configured by presence. Their values must not be copied into chat, documentation, logs, or commits.
 - Read-only App Store Connect verification found existing version `1.0`, build `1`, in Ready to Submit state. Tyler approved `1.0` build `2` as the next unused candidate. No App Store Connect state was changed.
-- A signing-disabled device archive for `1.0` build `2` passes structural and metadata validation. A fresh July 30 read-only audit found no usable signing identity, matching provisioning profile, or connected physical iOS device. The approved existing-configuration signed archive attempt reached the signing gate and failed without creating an archive. No Apple security, account, Keychain, provisioning, or signing state was changed.
+- A signing-disabled device archive for `1.0` build `2` passes structural and metadata validation. A physical iPhone is paired, Developer Mode is enabled, and Xcode 27 beta 4 is installed side by side with stable Xcode 26.6. Signed device attempts reached provisioning and failed without producing a signed app or archive. The machine still has zero usable code-signing identities.
 
 ## Completed Evidence
 
@@ -44,9 +44,13 @@ This is the go/no-go checklist for public or external TestFlight testing. The Ju
 - [x] Tyler explicitly accepted generated-only Vercel Edge stack frames as a public-beta monitoring limitation. The expanded retest still contained only `vc/edge/function` frames; Node.js mapping to route source remains verified.
 - [x] Tyler approved remediation instead of accepting ongoing server-derived geography. Both Sentry projects now use the documented recursive selector `$user.geo.**`. Exactly one authorized Preview Edge event verified one stored event total, no raw IP field or literal, and no displayed geography value or city, region, country, or coordinate fields. The synthetic issue was permanently deleted; the branch-only Preview variable, one-time value, and diagnostic route were removed. Sentry documents that advanced rules apply only to new incoming events, so pre-change events are not retroactively rewritten; Free-plan error-event retention is 30 days.
 - [x] Tyler approved another local signed-archive attempt using the existing Xcode signing configuration only. After normal Swift-package metadata access was restored, dependency resolution passed and the archive reached the signing gate. It failed because no matching provisioning profile exists; no archive was created and no Apple or signing state changed.
-- [x] Tyler approved protected native Sentry setup. A mode-0600 temporary build-settings file supplied the iOS DSN without displaying or committing it. Xcode resolved the setting, an unsigned Release build passed, and the compiled app contained a valid resolved DSN. The protected file and compiled temporary artifacts were removed afterward. No native event was sent because no signed archive or connected physical device exists.
+- [x] Tyler approved protected native Sentry setup. A mode-0600 temporary build-settings file supplied the iOS DSN without displaying or committing it. Xcode resolved the setting, an unsigned Release build passed, and the compiled app contained a valid resolved DSN. The protected file and compiled temporary artifacts were removed afterward. No native event was sent because no signed candidate exists.
+- [x] Tyler approved revoking one Apple Development certificate believed at the time to belong to the secondary testing account and creating a replacement. Only a Development certificate was revoked; the separate Distribution Managed certificate was not changed. The replacement Development certificate has no matching private key among the two local login-keychain private keys, and the local identity check still reports zero usable identities.
+- [x] A manual CSR attempt failed with “The specified item could not be found in the keychain.” No valid CSR was produced. No private key was deleted or exported; no keychain, trust setting, Apple security state, or preserved recovery artifact was reset or altered.
+- [x] A certificate-revocation notice was delivered to the Account Holder mailbox, while the local certificate is labeled for the secondary testing user. Those names and notification routing do not identify the revoked certificate's individual owner. The exact individual ownership is unresolved and must be confirmed by Apple Support rather than inferred.
+- [x] An Apple Developer Support case was submitted from the Account Holder session without an attachment or protected identifiers in the message. The case needs a correction stating that the revoked Development certificate's individual owner is unconfirmed. Do not create another case unless Apple directs it.
 - [x] The sanitized external/public guide is prepared at `docs/public-testflight-tester-guide.md` with current feature coverage, assigned-scenario-only subscription testing, severity definitions, privacy-safe reporting, and immediate-stop rules.
-- [x] No Apple account, team, bundle, capability, signing, subscription, tester, upload, or review state was changed during diagnostics or the approved provisioning attempt.
+- [x] No Apple Account security, team membership, bundle, capability, subscription, tester, upload, or review state was changed. The approved Development-certificate revocation and replacement are the only Apple signing-state changes made after the earlier read-only diagnostics.
 
 ## Beta Blockers
 
@@ -57,10 +61,10 @@ All blockers must be resolved or explicitly accepted at the correct approval gat
 - [x] Pass strict production authentication readiness in the intended deployed environment. The database schema and secure-cookie configuration pass, the updated production deployment is Ready, and the dashboard smoke test passes.
 - [x] Pass strict Weekly/Daily Brief delivery readiness with protected database, task secret, provider, sender, and deployed URL configuration.
 - [x] Complete protected Sentry privacy remediation. Browser transport, feedback delivery, Node.js and Edge runtime ingestion, production release creation, and source-map artifact upload are verified. Raw Edge request-IP storage is disabled, the recursive geography scrub is verified for new events, and Tyler accepted generated-only Edge stack frames for public beta.
-- [ ] Complete native crash-delivery verification on the exact protected signed/device candidate. Protected-setting resolution and an unsigned Release build pass, but no event has been sent.
+- [ ] Complete native crash-delivery verification on the exact protected signed/device candidate. Protected-setting resolution and an unsigned Release build pass, but no native event has been sent.
 - [x] Confirm marketing version `1.0` and unused build number `2`.
-- [ ] Create and validate a signed Release archive. The July 30 existing-configuration attempt reached signing and found no matching provisioning profile; the read-only audit also found no usable signing identity. The current App Store Connect account has no existing API-key access to reuse. Do not repair or replace the preserved Xcode/Keychain account credential, request organization API access, or change signing configuration without a new explicit approval.
-- [ ] Complete physical-device QA on the exact release candidate.
+- [ ] Create and validate a signed Release archive. Xcode 27 beta 4 can communicate with the iOS 27 device, but signed device attempts stop at provisioning. The replacement Development certificate has no matching local private key, zero usable signing identities remain, and the revoked certificate's individual owner is unresolved. Pause certificate, CSR, Keychain, profile, and signing work pending Apple Support and a new exact approval.
+- [ ] Complete physical-device QA on the exact release candidate. Device connectivity and Developer Mode are established, but no signed candidate has installed and the app-level matrix has not begun.
 - [ ] Establish the existing subscription baseline without repurchase and complete the approved transition matrix: Pro to Free, Team to Pro, and Team to Free.
 - [x] Prepare and verify the sanitized external TestFlight tester guide at `docs/public-testflight-tester-guide.md`. Existing Round 1–3 guides remain historical web-beta references and are not approved for public TestFlight distribution.
 
@@ -92,7 +96,7 @@ Do not print, copy to chat, or commit protected values or identifiers.
 
 ## Build-Upload Approval
 
-Current decision as of July 30, 2026: **NO-GO — do not upload a build.** Sentry privacy and protected native-setting resolution are verified, but the signed Release archive, exact-device QA, subscription-transition matrix, native event-delivery check, and remaining strict protected checks are incomplete.
+Current decision as of July 31, 2026: **NO-GO — do not upload a build.** Sentry privacy and protected native-setting resolution are verified, but Apple signing is paused pending Support clarification. There is no usable signing identity, signed Release archive, installed exact-device candidate, native event, subscription-transition evidence, or complete strict protected-check result.
 
 - [ ] Present Tyler with the exact marketing version, unused build number, commit, dependency audit, CI result, preview/production result, archive/build evidence, device evidence, protected-check status, release notes, and remaining risks.
 - [ ] Confirm signing and capabilities by presence only; do not expose account, team, bundle, certificate, profile, or protected configuration values.
@@ -118,7 +122,8 @@ Current decision as of July 30, 2026: **NO-GO — do not upload a build.** Sentr
 
 | Document | Use for this release candidate |
 | --- | --- |
-| `docs/eod-handoff-2026-07-29.md` | Source of truth for the next clean continuation. |
+| `docs/eod-handoff-2026-07-31.md` | Source of truth for the next clean continuation. |
+| `docs/eod-handoff-2026-07-29.md` | Historical baseline superseded by the July 31 handoff. |
 | `docs/eod-handoff-2026-07-28.md` | Historical source for the original release-readiness task list. |
 | `docs/dependency-security-upgrade-plan-2026-07-28.md` | Approved upgrade scope and regression plan. |
 | `docs/public-testflight-tester-guide.md` | Sanitized tester-facing guide for the approved external/public TestFlight build and scope. Reverify against enabled services before distribution. |
