@@ -11,6 +11,11 @@ import {
   type WeeklyBriefDeliveryInput,
   type WeeklyBriefDeliveryRecord
 } from "./weekly-brief-history";
+import {
+  normalizeWeeklyBriefEditionRecord,
+  type WeeklyBriefEditionRecord
+} from "./weekly-brief-edition";
+import type { WeeklyBriefSnapshot } from "./weekly-brief";
 
 type DbFollow = {
   targetId: string;
@@ -60,6 +65,14 @@ type DbWeeklyBriefDelivery = {
   userId: string;
 };
 
+type DbWeeklyBriefEdition = {
+  editionDate: string;
+  generatedAt: Date;
+  id: string;
+  snapshot: unknown;
+  userId: string;
+};
+
 type DbProfile = {
   districtCode: string | null;
   districtLabel: string | null;
@@ -67,6 +80,7 @@ type DbProfile = {
   name: string | null;
   notificationPreferences: unknown;
   partyAffiliation: string | null;
+  timeZone: string | null;
   updatedAt: Date;
 };
 
@@ -86,6 +100,7 @@ let profileSchemaReady: Promise<boolean> | null = null;
 let subscriptionSchemaReady: Promise<boolean> | null = null;
 let gamificationSchemaReady: Promise<boolean> | null = null;
 let weeklyBriefDeliverySchemaReady: Promise<boolean> | null = null;
+let weeklyBriefEditionSchemaReady: Promise<boolean> | null = null;
 
 function isDatabaseConnectionError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
@@ -126,6 +141,7 @@ async function ensureAccountProfileSchema() {
       await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "districtState" TEXT`);
       await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "districtCode" TEXT`);
       await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "notificationPreferences" JSONB`);
+      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "timeZone" TEXT`);
 
       return true;
     } catch (error) {
@@ -137,6 +153,41 @@ async function ensureAccountProfileSchema() {
   })();
 
   return profileSchemaReady;
+}
+
+async function ensureWeeklyBriefEditionSchema() {
+  if (!canUseDatabasePersistence()) return false;
+  if (weeklyBriefEditionSchemaReady) return weeklyBriefEditionSchemaReady;
+
+  weeklyBriefEditionSchemaReady = (async () => {
+    try {
+      const prisma = getPrisma();
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "WeeklyBriefEdition" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          "editionDate" TEXT NOT NULL,
+          "generatedAt" TIMESTAMP(3) NOT NULL,
+          "snapshot" JSONB NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "WeeklyBriefEdition_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+        )
+      `);
+      await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "WeeklyBriefEdition_userId_editionDate_key" ON "WeeklyBriefEdition"("userId", "editionDate")`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "WeeklyBriefEdition_userId_generatedAt_idx" ON "WeeklyBriefEdition"("userId", "generatedAt")`);
+
+      return true;
+    } catch (error) {
+      logDatabaseFallback("ensureWeeklyBriefEditionSchema", error);
+      weeklyBriefEditionSchemaReady = null;
+      if (isDatabaseConnectionError(error)) return false;
+      throw error;
+    }
+  })();
+
+  return weeklyBriefEditionSchemaReady;
 }
 
 async function ensureWeeklyBriefDeliverySchema() {
@@ -277,6 +328,7 @@ export async function readProfileFromDatabase(userId: string): Promise<AccountPr
         "districtLabel",
         "districtState",
         "districtCode",
+        "timeZone",
         "notificationPreferences",
         "updatedAt"
       FROM "User"
@@ -296,6 +348,7 @@ export async function readProfileFromDatabase(userId: string): Promise<AccountPr
           ? (record.notificationPreferences as AccountProfileSnapshot["notificationPreferences"])
           : undefined,
       partyAffiliation: record.partyAffiliation ?? undefined,
+      timeZone: record.timeZone ?? undefined,
       updatedAt: record.updatedAt.toISOString()
     });
   } catch (error) {
@@ -329,6 +382,7 @@ export async function writeProfileToDatabase(userId: string, value: Partial<Acco
         "districtLabel" = ${profile.districtLabel ?? null},
         "districtState" = ${profile.districtState ?? null},
         "districtCode" = ${profile.districtCode ?? null},
+        "timeZone" = ${profile.timeZone ?? null},
         "notificationPreferences" = ${preferencesJson}::jsonb,
         "updatedAt" = NOW()
       WHERE "id" = ${userId}
@@ -786,5 +840,83 @@ export async function writeWeeklyBriefDeliveryToDatabase(userId: string, value: 
     `;
 
     return record;
+  });
+}
+
+function normalizeDatabaseWeeklyBriefEdition(record: DbWeeklyBriefEdition) {
+  return normalizeWeeklyBriefEditionRecord(record.userId, {
+    editionDate: record.editionDate,
+    generatedAt: record.generatedAt.toISOString(),
+    id: record.id,
+    snapshot: record.snapshot as WeeklyBriefSnapshot
+  });
+}
+
+export async function readWeeklyBriefEditionFromDatabase(
+  userId: string,
+  editionDate: string
+): Promise<WeeklyBriefEditionRecord | null> {
+  if (!(await ensureWeeklyBriefEditionSchema())) return null;
+
+  return withDatabaseFallback("readWeeklyBriefEditionFromDatabase", null, async () => {
+    const prisma = getPrisma();
+    const records = await prisma.$queryRaw<DbWeeklyBriefEdition[]>`
+      SELECT "id", "userId", "editionDate", "generatedAt", "snapshot"
+      FROM "WeeklyBriefEdition"
+      WHERE "userId" = ${userId} AND "editionDate" = ${editionDate}
+      LIMIT 1
+    `;
+
+    return records[0] ? normalizeDatabaseWeeklyBriefEdition(records[0]) : null;
+  });
+}
+
+export async function readPreviousWeeklyBriefEditionFromDatabase(
+  userId: string,
+  beforeEditionDate: string
+): Promise<WeeklyBriefEditionRecord | null> {
+  if (!(await ensureWeeklyBriefEditionSchema())) return null;
+
+  return withDatabaseFallback("readPreviousWeeklyBriefEditionFromDatabase", null, async () => {
+    const prisma = getPrisma();
+    const records = await prisma.$queryRaw<DbWeeklyBriefEdition[]>`
+      SELECT "id", "userId", "editionDate", "generatedAt", "snapshot"
+      FROM "WeeklyBriefEdition"
+      WHERE "userId" = ${userId} AND "editionDate" < ${beforeEditionDate}
+      ORDER BY "editionDate" DESC
+      LIMIT 1
+    `;
+
+    return records[0] ? normalizeDatabaseWeeklyBriefEdition(records[0]) : null;
+  });
+}
+
+export async function writeWeeklyBriefEditionToDatabase(
+  userId: string,
+  value: WeeklyBriefEditionRecord
+): Promise<WeeklyBriefEditionRecord | null> {
+  if (!(await ensureWeeklyBriefEditionSchema())) return null;
+
+  return withDatabaseFallback("writeWeeklyBriefEditionToDatabase", null, async () => {
+    const prisma = getPrisma();
+    const record = normalizeWeeklyBriefEditionRecord(userId, value);
+    const snapshotJson = JSON.stringify(record.snapshot);
+
+    const records = await prisma.$queryRaw<DbWeeklyBriefEdition[]>`
+      INSERT INTO "WeeklyBriefEdition" (
+        "id", "userId", "editionDate", "generatedAt", "snapshot", "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${record.id}, ${record.userId}, ${record.editionDate}, ${new Date(record.generatedAt)}, ${snapshotJson}::jsonb, NOW(), NOW()
+      )
+      ON CONFLICT ("userId", "editionDate") DO UPDATE
+      SET
+        "generatedAt" = EXCLUDED."generatedAt",
+        "snapshot" = EXCLUDED."snapshot",
+        "updatedAt" = NOW()
+      RETURNING "id", "userId", "editionDate", "generatedAt", "snapshot"
+    `;
+
+    return normalizeDatabaseWeeklyBriefEdition(records[0]);
   });
 }

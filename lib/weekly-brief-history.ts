@@ -68,7 +68,7 @@ export function buildWeeklyBriefDeliveryInput({
     recipient,
     savedRecordCount: brief.metrics.savedRecords,
     status: resolvedStatus,
-    summary: brief.lens.headline,
+    summary: brief.watchToday[0]?.title ?? brief.lens.headline,
     trackedBillCount: brief.watchlist.bills.length,
     unreadAlertCount: brief.metrics.unreadAlerts
   };

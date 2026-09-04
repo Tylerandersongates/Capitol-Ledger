@@ -141,7 +141,7 @@ function checkAppStoreSetupPacket() {
 
   const requiredPacketPhrases = [
     "App Store Connect Setup Packet",
-    "CapitolWonk CE",
+    "CapitolWonk",
     "com.capitolwonk.ce",
     "capitolwonk-ce-ios-v1",
     "com.capitolwonk.pro.monthly",

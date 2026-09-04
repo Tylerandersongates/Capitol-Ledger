@@ -25,7 +25,7 @@ const videoUrls = Array.from(demoData.matchAll(/videoUrl:\s*"([^"]+)"/g), (match
 const officialUrls = videoUrls.filter((url) => url.startsWith("https://"));
 const billIdsWithVideos = new Set(Array.from(demoData.matchAll(/billId:\s*"([^"]+)"/g), (match) => match[1]));
 
-console.log("Checking CapitolWonk CE speech/video links");
+console.log("Checking CapitolWonk speech/video links");
 
 addCheck("Demo bill video records exist", videoUrls.length >= 3, `${videoUrls.length} video links found`);
 addCheck("Video links use secure URLs", officialUrls.length === videoUrls.length, `${officialUrls.length}/${videoUrls.length} links use https`);

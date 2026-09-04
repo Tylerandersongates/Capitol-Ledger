@@ -1,6 +1,6 @@
 # AI Bill Analysis Agent Guide
 
-CapitolWonk CE's bill detail policy lens uses a hybrid pipeline:
+CapitolWonk's bill detail policy lens uses a hybrid pipeline:
 
 1. The deterministic `buildAiBillAnalysis` policy lens remains the fallback.
 2. `resolveAiBillAnalysis` can call a server-side OpenAI Responses API generator when live analysis is explicitly enabled.

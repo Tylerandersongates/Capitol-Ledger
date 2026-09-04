@@ -1,16 +1,18 @@
-# CapitolWonk CE First-Round Beta Tester Guide
+# CapitolWonk First-Round Beta Tester Guide
 
-## What CapitolWonk CE Is
+> Archive notice (September 3, 2026): this earlier-round guide is reference material, not approved current tester instructions. Source branding is updated; existing exported documents and screenshots are historical. Review flows and regenerate exports before any future distribution.
 
-CapitolWonk CE is a mobile-first civic tracking app for people who want to follow bills, representatives, votes, alerts, and their own civic engagement without bouncing between scattered government sites and news feeds.
+## What CapitolWonk Is
 
-I created CapitolWonk CE because civic information is too fragmented for regular people to use consistently. The goal is to make it easier to know what is happening, save what matters, contact the right officials, and build the habit of civic participation without needing to be a policy expert.
+CapitolWonk is a mobile-first civic tracking app for people who want to follow bills, representatives, votes, alerts, and their own civic engagement without bouncing between scattered government sites and news feeds.
+
+I created CapitolWonk because civic information is too fragmented for regular people to use consistently. The goal is to make it easier to know what is happening, save what matters, contact the right officials, and build the habit of civic participation without needing to be a policy expert.
 
 This first beta round is about trust, clarity, and basic usability. The app should feel useful, premium, and calm, even when the underlying civic data is complex.
 
 ## How To Be A First-Round Beta Tester
 
-Use CapitolWonk CE like you would use a real civic companion app. Do not just click through screens. Try to complete small real-world tasks:
+Use CapitolWonk like you would use a real civic companion app. Do not just click through screens. Try to complete small real-world tasks:
 
 - Find a bill or official that interests you.
 - Save something to your watchlist.
@@ -41,7 +43,7 @@ Send feedback when something feels confusing, broken, misleading, too small to t
 
 ## How To Report Feedback
 
-Use the feedback reporting inside CapitolWonk CE whenever possible. This keeps tester notes in the beta review queue instead of scattering them across texts, emails, or screenshots.
+Use the feedback reporting inside CapitolWonk whenever possible. This keeps tester notes in the beta review queue instead of scattering them across texts, emails, or screenshots.
 
 Browser bypass link, use this if the tester needs to open the feedback form directly:
 https://project-qosv1.vercel.app/feedback?source=beta

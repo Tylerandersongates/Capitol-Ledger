@@ -1,5 +1,5 @@
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
-import { getWeeklyBriefForUser } from "@/lib/weekly-brief";
+import { getOrCreateDailyBriefEditionForUser } from "@/lib/weekly-brief-editions";
 import { buildWeeklyBriefDeliveryInput } from "@/lib/weekly-brief-history";
 import { writeWeeklyBriefDeliveryToDatabase } from "@/lib/account-database";
 import { publicBrandName } from "@/lib/brand";
@@ -39,6 +39,7 @@ export type WeeklyBriefDeliveryRunResult = {
   dryRun: boolean;
   eligibleUsers: number;
   failed: number;
+  generatedEditions: number;
   message: string;
   prepared: number;
   records: Array<{
@@ -68,21 +69,30 @@ function toAuthUser(user: EligibleWeeklyBriefUser): AuthUser {
 }
 
 function buildWeeklyBriefText(brief: WeeklyBriefSnapshot) {
-  const updates = brief.priorityUpdates
-    .map((update) => `- ${update.title}: ${update.body}`)
+  const watchItems = brief.watchToday
+    .map((item) => `- ${item.label}: ${item.title}\n  What happened: ${item.whatHappened}\n  Why selected: ${item.whySelected}\n  What may happen next: ${item.next}`)
     .join("\n");
-  const actions = brief.actionItems.map((item) => `- ${item.label}: ${item.body}`).join("\n");
+  const politics = brief.yesterdayInPolitics
+    .map((item) => `- ${item.title} (${item.sourceName}): ${item.body}`)
+    .join("\n");
+  const movement = brief.watchlistMovement.items
+    .map((item) => `- ${item.title}: ${item.body}`)
+    .join("\n");
+  const actions = brief.worthCheckingNext.map((item) => `- ${item.label}: ${item.body}`).join("\n");
 
   return [
     `${brief.title}`,
     "",
-    brief.lens.headline,
-    brief.lens.body,
+    "Your watch today:",
+    watchItems || "- No personalized watch items are available yet.",
     "",
-    "Priority updates:",
-    updates || "- No priority updates today.",
+    "Yesterday in politics:",
+    politics || "- No media topics cleared the latest 24-hour selection.",
     "",
-    "Suggested actions:",
+    "Your watchlist moved:",
+    movement || `- ${brief.watchlistMovement.summary}`,
+    "",
+    "Worth checking next:",
     actions || `- Review your ${publicBrandName} dashboard.`
   ].join("\n");
 }
@@ -93,7 +103,7 @@ function buildWebhookPayload({ brief, user }: { brief: WeeklyBriefSnapshot; user
     brief,
     from: sender(),
     kind: "weekly_brief",
-    subject: `${appName()} Daily Civic Brief`,
+    subject: `${appName()} Daily Brief`,
     text: buildWeeklyBriefText(brief),
     to: user.email,
     user: {
@@ -112,7 +122,7 @@ async function deliverWeeklyBrief({ brief, user }: { brief: WeeklyBriefSnapshot;
 
     await sendEmailWithResend({
       from,
-      subject: `${appName()} Daily Civic Brief`,
+      subject: `${appName()} Daily Brief`,
       text: buildWeeklyBriefText(brief),
       to: user.email
     });
@@ -176,6 +186,7 @@ export async function runWeeklyBriefDelivery({
       dryRun,
       eligibleUsers: 0,
       failed: 0,
+      generatedEditions: 0,
       message: "Daily Brief delivery runner needs DATABASE_URL before scheduled delivery can run.",
       prepared: 0,
       records: []
@@ -187,13 +198,19 @@ export async function runWeeklyBriefDelivery({
   const records: WeeklyBriefDeliveryRunResult["records"] = [];
   let delivered = 0;
   let failed = 0;
+  let generatedEditions = 0;
   let prepared = 0;
 
   for (const userRecord of users) {
     const user = toAuthUser(userRecord);
 
     try {
-      const brief = await getWeeklyBriefForUser(user);
+      const edition = await getOrCreateDailyBriefEditionForUser(user, {
+        forceRefresh: dryRun,
+        persist: !dryRun
+      });
+      const brief = edition.snapshot;
+      generatedEditions += 1;
 
       if (dryRun) {
         records.push({
@@ -268,6 +285,7 @@ export async function runWeeklyBriefDelivery({
     dryRun,
     eligibleUsers: users.length,
     failed,
+    generatedEditions,
     message: dryRun ? "Daily Brief delivery dry run completed." : "Daily Brief delivery run completed.",
     prepared,
     records

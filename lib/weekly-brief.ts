@@ -3,7 +3,15 @@ import { getAccountProfile } from "@/lib/account-profile";
 import { getAccountSubscription } from "@/lib/account-subscription";
 import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
 import { publicBrandName } from "@/lib/brand";
-import { getBill, getBillStatus, getDashboardData, getMember, getRecentUpdates } from "@/lib/data";
+import {
+  getAllMembers,
+  getBill,
+  getBillStatus,
+  getDashboardData,
+  getMember,
+  getMemberVotes,
+  getRecentUpdates
+} from "@/lib/data";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { fetchGdeltDailyBriefItems, type GdeltDailyBriefArticle } from "@/lib/gdelt/client";
 import { subscriptionPlans } from "@/lib/subscription-plans";
@@ -29,6 +37,37 @@ export type DailyBriefSourceItem = {
   label: "Official update" | "Story signal";
   sourceKind: "gdelt-media" | "official" | "watch-lane";
   sourceName: string;
+  sourceUrl?: string;
+  title: string;
+};
+
+export type DailyBriefRecommendation = {
+  href: string;
+  id: string;
+  kind: "vote" | "bill" | "official";
+  label: "Vote" | "Bill" | "Official";
+  next: string;
+  sourceUrl: string;
+  title: string;
+  whatHappened: string;
+  whySelected: string;
+};
+
+export type DailyBriefEditorialOverride = {
+  billId?: string;
+  billRationale?: string;
+  officialId?: string;
+  officialRationale?: string;
+  voteId?: string;
+  voteRationale?: string;
+};
+
+export type DailyBriefMovement = {
+  body: string;
+  href: string;
+  id: string;
+  label: "Bill" | "Official";
+  occurredAt: string;
   sourceUrl?: string;
   title: string;
 };
@@ -80,6 +119,9 @@ export type WeeklyBriefSnapshot = {
     bills: Array<{
       href: string;
       id: string;
+      latestActionDate: string;
+      latestActionText: string;
+      sourceUrl: string;
       status: string;
       title: string;
     }>;
@@ -87,74 +129,32 @@ export type WeeklyBriefSnapshot = {
     officials: Array<{
       href: string;
       id: string;
+      latestActivityDate?: string;
+      latestActivityText?: string;
+      sourceUrl: string;
       title: string;
     }>;
   };
+  watchlistMovement: {
+    items: DailyBriefMovement[];
+    summary: string;
+  };
+  watchToday: DailyBriefRecommendation[];
+  worthCheckingNext: Array<{
+    body: string;
+    href: string;
+    label: string;
+  }>;
   writtenSummary: {
     headline: string;
     nextStep: string;
     paragraphs: string[];
     sourceNote: string;
   };
+  yesterdayInPolitics: DailyBriefSourceItem[];
 };
 
 const defaultCadence = "Daily at 8:00 AM";
-
-const majorStoryCatalog: Array<{
-  body: string;
-  href: string;
-  id: string;
-  issueMatches: string[];
-  sourceName: string;
-  sourceUrl: string;
-  title: string;
-}> = [
-  {
-    body: "Track cost-of-living, budget, tax, and price-pressure coverage alongside official fiscal action.",
-    href: "/search?type=bills&q=affordability",
-    id: "major-story-affordability",
-    issueMatches: ["Affordability", "Inflation", "Federal Budget Deficit", "Jobs"],
-    sourceName: "Media story watch",
-    sourceUrl: "https://www.gdeltproject.org/",
-    title: "Cost-of-living politics"
-  },
-  {
-    body: "Watch border, immigration, public safety, and homeland security coverage when those topics intersect with Congress or agency action.",
-    href: "/search?type=bills&q=border%20security",
-    id: "major-story-border-security",
-    issueMatches: ["Border Security", "Public Safety"],
-    sourceName: "Media + official action watch",
-    sourceUrl: "https://www.gdeltproject.org/",
-    title: "Border and public safety agenda"
-  },
-  {
-    body: "Surface health cost, drug policy, coverage, and agency-rule stories when they match followed issues.",
-    href: "/search?type=bills&q=healthcare",
-    id: "major-story-healthcare",
-    issueMatches: ["Healthcare", "Healthcare Affordability", "Drug Addiction"],
-    sourceName: "Federal Register + media watch",
-    sourceUrl: "https://www.federalregister.gov/developers/documentation/api/v1",
-    title: "Healthcare affordability watch"
-  },
-  {
-    body: "Follow school funding, workforce, infrastructure, and climate implementation updates with official links first.",
-    href: "/search?type=bills&q=infrastructure",
-    id: "major-story-public-investment",
-    issueMatches: ["Education", "Infrastructure", "Climate Change", "Veterans Affairs"],
-    sourceName: "Official source watch",
-    sourceUrl: "https://api.congress.gov/",
-    title: "Public investment and services"
-  },
-  {
-    body: "Flag firearm, community safety, and emergency-response stories when coverage volume and official action both rise.",
-    href: "/search?type=bills&q=gun%20violence",
-    id: "major-story-gun-violence",
-    issueMatches: ["Gun Violence", "Public Safety"],
-    sourceName: "Media coverage watch",
-    sourceUrl: "https://www.gdeltproject.org/",
-    title: "Gun violence and safety"
-  }
-];
 
 function normalizeInterest(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -221,70 +221,285 @@ function resolveInterestBills(ledger: AccountLedgerSnapshot, watchlistBills: Bil
   return uniqueBills([...interestMatches, ...watchlistBills]).slice(0, 3);
 }
 
+function matchingInterests(ledger: AccountLedgerSnapshot, bill?: Bill) {
+  if (!bill) return [];
+  return ledger.issueInterests.filter((interest) => interestMatchesBill(interest, bill));
+}
+
+function profileDistrict(profile: AccountProfileSnapshot) {
+  const match = profile.districtCode?.trim().toUpperCase().match(/^([A-Z]{2})-(\d{1,2}|AL)$/);
+  if (!match) return null;
+  return { district: match[2], state: match[1] };
+}
+
+function selectOfficial(
+  ledger: AccountLedgerSnapshot,
+  profile: AccountProfileSnapshot,
+  watchlistBills: Bill[],
+  override?: DailyBriefEditorialOverride
+): { member: Member; relatedBill?: Bill; whySelected: string } | undefined {
+  const editorialMember = override?.officialId ? getMember(override.officialId) : undefined;
+  if (editorialMember) {
+    return {
+      member: editorialMember,
+      whySelected: override?.officialRationale?.trim() || "CapitolWonk editors selected this official for today's watch."
+    };
+  }
+
+  const followed = resolveWatchlistOfficials(ledger);
+  if (followed[0]) {
+    return {
+      member: followed[0],
+      whySelected: "You follow this official."
+    };
+  }
+
+  const district = profileDistrict(profile);
+  if (district) {
+    const activeMembers = getAllMembers().filter((member) => member.active && member.state === district.state);
+    const districtMember = activeMembers.find((member) => member.chamber === "House" && member.district === district.district);
+    if (districtMember) {
+      return {
+        member: districtMember,
+        whySelected: `This official represents ${district.state}-${district.district}, your saved district.`
+      };
+    }
+
+    const senator = activeMembers.find((member) => member.chamber === "Senate");
+    if (senator) {
+      return {
+        member: senator,
+        whySelected: `This official represents ${senator.state} in the Senate, matching your saved state.`
+      };
+    }
+  }
+
+  const selectedBill = resolveInterestBills(ledger, watchlistBills)[0];
+  const sponsor = selectedBill?.sponsorBioguideId ? getMember(selectedBill.sponsorBioguideId) : undefined;
+  if (sponsor && selectedBill) {
+    return {
+      member: sponsor,
+      relatedBill: selectedBill,
+      whySelected: `This official is the sponsor listed on today's selected bill, ${selectedBill.displayNumber}.`
+    };
+  }
+
+  const selectedVote = selectVote(ledger, override?.voteId);
+  const voteMember = selectedVote?.memberBioguideIds.map((id) => getMember(id)).find((member): member is Member => Boolean(member));
+  if (!voteMember || !selectedVote) return undefined;
+
+  return {
+    member: voteMember,
+    whySelected: "This official appears in today's selected roll-call record."
+  };
+}
+
+function scoreVote(
+  entry: ReturnType<typeof getDashboardData>["voteFeed"][number],
+  ledger: AccountLedgerSnapshot
+) {
+  const followedBillIds = new Set(ledger.follows.filter((record) => record.type === "bill").map((record) => record.id));
+  const followedMemberIds = new Set(ledger.follows.filter((record) => record.type === "member").map((record) => record.id));
+  const followedMemberMatch = entry.memberBioguideIds.some((id) => followedMemberIds.has(id));
+
+  return (entry.bill && followedBillIds.has(entry.bill.id) ? 6 : 0) + matchingInterests(ledger, entry.bill).length * 3 + (followedMemberMatch ? 2 : 0);
+}
+
+function selectVote(ledger: AccountLedgerSnapshot, overrideVoteId?: string) {
+  const voteFeed = getDashboardData().voteFeed;
+  const editorialVote = overrideVoteId ? voteFeed.find((entry) => entry.vote.id === overrideVoteId) : undefined;
+  if (editorialVote) return editorialVote;
+
+  return [...voteFeed].sort((left, right) => {
+    const scoreDelta = scoreVote(right, ledger) - scoreVote(left, ledger);
+    if (scoreDelta) return scoreDelta;
+    return Date.parse(right.vote.voteDate) - Date.parse(left.vote.voteDate);
+  })[0];
+}
+
+function billNextSignal(bill: Bill) {
+  const status = getBillStatus(bill);
+
+  if (status === "In Committee") return "A hearing, markup, report, or other committee action may be the next formal signal.";
+  if (status === "On Floor") return "Scheduling or a chamber vote may be the next formal signal.";
+  if (status === "Passed") return "Action in the other chamber or at the executive stage may be the next formal signal.";
+  if (status === "Enacted") return "Agency implementation and oversight may provide the next official updates.";
+  return "A committee referral, sponsorship change, or other action may be the next formal signal.";
+}
+
+function buildVoteRecommendation(
+  ledger: AccountLedgerSnapshot,
+  override?: DailyBriefEditorialOverride
+): DailyBriefRecommendation | null {
+  const selected = selectVote(ledger, override?.voteId);
+  if (!selected) return null;
+
+  const { bill, totals, vote } = selected;
+  const followedBill = bill && ledger.follows.some((record) => record.type === "bill" && record.id === bill.id);
+  const issueMatches = matchingInterests(ledger, bill);
+  const followedMemberIds = new Set(ledger.follows.filter((record) => record.type === "member").map((record) => record.id));
+  const followedOfficialMatch = selected.memberBioguideIds.some((id) => followedMemberIds.has(id));
+  const tally = totals.yes + totals.no + totals.present + totals.notVoting + totals.other
+    ? ` The recorded tally was ${totals.yes} yes, ${totals.no} no, ${totals.present} present, and ${totals.notVoting} not voting.`
+    : "";
+  const whySelected = selected.vote.id === override?.voteId
+    ? override.voteRationale?.trim() || "CapitolWonk editors selected this roll call for today's watch."
+    : followedBill
+    ? `You saved ${bill.displayNumber}, which is linked to this roll call.`
+    : issueMatches.length
+      ? `The linked bill matches ${issueMatches.slice(0, 2).join(" and ")} in your followed issues.`
+      : followedOfficialMatch
+        ? "At least one official you follow appears in this roll-call record."
+        : "This is the most recent roll call available in the current official-record feed.";
+
+  return {
+    href: `/votes/${vote.id}`,
+    id: `watch-vote-${vote.id}`,
+    kind: "vote",
+    label: "Vote",
+    next: bill
+      ? `Watch ${bill.displayNumber}'s official action history for what follows this vote.`
+      : "Watch the official roll-call record for corrections or linked legislative action.",
+    sourceUrl: vote.sourceUrl,
+    title: bill?.shortTitle ?? `${vote.chamber} Roll Call ${vote.rollCall}`,
+    whatHappened: `${vote.chamber} Roll Call ${vote.rollCall} was recorded as ${vote.result.toLowerCase()} on ${formatDate(vote.voteDate)}.${tally}`,
+    whySelected
+  };
+}
+
+function buildBillRecommendation(
+  ledger: AccountLedgerSnapshot,
+  watchlistBills: Bill[],
+  override?: DailyBriefEditorialOverride
+): DailyBriefRecommendation | null {
+  const editorialBill = override?.billId ? getBill(override.billId) : undefined;
+  const bill = editorialBill ?? resolveInterestBills(ledger, watchlistBills)[0];
+  if (!bill) return null;
+
+  const followed = ledger.follows.some((record) => record.type === "bill" && record.id === bill.id);
+  const issueMatches = matchingInterests(ledger, bill);
+  const whySelected = bill.id === override?.billId
+    ? override.billRationale?.trim() || "CapitolWonk editors selected this bill for today's watch."
+    : followed
+    ? "You saved this bill to your watchlist."
+    : issueMatches.length
+      ? `It matches ${issueMatches.slice(0, 2).join(" and ")} in your followed issues.`
+      : "It has one of the newest official actions in the current bill feed.";
+
+  return {
+    href: `/bills/${bill.id}`,
+    id: `watch-bill-${bill.id}`,
+    kind: "bill",
+    label: "Bill",
+    next: billNextSignal(bill),
+    sourceUrl: bill.sourceUrl,
+    title: `${bill.displayNumber} · ${bill.shortTitle}`,
+    whatHappened: `${bill.latestActionText} The official record is dated ${formatDate(bill.latestActionDate)}.`,
+    whySelected
+  };
+}
+
+function buildOfficialRecommendation(
+  ledger: AccountLedgerSnapshot,
+  profile: AccountProfileSnapshot,
+  watchlistBills: Bill[],
+  override?: DailyBriefEditorialOverride
+): DailyBriefRecommendation | null {
+  const selection = selectOfficial(ledger, profile, watchlistBills, override);
+  if (!selection) return null;
+
+  const { member, relatedBill, whySelected } = selection;
+  const voteRecord = [...getMemberVotes(member.bioguideId)].sort((left, right) =>
+    Date.parse(right.vote?.voteDate ?? "0") - Date.parse(left.vote?.voteDate ?? "0")
+  )[0];
+  const whatHappened = relatedBill
+    ? `The official bill record lists this member as sponsor of ${relatedBill.displayNumber}; its latest action is dated ${formatDate(relatedBill.latestActionDate)}.`
+    : voteRecord?.vote
+      ? `On ${formatDate(voteRecord.vote.voteDate)}, the official record lists a ${voteRecord.position.toLowerCase()} position on ${voteRecord.vote.question.toLowerCase()}.`
+      : "No new action by this official was confirmed in the current brief; their public profile and record remain available to review.";
+
+  return {
+    href: `/members/${member.bioguideId}`,
+    id: `watch-official-${member.bioguideId}`,
+    kind: "official",
+    label: "Official",
+    next: "A roll call, sponsorship update, committee action, or official statement may be the next relevant signal.",
+    sourceUrl: member.sourceUrl,
+    title: member.fullName,
+    whatHappened,
+    whySelected
+  };
+}
+
+function buildWatchToday(
+  ledger: AccountLedgerSnapshot,
+  profile: AccountProfileSnapshot,
+  watchlistBills: Bill[],
+  override?: DailyBriefEditorialOverride
+) {
+  return [
+    buildVoteRecommendation(ledger, override),
+    buildBillRecommendation(ledger, watchlistBills, override),
+    buildOfficialRecommendation(ledger, profile, watchlistBills, override)
+  ].filter((item): item is DailyBriefRecommendation => Boolean(item));
+}
+
 function issueMatchScore(issueMatches: string[], interests: string[]) {
   const normalizedInterests = interests.map(normalizeInterest);
-
   return issueMatches.filter((issue) => normalizedInterests.includes(normalizeInterest(issue))).length;
 }
 
 function formatSeenAt(value?: string) {
-  if (!value) return "seen in the last day";
+  if (!value) return "indexed in the previous 24-hour window";
 
   const formatted = formatDate(value);
-  return formatted ? `seen ${formatted}` : "seen in the last day";
+  return formatted ? `seen ${formatted}` : "indexed in the previous 24-hour window";
 }
 
-function buildGdeltStoryItems(articles: GdeltDailyBriefArticle[]): DailyBriefSourceItem[] {
-  return articles.map((article) => ({
-    body: `${article.domain} coverage ${formatSeenAt(article.seenAt)} and matched to your followed issues through the U.S. politics filter.`,
-    href: article.url,
-    id: article.id,
-    issueMatches: article.issueMatches,
-    label: "Story signal" as const,
-    sourceKind: "gdelt-media",
-    sourceName: `GDELT: ${article.domain}`,
-    sourceUrl: article.url,
-    title: article.title
-  }));
-}
+function buildYesterdayInPolitics(
+  ledger: AccountLedgerSnapshot,
+  articles: GdeltDailyBriefArticle[]
+): DailyBriefSourceItem[] {
+  const seenTitles = new Set<string>();
 
-function buildMajorStoryItems(ledger: AccountLedgerSnapshot, gdeltArticles: GdeltDailyBriefArticle[] = []): DailyBriefSourceItem[] {
-  const gdeltItems = buildGdeltStoryItems(gdeltArticles);
-  const selectedStories = [...majorStoryCatalog]
-    .map((story) => ({
-      ...story,
-      score: issueMatchScore(story.issueMatches, ledger.issueInterests)
-    }))
-    .sort((left, right) => right.score - left.score || left.title.localeCompare(right.title));
-  const topStories = selectedStories.filter((story) => story.score > 0).slice(0, 3);
-  const fallbackStories = selectedStories.slice(0, 2);
-
-  const fallbackItems = (topStories.length ? topStories : fallbackStories).map((story) => ({
-    body: story.body,
-    href: story.href,
-    id: story.id,
-    issueMatches: story.issueMatches.filter((issue) => story.score === 0 || ledger.issueInterests.some((interest) => normalizeInterest(interest) === normalizeInterest(issue))),
-    label: "Story signal" as const,
-    sourceKind: "watch-lane" as const,
-    sourceName: story.sourceName,
-    sourceUrl: story.sourceUrl,
-    title: story.title
-  }));
-
-  return [...gdeltItems, ...fallbackItems].slice(0, 3);
+  return [...articles]
+    .sort((left, right) => {
+      const matchDelta = issueMatchScore(right.issueMatches, ledger.issueInterests) - issueMatchScore(left.issueMatches, ledger.issueInterests);
+      if (matchDelta) return matchDelta;
+      return Date.parse(right.seenAt ?? "0") - Date.parse(left.seenAt ?? "0");
+    })
+    .filter((article) => {
+      const key = normalizeInterest(article.title);
+      if (!key || seenTitles.has(key)) return false;
+      seenTitles.add(key);
+      return true;
+    })
+    .slice(0, 3)
+    .map((article) => ({
+      body: `${article.domain} coverage was ${formatSeenAt(article.seenAt)}. This is media context, not a verified official finding.`,
+      href: article.url,
+      id: article.id,
+      issueMatches: article.issueMatches,
+      label: "Story signal" as const,
+      sourceKind: "gdelt-media" as const,
+      sourceName: article.domain,
+      sourceUrl: article.url,
+      title: article.title
+    }));
 }
 
 function buildPriorityUpdates(ledger: AccountLedgerSnapshot): WeeklyBriefUpdate[] {
   const dashboard = getDashboardData();
-  const voteBill = dashboard.recentVote?.bill ?? dashboard.trackedBill;
   const readAlerts = new Set(ledger.readAlerts);
-  const systemUpdate: WeeklyBriefUpdate | null = voteBill
+  const recentVote = dashboard.recentVote?.vote;
+  const voteUpdate: WeeklyBriefUpdate | null = recentVote
     ? {
-        body: `${voteBill.displayNumber} has tracked movement ready for review.`,
-        href: "/alerts/detail",
+        body: `${recentVote.chamber} Roll Call ${recentVote.rollCall} was recorded as ${recentVote.result.toLowerCase()}.`,
+        href: `/votes/${recentVote.id}`,
         id: "system-vote-reminder",
-        label: "Vote reminder",
-        title: "Vote reminder",
+        label: "Vote",
+        sourceUrl: recentVote.sourceUrl,
+        title: recentVote.question,
         unread: !readAlerts.has("system-vote-reminder")
       }
     : null;
@@ -292,196 +507,288 @@ function buildPriorityUpdates(ledger: AccountLedgerSnapshot): WeeklyBriefUpdate[
   const eventUpdates = getRecentUpdates().map((event) => {
     const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
     const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
-    const targetLabel = bill?.displayNumber ?? member?.fullName ?? "Record";
 
     return {
-      body: `${targetLabel} - ${event.body}`,
+      body: event.body,
       href: bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search",
       id: event.id,
-      label: event.targetType === "bill" ? "Bill update" : "Representative",
+      label: event.targetType === "bill" ? "Bill" : "Official",
       sourceUrl: event.sourceUrl,
       title: event.title,
       unread: !readAlerts.has(event.id)
     };
   });
 
-  return [systemUpdate, ...eventUpdates].filter((update): update is WeeklyBriefUpdate => Boolean(update)).slice(0, 4);
+  return [voteUpdate, ...eventUpdates].filter((update): update is WeeklyBriefUpdate => Boolean(update)).slice(0, 4);
 }
 
-function buildDailySourceDigest({
-  gdeltArticles = [],
-  ledger,
-  priorityUpdates
-}: {
-  gdeltArticles?: GdeltDailyBriefArticle[];
-  ledger: AccountLedgerSnapshot;
-  priorityUpdates: WeeklyBriefUpdate[];
-}): WeeklyBriefSnapshot["sourceDigest"] {
-  const officialItems: DailyBriefSourceItem[] = priorityUpdates.slice(0, 3).map((update) => ({
-    body: update.body,
-    href: update.href,
-    id: `official-${update.id}`,
-    issueMatches: ledger.issueInterests.slice(0, 3),
-    label: "Official update",
-    sourceKind: "official",
-    sourceName: update.sourceUrl ? "Official source" : "Congress.gov watchlist",
-    sourceUrl: update.sourceUrl,
-    title: update.title
-  }));
-  const majorStoryItems = buildMajorStoryItems(ledger, gdeltArticles);
-  const items = [...officialItems, ...majorStoryItems].slice(0, 6);
-  const mediaSignalCount = majorStoryItems.filter((item) => item.sourceKind === "gdelt-media").length;
-  const matchedIssueCount = new Set(items.flatMap((item) => item.issueMatches.map(normalizeInterest)).filter(Boolean)).size;
-  const matchedIssueLabel = `${matchedIssueCount || ledger.issueInterests.length || 1} followed issue${(matchedIssueCount || ledger.issueInterests.length || 1) === 1 ? "" : "s"}`;
-  const mediaSummary = mediaSignalCount
-    ? `, plus ${mediaSignalCount} GDELT U.S. politics result${mediaSignalCount === 1 ? "" : "s"}`
-    : "";
-
+function buildWatchlistSnapshot(watchlistBills: Bill[], watchlistOfficials: Member[]): WeeklyBriefSnapshot["watchlist"] {
   return {
-    items,
-    summary: `${officialItems.length} official update${officialItems.length === 1 ? "" : "s"} and ${majorStoryItems.length} story signal${majorStoryItems.length === 1 ? "" : "s"}${mediaSummary} matched ${matchedIssueLabel}.`,
-    title: "Source watch"
+    bills: watchlistBills.map((bill) => ({
+      href: `/bills/${bill.id}`,
+      id: bill.id,
+      latestActionDate: bill.latestActionDate,
+      latestActionText: bill.latestActionText,
+      sourceUrl: bill.sourceUrl,
+      status: getBillStatus(bill),
+      title: `${bill.displayNumber} ${bill.shortTitle}`
+    })),
+    interests: [],
+    officials: watchlistOfficials.map((member) => {
+      const latestVote = [...getMemberVotes(member.bioguideId)].sort((left, right) =>
+        Date.parse(right.vote?.voteDate ?? "0") - Date.parse(left.vote?.voteDate ?? "0")
+      )[0];
+
+      return {
+        href: `/members/${member.bioguideId}`,
+        id: member.bioguideId,
+        latestActivityDate: latestVote?.vote?.voteDate,
+        latestActivityText: latestVote?.vote
+          ? `${latestVote.position} on ${latestVote.vote.question}`
+          : undefined,
+        sourceUrl: member.sourceUrl,
+        title: member.fullName
+      };
+    })
   };
 }
 
-function buildLens(
-  ledger: AccountLedgerSnapshot,
-  profile: AccountProfileSnapshot,
-  watchlistBills: Bill[],
-  unreadAlerts: number
-) {
-  const interestBills = resolveInterestBills(ledger, watchlistBills);
-  const topBill = interestBills[0] ?? watchlistBills[0];
-  const interests = ledger.issueInterests.length ? ledger.issueInterests.slice(0, 3).join(", ") : "your saved civic priorities";
-  const district = profile.districtCode || "your district";
+function buildWatchlistMovement({
+  currentWatchlist,
+  generatedAt,
+  previousBrief
+}: {
+  currentWatchlist: WeeklyBriefSnapshot["watchlist"];
+  generatedAt: string;
+  previousBrief?: WeeklyBriefSnapshot;
+}): WeeklyBriefSnapshot["watchlistMovement"] {
+  if (!previousBrief) {
+    return {
+      items: [],
+      summary: "This is the first comparable brief, so there is no prior snapshot to measure against yet."
+    };
+  }
+
+  const previousBills = new Map(previousBrief.watchlist.bills.map((bill) => [bill.id, bill]));
+  const previousOfficials = new Map(previousBrief.watchlist.officials.map((official) => [official.id, official]));
+  const billMovements: DailyBriefMovement[] = currentWatchlist.bills.flatMap((bill) => {
+    const previous = previousBills.get(bill.id);
+    if (!previous) {
+      return [{
+        body: "This bill entered your brief's watchlist since the prior edition.",
+        href: bill.href,
+        id: `movement-bill-added-${bill.id}`,
+        label: "Bill" as const,
+        occurredAt: bill.latestActionDate || generatedAt,
+        sourceUrl: bill.sourceUrl,
+        title: bill.title
+      }];
+    }
+    if (
+      previous.latestActionDate === bill.latestActionDate &&
+      previous.latestActionText === bill.latestActionText &&
+      previous.status === bill.status
+    ) return [];
+
+    return [{
+      body: `${bill.latestActionText} Current status: ${bill.status}.`,
+      href: bill.href,
+      id: `movement-bill-${bill.id}-${bill.latestActionDate}`,
+      label: "Bill" as const,
+      occurredAt: bill.latestActionDate || generatedAt,
+      sourceUrl: bill.sourceUrl,
+      title: bill.title
+    }];
+  });
+  const officialMovements: DailyBriefMovement[] = currentWatchlist.officials.flatMap((official) => {
+    const previous = previousOfficials.get(official.id);
+    if (!previous) {
+      return [{
+        body: "This official entered your brief's watchlist since the prior edition.",
+        href: official.href,
+        id: `movement-official-added-${official.id}`,
+        label: "Official" as const,
+        occurredAt: official.latestActivityDate || generatedAt,
+        sourceUrl: official.sourceUrl,
+        title: official.title
+      }];
+    }
+    if (
+      previous.latestActivityDate === official.latestActivityDate &&
+      previous.latestActivityText === official.latestActivityText
+    ) return [];
+
+    return [{
+      body: official.latestActivityText || "The latest recorded activity for this official changed.",
+      href: official.href,
+      id: `movement-official-${official.id}-${official.latestActivityDate ?? generatedAt}`,
+      label: "Official" as const,
+      occurredAt: official.latestActivityDate || generatedAt,
+      sourceUrl: official.sourceUrl,
+      title: official.title
+    }];
+  });
+  const items = [...billMovements, ...officialMovements]
+    .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
+    .slice(0, 3);
 
   return {
-    headline: topBill ? `${topBill.displayNumber}: ${topBill.shortTitle}` : "Your civic ledger is ready",
-    body: topBill
-      ? `${district} brief focus: ${topBill.shortTitle} is the highest-priority item connected to ${interests}.`
-      : `Today, ${publicBrandName} will watch ${interests} and surface votes, bill movement, and district-specific updates.`,
-    bullets: [
-      `${watchlistBills.length} tracked bill${watchlistBills.length === 1 ? "" : "s"} in today's watchlist`,
-      `${unreadAlerts} unread alert${unreadAlerts === 1 ? "" : "s"} ready for review`,
-      "Official records, saved alerts, and followed topics shape today's brief"
-    ]
+    items,
+    summary: items.length
+      ? `${items.length} meaningful watchlist change${items.length === 1 ? "" : "s"} appeared since the prior brief.`
+      : "Nothing meaningful changed in your followed bills, officials, issues, or district since the prior brief."
+  };
+}
+
+function buildWorthCheckingNext({
+  ledger,
+  profile,
+  unreadAlerts,
+  watchToday
+}: {
+  ledger: AccountLedgerSnapshot;
+  profile: AccountProfileSnapshot;
+  unreadAlerts: number;
+  watchToday: DailyBriefRecommendation[];
+}) {
+  const actions: WeeklyBriefSnapshot["worthCheckingNext"] = [];
+
+  if (unreadAlerts) {
+    actions.push({
+      body: `${unreadAlerts} unread official-record update${unreadAlerts === 1 ? " is" : "s are"} ready for review.`,
+      href: "/alerts?filter=unread",
+      label: "Review unread updates"
+    });
+  } else if (watchToday[0]) {
+    actions.push({
+      body: `Open the source-linked ${watchToday[0].label.toLowerCase()} record behind today's first watch item.`,
+      href: watchToday[0].href,
+      label: `Review the ${watchToday[0].label.toLowerCase()}`
+    });
+  }
+
+  if (!profileDistrict(profile)) {
+    actions.push({
+      body: "Add your congressional district to improve official and local relevance.",
+      href: "/onboarding",
+      label: "Add your district"
+    });
+  } else if (!ledger.follows.length && !ledger.issueInterests.length) {
+    actions.push({
+      body: "Follow a bill, official, or issue to make tomorrow's selections more personal.",
+      href: "/search",
+      label: "Build your watchlist"
+    });
+  } else {
+    const secondWatch = watchToday[1] ?? watchToday[0];
+    if (secondWatch) {
+      actions.push({
+        body: `Check the official source and latest status for ${secondWatch.title}.`,
+        href: secondWatch.href,
+        label: "Check the next record"
+      });
+    }
+  }
+
+  return actions.slice(0, 2);
+}
+
+function buildLens(watchToday: DailyBriefRecommendation[]) {
+  const first = watchToday[0];
+  return {
+    headline: first?.title ?? "Your civic watch is ready",
+    body: first?.whatHappened ?? `Add a bill, official, issue, or district so ${publicBrandName} can assemble a more personal brief.`,
+    bullets: watchToday.map((item) => `${item.label}: ${item.whySelected}`)
   };
 }
 
 function buildWrittenSummary({
-  ledger,
-  mediaSignalCount,
-  priorityUpdates,
-  profile,
-  unreadAlerts,
-  watchlistBills
+  district,
+  watchToday,
+  watchlistMovement,
+  worthCheckingNext,
+  yesterdayInPolitics
 }: {
-  ledger: AccountLedgerSnapshot;
-  mediaSignalCount: number;
-  priorityUpdates: WeeklyBriefUpdate[];
-  profile: AccountProfileSnapshot;
-  unreadAlerts: number;
-  watchlistBills: Bill[];
+  district: string;
+  watchToday: DailyBriefRecommendation[];
+  watchlistMovement: WeeklyBriefSnapshot["watchlistMovement"];
+  worthCheckingNext: WeeklyBriefSnapshot["worthCheckingNext"];
+  yesterdayInPolitics: DailyBriefSourceItem[];
 }): WeeklyBriefSnapshot["writtenSummary"] {
-  const topBill = resolveInterestBills(ledger, watchlistBills)[0] ?? watchlistBills[0];
-  const district = profile.districtCode || profile.districtLabel || "your district";
-  const interests = ledger.issueInterests.length ? ledger.issueInterests.slice(0, 3).join(", ") : "your saved civic priorities";
-  const topUpdate = priorityUpdates[0];
-  const billStatus = topBill ? getBillStatus(topBill).toLowerCase() : null;
-  const summarySubject = topBill ? `${topBill.displayNumber}, ${topBill.shortTitle}` : "your civic ledger";
-  const updateSentence = topUpdate
-    ? `The strongest update signal is ${topUpdate.title.toLowerCase()}: ${topUpdate.body}`
-    : "There are no urgent priority updates in the brief right now, so this is a good time to review your saved ledger and keep your tracked interests current.";
-  const nextStep = unreadAlerts
-    ? `Start by clearing ${unreadAlerts} unread alert${unreadAlerts === 1 ? "" : "s"}, then review the top watched bill.`
-    : topBill
-      ? `Start with ${topBill.displayNumber}, then check whether any vote or committee movement needs attention.`
-      : "Start by adding one bill or official to your saved ledger so tomorrow's summary has stronger signals.";
-
   return {
     headline: `Today's read for ${district}`,
-    nextStep,
+    nextStep: worthCheckingNext[0]?.body ?? "Review the official records linked from today's watch items.",
     paragraphs: [
-      `Today's brief centers on ${summarySubject}${billStatus ? `, currently ${billStatus}` : ""}. It is tied to ${interests} and is shaped by ${watchlistBills.length} tracked bill${watchlistBills.length === 1 ? "" : "s"}, ${priorityUpdates.length} priority update${priorityUpdates.length === 1 ? "" : "s"}, and ${ledger.follows.length + ledger.savedAlerts.length} saved ledger item${ledger.follows.length + ledger.savedAlerts.length === 1 ? "" : "s"}.`,
-      updateSentence,
-      "The brief translates those signals into a plain read: what moved, why it matters locally, and what is worth checking next."
+      watchToday.length
+        ? `${watchToday.length} item${watchToday.length === 1 ? "" : "s"} stand out to watch today: ${watchToday.map((item) => item.label.toLowerCase()).join(", ")}.`
+        : "No personalized watch items are available yet.",
+      yesterdayInPolitics.length
+        ? `${yesterdayInPolitics.length} media-reported topic${yesterdayInPolitics.length === 1 ? "" : "s"} add context; official records remain the source of truth. ${watchlistMovement.summary}`
+        : `No media topics cleared the latest 24-hour selection. ${watchlistMovement.summary}`
     ],
-    sourceNote: `Based on your district profile, saved ledger, followed issues, priority alerts, official bill and vote records${mediaSignalCount ? `, and ${mediaSignalCount} GDELT U.S. politics result${mediaSignalCount === 1 ? "" : "s"}` : ""}.`
+    sourceNote: "Built from your district, saved watchlist, followed issues, official bill and vote records, and a clearly labeled 24-hour media scan."
   };
 }
 
-function buildActionItems(profile: AccountProfileSnapshot, subscription: AccountSubscriptionSnapshot, unreadAlerts: number) {
-  const actions = [
-    {
-      body: unreadAlerts ? "Clear the unread queue before the next brief is assembled." : "Your alert queue is clear. Review the latest bill movement.",
-      href: unreadAlerts ? "/alerts?filter=unread" : "/alerts",
-      label: unreadAlerts ? "Review unread alerts" : "Review latest alerts"
-    },
-    {
-      body: profile.districtCode ? `Keep ${profile.districtCode} district tracking current for better local matching.` : "Add district setup to unlock local matching.",
-      href: "/onboarding",
-      label: profile.districtCode ? "Check district setup" : "Finish district setup"
-    }
-  ];
-
-  if (subscription.plan === "free") {
-    actions.push({
-      body: "Upgrade for the policy lens, source context, and priority alerts in the daily brief.",
-      href: "/upgrade",
-      label: "Preview Pro brief"
-    });
-  } else {
-    actions.push({
-      body: "Review source-linked bill summaries and voting context.",
-      href: "/search?type=bills",
-      label: "Open intelligence search"
-    });
-  }
-
-  return actions;
-}
-
 export function buildWeeklyBrief({
+  editorialOverride,
   gdeltArticles = [],
+  generatedAt = new Date().toISOString(),
   ledger,
+  previousBrief,
   profile,
   subscription
 }: {
+  editorialOverride?: DailyBriefEditorialOverride;
   gdeltArticles?: GdeltDailyBriefArticle[];
+  generatedAt?: string;
   ledger: AccountLedgerSnapshot;
+  previousBrief?: WeeklyBriefSnapshot;
   profile: AccountProfileSnapshot;
   subscription: AccountSubscriptionSnapshot;
 }): WeeklyBriefSnapshot {
+  const dashboard = getDashboardData();
   const watchlistBills = resolveWatchlistBills(ledger);
   const watchlistOfficials = resolveWatchlistOfficials(ledger);
   const priorityUpdates = buildPriorityUpdates(ledger);
-  const sourceDigest = buildDailySourceDigest({ gdeltArticles, ledger, priorityUpdates });
   const unreadAlerts = priorityUpdates.filter((update) => update.unread).length;
-  const enabled = profile.notificationPreferences.weeklyBrief;
-  const mediaSignalCount = sourceDigest.items.filter((item) => item.sourceKind === "gdelt-media").length;
+  const watchToday = buildWatchToday(ledger, profile, watchlistBills, editorialOverride);
+  const yesterdayInPolitics = buildYesterdayInPolitics(ledger, gdeltArticles);
+  const watchlist = buildWatchlistSnapshot(watchlistBills, watchlistOfficials);
+  watchlist.interests = ledger.issueInterests.slice(0, 6);
+  const watchlistMovement = buildWatchlistMovement({ currentWatchlist: watchlist, generatedAt, previousBrief });
+  const worthCheckingNext = buildWorthCheckingNext({ ledger, profile, unreadAlerts, watchToday });
+  const districtCode = profile.districtCode || "Your district";
+  const sourceDigest = {
+    items: yesterdayInPolitics,
+    summary: yesterdayInPolitics.length
+      ? `${yesterdayInPolitics.length} media-reported federal politics topic${yesterdayInPolitics.length === 1 ? "" : "s"} from the previous 24-hour scan.`
+      : "No media topics cleared the previous 24-hour selection.",
+    title: "Yesterday in politics"
+  };
 
   return {
-    actionItems: buildActionItems(profile, subscription, unreadAlerts),
+    actionItems: worthCheckingNext,
     cadence: defaultCadence,
     delivery: {
       channel: "In app",
-      enabled,
+      enabled: profile.notificationPreferences.weeklyBrief,
       nextDelivery: "Tomorrow in app",
-      note: enabled
-        ? `This brief stays inside ${publicBrandName} and refreshes daily from your saved ledger, alerts, district profile, followed issues, official records, and U.S. politics coverage.`
-        : "Your brief stays available here. Turn on brief alerts when you want a daily reminder.",
-      status: enabled ? "ready" : "paused"
+      note: profile.notificationPreferences.weeklyBrief
+        ? `This brief stays inside ${publicBrandName} and refreshes daily.`
+        : "Your brief stays available here. Turn on brief alerts if you want a daily reminder.",
+      status: profile.notificationPreferences.weeklyBrief ? "ready" : "paused"
     },
     district: {
-      code: profile.districtCode || "TX-10",
-      label: profile.districtLabel || "Austin, Texas - TX-10",
-      state: profile.districtState || "Texas"
+      code: districtCode,
+      label: profile.districtLabel || districtCode,
+      state: profile.districtState || profileDistrict(profile)?.state || ""
     },
-    generatedAt: new Date().toISOString(),
-    lens: buildLens(ledger, profile, watchlistBills, unreadAlerts),
+    generatedAt,
+    lens: buildLens(watchToday),
     metrics: {
-      activeBills: getDashboardData().billsInAction,
-      majorStoryMatches: sourceDigest.items.filter((item) => item.label === "Story signal").length,
+      activeBills: dashboard.billsInAction,
+      majorStoryMatches: yesterdayInPolitics.length,
       policyInterests: ledger.issueInterests.length,
       savedRecords: ledger.follows.length + ledger.savedAlerts.length,
       unreadAlerts
@@ -492,33 +799,34 @@ export function buildWeeklyBrief({
     },
     priorityUpdates,
     sourceDigest,
-    title: "Daily Civic Brief",
-    watchlist: {
-      bills: watchlistBills.map((bill) => ({
-        href: `/bills/${bill.id}`,
-        id: bill.id,
-        status: getBillStatus(bill),
-        title: `${bill.displayNumber} ${bill.shortTitle}`
-      })),
-      interests: ledger.issueInterests.slice(0, 6),
-      officials: watchlistOfficials.map((member) => ({
-        href: `/members/${member.bioguideId}`,
-        id: member.bioguideId,
-        title: member.fullName
-      }))
-    },
+    title: "Daily Brief",
+    watchlist,
+    watchlistMovement,
+    watchToday,
+    worthCheckingNext,
     writtenSummary: buildWrittenSummary({
-      ledger,
-      mediaSignalCount,
-      priorityUpdates,
-      profile,
-      unreadAlerts,
-      watchlistBills
-    })
+      district: districtCode,
+      watchToday,
+      watchlistMovement,
+      worthCheckingNext,
+      yesterdayInPolitics
+    }),
+    yesterdayInPolitics
   };
 }
 
-export async function getWeeklyBriefForUser(user: AuthUser) {
+export async function getWeeklyBriefForUser(
+  user: AuthUser,
+  {
+    editorialOverride,
+    generatedAt,
+    previousBrief
+  }: {
+    editorialOverride?: DailyBriefEditorialOverride;
+    generatedAt?: string;
+    previousBrief?: WeeklyBriefSnapshot;
+  } = {}
+) {
   const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
 
   const [databaseLedger, databaseProfile, databaseSubscription] = await Promise.all([
@@ -530,12 +838,17 @@ export async function getWeeklyBriefForUser(user: AuthUser) {
   const ledger = databaseLedger ?? getAccountLedger(accountUserId);
   const profile = databaseProfile ?? getAccountProfile(accountUserId);
   const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
-  const subscription = await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription);
-  const gdeltArticles = await fetchGdeltDailyBriefItems({ interests: ledger.issueInterests }).catch(() => []);
+  const [subscription, gdeltArticles] = await Promise.all([
+    getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription),
+    fetchGdeltDailyBriefItems({ interests: ledger.issueInterests }).catch(() => [])
+  ]);
 
   return buildWeeklyBrief({
+    editorialOverride,
     gdeltArticles,
+    generatedAt,
     ledger,
+    previousBrief,
     profile,
     subscription
   });

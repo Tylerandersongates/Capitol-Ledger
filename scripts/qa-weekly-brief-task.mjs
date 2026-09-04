@@ -35,6 +35,7 @@ function hasRunnerShape(data) {
     typeof data.configured === "boolean" &&
     typeof data.dryRun === "boolean" &&
     typeof data.eligibleUsers === "number" &&
+    typeof data.generatedEditions === "number" &&
     Array.isArray(data.records)
   );
 }
@@ -104,7 +105,7 @@ async function runLiveDeliveryCheck() {
 }
 
 async function main() {
-  console.log("Running CapitolWonk CE Weekly Brief task QA against the configured target");
+  console.log("Running CapitolWonk Weekly Brief task QA against the configured target");
   await runSafeChecks();
 
   if (shouldRunLiveDelivery) {

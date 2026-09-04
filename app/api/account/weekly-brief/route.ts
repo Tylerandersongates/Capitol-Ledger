@@ -4,20 +4,27 @@ import {
   readWeeklyBriefDeliveryHistoryFromDatabase,
   writeWeeklyBriefDeliveryToDatabase
 } from "@/lib/account-database";
-import { getWeeklyBriefForUser } from "@/lib/weekly-brief";
+import { getOrCreateDailyBriefEditionForUser } from "@/lib/weekly-brief-editions";
 import {
   addWeeklyBriefDeliveryRecord,
   buildWeeklyBriefDeliveryInput,
   getWeeklyBriefDeliveryHistory
 } from "@/lib/weekly-brief-history";
 import { guardMutationRequest } from "@/lib/request-security";
+import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
+import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 
 async function readWeeklyBrief() {
   const session = await getCurrentSession();
-  if (!session) return null;
+  if (!session) return NextResponse.json(requireAuthMessage(), { status: 401 });
+
+  const subscription = await getEffectiveSubscriptionForAccountUser(session.user);
+  if (!isPlanFeatureEnabled(subscription.plan, "personalizedBrief")) {
+    return NextResponse.json({ message: "Personalized briefs require Pro. The Daily Brief video is free at /brief." }, { status: 403 });
+  }
 
   return {
-    brief: await getWeeklyBriefForUser(session.user),
+    brief: (await getOrCreateDailyBriefEditionForUser(session.user)).snapshot,
     user: session.user
   };
 }
@@ -25,9 +32,7 @@ async function readWeeklyBrief() {
 export async function GET() {
   const result = await readWeeklyBrief();
 
-  if (!result) {
-    return NextResponse.json(requireAuthMessage(), { status: 401 });
-  }
+  if (result instanceof NextResponse) return result;
 
   return NextResponse.json({
     brief: result.brief,
@@ -45,9 +50,7 @@ export async function POST(request: NextRequest) {
 
   const result = await readWeeklyBrief();
 
-  if (!result) {
-    return NextResponse.json(requireAuthMessage(), { status: 401 });
-  }
+  if (result instanceof NextResponse) return result;
 
   const deliveryInput = buildWeeklyBriefDeliveryInput({
     brief: result.brief,

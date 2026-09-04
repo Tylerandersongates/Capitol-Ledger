@@ -32,8 +32,7 @@ import {
   validateVoteCatalog,
   voteMemberKey,
   type ParsedSenateVoteCatalog,
-  type ParsedVotePositionCatalog,
-  type SenateMenuVote
+  type ParsedVotePositionCatalog
 } from "../lib/congress/vote-catalog";
 import { getPrisma, hasDatabaseUrl } from "../lib/prisma";
 import {

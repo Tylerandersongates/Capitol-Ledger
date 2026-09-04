@@ -169,7 +169,7 @@ async function checkLiveCongressApi(congress, limit) {
 }
 
 async function main() {
-  console.log("Checking CapitolWonk CE Congress.gov live-data readiness");
+  console.log("Checking CapitolWonk Congress.gov live-data readiness");
 
   const congress = readIntegerEnv("CONGRESS_SYNC_CONGRESS", 119, { min: 1, max: 999 });
   const limit = readIntegerEnv("CONGRESS_SYNC_LIMIT", 25, { min: 1, max: 250 });

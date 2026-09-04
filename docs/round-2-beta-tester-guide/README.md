@@ -1,14 +1,16 @@
-# CapitolWonk CE Round 2 Beta Tester Guide
+# CapitolWonk Round 2 Beta Tester Guide
+
+> Archive notice (September 3, 2026): this earlier-round guide is reference material, not approved current tester instructions. Source branding is updated; existing exported documents are historical. Review flows and regenerate exports before any future distribution.
 
 Last updated: June 12, 2026.
 
-## What CapitolWonk CE Is
+## What CapitolWonk Is
 
-CapitolWonk CE is a mobile-first civic tracking app for following bills, representatives, votes, alerts, and personal civic activity in one calm, source-linked place.
+CapitolWonk is a mobile-first civic tracking app for following bills, representatives, votes, alerts, and personal civic activity in one calm, source-linked place.
 
 Round 1 focused on basic usability: could testers move around, save items, report feedback, and understand the main screens without coaching?
 
-Round 2 is about whether CapitolWonk CE feels useful enough to keep using. Please focus on account persistence, clarity, trust, missing data, and whether the product gives you a better civic workflow than searching government sites one by one.
+Round 2 is about whether CapitolWonk feels useful enough to keep using. Please focus on account persistence, clarity, trust, missing data, and whether the product gives you a better civic workflow than searching government sites one by one.
 
 ## Start Here
 
@@ -22,7 +24,7 @@ https://project-qosv1.vercel.app/feedback?source=round-2
 
 Use test-safe information. Do not enter private personal data you would not want stored in a beta environment.
 
-New testers should use an email inbox they can access. CapitolWonk CE sends a verification link during sign-up. Open that link from your email, then return to CapitolWonk CE and sign back in with the verified account before continuing.
+New testers should use an email inbox they can access. CapitolWonk sends a verification link during sign-up. Open that link from your email, then return to CapitolWonk and sign back in with the verified account before continuing.
 
 Returning Round 1 testers should sign in with the same account they already verified. Do not create a new account unless you are intentionally testing first-time setup again.
 
@@ -52,7 +54,7 @@ New tester:
 2. Go to Sign In.
 3. Create an account with a test-safe email you can access.
 4. Open the verification link emailed to you.
-5. Return to CapitolWonk CE and sign back in with the verified email.
+5. Return to CapitolWonk and sign back in with the verified email.
 6. Set your district, affiliation if you want, interests, and alert preferences.
 
 Returning tester:

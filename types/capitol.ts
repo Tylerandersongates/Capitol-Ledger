@@ -84,6 +84,7 @@ export type AccountProfileSnapshot = {
   districtState?: string;
   notificationPreferences: AccountNotificationPreferences;
   partyAffiliation: string;
+  timeZone?: string;
   updatedAt: string;
 };
 

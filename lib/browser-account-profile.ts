@@ -7,11 +7,13 @@ export const accountProfileChangedEvent = "capitol-ledger:account-profile-change
 const districtProfileKey = "capitol-ledger:district-profile";
 const notificationPreferencesKey = "capitol-ledger:notification-preferences";
 const partyAffiliationKey = "capitol-ledger:party-affiliation";
+const timeZoneKey = "capitol-ledger:time-zone";
 const officialSearchStateKey = "capitol-ledger:official-search-state";
 const localAccountStateKeys = [
   districtProfileKey,
   notificationPreferencesKey,
   partyAffiliationKey,
+  timeZoneKey,
   officialSearchStateKey,
   "capitol-ledger:follows",
   "capitol-ledger:gamification",
@@ -134,11 +136,15 @@ export function readLocalAccountProfile(): Partial<AccountProfileSnapshot> {
   const district = readLocalDistrictProfile();
   const notificationPreferences = readLocalNotificationPreferences();
   const partyAffiliation = typeof window === "undefined" ? "" : window.localStorage.getItem(partyAffiliationKey) ?? "";
+  const timeZone = typeof window === "undefined"
+    ? undefined
+    : window.localStorage.getItem(timeZoneKey) ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return {
     ...district,
     notificationPreferences,
-    partyAffiliation
+    partyAffiliation,
+    timeZone
   };
 }
 
@@ -148,6 +154,9 @@ export function writeLocalAccountProfile(profile: Partial<AccountProfileSnapshot
   if (typeof window !== "undefined" && typeof profile.partyAffiliation === "string") {
     window.localStorage.setItem(partyAffiliationKey, profile.partyAffiliation);
     window.dispatchEvent(new Event(accountProfileChangedEvent));
+  }
+  if (typeof window !== "undefined" && typeof profile.timeZone === "string") {
+    window.localStorage.setItem(timeZoneKey, profile.timeZone);
   }
 }
 
@@ -206,7 +215,10 @@ export async function syncAccountProfile(profile: Partial<AccountProfileSnapshot
   if (!(await hasActiveBrowserSession())) return null;
 
   const response = await fetch("/api/account/profile", {
-    body: JSON.stringify(profile),
+    body: JSON.stringify({
+      ...profile,
+      timeZone: profile.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+    }),
     headers: {
       "Content-Type": "application/json"
     },

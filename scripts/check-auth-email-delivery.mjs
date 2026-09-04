@@ -188,7 +188,7 @@ function checkSender() {
 }
 
 function main() {
-  console.log("Checking CapitolWonk CE auth email delivery configuration");
+  console.log("Checking CapitolWonk auth email delivery configuration");
 
   checkDatabase();
   checkAppUrl();

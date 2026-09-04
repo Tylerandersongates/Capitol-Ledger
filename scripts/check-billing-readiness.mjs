@@ -246,7 +246,7 @@ function checkProductionCookie() {
 }
 
 function main() {
-  console.log("Checking CapitolWonk CE App Store billing readiness");
+  console.log("Checking CapitolWonk App Store billing readiness");
 
   checkDatabase();
   checkAppUrl();

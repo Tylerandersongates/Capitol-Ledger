@@ -2,7 +2,7 @@
 
 ## Purpose
 
-CapitolWonk CE is now app-only for paid upgrades. Pro and Team are purchased through Apple in-app purchase in the native iOS shell, and the server validates signed StoreKit transactions before syncing paid access to the user account.
+CapitolWonk is now app-only for paid upgrades. Pro and Team are purchased through Apple in-app purchase in the native iOS shell, and the server validates signed StoreKit transactions before syncing paid access to the user account.
 
 ## Current App Path
 
