@@ -53,7 +53,7 @@ const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: s
   {
     detail: "A daily recap of what you follow",
     key: "weeklyBrief",
-    label: "Daily brief"
+    label: "Personalized brief"
   }
 ];
 
@@ -819,7 +819,7 @@ export function OnboardingSetupFlow() {
 export function NotificationPreferencesEditor({ compact = false, dense = false }: { compact?: boolean; dense?: boolean }) {
   const [subscription] = useSubscriptionState(null, { scope: "effective" });
   const [preferences, setPreferences] = useState(defaultNotificationPreferences);
-  const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "weeklyBrief");
+  const weeklyBriefUnlocked = isPlanFeatureEnabled(subscription.plan, "personalizedBrief");
 
   useEffect(() => {
     let active = true;

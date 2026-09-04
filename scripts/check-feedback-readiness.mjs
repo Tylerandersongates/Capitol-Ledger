@@ -64,7 +64,7 @@ function requireFile(path) {
 }
 
 function main() {
-  console.log("Checking CapitolWonk CE feedback and error-monitoring readiness");
+  console.log("Checking CapitolWonk feedback and error-monitoring readiness");
 
   for (const path of [
     "instrumentation-client.ts",

@@ -9,7 +9,7 @@ Current status: TestFlight preparation is active as of July 18, 2026. App Store 
 ## Feedback Systems
 
 - TestFlight feedback submitted through Apple is reviewed in App Store Connect under the app's TestFlight feedback area.
-- Reports submitted through `/feedback` are sent to the private Sentry project configured for CapitolWonk CE.
+- Reports submitted through `/feedback` are sent to the private Sentry project configured for CapitolWonk.
 - Browser, server, and native iOS errors are also sent to Sentry when their protected DSN values are configured.
 - Sentry session replay and default PII collection are disabled.
 - Account deletion uses the dedicated `AccountDeletionRequest` workflow and never enters the feedback system.

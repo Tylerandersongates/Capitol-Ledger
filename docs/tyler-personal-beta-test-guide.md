@@ -6,7 +6,7 @@ Private pre-tester checklist for Tyler. Use this before inviting external beta t
 - Use a real Checkout-created Team subscription with the saved Stripe test card.
 - Confirm the Stripe Billing Portal opens from the app for the owner account.
 - If the Team plan is canceled in the portal, confirm Stripe shows the subscription as ending at the period date.
-- Confirm CapitolWonk CE intentionally treats a pending-cancel Team subscription as locked immediately:
+- Confirm CapitolWonk intentionally treats a pending-cancel Team subscription as locked immediately:
   - `/team` shows the access gate.
   - `/upgrade` shows Free as the current plan.
   - Team checkout quantity resets to the 3-seat minimum.

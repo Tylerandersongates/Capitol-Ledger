@@ -35,7 +35,6 @@ import {
   ChevronRight,
   FileText,
   Home,
-  LockKeyhole,
   Search,
   Sparkles,
   Star,
@@ -602,44 +601,9 @@ export function DashboardClient({
               </PlanFeatureGate>
             </div>
 
-            <PlanFeatureGate
-              feature="weeklyBrief"
-              initialSubscription={initialSubscription}
-              fallback={
-                <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
-                  <div className={dashboardCardAccentClass} />
-                  <div className="relative z-10">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">
-                          <span className="grid h-8 w-8 place-items-center rounded-xl border border-[#ffb12b]/22 bg-[#ffb12b]/10 text-[#ffb12b]">
-                            <LockKeyhole className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                          </span>
-                          Daily Brief
-                        </div>
-                        <h2 className="mt-2 text-[22px] font-semibold leading-tight">Daily Brief requires Pro</h2>
-                        <p className="mt-2 text-[14px] leading-snug text-white/58">Upgrade to Pro to open district summaries, saved bill and official updates, and suggested actions.</p>
-                      </div>
-                      <Link href="/upgrade" className={mobileViewAllClass}>
-                        Upgrade
-                      </Link>
-                    </div>
-                    <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
-                      <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery status</div>
-                        <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white/52">
-                          Locked
-                        </span>
-                      </div>
-                  <div className="mt-2 text-[13px] leading-snug text-white/66">Free accounts keep alerts and dashboard access. Daily Brief unlocks with Pro.</div>
-                    </div>
-                  </div>
-                </MobileCard>
-              }
-            >
-              <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
-                <div className={dashboardCardAccentClass} />
-                <div className="relative z-10">
+            <MobileCard variant="dashboard" className="relative mt-5 overflow-hidden px-4 py-4">
+              <div className={dashboardCardAccentClass} />
+              <div className="relative z-10">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">
@@ -648,30 +612,16 @@ export function DashboardClient({
                       </span>
                       Daily Brief
                     </div>
-                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Daily summary</h2>
-                    <p className="mt-2 text-[14px] leading-snug text-white/58">Your daily district summary, major stories, and saved bill updates.</p>
+                    <h2 className="mt-2 text-[22px] font-semibold leading-tight">Watch the Daily Brief</h2>
+                    <p className="mt-2 text-[16px] leading-snug text-white/58">A short video on what happened, why it matters, and what to watch next.</p>
                   </div>
                   <Link href="/brief" className={mobileViewAllClass}>
                     Open
                   </Link>
                 </div>
-                <div className={`${dashboardInnerPanelClass} mt-3 px-3 py-2.5`}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/48">Delivery status</div>
-                    <span className="rounded-full border border-[#2be68d]/35 bg-[#2be68d]/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-[#2be68d]">
-                      Active
-                    </span>
-                  </div>
-                  <div className="mt-2 text-[13px] leading-snug text-white/66">Next issue includes vote recaps, committee updates, and items tied to your district and interests.</div>
-                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                    <BriefMetricPill label="Updates" value={data.updateCount} />
-                    <BriefMetricPill label="Committee" value={data.statusCounts.inCommittee} />
-                    <BriefMetricPill label="Active" value={data.billsInAction} />
-                  </div>
-                </div>
-                </div>
-              </MobileCard>
-            </PlanFeatureGate>
+                <p className="mt-3 text-[14px] font-medium text-[#ffb12b]">Free for everyone · No sign-in required</p>
+              </div>
+            </MobileCard>
 
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[18px] font-medium leading-none">Latest votes</h2>
@@ -940,15 +890,6 @@ function formatTeamAccessRole(role: TeamAccessSummary["role"]) {
   if (role === "admin") return "Admin";
   if (role === "viewer") return "Viewer";
   return "Analyst";
-}
-
-function BriefMetricPill({ label, value }: { label: string; value: number }) {
-  return (
-    <div className={`${dashboardMetricPanelClass} px-2 py-2 text-center`}>
-      <div className="text-[18px] font-medium leading-none text-[#ffbd39]">{value}</div>
-      <div className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.05em] text-white/52">{label}</div>
-    </div>
-  );
 }
 
 function FavoriteRows({

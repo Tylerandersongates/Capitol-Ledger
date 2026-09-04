@@ -204,7 +204,7 @@ function callouts(slug, items) {
 function frame(slug, content, calloutItems) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" role="img" aria-labelledby="title-${slug} desc-${slug}">
-  <title id="title-${slug}">Annotated CapitolWonk CE ${slug} snapshot</title>
+  <title id="title-${slug}">Annotated CapitolWonk ${slug} snapshot</title>
   <desc id="desc-${slug}">A mobile app screen map with numbered arrows pointing to beta testing areas.</desc>
   ${defs(slug)}
   <rect width="${canvas.width}" height="${canvas.height}" fill="#f5f7fb"/>

@@ -1,8 +1,10 @@
 # Next Steps
 
+Current-status note (September 3, 2026): the roadmap below is a July 18 snapshot, not current deployment verification. Follow the latest dated EOD for release gates. Public branding is now CapitolWonk; the Daily Brief video is free and personalized coverage remains Pro. The local changes are not deployed. Round 1–3 exported tester guides are historical and must not be distributed as current launch material without a fresh review and export.
+
 ## Phase Roadmap
 
-Status: updated July 18, 2026. CapitolWonk CE is in TestFlight prep mode: finish protected monitoring setup, App Store billing validation, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
+Status: updated July 18, 2026. CapitolWonk is in TestFlight prep mode: finish protected monitoring setup, App Store billing validation, final launch-facing text tone, and only work that reduces App Store/TestFlight risk.
 
 ### Phase Status Snapshot
 
@@ -41,7 +43,7 @@ We are waiting for Round 2 tester activity. The app-facing priority is to avoid 
 Round 2 tester materials:
 
 - Tester guide source: `docs/round-2-beta-tester-guide/README.md`
-- Downloadable tester guide: `https://project-qosv1.vercel.app/downloads/capitol-ledger-round-2-beta-tester-guide.docx`
+- Historical exported tester guide: `public/downloads/capitol-ledger-round-2-beta-tester-guide.docx` (not current distribution material)
 - Feedback triage after deployment: private Sentry Issues/User Feedback plus App Store Connect TestFlight feedback
 - Internal returning-user QA: Returning User QA Script
 - Internal Round 2 readiness: Round 2 Beta Readiness Checklist
@@ -55,7 +57,7 @@ Round 2 asks:
 
 ### Phase 1: Web Beta Readiness - Complete
 
-Goal: get CapitolWonk CE deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
+Goal: get CapitolWonk deployed as a controlled web beta so trusted testers can use the app, submit reports, and give us real flow/design feedback before App Store or TestFlight work.
 
 Completed:
 
@@ -263,7 +265,7 @@ Upload checklist:
 34. Activated Daily Brief generation with `/brief`, `/api/account/weekly-brief`, and an `/account` delivery card that combines district, saved ledger, policy interests, unread alerts, and subscription level into a personalized civic summary.
 35. Connected the dashboard alert badge to the same read/unread alert ledger used by `/alerts`, so the header indicator resets to blank after all active new alerts are read.
 36. Gated Daily Brief controls behind Pro Intelligence so Free users see the feature as locked/inactive and are routed to upgrade before preparing delivery.
-37. Updated `/sign-in` so account creation is available for first-time visitors, then the Create tab and New account button are hidden for returning users with existing CapitolWonk CE browser/account state.
+37. Updated `/sign-in` so account creation is available for first-time visitors, then the Create tab and New account button are hidden for returning users with existing CapitolWonk browser/account state.
 38. Added password reset completion for production auth: reset tokens can now update the stored password, clear old sessions, create a fresh production session, and return the user through the `/sign-in?resetToken=...` mobile flow.
 39. Added the first Prisma production migration plus deploy/check scripts so the auth, account ledger, subscription, gamification, and civic-data tables can be applied and verified against a real hosted Postgres database.
 40. Added auth email delivery plumbing for verification and password-reset links, including a provider-ready webhook payload, optional webhook secret header, `/sign-in?verifyToken=...` handling, and environment setup notes.
@@ -300,7 +302,7 @@ Upload checklist:
 71. Added `pnpm beta:triage` so database-backed beta feedback can be summarized before each fix pass, with optional blocker/untriaged failure gates.
 72. Tightened duplicate browser/account hydration for profile, party affiliation, gamification, and read-alert state so pages avoid unnecessary repeated background requests.
 73. Added `pnpm video-links:check` to verify the current speech/video demo layer before investor or beta walkthroughs.
-74. Added a visible CapitolWonk CE Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
+74. Added a visible CapitolWonk Accountability v0.1 methodology for official profiles, including weighted transparency factors, score evidence labels, and a nonpartisan explanation of what the score does and does not measure.
 75. Added the GDELT Daily Brief media-signal layer so `/brief` can pull US-politics news signals by followed issue while keeping official bill/vote records as the source of record.
 
 ## Open Product Todos
@@ -315,7 +317,7 @@ Upload checklist:
 4. Standardized the mobile design system across pages with lighter page/card title weights, softer shared glass cards, consistent phone gutters, frosted icon buttons, and matching oval View All/action pills.
 5. Redesigned notifications from overlapping category tabs into a cleaner action-first inbox with `All`, `Action Needed`, and `Unread` filters, time-grouped sections, category pills, and unread/action indicators.
 6. Refined `/impact` and `/badges` to match the current lighter mobile card system while preserving the trophy/badge and civic score visual language from the mockups.
-7. Redesigned `/sign-in` into a complete mobile account entry flow that matches the lighter CapitolWonk CE mobile system across sign-in, create-account, forgot-password, verification, and success states.
+7. Redesigned `/sign-in` into a complete mobile account entry flow that matches the lighter CapitolWonk mobile system across sign-in, create-account, forgot-password, verification, and success states.
 8. Removed the inactive `/search` header filter icon and refined `/badges?filter=locked` tile spacing so locked badge names and requirements read cleanly.
 9. Rebuilt `/search` Smart Filters into combinable Pro official-record filters with active states, reset behavior, preserved search text, and live match counts.
 10. Matched `/badges?filter=earned` name and description spacing to the locked badge layout so earned and locked badge grids read consistently.

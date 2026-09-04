@@ -2,11 +2,11 @@
 
 ## Goal
 
-Push the local CapitolWonk CE app folder to the GitHub repository that Vercel will deploy from.
+Push the local CapitolWonk app folder to the GitHub repository that Vercel will deploy from.
 
 ## Why This Is Needed
 
-Vercel can be connected to your GitHub account, but it still needs the actual CapitolWonk CE code inside a GitHub repository. The local app folder is not a Git repository until `git init` is run from the project folder.
+Vercel can be connected to your GitHub account, but it still needs the actual CapitolWonk code inside a GitHub repository. The local app folder is not a Git repository until `git init` is run from the project folder.
 
 ## Project Folder
 
@@ -29,7 +29,7 @@ Do not manually upload `.env.local` to GitHub.
 
 ## First Push Commands
 
-Replace `YOUR-GITHUB-REPO-URL` with the GitHub repo URL. For the current CapitolWonk CE repo, use:
+Replace `YOUR-GITHUB-REPO-URL` with the GitHub repo URL. For the current CapitolWonk repo, use:
 
 ```text
 https://github.com/Tylerandersongates/Capitol-Ledger.git
@@ -43,7 +43,7 @@ git init -b main
 git status --short
 git add .
 git status --short
-git commit -m "Initial CapitolWonk CE app"
+git commit -m "Initial CapitolWonk app"
 git remote add origin YOUR-GITHUB-REPO-URL
 git push -u origin main
 ```

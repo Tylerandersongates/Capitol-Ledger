@@ -1,6 +1,8 @@
-# CapitolWonk CE App
+# CapitolWonk App
 
-CapitolWonk CE is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
+Use the latest dated EOD handoff in `docs/` for current verification and release gates. Older generated backend recommendations and tester PDFs/DOCX files are historical snapshots; their branding and billing guidance may be obsolete. Do not distribute them as current launch material without review and regeneration.
+
+CapitolWonk is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
 
 ## Current Workspace
 
@@ -20,7 +22,7 @@ The preview is running in production mode, so after changes:
 
 ## Core Direction
 
-CapitolWonk CE should feel like Bloomberg Terminal meets Apple meets modern civic accountability:
+CapitolWonk should feel like Bloomberg Terminal meets Apple meets modern civic accountability:
 
 - Deep navy mobile interface
 - Gold and amber civic-tech highlights

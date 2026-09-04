@@ -454,7 +454,7 @@ export function PolicyInterestsEditor({
             <div className={premiumEyebrowClass}>Alert topics</div>
             <h2 className={`${premiumCardTitleClass} mt-2`}>Topics you follow</h2>
             <p className={premiumCardDescriptionClass}>
-              {editing ? "Choose topics for alerts and your daily brief." : "These topics shape your alerts and daily brief."}
+              {editing ? "Choose topics for alerts and your personalized brief." : "These topics shape your alerts and personalized brief."}
             </p>
           </div>
           <button
@@ -541,7 +541,7 @@ export function PolicyInterestsEditor({
 function savedLedgerPlanDescription(plan: AccountSubscriptionSnapshot["plan"]) {
   if (plan === "team") return "Shares saved items with your team workspace.";
   if (plan === "pro") return "Turns saved items into briefs and reports.";
-  return "Keeps your saved items in one place. Pro adds briefs and reports.";
+  return "Keeps your saved items in one place. Pro adds personalized briefs and reports.";
 }
 
 export function SavedLedgerSummary({

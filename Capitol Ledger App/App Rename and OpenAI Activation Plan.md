@@ -1,73 +1,41 @@
 # App Rename and OpenAI Activation Plan
 
-Status: final public-name pass for TestFlight/App Store upload readiness on July 6, 2026.
+Status: display-name cleanup updated September 3, 2026. Follow the July 29 EOD safety rules and the latest dated handoff for release status.
 
 ## Source Of Truth
 
-Use this plan before broad rename edits. The selected public app name is `CapitolWonk CE`.
+The public app name is `CapitolWonk`. This is a display-name change, not a new app or purchase-identity migration.
 
-Do not rename internal `Weekly Brief` route, script, or delivery names during upload-critical work unless that rename is deliberately scheduled as its own pass. The user-facing surface remains Daily Brief.
+Keep the repository folder, package name, native target/module, bundle identifier, App Store SKU, product identifiers, account-token namespace, telemetry identifiers, and environment prefixes stable. The setup packet retains the existing reference identifiers; do not recreate Apple records or change signing.
 
-## Final Rename Values
+The user-facing surface remains Daily Brief. Preserve internal Weekly Brief routes, scripts, delivery names, and stored data until a separately approved compatibility migration.
 
-Use these values for the upload-ready app, iOS target, App Store records, product IDs, and deployment environment:
+## Safe Rename Scope
 
-| Area | Final upload value | Notes |
-| --- | --- | --- |
-| Public app name | `CapitolWonk CE` | User-facing brand |
-| Web package name | `capitol-ledger` | Keep unless the repo/package must track the final brand |
-| Native target/module | `CapitolLedgerNative` | Keep unless Xcode target renaming is required |
-| iOS display name | `CapitolWonk CE` through `APP_DISPLAY_NAME` | User-visible app name |
-| iOS bundle ID | `com.capitolwonk.ce` | Create this Bundle ID in Apple Developer |
-| App Store SKU | `capitolwonk-ce-ios-v1` | Use for the App Store Connect app record |
-| App Store account-token namespace | `com.capitolwonk.ce` | Stable namespace for Apple account-token binding |
-| Pro monthly product ID | `com.capitolwonk.pro.monthly` | Create exactly as shown before purchase QA |
-| Pro annual product ID | `com.capitolwonk.pro.annual` | Create exactly as shown before purchase QA |
-| Team monthly product ID | `com.capitolwonk.team.monthly` | Create exactly as shown before purchase QA |
-| Team annual product ID | `com.capitolwonk.team.annual` | Create exactly as shown before purchase QA |
-| Team 4-20 seat product IDs | `com.capitolwonk.team.{seatCount}.{cycle}` | Create the 34 additional products from the setup packet |
-| Public email from names | `CapitolWonk CE <...>` | Keep launch-facing sender names aligned |
-| Docs folder/project history | Current docs folder | Keep unless the workspace itself is intentionally renamed |
-| Env prefix | `CAPITOL_LEDGER_*` | Keep through upload unless a compatibility migration is planned |
+- Use the shared `lib/brand.ts` helper for app text and metadata. It normalizes the retired suffix in an existing public-name override.
+- Update public display-name examples in `.env.example`; do not edit protected local/deployment configuration during a source cleanup.
+- Update only `APP_DISPLAY_NAME` in the native project. No signing or purchase identity changes.
+- Keep active documentation and readiness checks aligned. Dated EODs and previously exported tester PDFs/DOCX files are historical records, not current launch material.
+- Remote App Store/channel metadata and sender display names are separate follow-ups requiring approval and verification in their intended environments. Relevant variable names: `NEXT_PUBLIC_APP_NAME`, `AUTH_EMAIL_FROM`, `WEEKLY_BRIEF_FROM`.
 
-## Safe Rename Order
+## Local Verification
 
-1. Confirm `com.capitolwonk.ce`, `capitolwonk-ce-ios-v1`, and the `com.capitolwonk.*` product IDs in Apple before creating records.
-2. Update public brand:
-   - `lib/brand.ts`
-   - `.env.example`
-   - ignored local/deployment `NEXT_PUBLIC_APP_NAME`
-   - `AUTH_EMAIL_FROM`
-   - `WEEKLY_BRIEF_FROM`
-3. Update iOS display and bundle values:
-   - `ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj`
-   - App Store Connect record settings
-   - deployment `APP_STORE_BUNDLE_ID`
-4. Keep final product IDs aligned:
-   - `components/subscription-controls.tsx`
-   - `ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift`
-   - `lib/billing/app-store.ts`
-   - `scripts/check-testflight-readiness.mjs`
-   - `scripts/check-billing-readiness.mjs`
-   - App Store setup docs
-5. Update launch-facing docs and App Store metadata:
-   - App Store Connect setup packet
-   - TestFlight readiness checklist
-   - Billing readiness guide
-   - privacy/support copy only where the public brand helper is not already used
-6. Run the local guard set before strict Apple gates:
-   - `pnpm launch-copy:check`
-   - `pnpm weekly-brief:in-app-check`
-   - `pnpm ai-policy-lens:check`
-   - `pnpm ai-bill-analysis:live-check -- --dry-run`
-   - `pnpm ios-native:check`
-   - `pnpm billing:check`
-   - `pnpm testflight:check`
-   - `pnpm lint`
-   - `pnpm exec tsc --noEmit --pretty false`
-7. After final Apple secrets are configured, run:
-   - `TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check`
-   - `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`
+Run checks sequentially with the existing dependencies and a supported Node 20/22 runtime:
+
+```bash
+pnpm brand:check
+pnpm launch-copy:check
+pnpm weekly-brief:in-app-check
+pnpm ai-policy-lens:check
+pnpm ios-native:check
+pnpm billing:check
+pnpm testflight:check
+pnpm lint
+pnpm exec tsc --noEmit --pretty false
+pnpm build
+```
+
+Local preparation checks are not signed-device, purchase, or upload approval. Strict Apple gates require the existing protected configuration in the intended environment. Do not change configuration or repurchase a subscription merely to make a check pass.
 
 ## OpenAI Activation
 
@@ -109,10 +77,8 @@ After the command passes, browser-smoke several details pages on `http://127.0.0
 - `demo-s-2237`
 - at least one synced live bill from the local database, if database reads are enabled
 
-## Current Blockers
+## Verification Boundaries
 
-- Final app name, bundle ID, SKU, and product IDs are not confirmed in source.
-- Strict TestFlight readiness still needs final App Store Connect/API values.
-- Strict App Store billing readiness still needs final App Store Server API values and product verification.
-- Live OpenAI verification is blocked until `OPENAI_API_KEY` and provider env are configured outside source control.
-- Local preview runtime hygiene still needs the Node 20/22 and clean `node_modules` pass noted in the July 6 handoff.
+- The OpenAI setup instructions above are retained reference material; live provider behavior was not reverified by the September 3 display-name cleanup.
+- Remote Apple display metadata and sender names are not updated by local source changes.
+- Signed-device, purchase transition, Sentry privacy, and release blockers remain governed by the latest EOD; do not treat local preparation checks as upload readiness.

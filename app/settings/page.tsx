@@ -57,7 +57,7 @@ const settingRows = [
   },
   {
     label: "Daily brief",
-    value: "Recent briefs",
+    value: "Free video briefing",
     href: "/brief",
     icon: <CalendarClock />
   },

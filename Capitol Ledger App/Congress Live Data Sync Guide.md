@@ -2,12 +2,12 @@
 
 ## Purpose
 
-CapitolWonk CE already has a Congress.gov API client, normalizers, API preview routes, sync smoke test, and first database write path. This guide defines the setup needed to run member, bill, committee, source-link, official summary, cosponsor, House vote, and House member-vote upserts, then expand later into Senate vote ingestion.
+CapitolWonk already has a Congress.gov API client, normalizers, API preview routes, sync smoke test, and first database write path. This guide defines the setup needed to run member, bill, committee, source-link, official summary, cosponsor, House vote, and House member-vote upserts, then expand later into Senate vote ingestion.
 
 ## Current App Path
 
 1. `lib/congress/client.ts` fetches Congress.gov members, bills, committees, bill records, bill summaries, bill cosponsors, House votes, House member vote positions, and member records.
-2. `lib/congress/normalizers.ts` converts Congress.gov records into CapitolWonk CE member, bill, committee, cosponsor, House vote, House member-vote, and source-link shapes.
+2. `lib/congress/normalizers.ts` converts Congress.gov records into CapitolWonk member, bill, committee, cosponsor, House vote, House member-vote, and source-link shapes.
 3. `/api/congress/members`, `/api/congress/bills`, and `/api/congress/committees` expose live preview endpoints when `CONGRESS_API_KEY` is configured.
 4. `pnpm sync:congress` smoke-tests API access and normalization.
 5. `CONGRESS_SYNC_FULL_MEMBER_ROSTER=true pnpm sync:congress` paginates and validates the complete current-Congress roster without writing by default.

@@ -105,12 +105,12 @@ Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on accoun
 - `NEXT_PUBLIC_APP_URL` for email links such as `/sign-in?resetToken=...`
 - `AUTH_EMAIL_DELIVERY=webhook` when an email provider/webhook bridge is connected
 - `AUTH_EMAIL_WEBHOOK_URL` for the provider/webhook endpoint
-- `AUTH_EMAIL_WEBHOOK_SECRET` when the webhook bridge should validate CapitolWonk CE requests
+- `AUTH_EMAIL_WEBHOOK_SECRET` when the webhook bridge should validate CapitolWonk requests
 - `AUTH_EMAIL_FROM` for the sending identity shown in auth messages
 - `WEEKLY_BRIEF_CRON_SECRET` for the scheduled brief task route
 - `WEEKLY_BRIEF_DELIVERY=webhook` when a Weekly Brief provider bridge is connected
 - `WEEKLY_BRIEF_WEBHOOK_URL` for the Weekly Brief provider/webhook endpoint
-- `WEEKLY_BRIEF_WEBHOOK_SECRET` when the Weekly Brief webhook bridge should validate CapitolWonk CE requests
+- `WEEKLY_BRIEF_WEBHOOK_SECRET` when the Weekly Brief webhook bridge should validate CapitolWonk requests
 - `WEEKLY_BRIEF_FROM` for the sending identity shown in Weekly Brief messages
 - `APP_STORE_BUNDLE_ID` for App Store transaction bundle validation
 - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` for stable StoreKit account-token generation before first TestFlight purchase
@@ -122,7 +122,7 @@ Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on accoun
 
 ## Auth Email Delivery
 
-When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk CE sends a JSON payload to `AUTH_EMAIL_WEBHOOK_URL` for verification and password reset emails. The payload includes:
+When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk sends a JSON payload to `AUTH_EMAIL_WEBHOOK_URL` for verification and password reset emails. The payload includes:
 
 - `kind`: `verify_email` or `password_reset`
 - `to`

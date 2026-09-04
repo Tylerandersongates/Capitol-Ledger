@@ -294,7 +294,7 @@ function checkHardening() {
 }
 
 function main() {
-  console.log("Checking CapitolWonk CE backend setup");
+  console.log("Checking CapitolWonk backend setup");
 
   checkCore();
   checkAuthEmail();

@@ -1,7 +1,10 @@
-export const defaultPublicBrandName = "CapitolWonk CE";
+export const defaultPublicBrandName = "CapitolWonk";
 
 export function getPublicBrandName() {
-  return process.env.NEXT_PUBLIC_APP_NAME?.trim() || defaultPublicBrandName;
+  const configuredName = process.env.NEXT_PUBLIC_APP_NAME?.trim();
+  // Keep a previously configured display name from restoring the retired suffix.
+  if (!configuredName || /^CapitolWonk(?:\s+CE)?$/i.test(configuredName)) return defaultPublicBrandName;
+  return configuredName;
 }
 
 export const publicBrandName = getPublicBrandName();

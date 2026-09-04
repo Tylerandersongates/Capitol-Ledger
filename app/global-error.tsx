@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { publicBrandName } from "@/lib/brand";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <body style={{ background: "#020b18", color: "#ffffff", fontFamily: "system-ui, sans-serif", margin: 0 }}>
         <main style={{ margin: "0 auto", maxWidth: 440, padding: "96px 28px" }}>
           <div style={{ color: "#ffb12b", fontSize: 14, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            CapitolWonk CE
+            {publicBrandName}
           </div>
           <h1 style={{ fontSize: 30, lineHeight: 1.15, margin: "18px 0 12px" }}>Something went wrong</h1>
           <p style={{ color: "rgba(255,255,255,0.62)", fontSize: 16, lineHeight: 1.6 }}>

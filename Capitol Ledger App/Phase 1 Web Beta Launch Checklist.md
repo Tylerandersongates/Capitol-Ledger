@@ -4,7 +4,7 @@ Status: Phase 1 is tester-launch ready. First trusted tester intake is planned f
 
 ## Goal
 
-Get CapitolWonk CE onto a controlled Vercel web beta, connected to Neon, so a small tester group can use the app and send feedback before App Store/TestFlight packaging.
+Get CapitolWonk onto a controlled Vercel web beta, connected to Neon, so a small tester group can use the app and send feedback before App Store/TestFlight packaging.
 
 ## What Phase 1 Is Not
 

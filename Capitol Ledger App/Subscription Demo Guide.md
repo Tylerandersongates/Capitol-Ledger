@@ -2,7 +2,7 @@
 
 ## Goal
 
-Show how CapitolWonk CE operates and feels across three subscription modes:
+Show how CapitolWonk operates and feels across three subscription modes:
 
 - Free
 - Pro Intelligence
@@ -72,7 +72,7 @@ Demo path:
 
 Talk track:
 
-Pro turns CapitolWonk CE from a tracker into an intelligence layer. It gives users analysis, source trails, video context, advanced discovery, and higher-priority civic alerts.
+Pro turns CapitolWonk from a tracker into an intelligence layer. It gives users analysis, source trails, video context, advanced discovery, and higher-priority civic alerts.
 
 ## Civic Team Mode
 

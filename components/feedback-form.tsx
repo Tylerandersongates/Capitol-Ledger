@@ -65,7 +65,7 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
       setContactEmail("");
       setMessage("");
       setState("sent");
-      setStatusText("Feedback sent securely. Thank you for helping improve CapitolWonk CE.");
+      setStatusText(`Feedback sent securely. Thank you for helping improve ${publicBrandName}.`);
       setTitle("");
     } catch (error) {
       setState("error");

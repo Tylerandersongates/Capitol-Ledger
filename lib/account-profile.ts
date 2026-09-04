@@ -1,4 +1,5 @@
 import type { AccountNotificationPreferences, AccountProfileSnapshot } from "@/types/capitol";
+import { normalizeDailyBriefTimeZone } from "@/lib/weekly-brief-edition";
 
 const defaultNotificationPreferences: AccountNotificationPreferences = {
   districtAlerts: false,
@@ -34,6 +35,7 @@ export function normalizeAccountProfile(value: Partial<AccountProfileSnapshot> =
     districtState: value.districtState?.trim() || "",
     notificationPreferences: normalizeNotificationPreferences(value.notificationPreferences),
     partyAffiliation: value.partyAffiliation?.trim() ?? "",
+    timeZone: normalizeDailyBriefTimeZone(value.timeZone),
     updatedAt: new Date().toISOString()
   };
 }

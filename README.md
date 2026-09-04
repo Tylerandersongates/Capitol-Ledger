@@ -1,6 +1,6 @@
-# CapitolWonk CE
+# CapitolWonk
 
-CapitolWonk CE is a nonpartisan civic intelligence MVP for inspecting federal lawmakers, bills, votes, sponsorships, and saved legislative updates.
+CapitolWonk is a nonpartisan civic intelligence MVP for inspecting federal lawmakers, bills, votes, sponsorships, and saved legislative updates.
 
 This scaffold is demo-first: the app runs against local seed data immediately, while the Prisma schema and Congress.gov client provide the path to real ingestion.
 

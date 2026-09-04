@@ -218,7 +218,7 @@ async function main() {
     });
   }
 
-  console.log("Seeded CapitolWonk CE demo data.");
+  console.log("Seeded CapitolWonk demo data.");
 }
 
 main()

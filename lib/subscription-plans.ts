@@ -9,6 +9,7 @@ export type SubscriptionFeatureId =
   | "civicDashboard"
   | "exportReports"
   | "issueTracking"
+  | "personalizedBrief"
   | "priorityAlerts"
   | "savedLedger"
   | "sharedWatchlists"
@@ -169,7 +170,13 @@ export const subscriptionFeatureCatalog: SubscriptionFeature[] = [
   {
     id: "weeklyBrief",
     label: "Daily Brief",
-    description: "A daily summary from your district, saved items, alerts, topics, and major story watch.",
+    description: "Free daily video briefings with transcripts and source links.",
+    minimumPlan: "free"
+  },
+  {
+    id: "personalizedBrief",
+    label: "Personalized brief",
+    description: "District context, saved watchlist movement, and focused next steps.",
     minimumPlan: "pro"
   },
   {

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-CapitolWonk CE can create real account sessions, verification tokens, and password-reset tokens. This guide covers the outside email provider step needed to send verification and reset links to users.
+CapitolWonk can create real account sessions, verification tokens, and password-reset tokens. This guide covers the outside email provider step needed to send verification and reset links to users.
 
 ## Current App Path
 
@@ -21,7 +21,7 @@ NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 AUTH_SECRET="long-random-secret"
 AUTH_COOKIE_SECURE="true"
 AUTH_EMAIL_DELIVERY="webhook"
-AUTH_EMAIL_FROM="CapitolWonk CE <accounts@example.com>"
+AUTH_EMAIL_FROM="CapitolWonk <accounts@example.com>"
 AUTH_EMAIL_WEBHOOK_URL="https://provider-bridge.example.com/auth-email"
 AUTH_EMAIL_WEBHOOK_SECRET="long-random-secret"
 ```
@@ -40,17 +40,17 @@ AUTH_EMAIL_REQUIRE_PROVIDER=true pnpm auth-email:check
 
 ## Provider Bridge Contract
 
-When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk CE sends a `POST` request to `AUTH_EMAIL_WEBHOOK_URL` with:
+When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk sends a `POST` request to `AUTH_EMAIL_WEBHOOK_URL` with:
 
 ```json
 {
   "kind": "verify_email",
   "to": "user@example.com",
-  "from": "CapitolWonk CE <accounts@example.com>",
-  "subject": "Verify your CapitolWonk CE account",
+  "from": "CapitolWonk <accounts@example.com>",
+  "subject": "Verify your CapitolWonk account",
   "text": "Plain-text email body with the secure action link",
   "actionUrl": "https://your-app.example.com/sign-in?verifyToken=...",
-  "appName": "CapitolWonk CE",
+  "appName": "CapitolWonk",
   "user": {
     "email": "user@example.com",
     "name": "Demo Citizen"
@@ -70,7 +70,7 @@ Recommended first setup:
 
 1. Verify the sending domain.
 2. Create the sender identity used by `AUTH_EMAIL_FROM`.
-3. Create a small webhook bridge or serverless function that accepts CapitolWonk CE payloads.
+3. Create a small webhook bridge or serverless function that accepts CapitolWonk payloads.
 4. Validate `X-Capitol-Ledger-Secret`.
 5. Send the payload as a plain-text transactional email first.
 6. Add branded HTML after the plain-text path is reliable.
