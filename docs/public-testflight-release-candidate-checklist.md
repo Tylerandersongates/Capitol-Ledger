@@ -1,8 +1,8 @@
 # CapitolWonk Public TestFlight Release-Candidate Checklist
 
-Status: preparation only. Updated July 29, 2026 from the July 28 EOD handoff.
+Status: preparation only. July 29 evidence below is historical; current status pointers updated September 3, 2026 at closeout. The September 3 web release is live, but no new signed/device candidate or TestFlight upload was verified.
 
-This is the go/no-go checklist for public or external TestFlight testing. The July 29 EOD handoff is the source of truth. App Store Connect setup notes and earlier beta guides are reference material only.
+This is the go/no-go checklist for public or external TestFlight testing. Use the [September 3 EOD](eod-handoff-2026-09-03.md) and [current timeline/task ledger](project-timeline.md) for current ordering and carryovers; the July 29 safety gates below remain binding. Logo refresh is first on September 4. Reserve the October 2–6 owner-availability buffer when scheduling approvals/device work. App Store Connect setup notes and earlier beta guides are reference material only. Revalidate candidate-specific checks after logo/native changes; July checkmarks are not verification of a newly changed build. The fresh dependency audit remains unavailable, not clean.
 
 ## Candidate Snapshot
 
@@ -114,7 +114,8 @@ Do not print, copy to chat, or commit protected values or identifiers.
 
 | Document | Use for this release candidate |
 | --- | --- |
-| `docs/eod-handoff-2026-07-29.md` | Source of truth for the next clean continuation. |
+| `docs/eod-handoff-2026-09-03.md` and `docs/project-timeline.md` | Current release state, tomorrow's first task, full carryovers and availability-adjusted planning. |
+| `docs/eod-handoff-2026-07-29.md` | Prior candidate evidence and standing safety/approval rules; not the current web commit or fresh native QA. |
 | `docs/eod-handoff-2026-07-28.md` | Historical source for the original release-readiness task list. |
 | `docs/dependency-security-upgrade-plan-2026-07-28.md` | Approved upgrade scope and regression plan. |
 | `docs/public-testflight-tester-guide.md` | Sanitized tester-facing guide for the approved external/public TestFlight build and scope. Reverify against enabled services before distribution. |

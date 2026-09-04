@@ -1,6 +1,10 @@
 # Next Steps
 
-Current-status note (September 3, 2026): the roadmap below is a July 18 snapshot, not current deployment verification. Follow the latest dated EOD for release gates. Public branding is now CapitolWonk; the Daily Brief video is free and personalized coverage remains Pro. The local changes are not deployed. Round 1–3 exported tester guides are historical and must not be distributed as current launch material without a fresh review and export.
+Current-status note (September 3, 2026, closeout): CapitolWonk display-name cleanup and the free Daily Brief/Pro layout are **deployed**, and the daily-editions migration is applied. **First task for September 4: refresh the logo; artwork is still unchanged.** Use [Current Timeline and Task Ledger](../docs/project-timeline.md) and the [September 3 EOD](../docs/eod-handoff-2026-09-03.md) for the ordered tasks, current evidence and October 2–6 availability buffer. Update the ledger at every EOD, including any evidence-based schedule gains. TestFlight remains pending separate gates/approval.
+
+**User-set launch target: October 30, 2026.** Follow the ledger's backward plan and preserve review/rework contingency. Intermediate checkpoints are provisional; report forecast risk and obtain Tyler's decision before changing the launch target.
+
+The phase detail below is preserved as a **July 18 historical scope snapshot**, not current deployment verification, current authorization, or an estimate of remaining days. Current ledger statuses supersede old "local/not deployed," waiting-state and setup descriptions below. Round 1–3 exported tester guides are historical and must not be distributed as current launch material without a fresh review and export.
 
 ## Phase Roadmap
 
@@ -307,7 +311,8 @@ Upload checklist:
 
 ## Open Product Todos
 
-- None currently tracked.
+- Logo refresh is first for September 4; the existing artwork has not been replaced.
+- The complete ordered carry-forward list, device/video follow-ups, approval gates and deferred scope are maintained in `docs/project-timeline.md`. Do not infer an empty backlog from the historical completed-work lists.
 
 ## Completed Design Work
 

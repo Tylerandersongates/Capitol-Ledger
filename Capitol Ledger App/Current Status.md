@@ -1,6 +1,8 @@
 # Current Status
 
-> Status note (September 3, 2026): the dated status below is historical. Use the latest EOD handoff for release gates and current verification; the current display-name and Daily Brief changes are local only.
+> Status note (September 3, 2026, closeout): the display-name and Daily Brief changes are live on Vercel at `e82d7ea`, and the daily-editions migration is applied. CI and production smoke passed. The logo remains unchanged and is **first for September 4**. Use the [latest EOD](../docs/eod-handoff-2026-09-03.md) and [current timeline/task ledger](../docs/project-timeline.md) for carryovers, the October 2–6 availability buffer, and evidence-based schedule updates. TestFlight is not uploaded; privacy, signing, device/subscription QA and a fresh dependency audit remain open. The dated sections below are historical.
+
+**Launch target confirmed by Tyler: October 30, 2026.** Proposed checkpoints and remaining review contingency are in the ledger; no upload/review/release approval is implied by the date.
 
 ## July 18, 2026 Feedback and Monitoring Update
 

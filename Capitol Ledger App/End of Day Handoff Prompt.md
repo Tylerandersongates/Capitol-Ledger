@@ -18,6 +18,9 @@ Output in this exact structure:
 - What works now
 - What is partially done
 - What is blocked
+- Reconcile docs/project-timeline.md: carry every unfinished task ID, owner/dependency and next checkpoint forward. Record actual completion dates, remaining effort, prior/revised forecast dates and why they changed. State ahead/on track/behind only against an established baseline; otherwise say not yet measurable.
+- Carry forward the owner-availability buffer and adjust dependent approvals, device sessions, uploads and reviews. Keep the personal reason out of tracked notes.
+- Keep the October 30, 2026 user-set launch target and backward-plan checkpoints visible. Record forecast confidence and review/rework contingency; surface any risk to the target and do not move it without Tyler's decision.
 
 3) Environment And Config Changes
 - Any new/updated environment variables (names only unless I explicitly ask for values)
@@ -31,6 +34,7 @@ Output in this exact structure:
 5) Next Task (Single Safest Step)
 - One recommended next action for the next thread
 - Exact command(s) to run first
+- Identify tomorrow's first task explicitly; link the complete carry-forward ledger so other tasks are not lost.
 
 6) Resume Prompt For New Thread
 - Provide one copy/paste prompt I can use to start the next thread with all critical context.
@@ -42,6 +46,8 @@ Rules:
 - Include absolute dates when referencing "today/yesterday".
 - Do not invent anything that was not done.
 - If something could not be verified, say so explicitly.
+- Update the timeline and task ledger every EOD, even when ahead. If time is gained, pull forward only the next scoped, dependency-ready task and retain QA/availability contingency; do not add scope or bypass approvals.
+- Keep the dated handoff, current timeline, Current Status.md and Next Steps.md consistent. Never carry forward "not deployed" or "migration pending" after a verified release, and never promote old QA evidence to a newly changed native candidate.
 ```
 
 ## Prompt To Start The Next Thread

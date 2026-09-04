@@ -1,6 +1,6 @@
 # CapitolWonk App
 
-Use the latest dated EOD handoff in `docs/` for current verification and release gates. Older generated backend recommendations and tester PDFs/DOCX files are historical snapshots; their branding and billing guidance may be obsolete. Do not distribute them as current launch material without review and regeneration.
+Use the latest dated EOD handoff in `docs/` for current verification and release gates, and [Current Timeline and Task Ledger](../docs/project-timeline.md) for ordered carryovers, availability and schedule changes. Update both at every EOD. Older generated backend recommendations and tester PDFs/DOCX files are historical snapshots; their branding and billing guidance may be obsolete. Do not distribute them as current launch material without review and regeneration.
 
 CapitolWonk is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
 
@@ -33,8 +33,9 @@ CapitolWonk should feel like Bloomberg Terminal meets Apple meets modern civic a
 
 ## Product Notes
 
-- Current focus: first trusted beta tester intake on June 6, 2026. Phase 1 is tester-launch ready; Phase 2 and Phase 3 are now in beta QA/triage mode.
-- Latest pushed beta package: `b5106dd Prepare beta tester polish and guide`.
+- Current focus (September 3 closeout): logo refresh first on September 4, then the remaining privacy, audit, signing, device and subscription gates toward TestFlight. Carry the October 2–6 availability buffer and all unfinished tasks through the current ledger.
+- User-set launch target: October 30, 2026. Keep the ledger's backward plan, approvals and review/rework contingency current at each EOD.
+- Latest verified web product release: `e82d7ea` (PR #7), CapitolWonk name and free Daily Brief/Pro layout, live on Vercel. Native upload remains separately gated. The remaining product notes record earlier completed work, not fresh device QA.
 - The first-round beta tester guide lives in `docs/beta-tester-guide` as Markdown, PDF, editable DOCX, and annotated snapshots.
 - Password reset/forgot-password has been verified working for the beta pass.
 - Free, Pro Intelligence, and Civic Team now share one subscription entitlement matrix, with demo mode switchers on `/account` and `/upgrade`.
@@ -48,4 +49,4 @@ CapitolWonk should feel like Bloomberg Terminal meets Apple meets modern civic a
 - `/account` now includes optional party affiliation, displayed under city/district and controlled from Account Settings.
 - Save/unsave star actions on official and bill profiles now provide immediate in-UI confirmation (`Saved to your ledger` / `Removed from your ledger`) while updating saved-ledger state.
 - Official profile accountability now uses a visible nonpartisan methodology: the score is a weighted source-coverage model across voting records, public engagement, sponsored bills, and ethics/compliance evidence.
-- Active next step: run the deployed `/beta` smoke path, send the beta guide and deployed `/beta` link to the first trusted testers, then triage `/feedback/review` after each session.
+- Active next step: review and refresh the logo per T01 in the current ledger. Feedback uses Sentry/TestFlight; the old `/feedback/review` workflow is retired. No new tester invitations or distribution are authorized by these notes.

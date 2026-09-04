@@ -25,7 +25,7 @@ Keep `content/daily-brief-videos.json` as `{ "channelUrl": null, "episodes": [] 
 
 The page selects the latest valid episode whose publication time has passed. Future-dated and malformed episodes are not displayed. It labels the actual publication date, so yesterday's video is not presented as today's. Keep the prior episode until the replacement is ready. Missing transcripts or sources are labeled honestly, but the editorial workflow should supply both before release.
 
-This first version uses a checked-in content file, not a staff editor or live YouTube feed. Daily updates require a content edit and site release. No scheduler, channel synchronization, deployment, or production migration has been activated by this change. An authenticated publishing form or approved feed integration can be added later.
+This first version uses a checked-in content file, not a staff editor or live YouTube feed. Daily updates require a content edit and site release. The September 3 web release is deployed and the personalized daily-editions migration is applied; no scheduler, outbound sends or channel synchronization was activated. An authenticated publishing form or approved feed integration can be added later. Follow the latest EOD and `docs/project-timeline.md` for channel/first-video work and release approvals.
 
 ## Player and engagement behavior
 
