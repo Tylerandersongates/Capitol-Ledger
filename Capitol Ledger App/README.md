@@ -33,7 +33,7 @@ CapitolWonk should feel like Bloomberg Terminal meets Apple meets modern civic a
 
 ## Product Notes
 
-- Current focus (September 3 closeout): logo refresh first on September 4, then the remaining privacy, audit, signing, device and subscription gates toward TestFlight. Carry the October 2–6 availability buffer and all unfinished tasks through the current ledger.
+- Current focus (September 10): keep the existing logo, release the verified local `CE`-suffix removal only after explicit approval, then continue the privacy, audit, signing, device and subscription gates toward TestFlight. The September 4–10 gap put the plan behind its first checkpoint; carry the low-confidence October 30 forecast, October 2–6 availability buffer and all unfinished tasks through the current ledger.
 - User-set launch target: October 30, 2026. Keep the ledger's backward plan, approvals and review/rework contingency current at each EOD.
 - Latest verified web product release: `e82d7ea` (PR #7), CapitolWonk name and free Daily Brief/Pro layout, live on Vercel. Native upload remains separately gated. The remaining product notes record earlier completed work, not fresh device QA.
 - The first-round beta tester guide lives in `docs/beta-tester-guide` as Markdown, PDF, editable DOCX, and annotated snapshots.
@@ -49,4 +49,4 @@ CapitolWonk should feel like Bloomberg Terminal meets Apple meets modern civic a
 - `/account` now includes optional party affiliation, displayed under city/district and controlled from Account Settings.
 - Save/unsave star actions on official and bill profiles now provide immediate in-UI confirmation (`Saved to your ledger` / `Removed from your ledger`) while updating saved-ledger state.
 - Official profile accountability now uses a visible nonpartisan methodology: the score is a weighted source-coverage model across voting records, public engagement, sponsored bills, and ethics/compliance evidence.
-- Active next step: review and refresh the logo per T01 in the current ledger. Feedback uses Sentry/TestFlight; the old `/feedback/review` workflow is retired. No new tester invitations or distribution are authorized by these notes.
+- Active next step: review the local retained-logo/CE-free wordmark result and decide the exact narrow web release. After production smoke, continue T02's read-only Sentry geography review. Feedback uses Sentry/TestFlight; the old `/feedback/review` workflow is retired. No new tester invitations or distribution are authorized by these notes.
