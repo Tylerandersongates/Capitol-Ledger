@@ -2,9 +2,9 @@
 
 ## Decision
 
-**The approved narrow remediation is implemented and locally verified; the release gate remains open for one exact residual-risk decision.** The candidate aligns `next`, `eslint-config-next` and `@next/swc-wasm-nodejs` on `15.5.25` and refreshes the lockfile, including every compatible vulnerable transitive. Normal resolution also advances compatible packages inside the affected Next/ESLint/Sharp/Sentry build subtrees; the direct manifest still changes only the three aligned Next pins. The fresh production and full audits both improve to **0 critical, 2 high and 2 moderate** findings. All four remaining findings are in `postcss@8.4.31`, which Next 15.5.25 pins exactly.
+**T03 is closed for exact candidate `f4f04de` with Tyler's explicit candidate-specific residual-risk acceptance.** The candidate aligns `next`, `eslint-config-next` and `@next/swc-wasm-nodejs` on `15.5.25` and refreshes the lockfile, including every compatible vulnerable transitive. Normal resolution also advances compatible packages inside the affected Next/ESLint/Sharp/Sentry build subtrees; the direct manifest still changes only the three aligned Next pins. The fresh production and full audits both improve to **0 critical, 2 high and 2 moderate** findings. All four accepted residual findings are in `postcss@8.4.31`, which Next 15.5.25 pins exactly.
 
-The candidate removes both direct Next criticals and every remediable high finding without an override. July's exception does not silently accept the complete September residual: two of the four current PostCSS advisories were not in the July result. T03 therefore remains open until Tyler explicitly accepts this exact four-advisory candidate-specific residual or a supported Next release carries a patched nested PostCSS. No production deployment, protected configuration or external-service state changed during local remediation.
+The candidate removes both direct Next criticals and every remediable high finding without an override. July's exception did not silently carry forward: after branch CI and the matching Vercel preview passed, Tyler separately accepted the exact current two-high/two-moderate PostCSS set. The acceptance applies only to candidate `f4f04de`; it does not accept future advisory changes or authorize merging to `main`, production deployment, signing, TestFlight upload or distribution. Monitor maintained Next releases and replace the nested copy when a supported patch is available. No production deployment, protected configuration or protected external-service state changed during T03.
 
 ## Scope and toolchain
 
@@ -56,6 +56,13 @@ Local candidate verification passed:
 
 The existing `build:wasm` preload can silently fall back to native under this pnpm layout. Candidate verification therefore supplied Next's internal `NEXT_TEST_WASM_DIR` only to the local test process, asserted `binding.isWasm === true`, ran a real TypeScript transform and completed the build. This did not change production configuration. The helper's standalone reliability is a separate tooling follow-up, not evidence against the installed 15.5.25 WASM artifact.
 
+## Branch and preview evidence
+
+- Candidate commit: `f4f04dec6e7fcf29f41cf539156ab73667ba1a2f` on `codex/logo-refresh-sept10`.
+- [GitHub Actions run 34518247389](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34518247389): passed in approximately 1m55s. Frozen install, runtime check, TypeScript, brand, lint, feedback readiness and production build all passed.
+- [Vercel deployment `mep97jz9t5Hncx1t2mRBeTytDqut`](https://vercel.com/capitolwonkce/project-qosv1/mep97jz9t5Hncx1t2mRBeTytDqut): Ready/Latest from exact commit `f4f04de`; build completed in approximately two minutes with no failed stage or surfaced build warning/error.
+- Anonymous HTTP checks were correctly intercepted by Vercel Deployment Protection. Through the existing authenticated project-owner browser session, 14 application-page/redirect checks reached the preview with no stale `CE` branding, and rendered pages verified both the local-logo and allowlisted Congress.gov image-optimizer paths. The complete unprotected application/status matrix remains the local optimized-server result: 19/19 routes and 2/2 optimizer requests.
+
 ## Baseline production findings
 
 | Locked package | Severity/count | Advisory IDs | Patched floor | Dependency path and observed reachability |
@@ -84,17 +91,17 @@ The full graph reports **18 package-version findings: 2 critical, 14 high and 2 
 - Vercel documents Amazon Linux 2023 for its **build image**, but that does not by itself establish the deployed Functions runtime filesystem. No runtime-OS verification was performed, so the Windows advisory's current applicability remains unverified.
 - The AVIF advisory concerns decoding an AVIF **input** during optimization. Next's default WebP output and CapitolWonk's lack of an `images.formats` override do not mitigate that input path. No known AVIF asset or upload route was found and the remote-image allowlist is limited to Congress hosts, but an allowed upstream could still return AVIF content.
 - The remediated candidate removes both critical findings and all Sharp, fast-uri, brace-expansion, nanoid and js-yaml findings. The original Next/AVIF/Windows reachability caveats no longer represent candidate vulnerabilities.
-- No application path that accepts attacker-controlled CSS or `sourceMappingURL` input was found. The remaining nested PostCSS copy is observed in the trusted repository build path. That materially limits reachability, but it does not satisfy the release target of zero unaccepted high/critical findings.
-- Tyler's July exception remains recorded for the then-known three-high/one-moderate PostCSS/sharp subset. Sharp is now patched, while the candidate's PostCSS result is two high and two moderate advisories. Because the current set is not identical to the July set, T03 still requires a new exact candidate-specific acceptance.
+- No application path that accepts attacker-controlled CSS or `sourceMappingURL` input was found. The remaining nested PostCSS copy is observed in the trusted repository build path. That materially limits reachability but does not remove the technical findings; Tyler's exact acceptance converts them from unaccepted to accepted/monitored risk for candidate `f4f04de` only.
+- Tyler's July exception remains recorded for the then-known three-high/one-moderate PostCSS/sharp subset. Sharp is now patched, while the candidate's PostCSS result is two high and two moderate advisories. Because the current set is not identical to the July set, Tyler granted a separate exact candidate-specific acceptance after reviewing the remediated audit and external evidence.
 
-## Remediation execution and remaining decision
+## Remediation execution and closure
 
 1. **Complete:** Tyler approved the exact narrow dependency change.
 2. **Complete:** align the Next toolchain on `15.5.25` and use a targeted Node 22/pnpm 9 lock refresh that moves every compatible vulnerable transitive. Normal resolution also updates compatible packages within the affected dependency subtrees; no override or package-age bypass was used.
 3. **Complete locally:** frozen install, graph inspection, production/full re-audits, TypeScript, lint, native and true-WASM builds, the complete regression/readiness suite, and optimized HTTP/image smoke.
-4. **Pending external evidence:** push the candidate branch, pass branch CI and verify its Vercel preview.
-5. **Pending Tyler:** explicitly accept the exact remaining `postcss@8.4.31` two-high/two-moderate limited-reachability residual for this candidate, or keep T03 open while waiting for a supported Next release with patched nested PostCSS. Do not add an unsupported override merely to suppress the audit.
-6. Close T03 only after step 4 passes and step 5 has an explicit decision. Keep any accepted residual visible in the upload decision packet.
+4. **Complete:** candidate `f4f04de` was pushed; exact-head branch CI and the matching Ready/Latest Vercel preview passed.
+5. **Complete:** Tyler explicitly accepted the exact remaining `postcss@8.4.31` two-high/two-moderate limited-reachability residual for this candidate. No unsupported override was added.
+6. **Complete:** T03 is closed for `f4f04de`. Keep the exception visible in the eventual upload decision packet and re-audit if the candidate dependency graph changes.
 
 ## Control observations
 
@@ -109,7 +116,7 @@ The full graph reports **18 package-version findings: 2 critical, 14 high and 2 
 - Approved dependency remediation: **implemented and locally verified**.
 - Critical findings: **cleared (2 → 0)**.
 - Residual findings: **2 high and 2 moderate, all nested Next PostCSS**.
-- Branch CI/Vercel preview: **pending**.
-- Release gate/T03: **open pending external evidence and Tyler's exact residual-risk decision**.
-- New risk exception: **not granted**.
+- Branch CI/Vercel preview: **passed for exact commit `f4f04de`**.
+- Candidate-specific risk exception: **granted by Tyler for the exact four nested PostCSS findings**.
+- Release gate/T03: **closed for candidate `f4f04de`**.
 - Production/config/external-service mutation during remediation: **none**.
