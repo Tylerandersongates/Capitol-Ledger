@@ -36,4 +36,7 @@ assert.match(readFileSync(".env.example", "utf8"), /^NEXT_PUBLIC_APP_NAME="?Capi
 for (const file of ["components/feedback-form.tsx", "app/global-error.tsx"]) {
   assert.ok(readFileSync(file, "utf8").includes('from "@/lib/brand"'), `${file} must use the shared brand.`);
 }
+const wordmark = readFileSync("components/brand-wordmark.tsx", "utf8");
+assert.ok(wordmark.includes(">Wonk</span>"), "The shared wordmark should render CapitolWonk without a suffix.");
+assert.doesNotMatch(wordmark, />Wonk\s+CE</i, "The shared wordmark must not restore the retired CE suffix.");
 console.log("Public brand check passed: current name, legacy override, active text, and native display names.");

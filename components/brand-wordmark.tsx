@@ -9,7 +9,7 @@ export function BrandWordmark({ className = "", foilClassName = "" }: BrandWordm
   return (
     <span className={`brand-wordmark inline-flex items-baseline whitespace-nowrap ${className}`} aria-label={publicBrandName}>
       <span className="text-white">Capitol</span>
-      <span className={`brand-wordmark-foil ${foilClassName}`}>Wonk CE</span>
+      <span className={`brand-wordmark-foil ${foilClassName}`}>Wonk</span>
     </span>
   );
 }
