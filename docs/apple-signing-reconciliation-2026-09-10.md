@@ -41,8 +41,8 @@ Until Apple replies and Tyler approves one exact action, do not:
 
 Wait for Apple Developer Support to reply on the existing case. When a response arrives, inspect it read-only, record only a redacted technical summary, reconcile it with the zero-identity/current-profile evidence, and present Tyler one narrowly scoped action for explicit approval. If no response arrives in the planned window, present a schedule impact and an approval-gated escalation option; do not create a duplicate case automatically.
 
-## Workspace-integrity hold
+## Workspace-integrity resolution
 
-The worktree and remote branch matched at documentation commit `2443c08` before T04 began. During the read-only pass, an unexplained uncommitted `pnpm-lock.yaml` diff appeared without a `package.json` change. It downgrades several transitives patched by T03 and would change the accepted dependency graph. The diff is not staged, committed or pushed; remote dependency candidate `f4f04de` and its recorded evidence remain unchanged.
+The worktree and remote branch matched at documentation commit `2443c08` before T04 began. During the read-only pass, an unexplained uncommitted `pnpm-lock.yaml` diff appeared without a `package.json` change. It downgraded several transitives patched by T03 and would have changed the accepted dependency graph. The diff was not staged, committed or pushed; remote dependency candidate `f4f04de` and its recorded evidence remained unchanged.
 
-Do not treat the dirty lockfile as a candidate, run a package install from it, or include it in a T04 documentation commit. Preserve it for inspection and obtain Tyler's direction before restoring or keeping it.
+The diff was quarantined without running an install or build. Tyler explicitly approved restoring only `pnpm-lock.yaml` to the committed T03 version and pushing the T04 documentation checkpoint. The restored file matches the committed lockfile; no dependency change was staged, committed or pushed.
