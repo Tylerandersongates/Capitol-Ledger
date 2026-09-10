@@ -1,8 +1,8 @@
 # CapitolWonk Public TestFlight Release-Candidate Checklist
 
-Status: preparation only. July 29 evidence below is historical; current status pointers updated September 3, 2026 at closeout. The September 3 web release is live, but no new signed/device candidate or TestFlight upload was verified.
+Status: preparation only. July 29 evidence below is historical; current status pointers updated September 10, 2026 after the approved wordmark release. Production source `7ec68bc` is live, but no new signed/device candidate or TestFlight upload was verified.
 
-This is the go/no-go checklist for public or external TestFlight testing. Use the [September 3 EOD](eod-handoff-2026-09-03.md) and [current timeline/task ledger](project-timeline.md) for current ordering and carryovers; the July 29 safety gates below remain binding. Logo refresh is first on September 4. Reserve the October 2–6 owner-availability buffer when scheduling approvals/device work. App Store Connect setup notes and earlier beta guides are reference material only. Revalidate candidate-specific checks after logo/native changes; July checkmarks are not verification of a newly changed build. The fresh dependency audit remains unavailable, not clean.
+This is the go/no-go checklist for public or external TestFlight testing. Use the [September 10 EOD](eod-handoff-2026-09-10.md) and [current timeline/task ledger](project-timeline.md) for current ordering and carryovers; the July 29 safety gates below remain binding. T01 is complete with the logo retained and only the shared wordmark-card `CE` suffix removed; T02's read-only Sentry geography review is next, while corrected-wordmark listing screenshot recapture remains under T09. Reserve the October 2–6 owner-availability buffer when scheduling approvals/device work. App Store Connect setup notes and earlier beta guides are reference material only. Revalidate candidate-specific checks against the exact native candidate; July checkmarks are not verification of a newly changed build. The fresh dependency audit remains unavailable, not clean.
 
 ## Candidate Snapshot
 

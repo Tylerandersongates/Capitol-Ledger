@@ -1,6 +1,6 @@
 # Next Steps
 
-Current-status note (September 10, 2026): Tyler confirmed the logo artwork stays. The local shared wordmark now omits `CE` at commit `6ce9d5b`; production remains on `e82d7ea` until that narrow release is explicitly approved. Use [Current Timeline and Task Ledger](../docs/project-timeline.md) and the [September 10 EOD](../docs/eod-handoff-2026-09-10.md) for the ordered tasks, evidence, revised estimates and October 2–6 availability buffer. The September 4–10 gap left the plan behind its first checkpoint; October 30 is still the target but is not evidenced on track. After the T01 production decision/smoke, continue the read-only Sentry geography decision, fresh dependency audit, signing, protected/native checks, device and subscription gates. TestFlight remains pending separate approval.
+Current-status note (September 10, 2026): T01 is complete. Tyler retained the logo artwork, and production source `7ec68bc` removes `CE` only from the shared wordmark cards; GitHub CI, Ready/Current Vercel deployment and five-route live smoke all passed. Use [Current Timeline and Task Ledger](../docs/project-timeline.md) and the [September 10 EOD](../docs/eod-handoff-2026-09-10.md) for the ordered tasks, evidence, revised estimates and October 2–6 availability buffer. The September 4–10 gap left the plan behind its first checkpoint; October 30 is still the target but is not evidenced on track. Continue with T02's read-only Sentry geography review, then the fresh dependency audit, signing, protected/native checks, device and subscription gates. The two current App Store listing screenshots still show `CE` and require recapture before reuse under T09; remote asset replacement and TestFlight remain pending separate approval.
 
 **User-set launch target: October 30, 2026.** Follow the ledger's backward plan and preserve review/rework contingency. Intermediate checkpoints are provisional; report forecast risk and obtain Tyler's decision before changing the launch target.
 
@@ -311,7 +311,7 @@ Upload checklist:
 
 ## Open Product Todos
 
-- Logo refresh is first for September 4; the existing artwork has not been replaced.
+- T01 is complete at production source `7ec68bc`: the existing logo artwork was retained and only the shared wordmark-card `CE` suffix was removed. T02's read-only Sentry geography review is next; corrected-wordmark listing screenshot recapture remains under T09.
 - The complete ordered carry-forward list, device/video follow-ups, approval gates and deferred scope are maintained in `docs/project-timeline.md`. Do not infer an empty backlog from the historical completed-work lists.
 
 ## Completed Design Work
