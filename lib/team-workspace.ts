@@ -1231,8 +1231,7 @@ function readMemoryPendingTeamWorkspaceInvitesForEmail({
 }
 
 async function readDatabasePendingTeamWorkspaceInvitesForEmail({
-  email,
-  userId
+  email
 }: {
   email: string;
   userId?: string;

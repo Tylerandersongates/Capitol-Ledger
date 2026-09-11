@@ -7,7 +7,7 @@ This is the go/no-go checklist for public or external TestFlight testing. Use th
 ## Candidate Snapshot
 
 - Current verified production source: `main` at `7ec68bc` (CE-free shared wordmark).
-- Current review branch: `codex/logo-refresh-sept10`; Tyler authorized the final September 10 checkpoint push, and the commit containing this checklist is its exact reviewed non-production T08/T09 candidate. The earlier dependency evidence candidate is `f4f04de`.
+- Current review branch: `codex/logo-refresh-sept10`; Tyler authorized the final September 10 checkpoint, and its current branch tip is the exact reviewed non-production T08/T09 candidate, including any direct CI-only correction needed to make the checkpoint pass. The earlier dependency evidence candidate is `f4f04de`.
 - The privacy/deletion and channel-only YouTube package is frozen in that branch checkpoint. Post-push CI/Preview evidence remains to be inspected; it is not a production or native release candidate. Historical native build-2 evidence from `codex/testflight-build-2-rc` remains reference-only.
 - Production web target: `https://project-qosv1.vercel.app`
 - Current native project settings resolve to the approved candidate marketing version `1.0`, build `2`, iPhone and iPad support, and iOS 16.0 minimum deployment.
