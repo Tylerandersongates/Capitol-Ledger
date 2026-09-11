@@ -2107,8 +2107,8 @@ async function getDatabaseDashboardRecords() {
       .filter((bill): bill is PrismaBill => Boolean(bill));
 
     return {
-      bills: mergeBillsByRecordKey([...billRows, ...voteBills].map(mapDatabaseBill), bills),
-      votes: mergeBy(voteRows.map(mapDatabaseVote), votes, (vote) => vote.id)
+      bills: dedupeDashboardBills([...billRows, ...voteBills].map(mapDatabaseBill)),
+      votes: voteRows.map(mapDatabaseVote)
     };
   } catch {
     return null;
@@ -2130,7 +2130,7 @@ export async function getDashboardDataWithLiveData() {
     return buildDashboardData(dashboardLiveRecordsCache.records.bills, dashboardLiveRecordsCache.records.votes);
   }
 
-  return getDashboardData();
+  return buildDashboardData([], []);
 }
 
 export function getRecentUpdates() {

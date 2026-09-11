@@ -56,7 +56,7 @@ import type {
 
 type DashboardData = ReturnType<typeof getDashboardData>;
 type DashboardVoteFeedCandidate = DashboardData["voteFeed"][number] & { sourceLabel?: string };
-type DashboardVoteFreshnessTone = "empty" | "fresh" | "quiet" | "reference";
+type DashboardVoteFreshnessTone = "empty" | "fresh" | "quiet";
 type DashboardFavoriteItem = {
   id: string;
   href: string;
@@ -154,6 +154,7 @@ export function DashboardClient({
     return data.favoriteTargets.bills.find((bill) => bill.id === savedBill.id);
   }, [data.favoriteTargets.bills, favoriteRecords]);
   const hasTrackedBill = Boolean(trackedBill);
+  const hasLiveBillData = data.billsInAction > 0;
   const trackerStage = resolveBillTrackerStage(trackedBill?.latestActionText);
   const trackerStageIndex = Math.max(0, billTrackerStages.findIndex((stage) => stage.label === trackerStage));
   const trackerFillPercent = (trackerStageIndex / (billTrackerStages.length - 1)) * 100;
@@ -412,50 +413,64 @@ export function DashboardClient({
                       <FileText className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                       Live bill tracker
                     </div>
-                    <h2 className="mt-2 max-w-[19rem] text-[26px] font-semibold leading-tight">Today&apos;s bills</h2>
-                    <p className="mt-2 text-[17px] text-white/62">{data.billsInAction} active bills in Congress</p>
+                    <h2 className="mt-2 max-w-[19rem] text-[26px] font-semibold leading-tight">
+                      {hasLiveBillData ? "Today’s bills" : "Live bill data is unavailable"}
+                    </h2>
+                    <p className="mt-2 text-[17px] text-white/62">
+                      {hasLiveBillData
+                        ? `${data.billsInAction} active ${data.billsInAction === 1 ? "bill" : "bills"} in Congress`
+                        : "Current congressional bill activity will appear when live records are available."}
+                    </p>
                   </div>
-                  <Link
-                    href="/live-docket"
-                    className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
-                    aria-label={`Open ${data.billsInAction} active bill results`}
-                  >
-                    <span>{data.billsInAction}</span>
-                    <ChevronRight className="h-5 w-5 text-white/46" aria-hidden="true" />
-                  </Link>
+                  {hasLiveBillData ? (
+                    <Link
+                      href="/live-docket"
+                      className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
+                      aria-label={`Open ${data.billsInAction} active bill results`}
+                    >
+                      <span>{data.billsInAction}</span>
+                      <ChevronRight className="h-5 w-5 text-white/46" aria-hidden="true" />
+                    </Link>
+                  ) : null}
                 </div>
-                <div className={`${dashboardInnerPanelClass} mt-5 px-3 py-3`}>
-                  <div className="flex h-3 overflow-hidden rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
-                    <Link
-                      href="/live-docket?status=passed"
-                      className="block h-full bg-[#28c98a] transition hover:brightness-110"
-                      style={{ width: `${passedPercent}%` }}
-                      aria-label={`${data.statusCounts.passed} passed bills`}
-                    />
-                    <Link
-                      href="/live-docket?status=in-committee"
-                      className="block h-full bg-[#ffc047] transition hover:brightness-110"
-                      style={{ width: `${committeePercent}%` }}
-                      aria-label={`${data.statusCounts.inCommittee} bills in committee`}
-                    />
-                    <Link
-                      href="/live-docket?status=in-progress"
-                      className="block h-full bg-[#2f9fff] transition hover:brightness-110"
-                      style={{ width: `${inProgressPercent}%` }}
-                      aria-label={`${inProgressCount} bills in progress`}
-                    />
+                {hasLiveBillData ? (
+                  <div className={`${dashboardInnerPanelClass} mt-5 px-3 py-3`}>
+                    <div className="flex h-3 overflow-hidden rounded-full bg-[#06152d] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]">
+                      <Link
+                        href="/live-docket?status=passed"
+                        className="block h-full bg-[#28c98a] transition hover:brightness-110"
+                        style={{ width: `${passedPercent}%` }}
+                        aria-label={`${data.statusCounts.passed} passed bills`}
+                      />
+                      <Link
+                        href="/live-docket?status=in-committee"
+                        className="block h-full bg-[#ffc047] transition hover:brightness-110"
+                        style={{ width: `${committeePercent}%` }}
+                        aria-label={`${data.statusCounts.inCommittee} bills in committee`}
+                      />
+                      <Link
+                        href="/live-docket?status=in-progress"
+                        className="block h-full bg-[#2f9fff] transition hover:brightness-110"
+                        style={{ width: `${inProgressPercent}%` }}
+                        aria-label={`${inProgressCount} bills in progress`}
+                      />
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <StatusCountLink color="#28c98a" href="/live-docket?status=passed" label="Passed" value={data.statusCounts.passed} />
+                      <StatusCountLink
+                        color="#ffc047"
+                        href="/live-docket?status=in-committee"
+                        label="In Committee"
+                        value={data.statusCounts.inCommittee}
+                      />
+                      <StatusCountLink color="#2f9fff" href="/live-docket?status=in-progress" label="In Progress" value={inProgressCount} />
+                    </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <StatusCountLink color="#28c98a" href="/live-docket?status=passed" label="Passed" value={data.statusCounts.passed} />
-                    <StatusCountLink
-                      color="#ffc047"
-                      href="/live-docket?status=in-committee"
-                      label="In Committee"
-                      value={data.statusCounts.inCommittee}
-                    />
-                    <StatusCountLink color="#2f9fff" href="/live-docket?status=in-progress" label="In Progress" value={inProgressCount} />
+                ) : (
+                  <div className={`${dashboardInnerPanelClass} mt-5 px-3 py-3 text-[13px] leading-snug text-white/48`}>
+                    Bill totals will appear after the live congressional feed updates.
                   </div>
-                </div>
+                )}
               </div>
             </MobileCard>
 
@@ -632,32 +647,42 @@ export function DashboardClient({
 
             <MobileCard variant="dashboard" className="relative mt-3 overflow-hidden px-3 py-3">
               <div className={dashboardCardAccentClass} />
-              <div className="relative z-10">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
-                  <div className="min-w-0">
-                    <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{recentVoteBill?.shortTitle ?? recentVote?.question ?? "No recent vote"}</h3>
-                    <p className="mt-1 text-[15px] text-white/58">{recentVoteBill?.displayNumber ?? recentVote?.rollCall ?? "Roll call"}</p>
+              {selectedVoteFeed ? (
+                <div className="relative z-10">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
+                    <div className="min-w-0">
+                      <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">{recentVoteBill?.shortTitle ?? recentVote?.question}</h3>
+                      <p className="mt-1 text-[15px] text-white/58">{recentVoteBill?.displayNumber ?? recentVote?.rollCall}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] text-white/50">{recentVoteSourceLabel}</div>
+                      <div className="rounded-full border border-[#2be68d]/25 bg-[#2be68d]/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none text-[#2be68d]">{recentVote?.result ?? "Updated"}</div>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-2">
-                    <div className="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] text-white/50">{recentVoteSourceLabel}</div>
-                    <div className="rounded-full border border-[#2be68d]/25 bg-[#2be68d]/10 px-2.5 py-1 text-right text-[14px] font-medium leading-none text-[#2be68d]">{recentVote?.result ?? "Updated"}</div>
+                  <VoteSpreadPanel
+                    className="mt-2"
+                    totals={{
+                      no: recentVoteTotals?.no ?? 0,
+                      notVoting: recentVoteTotals?.notVoting ?? 0,
+                      yes: recentVoteTotals?.yes ?? 0
+                    }}
+                  />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] ${getDashboardVoteFreshnessToneClass(recentVoteFreshness.tone)}`}>
+                      {recentVoteFreshness.label}
+                    </span>
+                    <span className="text-[12px] font-medium text-white/48">{recentVoteFreshness.detail}</span>
                   </div>
                 </div>
-                <VoteSpreadPanel
-                  className="mt-2"
-                  totals={{
-                    no: recentVoteTotals?.no ?? 0,
-                    notVoting: recentVoteTotals?.notVoting ?? 0,
-                    yes: recentVoteTotals?.yes ?? 0
-                  }}
-                />
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.07em] ${getDashboardVoteFreshnessToneClass(recentVoteFreshness.tone)}`}>
-                    {recentVoteFreshness.label}
-                  </span>
-                  <span className="text-[12px] font-medium text-white/48">{recentVoteFreshness.detail}</span>
+              ) : (
+                <div className="relative z-10 py-2">
+                  <p className="text-[15px] font-medium text-white/58">No recent national votes available.</p>
+                  <h3 className="mt-2 text-[21px] font-semibold leading-tight text-white">Live vote results will appear here</h3>
+                  <p className="mt-2 text-[14px] leading-snug text-white/48">
+                    Current congressional roll-call results will appear when live records are available.
+                  </p>
                 </div>
-              </div>
+              )}
             </MobileCard>
 
             <div className="mt-8 flex items-center justify-between">
@@ -1089,14 +1114,6 @@ function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undef
 
   const recordedLabel = `Last recorded ${formatDate(candidate.vote.voteDate)}`;
 
-  if (candidate.sourceKind === "demo") {
-    return {
-      detail: recordedLabel,
-      label: "Reference record",
-      tone: "reference" as const
-    };
-  }
-
   const voteDateKey = getUtcDateKey(candidate.vote.voteDate);
   const generatedDateKey = getUtcDateKey(generatedAt);
 
@@ -1116,7 +1133,6 @@ function getDashboardVoteFreshness(candidate: DashboardVoteFeedCandidate | undef
 }
 
 function getDashboardVoteFreshnessToneClass(tone: DashboardVoteFreshnessTone) {
-  if (tone === "reference") return "border-[#ffb12b]/30 bg-[#ffb12b]/12 text-[#ffb12b]";
   if (tone === "fresh") return "border-[#2be68d]/28 bg-[#2be68d]/12 text-[#2be68d]";
   if (tone === "quiet") return "border-[#79a8ff]/24 bg-[#79a8ff]/10 text-[#9fc4ff]";
   return "border-white/10 bg-white/[0.045] text-white/48";
@@ -1128,18 +1144,19 @@ function resolveDashboardVoteFeed(
   targets: DashboardData["favoriteTargets"],
   profile: AccountProfileSnapshot | null
 ) {
+  const liveCandidates = candidates.filter((candidate) => candidate.sourceKind !== "demo");
   const savedBillIds = new Set(uniqueFavoriteRecords(records).filter((record) => record.type === "bill").map((record) => record.id));
-  const savedBillVote = candidates.find((candidate) => candidate.vote.billId && savedBillIds.has(candidate.vote.billId));
+  const savedBillVote = liveCandidates.find((candidate) => candidate.vote.billId && savedBillIds.has(candidate.vote.billId));
   if (savedBillVote) return { ...savedBillVote, sourceLabel: "Saved bill" };
 
   const delegationIds = getFederalDelegationMemberIds(targets, profile);
-  const delegationVote = candidates.find((candidate) => candidate.memberBioguideIds.some((memberId) => delegationIds.has(memberId)));
+  const delegationVote = liveCandidates.find((candidate) => candidate.memberBioguideIds.some((memberId) => delegationIds.has(memberId)));
   if (delegationVote) return { ...delegationVote, sourceLabel: "Your officials" };
 
-  const nationalVote = candidates.find((candidate) => Boolean(candidate.bill));
+  const nationalVote = liveCandidates.find((candidate) => Boolean(candidate.bill));
   if (nationalVote) return { ...nationalVote, sourceLabel: "National feed" };
 
-  const latestVote = candidates[0];
+  const latestVote = liveCandidates[0];
   return latestVote ? { ...latestVote, sourceLabel: "Congress feed" } : undefined;
 }
 
