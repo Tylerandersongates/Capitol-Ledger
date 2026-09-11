@@ -1,7 +1,14 @@
-import { getAccountLedger } from "@/lib/account-ledger";
-import { getAccountProfile } from "@/lib/account-profile";
-import { getAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { getAccountLedger, normalizeAccountLedger } from "@/lib/account-ledger";
+import { getAccountProfile, getDefaultAccountProfile } from "@/lib/account-profile";
+import { getAccountSubscription, normalizeAccountSubscription } from "@/lib/account-subscription";
+import {
+  canUseDatabasePersistence,
+  getAccountPersistenceUserId,
+  readLedgerFromDatabase,
+  readProfileFromDatabase,
+  readSubscriptionFromDatabase
+} from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { publicBrandName } from "@/lib/brand";
 import {
   getAllMembers,
@@ -827,19 +834,23 @@ export async function getWeeklyBriefForUser(
     previousBrief?: WeeklyBriefSnapshot;
   } = {}
 ) {
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const accountUserId = await getAccountPersistenceUserId(user);
 
   const [databaseLedger, databaseProfile, databaseSubscription] = await Promise.all([
-    readLedgerFromDatabase(accountUserId).catch(() => null),
-    readProfileFromDatabase(accountUserId).catch(() => null),
-    readSubscriptionFromDatabase(accountUserId).catch(() => null)
+    readLedgerFromDatabase(accountUserId),
+    readProfileFromDatabase(accountUserId),
+    readSubscriptionFromDatabase(accountUserId)
   ]);
 
-  const ledger = databaseLedger ?? getAccountLedger(accountUserId);
-  const profile = databaseProfile ?? getAccountProfile(accountUserId);
-  const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const usesDatabase = canUseDatabasePersistence();
+  const ledger = databaseLedger ?? (usesDatabase ? normalizeAccountLedger() : getAccountLedger(accountUserId));
+  const profile = databaseProfile ?? (usesDatabase ? getDefaultAccountProfile() : getAccountProfile(accountUserId));
+  const personalSubscription = databaseSubscription ??
+    (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
   const [subscription, gdeltArticles] = await Promise.all([
-    getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription),
+    getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch((error) =>
+      fallbackUnlessAccountPersistenceUnavailable(error, personalSubscription)
+    ),
     fetchGdeltDailyBriefItems({ interests: ledger.issueInterests }).catch(() => [])
   ]);
 

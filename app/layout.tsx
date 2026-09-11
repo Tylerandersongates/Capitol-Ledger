@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AccountDeletionBrowserGuard } from "@/components/account-deletion-browser-guard";
 import { SiteHeader } from "@/components/site-header";
 import { publicBrandName } from "@/lib/brand";
 
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
+        <AccountDeletionBrowserGuard />
         <SiteHeader />
         <main>{children}</main>
       </body>

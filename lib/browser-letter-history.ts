@@ -1,4 +1,4 @@
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import type { OfficialContactMessageRecord } from "@/lib/official-contact-messages";
 
 export type SentLetterRecord = OfficialContactMessageRecord & {
@@ -10,7 +10,7 @@ export const sentLettersChangedEvent = "capitol-ledger:sent-letters-changed";
 const sentLettersKey = "capitol-ledger:sent-letters";
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined" || !window.localStorage) return fallback;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return fallback;
 
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
@@ -20,7 +20,7 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined" || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -117,6 +117,7 @@ export function writeLocalSentLetters(records: SentLetterRecord[]) {
 }
 
 export function recordLocalSentLetter(record: OfficialContactMessageRecord) {
+  if (isBrowserAccountDeletionFenced()) return null;
   const normalized = normalizeSentLetter(record, "local");
   if (!normalized) return null;
 
@@ -126,6 +127,7 @@ export function recordLocalSentLetter(record: OfficialContactMessageRecord) {
 }
 
 export function confirmLocalSentLetter(id: string) {
+  if (isBrowserAccountDeletionFenced()) return null;
   const confirmedAt = new Date().toISOString();
   const next = readLocalSentLetters().map((record) =>
     record.id === id
@@ -147,6 +149,7 @@ export async function fetchAccountSentLetters() {
   if (!response?.ok) return [];
 
   const data = (await response.json().catch(() => null)) as { letters?: unknown[] } | null;
+  if (isBrowserAccountDeletionFenced()) return [];
   const records = Array.isArray(data?.letters) ? data.letters : [];
   return records.map((record) => normalizeSentLetter(record, "account")).filter(Boolean) as SentLetterRecord[];
 }
@@ -154,6 +157,7 @@ export async function fetchAccountSentLetters() {
 export async function hydrateSentLetters() {
   const localLetters = readLocalSentLetters();
   const accountLetters = await fetchAccountSentLetters();
+  if (isBrowserAccountDeletionFenced()) return [];
   const merged = mergeLetters([...accountLetters, ...localLetters]);
 
   if (accountLetters.length && JSON.stringify(localLetters) !== JSON.stringify(merged)) {

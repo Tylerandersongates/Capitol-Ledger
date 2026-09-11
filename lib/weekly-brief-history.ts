@@ -1,4 +1,5 @@
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
+import { assertAccountMemoryPersistenceAllowed } from "@/lib/account-persistence-safety";
 import type { WeeklyBriefSnapshot } from "@/lib/weekly-brief";
 
 export type WeeklyBriefDeliveryStatus = "prepared" | "queued_demo" | "sent" | "failed" | "paused" | "preview_only";
@@ -103,6 +104,7 @@ export function normalizeWeeklyBriefDeliveryRecord(
 }
 
 export function addWeeklyBriefDeliveryRecord(userId: string, value: WeeklyBriefDeliveryInput) {
+  assertAccountMemoryPersistenceAllowed("addWeeklyBriefDeliveryRecord");
   const record = normalizeWeeklyBriefDeliveryRecord(userId, value);
   const records = weeklyBriefHistoryStore.get(userId) ?? [];
   const next = [record, ...records].slice(0, 20);
@@ -112,7 +114,36 @@ export function addWeeklyBriefDeliveryRecord(userId: string, value: WeeklyBriefD
 }
 
 export function getWeeklyBriefDeliveryHistory(userId: string) {
+  assertAccountMemoryPersistenceAllowed("getWeeklyBriefDeliveryHistory");
   return (weeklyBriefHistoryStore.get(userId) ?? []).slice(0, 10);
+}
+
+export function clearWeeklyBriefHistoryMemory(userId: string, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  let deleted = 0;
+
+  for (const [key, records] of weeklyBriefHistoryStore) {
+    if (key === userId) {
+      deleted += records.length;
+      weeklyBriefHistoryStore.delete(key);
+      continue;
+    }
+
+    const retainedRecords = records.filter((record) => {
+      const matchesUser = record.userId === userId;
+      const matchesEmail = normalizedEmail && record.recipient?.trim().toLowerCase() === normalizedEmail;
+      if (!matchesUser && !matchesEmail) return true;
+
+      deleted += 1;
+      return false;
+    });
+
+    if (retainedRecords.length === records.length) continue;
+    if (retainedRecords.length === 0) weeklyBriefHistoryStore.delete(key);
+    else weeklyBriefHistoryStore.set(key, retainedRecords);
+  }
+
+  return deleted;
 }
 
 function isWeeklyBriefDeliveryStatus(value: unknown): value is WeeklyBriefDeliveryStatus {

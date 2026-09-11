@@ -18,7 +18,7 @@ import {
   writeLocalNotificationPreferences,
   type LocalDistrictProfile
 } from "@/lib/browser-account-profile";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { hydrateAccountLedgerFromAccount } from "@/lib/browser-account-ledger";
 import { useSubscriptionState } from "@/components/subscription-controls";
 import { recordCompletedDistrictSetupIfReady, recordGamificationEvent } from "@/lib/browser-gamification";
@@ -125,7 +125,7 @@ function districtNumberFromProfileCode(code?: string) {
 }
 
 function readSavedFollowRecords() {
-  if (typeof window === "undefined") return [] as SavedFollowRecord[];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [] as SavedFollowRecord[];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(followsKey) ?? "[]") as unknown;
@@ -173,7 +173,7 @@ async function syncFollowRecordsToAccount(follows: SavedFollowRecord[]) {
 }
 
 function saveDistrictDelegationFollows(members: Member[], districtCode?: string) {
-  if (typeof window === "undefined") return 0;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return 0;
 
   const districtFollows = getDistrictDelegationFollowRecords(members, districtCode);
   if (!districtFollows.length) return 0;
@@ -345,7 +345,7 @@ function useDistrictProfile() {
 }
 
 function readIssueInterestsForSetup() {
-  if (typeof window === "undefined") return [] as string[];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [] as string[];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(issueInterestsKey) ?? "[]") as unknown;

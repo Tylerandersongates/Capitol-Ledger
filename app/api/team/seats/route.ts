@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountPersistenceUserId } from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
@@ -15,7 +16,7 @@ async function readTeamAccount() {
   const session = await getCurrentSession();
   if (!session) return null;
 
-  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const accountUserId = await getAccountPersistenceUserId(session.user);
   const subscription = await getSubscriptionForAccountUser(session.user);
 
   return {
@@ -51,7 +52,7 @@ async function readTeamManagerAccount() {
   const memberResult = await readTeamWorkspaceForMember({
     email: account.session.user.email,
     userId: account.accountUserId
-  }).catch(() => null);
+  }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
   if (memberResult?.membership.role !== "admin") {
     return {
@@ -82,7 +83,7 @@ function forbiddenTeamResponse(subscription: AccountSubscriptionSnapshot) {
   );
 }
 
-export async function DELETE(request: NextRequest) {
+async function releaseTeamSeat(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     seatId?: string;
     seatType?: string;
@@ -128,3 +129,5 @@ export async function DELETE(request: NextRequest) {
     throw error;
   }
 }
+
+export const DELETE = withAccountPersistenceRoute(releaseTeamSeat);

@@ -73,7 +73,9 @@ function main() {
     "sentry.edge.config.ts",
     "app/global-error.tsx",
     "app/feedback/page.tsx",
+    "app/privacy/page.tsx",
     "components/feedback-form.tsx",
+    "docs/app-store-privacy-correction-2026-09-10.md",
     "prisma/migrations/20260718154000_account_deletion_requests/migration.sql"
   ]) {
     requireFile(path);
@@ -86,6 +88,8 @@ function main() {
   const nativeApp = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerApp.swift");
   const nativeProject = read("ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj");
   const deletionService = read("lib/account-deletion.ts");
+  const privacyPage = read("app/privacy/page.tsx");
+  const privacyCorrection = read("docs/app-store-privacy-correction-2026-09-10.md");
 
   record(packageJson.includes('"@sentry/nextjs"'), "Sentry Next.js SDK is installed");
   record(nextConfig.includes("withSentryConfig") && nextConfig.includes("SENTRY_AUTH_TOKEN"), "Sentry build integration is configured");
@@ -98,7 +102,29 @@ function main() {
   record(feedbackForm.includes("Sentry.sendFeedback") && feedbackForm.includes("includeReplay: false"), "App feedback sends directly to Sentry without replay");
   record(nativeProject.includes("sentry-cocoa") && nativeProject.includes("minimumVersion = 9.6.0"), "Sentry Cocoa package is pinned");
   record(nativeApp.includes("SentrySDK.start") && nativeApp.includes("sendDefaultPii = false"), "Native crash monitoring disables default PII");
-  record(deletionService.includes('INSERT INTO "AccountDeletionRequest"'), "Account deletion no longer uses the feedback queue");
+  record(
+    deletionService.includes('INSERT INTO "AccountDeletionRequest"') &&
+      deletionService.includes("client.$transaction") &&
+      deletionService.includes('DELETE FROM "User"') &&
+      deletionService.includes("assertAccountRowsDeleted"),
+    "Account deletion uses a durable audit plus verified transactional erasure"
+  );
+  record(
+    privacyPage.includes("automatic error, crash, app-hang, watchdog-termination") &&
+      privacyPage.includes("processed on your device") &&
+      privacyPage.includes("Messages to officials") &&
+      privacyPage.includes("Service providers and recipients") &&
+      privacyPage.includes("Retention and deletion") &&
+      privacyPage.includes("withdraw consent") &&
+      privacyPage.includes("YouTube"),
+    "Prepared public privacy copy includes current disclosure sections"
+  );
+  record(
+    ["Provisional Answer Matrix", "Emails or Text Messages", "Device ID", "Crash Data", "Performance Data", "Other Diagnostic Data", "App Functionality", "neither is deployed, applied, or published", "does not authorize"].every((phrase) =>
+      privacyCorrection.includes(phrase)
+    ),
+    "Prepared App Store privacy packet includes proposed additions and approval boundary"
+  );
 
   console.log("\nProtected configuration");
   requireDsn("NEXT_PUBLIC_SENTRY_DSN", process.env.NEXT_PUBLIC_SENTRY_DSN, "Required for browser and WKWebView feedback delivery.");

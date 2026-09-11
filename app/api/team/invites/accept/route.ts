@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
+import { withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { acceptTeamWorkspaceInvite, acceptTeamWorkspaceInviteById, TeamWorkspaceError } from "@/lib/team-workspace";
 
-export async function POST(request: NextRequest) {
+async function acceptTeamInvite(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     inviteId?: string;
     token?: string;
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json(requireAuthMessage(), { status: 401 });
 
   try {
-    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+    const accountUserId = await getAccountPersistenceUserId(session.user);
     const result = body.inviteId?.trim()
       ? await acceptTeamWorkspaceInviteById({
           email: session.user.email,
@@ -48,3 +49,5 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const POST = withAccountPersistenceRoute(acceptTeamInvite);

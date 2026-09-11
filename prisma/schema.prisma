@@ -62,6 +62,9 @@ model User {
   weeklyBriefDeliveries   WeeklyBriefDelivery[]
   weeklyBriefEditions     WeeklyBriefEdition[]
   accountDeletionRequests AccountDeletionRequest[]
+  officialContactMessages OfficialContactMessage[]
+  petitionSignatures      PetitionSignature[]
+  teamSubscriptionPauses  TeamSubscriptionPause[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 }
@@ -300,6 +303,7 @@ model TeamWorkspace {
   owner       User         @relation("OwnedTeamWorkspace", fields: [ownerUserId], references: [id], onDelete: Cascade)
   members     TeamMember[]
   invites     TeamInvite[]
+  subscriptionPauses TeamSubscriptionPause[]
 
   @@index([updatedAt])
 }
@@ -409,9 +413,90 @@ model AccountDeletionRequest {
   createdAt                       DateTime  @default(now())
   updatedAt                       DateTime  @updatedAt
   user                            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cleanupJobs                     AccountDeletionCleanupJob[]
 
   @@index([status, requestedAt])
   @@index([userId])
+}
+
+model AccountDeletionCleanupJob {
+  id                 String                 @id
+  deletionRequestId  String
+  dedupeKey          String                 @unique
+  kind               String
+  payload            Json
+  status             String                 @default("pending")
+  attempts           Int                    @default(0)
+  availableAt        DateTime               @default(now())
+  lastError          String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  deletionRequest    AccountDeletionRequest @relation(fields: [deletionRequestId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt])
+  @@index([deletionRequestId])
+}
+
+model OfficialContactMessage {
+  id                String    @id
+  memberBioguideId  String
+  senderKey         String
+  senderEmail       String
+  userId            String?
+  memberName        String?
+  memberChamber     String?
+  memberState       String?
+  memberDistrict    String?
+  subject           String?
+  messagePreview    String?
+  deliveryMode      String    @default("manual")
+  deliveryStatus    String    @default("prepared")
+  contactUrl        String?
+  sentAt            DateTime  @default(now())
+  confirmedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([memberBioguideId, senderKey, sentAt])
+  @@index([userId])
+  @@index([userId, sentAt])
+}
+
+model PetitionSignature {
+  id             String   @id
+  userId         String
+  petitionId     String
+  title          String
+  body           String?
+  progressLabel  String?
+  targetLabel    String?
+  signedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, petitionId])
+  @@index([userId, signedAt])
+}
+
+model TeamSubscriptionPause {
+  id                    String   @id
+  userId                String
+  email                 String
+  workspaceId           String?
+  teamMemberId          String
+  previousSubscription  Json
+  status                String
+  pausedAt              DateTime @default(now())
+  restoredAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace              TeamWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([workspaceId])
 }
 
 model UpdateEvent {

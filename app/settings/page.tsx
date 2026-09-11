@@ -9,7 +9,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileProfileShortcutClass } from "@/components/mobile-ui";
 import { PartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { SettingsAccountSyncStatus } from "@/components/settings-account-sync-status";
-import { getCurrentSession } from "@/lib/auth";
+import { getCurrentSession, getProductionSession } from "@/lib/auth";
 import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
 import {
@@ -78,9 +78,12 @@ const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
 export default async function SettingsPage() {
-  const session = await getCurrentSession();
+  const [session, persistedProductionSession] = await Promise.all([
+    getCurrentSession(),
+    getProductionSession({ includeUnverified: true })
+  ]);
   const authenticated = Boolean(session);
-  const hasProductionAccount = session?.mode === "production";
+  const hasProductionAccount = Boolean(persistedProductionSession);
 
   return (
     <MobileShell

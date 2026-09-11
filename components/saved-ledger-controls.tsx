@@ -5,7 +5,7 @@ import { Bell, BookmarkCheck, Check, Star } from "lucide-react";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
 import { useSubscriptionState } from "@/components/subscription-controls";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { readLocalNotificationPreferences } from "@/lib/browser-account-profile";
 import { issueInterestsPendingSyncKey } from "@/lib/browser-account-ledger";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
@@ -39,7 +39,7 @@ let ledgerLocalRevision = 0;
 const latestLedgerRevisionByKey = new Map<LedgerStorageKey, number>();
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return fallback;
 
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
@@ -49,6 +49,7 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: LedgerStorageKey, value: T) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   const revision = ++ledgerLocalRevision;
   latestLedgerRevisionByKey.set(key, revision);
   window.localStorage.setItem(key, JSON.stringify(value));
@@ -86,7 +87,7 @@ function readIssueInterests() {
 }
 
 function readIssueInterestsState() {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) {
     return {
       hasStoredValue: false,
       interests: [] as string[]
@@ -165,6 +166,7 @@ function getSavedCounts(snapshot?: AccountLedgerSnapshot | null, alertCount?: nu
 }
 
 function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   window.localStorage.setItem(followsKey, JSON.stringify(snapshot.follows));
   window.localStorage.setItem(readAlertsKey, JSON.stringify(snapshot.readAlerts));
   window.localStorage.setItem(alertsKey, JSON.stringify(snapshot.savedAlerts));
@@ -173,6 +175,7 @@ function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
 }
 
 function writeServerLedgerValue(key: LedgerStorageKey, snapshot: AccountLedgerSnapshot) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   if (key === followsKey) window.localStorage.setItem(followsKey, JSON.stringify(uniqueFollows(snapshot.follows)));
   if (key === alertsKey) window.localStorage.setItem(alertsKey, JSON.stringify(uniqueStrings(snapshot.savedAlerts)));
   if (key === readAlertsKey) window.localStorage.setItem(readAlertsKey, JSON.stringify(uniqueStrings(snapshot.readAlerts)));
@@ -184,7 +187,7 @@ function writeServerLedgerValue(key: LedgerStorageKey, snapshot: AccountLedgerSn
 }
 
 function clearPendingIssueSync(key: LedgerStorageKey, revision: number) {
-  if (key !== interestsKey || latestLedgerRevisionByKey.get(key) !== revision) return;
+  if (isBrowserAccountDeletionFenced() || key !== interestsKey || latestLedgerRevisionByKey.get(key) !== revision) return;
   window.localStorage.removeItem(issueInterestsPendingSyncKey);
   dispatchPersistenceChanged(key);
 }
@@ -224,7 +227,7 @@ async function syncLocalLedgerToAccount(
 }
 
 async function hydrateSavedLedgerFromAccount() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   if (ledgerLocalRevision > 0) return;
   const hydrationRevision = ledgerLocalRevision;
   if (!(await hasActiveBrowserSession())) return;
@@ -245,7 +248,7 @@ async function hydrateSavedLedgerFromApi(hydrationRevision: number) {
   if (!response?.ok) return;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  if (!data?.ledger) return;
+  if (!data?.ledger || isBrowserAccountDeletionFenced()) return;
   if (ledgerLocalRevision !== hydrationRevision) return;
 
   writeLocalLedger(data.ledger);
@@ -404,7 +407,7 @@ export function PolicyInterestsEditor({
       setSelected(next);
     }
 
-    if (seededInitialKey && seededInitialInterestsRef.current !== seededInitialKey) {
+    if (seededInitialKey && seededInitialInterestsRef.current !== seededInitialKey && !isBrowserAccountDeletionFenced()) {
       seededInitialInterestsRef.current = seededInitialKey;
       const revision = ++ledgerLocalRevision;
       latestLedgerRevisionByKey.set(interestsKey, revision);

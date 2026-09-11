@@ -15,7 +15,10 @@ struct CapitolLedgerWebView: UIViewRepresentable {
         configuration.websiteDataStore = .default()
         configuration.userContentController.addUserScript(
             WKUserScript(
-                source: "window.__capitolLedgerNativeStoreKit = true;",
+                source: """
+                window.__capitolLedgerNativeStoreKit = true;
+                window.__capitolLedgerAccountDeletionFenceKey = "capitolwonk:account-deletion-fence";
+                """,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             )

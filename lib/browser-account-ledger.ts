@@ -1,4 +1,4 @@
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import type { AccountLedgerSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 export const followsKey = "capitol-ledger:follows";
@@ -23,7 +23,7 @@ export function sameStringSet(left: string[], right: string[]) {
 }
 
 export function readStringList(key: string) {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(key) ?? "[]") as unknown;
@@ -34,7 +34,7 @@ export function readStringList(key: string) {
 }
 
 export function readSavedFollowRecords() {
-  if (typeof window === "undefined") return [] as SavedFollowRecord[];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [] as SavedFollowRecord[];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(followsKey) ?? "[]") as unknown;
@@ -49,7 +49,7 @@ export function readReadAlertIds() {
 }
 
 export function hasPendingIssueSync() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
 
   try {
     return window.localStorage.getItem(issueInterestsPendingSyncKey) === "1";
@@ -59,7 +59,7 @@ export function hasPendingIssueSync() {
 }
 
 export function writeReadAlertIds(ids: string[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(readAlertsKey, JSON.stringify(uniqueStrings(ids)));
@@ -70,7 +70,7 @@ export function writeReadAlertIds(ids: string[]) {
 }
 
 export function writeLocalAccountLedger(ledger: AccountLedgerSnapshot) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     const pendingIssueSync = hasPendingIssueSync();
@@ -92,7 +92,7 @@ export async function fetchAccountLedger() {
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  return data?.ledger ?? null;
+  return isBrowserAccountDeletionFenced() ? null : data?.ledger ?? null;
 }
 
 export async function hydrateAccountLedgerFromAccount() {
@@ -102,6 +102,7 @@ export async function hydrateAccountLedgerFromAccount() {
 
   accountLedgerHydrationPromise = fetchAccountLedger()
     .then((ledger) => {
+      if (isBrowserAccountDeletionFenced()) return null;
       if (ledger) writeLocalAccountLedger(ledger);
       return ledger;
     })

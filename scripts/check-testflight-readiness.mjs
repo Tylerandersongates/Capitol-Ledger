@@ -11,6 +11,7 @@ const appStoreSetupPacketPath = `${appDocsDir}/App Store Connect Setup Packet.md
 const testFlightChecklistPath = `${appDocsDir}/TestFlight Readiness Checklist.md`;
 const publicReleaseCandidateChecklistPath = "docs/public-testflight-release-candidate-checklist.md";
 const publicTesterGuidePath = "docs/public-testflight-tester-guide.md";
+const privacyCorrectionPacketPath = "docs/app-store-privacy-correction-2026-09-10.md";
 
 const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj",
@@ -35,6 +36,7 @@ const requiredFiles = [
   "app/privacy/page.tsx",
   "app/support/page.tsx",
   appStoreSetupPacketPath,
+  privacyCorrectionPacketPath,
   testFlightChecklistPath,
   publicReleaseCandidateChecklistPath,
   publicTesterGuidePath
@@ -138,6 +140,8 @@ function checkAppStoreSetupPacket() {
   const settingsPage = read("app/settings/page.tsx");
   const accountDeletionRoute = read("app/api/account/deletion-request/route.ts");
   const accountDeletionControl = read("components/account-deletion-control.tsx");
+  const accountDeletionService = read("lib/account-deletion.ts");
+  const privacyCorrection = read(privacyCorrectionPacketPath);
 
   const requiredPacketPhrases = [
     "App Store Connect Setup Packet",
@@ -200,7 +204,12 @@ function checkAppStoreSetupPacket() {
     privacyPage.includes("Apple purchases") &&
     privacyPage.includes("account deletion") &&
     accountDeletionRoute.includes('body.confirmation !== "DELETE"') &&
-    accountDeletionControl.includes("Request account deletion") &&
+    accountDeletionRoute.includes("deleteAccountAndAssociatedData") &&
+    accountDeletionRoute.includes("clearAuthCookies(response)") &&
+    accountDeletionService.includes("client.$transaction") &&
+    accountDeletionService.includes('DELETE FROM "User"') &&
+    accountDeletionService.includes("assertAccountRowsDeleted") &&
+    accountDeletionControl.includes("Permanently delete account") &&
     accountDeletionControl.includes("Deleting CapitolWonk does not cancel an Apple subscription") &&
     supportPage.includes("publicBrand.supportTitle") &&
     supportPage.includes("Privacy requests") &&
@@ -210,6 +219,22 @@ function checkAppStoreSetupPacket() {
     pass("Support, privacy, and in-app account deletion are linked for App Store setup");
   } else {
     fail("Support, privacy, and in-app account deletion are linked for App Store setup", "Expected /privacy, /support, and a confirmed deletion-request entry point in Settings.");
+  }
+
+  const correctionPhrases = [
+    "Provisional Answer Matrix",
+    "Emails or Text Messages",
+    "Device ID",
+    "Crash Data",
+    "Performance Data",
+    "Other Diagnostic Data",
+    "exact Release archive",
+    "App Store Connect questionnaire: unchanged"
+  ];
+  if (correctionPhrases.every((phrase) => privacyCorrection.includes(phrase)) && packet.includes(privacyCorrectionPacketPath)) {
+    pass("Provisional App Privacy correction is documented and linked from the setup packet");
+  } else {
+    fail("Provisional App Privacy correction is documented and linked from the setup packet", "Expected proposed additions, open verification gates, and an unchanged-remote-state record.");
   }
 }
 
@@ -301,7 +326,7 @@ function checkPublicTesterGuide() {
     "Daily Brief and Alerts",
     "Actions, Impact, and Badges",
     "Privacy and Support",
-    "Request Account Deletion",
+    "Permanently delete account",
     "Force-close",
     "Subscriptions: Assigned Scenarios Only",
     "Send Beta Feedback",

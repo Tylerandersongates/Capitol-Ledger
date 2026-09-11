@@ -20,7 +20,14 @@ import {
   resetLocalAccountSetupState,
   writeLocalAccountProfile
 } from "@/lib/browser-account-profile";
-import { hasBrowserAccountCreated, markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
+import {
+  beginFreshBrowserAuthentication,
+  completeFreshBrowserAuthentication,
+  hasBrowserAccountCreated,
+  isBrowserAccountDeletionFenced,
+  markBrowserAccountCreated,
+  setBrowserSessionAuthenticated
+} from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import { publicBrand } from "@/lib/brand";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
@@ -86,6 +93,8 @@ const authPathItems = [
 ];
 
 function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return fallback;
+
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
   } catch {
@@ -108,6 +117,8 @@ function readLocalSubscription(): Partial<AccountSubscriptionSnapshot> {
 }
 
 function writeLocalLedger(snapshot: AccountLedgerSnapshot) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
+
   try {
     window.localStorage.setItem(followsKey, JSON.stringify(snapshot.follows));
     window.localStorage.setItem(alertsKey, JSON.stringify(snapshot.savedAlerts));
@@ -277,6 +288,7 @@ export function AuthFlowClient({
     setMode("verify");
     setPending(true);
     setStatus("Verifying secure email link...");
+    beginFreshBrowserAuthentication();
 
     postJson<{ error?: string; verified?: boolean }>("/api/auth/verify-email", {
       token: verifyToken
@@ -288,8 +300,8 @@ export function AuthFlowClient({
           return;
         }
 
+        if (!completeFreshBrowserAuthentication(true)) return;
         markBrowserAccountCreated();
-        setBrowserSessionAuthenticated(true);
         setAccountCreated(true);
         await prepareFreshAccountSetup();
         removeVerificationTokenFromHistory();
@@ -378,8 +390,8 @@ export function AuthFlowClient({
       .then((session) => {
         if (cancelled || !session?.authenticated || session.requiresVerification) return;
 
+        if (!setBrowserSessionAuthenticated(true)) return;
         markBrowserAccountCreated();
-        setBrowserSessionAuthenticated(true);
         setAllowAccountCreation(false);
         setAccountCreated(true);
         setStatus("Session verified. Continuing...");
@@ -464,6 +476,7 @@ export function AuthFlowClient({
 
     setPending(true);
     setStatus("Opening preview account...");
+    beginFreshBrowserAuthentication();
 
     const response = await fetch("/api/auth/demo", {
       method: "POST"
@@ -476,8 +489,8 @@ export function AuthFlowClient({
       return;
     }
 
+    if (!completeFreshBrowserAuthentication(true)) return;
     markBrowserAccountCreated();
-    setBrowserSessionAuthenticated(true);
     setAllowAccountCreation(false);
     setAccountCreated(true);
     void syncLocalAccountData();
@@ -497,6 +510,7 @@ export function AuthFlowClient({
         return;
       }
       setPending(true);
+      beginFreshBrowserAuthentication();
       const result = await postJson<AuthApiResponse>("/api/auth/sign-in", {
         email: form.email,
         password: form.password
@@ -513,8 +527,8 @@ export function AuthFlowClient({
 
       const authData = result.data as AuthApiResponse;
       if (authData.requiresVerification || !authData.user?.emailVerifiedAt) {
+        if (!completeFreshBrowserAuthentication(false)) return;
         markBrowserAccountCreated();
-        setBrowserSessionAuthenticated(false);
         setAllowAccountCreation(false);
         setAccountCreated(true);
         setMode("verify");
@@ -522,8 +536,8 @@ export function AuthFlowClient({
         return;
       }
 
+      if (!completeFreshBrowserAuthentication(true)) return;
       markBrowserAccountCreated();
-      setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth(await resolvePostAuthReturnTo());
@@ -556,6 +570,7 @@ export function AuthFlowClient({
         return;
       }
       setPending(true);
+      beginFreshBrowserAuthentication();
       const result = await postJson<AuthApiResponse>("/api/auth/register", {
         email: form.email,
         firstName: form.firstName,
@@ -574,9 +589,9 @@ export function AuthFlowClient({
         return;
       }
 
+      if (!completeFreshBrowserAuthentication(false)) return;
       resetLocalAccountSetupState();
       markBrowserAccountCreated();
-      setBrowserSessionAuthenticated(false);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       setMode("verify");
@@ -627,6 +642,7 @@ export function AuthFlowClient({
       }
 
       setPending(true);
+      beginFreshBrowserAuthentication();
       const result = await postJson<AuthApiResponse>("/api/auth/password-reset/confirm", {
         password: form.password,
         token: resetToken
@@ -641,8 +657,8 @@ export function AuthFlowClient({
         return;
       }
 
+      if (!completeFreshBrowserAuthentication(true)) return;
       markBrowserAccountCreated();
-      setBrowserSessionAuthenticated(true);
       setAllowAccountCreation(false);
       setAccountCreated(true);
       await finishProductionAuth(await resolvePostAuthReturnTo());
@@ -664,6 +680,7 @@ export function AuthFlowClient({
         return;
       }
       setPending(true);
+      beginFreshBrowserAuthentication();
       const result = await postJson<{ error?: string; verified?: boolean }>("/api/auth/verify-email", {
         token
       }).catch((error: unknown) => ({
@@ -677,8 +694,8 @@ export function AuthFlowClient({
         return;
       }
 
+      if (!completeFreshBrowserAuthentication(true)) return;
       markBrowserAccountCreated();
-      setBrowserSessionAuthenticated(true);
       setAccountCreated(true);
       await prepareFreshAccountSetup();
       removeVerificationTokenFromHistory();

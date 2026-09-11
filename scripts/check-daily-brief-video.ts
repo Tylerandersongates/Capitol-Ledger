@@ -56,6 +56,13 @@ const channelOnly = getDailyBriefVideoPageData({ channelUrl: "https://youtube.co
 assert.equal(channelOnly.subscribeUrl, "https://www.youtube.com/@CapitolWonk?sub_confirmation=1");
 assert.equal(channelOnly.embedUrl, null);
 
+const configuredChannel = getDailyBriefVideoPageData();
+assert.equal(configuredChannel.channelUrl, "https://www.youtube.com/@CapitolWonk");
+assert.equal(configuredChannel.subscribeUrl, "https://www.youtube.com/@CapitolWonk?sub_confirmation=1");
+assert.equal(configuredChannel.episode, null, "Do not publish a placeholder episode before the first real video exists.");
+assert.equal(configuredChannel.embedUrl, null, "Channel-only state must not load a YouTube player.");
+assert.equal(configuredChannel.watchUrl, null);
+
 const episode = {
   title: "Fixture edition",
   videoUrl: `https://youtube.com/shorts/${id}?si=tracking`,

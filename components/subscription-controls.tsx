@@ -10,7 +10,7 @@ import {
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
 import { publicBrand } from "@/lib/brand";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import {
   formatTeamSeatPrice,
   getTeamAppStoreProductId,
@@ -129,7 +129,7 @@ function normalizeSubscription(value: Partial<AccountSubscriptionSnapshot> = {})
 }
 
 function readSubscription(): AccountSubscriptionSnapshot {
-  if (typeof window === "undefined") return defaultSubscription;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return defaultSubscription;
 
   try {
     return normalizeSubscription(JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Partial<AccountSubscriptionSnapshot>);
@@ -143,6 +143,7 @@ function shouldPreferNativeStoreKitSubscription(subscription: AccountSubscriptio
 }
 
 function writeSubscription(next: AccountSubscriptionSnapshot, syncAccount = true) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   window.localStorage.setItem(storageKey, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(subscriptionEvent, { detail: next }));
 
@@ -214,7 +215,7 @@ async function hydrateSubscriptionFromAccount(scope: SubscriptionHydrationScope)
   }
 
   const subscription = await accountHydrationPromises[scope];
-  if (!subscription) return null;
+  if (!subscription || isBrowserAccountDeletionFenced()) return null;
 
   if (!subscriptionsMatch(readSubscription(), subscription)) writeSubscription(subscription, false);
   return subscription;
@@ -239,7 +240,8 @@ async function readAppStoreAccountToken() {
       });
   }
 
-  return appStoreAccountTokenPromise;
+  const token = await appStoreAccountTokenPromise;
+  return isBrowserAccountDeletionFenced() ? null : token;
 }
 
 export function useSubscriptionState(

@@ -1,4 +1,5 @@
 import { getAccountPersistenceUserId } from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { getCurrentSession } from "@/lib/auth";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { pausePersonalProSubscriptionForTeamSeat } from "@/lib/team-subscription-transition";
@@ -26,11 +27,11 @@ export async function getEffectiveSubscriptionForAccountUser(
   const subscription = personalSubscription ?? (await getSubscriptionForAccountUser(user));
   if (hasActiveTeamBilling(subscription)) return subscription;
 
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const accountUserId = await getAccountPersistenceUserId(user);
   const memberWorkspace = await readTeamWorkspaceForMember({
     email: user.email,
     userId: accountUserId
-  }).catch(() => null);
+  });
 
   if (!memberWorkspace) return subscription;
 
@@ -40,7 +41,7 @@ export async function getEffectiveSubscriptionForAccountUser(
         teamMemberId: memberWorkspace.membership.id,
         userId: accountUserId,
         workspaceId: memberWorkspace.workspace.id
-      }).catch(() => null))?.subscription ?? subscription)
+      }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null)))?.subscription ?? subscription)
     : subscription;
 
   return {

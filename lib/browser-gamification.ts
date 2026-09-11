@@ -9,7 +9,7 @@ import {
   type AccountGamificationSnapshot
 } from "@/lib/account-gamification";
 import { readLocalDistrictProfile } from "@/lib/browser-account-profile";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 
 export const gamificationChangedEvent = "capitol-ledger:gamification-changed";
 
@@ -74,7 +74,7 @@ function setActiveGamificationStorageScopeFromSession(data: AuthSessionResponse 
 }
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined" || !window.localStorage) return fallback;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return fallback;
 
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
@@ -84,7 +84,7 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined" || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -106,7 +106,7 @@ function isDateKey(value: unknown): value is string {
 }
 
 function readLocalStreakCreditDate() {
-  if (typeof window === "undefined" || !window.localStorage) return null;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return null;
 
   try {
     const value = window.localStorage.getItem(activeGamificationStorageKeys.streakKey);
@@ -117,7 +117,7 @@ function readLocalStreakCreditDate() {
 }
 
 function writeLocalStreakCreditDate(dateKey: string) {
-  if (typeof window === "undefined" || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(activeGamificationStorageKeys.streakKey, dateKey);
@@ -198,7 +198,7 @@ export function readLocalGamificationSnapshot() {
 }
 
 export function writeLocalGamificationSnapshot(snapshot: Partial<AccountGamificationSnapshot>) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   const next = normalizeAccountGamification(snapshot);
   writeJson(activeGamificationStorageKeys.snapshotKey, next);
@@ -219,7 +219,7 @@ export async function syncGamificationToAccount(snapshot = readLocalGamification
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as AccountGamificationResponse | null;
-  if (!data?.gamification) return null;
+  if (!data?.gamification || isBrowserAccountDeletionFenced()) return null;
 
   setActiveGamificationStorageScopeFromSession(data);
   const accountSnapshot = normalizeAccountGamification(data.gamification);
@@ -252,7 +252,7 @@ async function hydrateGamificationFromApi() {
   }
 
   const data = (await response.json().catch(() => null)) as AccountGamificationResponse | null;
-  if (!data?.gamification) {
+  if (!data?.gamification || isBrowserAccountDeletionFenced()) {
     return readLocalGamificationSnapshot();
   }
 
@@ -267,7 +267,7 @@ async function hydrateGamificationFromApi() {
 }
 
 export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1, options: RecordGamificationEventOptions = {}) {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
 
   const rule = getGamificationEventRule(event);
   if (!rule) return false;
@@ -359,7 +359,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
 }
 
 export function setGamificationEventCount(event: GamificationEventType, count: number) {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
 
   const rule = getGamificationEventRule(event);
   if (!rule) return false;

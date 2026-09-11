@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
+import { getAccountSubscription, normalizeAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
 import {
+  canUseDatabasePersistence,
   findSubscriptionUserIdByProvider,
   getAccountPersistenceUserId,
   readSubscriptionFromDatabase,
   writeSubscriptionToDatabase
 } from "@/lib/account-database";
+import { throwAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { createAppStoreAccountToken, validateAppStoreTransaction } from "@/lib/billing/app-store";
 import { publicBrandName } from "@/lib/brand";
 import { guardMutationRequest } from "@/lib/request-security";
 
-export async function POST(request: NextRequest) {
+async function syncAppStoreSubscription(request: NextRequest) {
   const guard = guardMutationRequest(request, "account-subscription-app-store", { limit: 20, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
@@ -26,7 +28,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "App Store signed transaction is required." }, { status: 400 });
   }
 
-  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const accountUserId = await getAccountPersistenceUserId(session.user);
+  const usesDatabase = canUseDatabasePersistence();
   const validation = await validateAppStoreTransaction(signedTransactionJWS, {
     expectedAppAccountToken: createAppStoreAccountToken(accountUserId)
   }).catch((error: unknown) => ({
@@ -34,13 +37,14 @@ export async function POST(request: NextRequest) {
   }));
 
   if ("error" in validation) {
-    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
-    const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
+    const subscription = databaseSubscription ??
+      (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
 
     return NextResponse.json(
       {
         error: validation.error,
-        mode: databaseSubscription ? "database" : "account",
+        mode: usesDatabase ? "database" : "account",
         subscription
       },
       { status: 422 }
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
 
   const existingOwnerUserId = await findSubscriptionUserIdByProvider({
     subscriptionId: validation.subscription.providerSubscriptionId
-  }).catch(() => null);
+  });
 
   if (existingOwnerUserId && existingOwnerUserId !== accountUserId) {
     return NextResponse.json(
@@ -70,12 +74,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, validation.subscription).catch(() => null);
-  const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, validation.subscription);
+  const subscription = usesDatabase
+    ? await writeSubscriptionToDatabase(accountUserId, validation.subscription)
+    : setAccountSubscription(accountUserId, validation.subscription);
+  if (!subscription) throwAccountPersistenceUnavailable("syncAppStoreSubscription");
 
   return NextResponse.json({
     environment: validation.environment,
-    mode: databaseSubscription ? "database" : "account",
+    mode: usesDatabase ? "database" : "account",
     subscription
   });
 }
+
+export const POST = withAccountPersistenceRoute(syncAppStoreSubscription);

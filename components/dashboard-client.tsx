@@ -13,7 +13,7 @@ import {
   recordCompletedDistrictSetupIfReady
 } from "@/lib/browser-gamification";
 import { accountProfileChangedEvent, fetchAccountProfile } from "@/lib/browser-account-profile";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { interestsKey, readStringList } from "@/lib/browser-account-ledger";
 import {
   billStanceChangedEvent,
@@ -1144,7 +1144,7 @@ function resolveDashboardVoteFeed(
 }
 
 function readDashboardFavoriteRecords() {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [];
 
   try {
     const stored = window.localStorage?.getItem(followsKey);
@@ -1161,7 +1161,7 @@ function dispatchDashboardFavoritesChanged() {
 }
 
 function writeDashboardFavoriteRecords(records: SavedFollowRecord[], syncAccount = true) {
-  if (typeof window === "undefined") return records;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return records;
 
   const next = uniqueFavoriteRecords(records);
 
@@ -1310,7 +1310,8 @@ async function readDashboardAccountLedger() {
       });
   }
 
-  return dashboardLedgerPromise;
+  const ledger = await dashboardLedgerPromise;
+  return isBrowserAccountDeletionFenced() ? null : ledger;
 }
 
 async function syncDashboardFavoriteRecordsToAccount(records: SavedFollowRecord[]) {
@@ -1327,7 +1328,7 @@ async function syncDashboardFavoriteRecordsToAccount(records: SavedFollowRecord[
   if (!response?.ok) return records;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
-  return data?.ledger?.follows ?? records;
+  return isBrowserAccountDeletionFenced() ? [] : data?.ledger?.follows ?? records;
 }
 
 async function hydrateDashboardFavoriteRecords() {

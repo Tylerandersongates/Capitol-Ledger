@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getAccountSubscription, normalizeAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
+import { canUseDatabasePersistence, getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable, throwAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { guardMutationRequest } from "@/lib/request-security";
@@ -18,28 +19,34 @@ function isClientWritableSubscription(value: Partial<AccountSubscriptionSnapshot
   return plan === "free" && provider === "demo";
 }
 
-export async function GET(request: NextRequest) {
+async function getSubscription(request: NextRequest) {
   const user = await readSession();
 
   if (!user) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
-  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user);
+  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
+  const usesDatabase = canUseDatabasePersistence();
 
-  const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const personalSubscription = databaseSubscription ??
+    (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
   const effective = request.nextUrl.searchParams.get("scope") === "effective";
-  const subscription = effective ? await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription) : personalSubscription;
+  const subscription = effective
+    ? await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch((error) =>
+        fallbackUnlessAccountPersistenceUnavailable(error, personalSubscription)
+      )
+    : personalSubscription;
 
   return NextResponse.json({
-    mode: effective ? "effective" : databaseSubscription ? "database" : "account",
+    mode: effective ? "effective" : usesDatabase ? "database" : "account",
     user,
     subscription
   });
 }
 
-export async function POST(request: NextRequest) {
+async function updateSubscription(request: NextRequest) {
   const guard = guardMutationRequest(request, "account-subscription");
   if (guard) return guard;
 
@@ -50,16 +57,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountSubscriptionSnapshot>;
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const accountUserId = await getAccountPersistenceUserId(user);
+  const usesDatabase = canUseDatabasePersistence();
 
   if (!isClientWritableSubscription(body)) {
-    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
-    const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
+    const subscription = databaseSubscription ??
+      (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
 
     return NextResponse.json(
       {
         error: "Paid subscriptions must be changed through App Store purchase or billing management.",
-        mode: databaseSubscription ? "database" : "account",
+        mode: usesDatabase ? "database" : "account",
         user,
         subscription
       },
@@ -67,12 +76,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, body).catch(() => null);
-  const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, body);
+  const subscription = usesDatabase
+    ? await writeSubscriptionToDatabase(accountUserId, body)
+    : setAccountSubscription(accountUserId, body);
+  if (!subscription) throwAccountPersistenceUnavailable("updateSubscription");
 
   return NextResponse.json({
-    mode: databaseSubscription ? "database" : "account",
+    mode: usesDatabase ? "database" : "account",
     user,
     subscription
   });
 }
+
+export const GET = withAccountPersistenceRoute(getSubscription);
+export const POST = withAccountPersistenceRoute(updateSubscription);

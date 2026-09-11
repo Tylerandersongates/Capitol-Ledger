@@ -2,6 +2,10 @@
 
 Current-status note (September 10, 2026): T01–T03 are complete for their exact scopes. Tyler retained the logo artwork, and production source `7ec68bc` removes `CE` only from the shared wordmark cards; CI, Ready/Current Vercel production and live smoke passed. Dependency candidate `f4f04de` aligns the Next toolchain on `15.5.25`, clears both criticals and every remediable high, and passes frozen install, native/asserted-WASM builds, 38/38 application/readiness validations, optimized HTTP/image smoke, unsigned iOS Simulator Release, exact-head CI and matching Ready Vercel Preview. Production/full audits are 0 critical, 2 high and 2 moderate, all in Next's nested `postcss@8.4.31`; Tyler explicitly accepted that exact four-advisory residual for `f4f04de`. Re-audit a changed graph and keep the exception visible. T04 is active and blocked pending Apple Developer Support guidance. The September 10 read-only reconciliation found zero code-signing identities, one unexpired matching Xcode-managed App Store profile, stable Xcode 26.6 selected with Xcode 27 beta unselected, and no currently available physical iPhone. Tyler confirmed that Apple had not replied, explicitly approved a corrected follow-up on the existing case, and Apple acknowledged receipt; no signing or release state changed. Await the reply, inspect it read-only, and present one narrowly scoped action for Tyler's approval. An unexplained uncommitted `pnpm-lock.yaml` downgrade was quarantined and then, with Tyler's explicit approval, restored to the committed T03 version; no dependency change was committed or pushed. Use [Current Timeline and Task Ledger](../docs/project-timeline.md), the [September 10 EOD](../docs/eod-handoff-2026-09-10.md), the [T03 audit report](../docs/dependency-security-audit-2026-09-10.md), and the [T04 signing report](../docs/apple-signing-reconciliation-2026-09-10.md) for ordered tasks, evidence, revised estimate and the October 2–6 availability buffer. The plan remains behind its first checkpoint; October 30 is still the target but is not evidenced on track. The two current App Store listing screenshots still show `CE` and require recapture under T09; remote asset replacement and TestFlight remain separately gated.
 
+App Privacy work advanced in parallel while Apple is pending: the [September 10 provisional correction packet](../docs/app-store-privacy-correction-2026-09-10.md), public-policy source update, deletion implementation, and readiness assertions are captured in the reviewed non-production branch candidate. Five types are added to the proposed questionnaire—Emails or Text Messages, Device ID, Crash Data, Performance Data, and Other Diagnostic Data. The resolved native SDK's persistent installation identifiers make the proposed diagnostic linkage Yes; tracking remains No for the current no-video/no-analytics configuration. The in-app deletion action commits account erasure plus cleanup-job snapshots without a precommit deletion-side member/provider mutation. Exact-ID persistence prevents stale recreation/email remap. Jobs are retained only while pending/retrying and erased after success; terminal/missing Stripe outcomes complete and transient failures retry. Signed webhooks enforce timestamp tolerance and live-state reconciliation; before acknowledging a deleted-user event, they schedule an active subscription not to renew and detach metadata where Stripe permits. Concurrent Team-seat pauses serialize on account/workspace locks and attempt compensation on failure. Hashed rate-limit subjects are cleared. An explicit receipt gates completion, ambiguous results are unconfirmed, and a multi-tab fence blocks browser/native writers. The exact archive/providers, production migration history and conditional older deletion-request migration, three new migrations and sentinel/orphan behavior, live FKs, task schedule/age monitor, disposable account, real-Postgres/Stripe/device QA, backup/PITR policy, and provider procedures remain open. App Store Connect and production remain unchanged; no production, provider, questionnaire, upload, distribution, or release action is authorized. See the [account-deletion runbook](../docs/account-deletion-runbook-2026-09-10.md).
+
+September 11 handoff boundary: post-restart integrity, full tracked/untracked review, secret scanning, and the consolidated local matrix pass. Tyler authorized one final September 10 checkpoint commit and push to `codex/logo-refresh-sept10`; the commit containing this note is the exact non-production T08/T09 branch candidate. Production `main` remains at `7ec68bc`. First inspect branch CI/Preview evidence, then inspect production migration history read-only and prepare the ordered deployment/QA approval packet. No production deploy, protected configuration, account deletion, provider mutation, questionnaire publication, upload, distribution, or release is authorized. T04 remains blocked pending Apple. The public channel `https://www.youtube.com/@CapitolWonk` is verified and configured with `episodes` empty; no first video, player, production integration, runtime privacy proof, or launch-scope decision exists.
+
 **User-set launch target: October 30, 2026.** Follow the ledger's backward plan and preserve review/rework contingency. Intermediate checkpoints are provisional; report forecast risk and obtain Tyler's decision before changing the launch target.
 
 The phase detail below is preserved as a **July 18 historical scope snapshot**, not current deployment verification, current authorization, or an estimate of remaining days. Current ledger statuses supersede old "local/not deployed," waiting-state and setup descriptions below. Round 1–3 exported tester guides are historical and must not be distributed as current launch material without a fresh review and export.
@@ -32,19 +36,19 @@ Everything going forward should serve the TestFlight path. Defer broad product e
 
 Roadmap sequencing rule: do not pull Supreme Court or state-legislation expansion into the current TestFlight scope. Supreme Court work starts as a sister-app track after TestFlight. State legislation remains a main-app future update.
 
-### Feedback System Replacement - Local, Not Yet Deployed
+### Feedback Baseline And Local Privacy/Deletion Update
 
-1. `/feedback` now sends directly to Sentry; the internal `/feedback/review` queue and its API/scripts are retired.
-2. Browser/server error monitoring and native iOS crash monitoring are implemented with session replay and default PII disabled.
-3. Account deletion now uses a dedicated `AccountDeletionRequest` table and remains independent of monitoring.
+1. `/feedback` sends directly to Sentry; the internal `/feedback/review` queue and its API/scripts are retired. Prior production browser feedback and monitoring evidence exists.
+2. Browser/server monitoring is verified for its recorded production scope. Native iOS crash monitoring is implemented with session replay and default PII disabled, but exact signed/device runtime delivery remains pending.
+3. Account deletion now uses a dedicated `AccountDeletionRequest` completion audit and remains independent of Sentry. The September 10 reviewed branch implementation performs immediate transactional account deletion, commits required provider/member cleanup jobs with it, and deidentifies the completed audit; it is not yet migrated, task-configured, deployed, or destructively/provider verified in production.
 4. The old `BetaFeedback` production table must remain as a read-only archive until existing reports are privately exported and verified.
-5. Next actions require protected Sentry project values, a production database migration, a web deploy, and a new TestFlight build. Stop for Tyler's approval immediately before those external changes.
+5. First reconcile the local privacy/deletion tree into an exact reviewable candidate. Later production actions require the ordered migrations before matching source, protected cleanup-task scheduling/monitoring, protected Sentry/App Store configuration, deployed and provider QA, and a signed TestFlight candidate. Stop for Tyler's applicable approval immediately before each external or destructive action.
 
-### Current Waiting State
+### Current Active State
 
-We are waiting for Round 2 tester activity. The app-facing priority is to avoid unnecessary pushes while testers may be active, except for minor docs updates or blocker fixes.
+T04 is waiting on Apple Developer Support with the signing freeze intact. T09 local privacy/deletion review can proceed in parallel without touching production. If Apple replies, inspect it read-only and present one exact supported action for Tyler's approval. Do not treat historical Round 2 activity as the current release gate.
 
-Round 2 tester materials:
+Historical Round 2 tester materials:
 
 - Tester guide source: `docs/round-2-beta-tester-guide/README.md`
 - Historical exported tester guide: `public/downloads/capitol-ledger-round-2-beta-tester-guide.docx` (not current distribution material)
@@ -106,7 +110,7 @@ Remaining before App Store upload:
 1. Watch Round 2 reports for account/session confusion, profile resets, verification confusion, or days-logged-in issues.
 2. Decide whether to replace in-memory rate limiting with an edge/provider-backed limiter before public launch.
 3. Confirm final auth email provider settings for production volume.
-4. Confirm privacy/account deletion expectations for Apple review.
+4. Deploy the deletion-integrity, cleanup-outbox, and Team-pause workspace-integrity migrations before the matching source; verify live tables/foreign keys; configure the protected cleanup-task secret, authenticated schedule, no-payload monitor, and retry/reclaim path; then run the controlled disposable-account deletion plus Team-member/legacy-Stripe cleanup matrix in the web environment and on the exact TestFlight device candidate. Confirm backup/PITR tombstone handling and external-provider retention/removal before presenting the flow to Apple review.
 
 ### Phase 3: Design QA And Beta Polish - Round 1 Complete, Round 2 Pending
 
@@ -194,7 +198,7 @@ Remaining before App Store upload:
 3. Keep Weekly Brief in app for beta/App Store v1. Defer email/push provider bridge, cron activation, and real outbound sends to the Post-Launch Next Build.
 4. Choose push-notification provider and implement device token storage, alert-triggered sends, permission prompts, and unsubscribe/preference controls if push is part of App Store v1.
 5. Add monitoring/error reporting and production rate limiting before public launch.
-6. Confirm privacy policy, support URL, data retention, and account deletion story for Apple review.
+6. Confirm the privacy policy, support URL, data retention, and account-deletion evidence for Apple review. The local transaction is not enough: inspect production migration history and deploy `20260718154000_account_deletion_requests` first if absent, then require all three new migration deployments; live schema/FK inspection; protected cleanup-task scheduling, monitoring, retries and completed-job erasure; disposable-account plus Team-member/legacy-Stripe cleanup QA; physical-device local/session clearing; backup/PITR tombstone policy; and Apple/Stripe/Sentry/email/official-message retention/removal procedures.
 
 ### Phase 7: App Store And TestFlight - Remaining Path To Upload
 
@@ -211,6 +215,7 @@ Prerequisites:
 5. Account persistence, saved state, and days-logged-in behavior are acceptable for returning testers.
 6. Subscription/App Store purchase path is direct StoreKit, with server validation configured and verified in sandbox/TestFlight.
 7. External production-service gates are either completed or clearly deferred from App Store v1.
+8. Account deletion is deployed and verified with a disposable production-shaped account. Evidence must show exact-ID/no-memory persistence; immediate account erasure and all-session invalidation; explicit-receipt completion versus an unconfirmed ambiguous result; multi-tab/device-writer fencing; transactionally captured Team/legacy-Stripe jobs retained only while pending/retrying and erased after success; timestamp/live-state/deleted-user webhook safeguards; terminal/missing/transient cleanup outcomes; real-Postgres pause/delete serialization and compensation; deletion-transaction rollback with no precommit provider mutation; strict sentinel/orphan migration behavior; and no cancellation of App Store billing.
 
 Upload checklist:
 
@@ -219,7 +224,7 @@ Upload checklist:
 3. Freeze the beta-tested core flow.
 4. Use the App Store Connect setup packet to prepare App Store Connect app record, bundle ID, signing, capabilities, support URL, privacy policy URL, subscription products, and review notes.
 5. Prepare App Store description, keywords, promotional text, release notes, category, and review notes.
-6. Prepare App Privacy nutrition labels based on actual account, analytics, civic activity, purchase, and notification data use.
+6. Reconcile the prepared App Privacy matrix against the exact Release archive and final production providers, complete the account-deletion release gates in the runbook, deploy the matching public policy, and publish the questionnaire only after exact approval.
 7. Capture final screenshots for required iPhone sizes from the stable mobile pages.
 8. Package the Apple build path and verify production environment settings.
 9. Upload the first build to App Store Connect.

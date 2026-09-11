@@ -1,4 +1,5 @@
 import type { AccountSubscriptionSnapshot } from "../types/capitol";
+import { assertAccountMemoryPersistenceAllowed } from "./account-persistence-safety";
 import { normalizeOptionalTeamSeatCount } from "./subscription-seat-count";
 
 const defaultSubscription = (): AccountSubscriptionSnapshot => ({
@@ -41,6 +42,7 @@ export function normalizeAccountSubscription(value: Partial<AccountSubscriptionS
 }
 
 export function getAccountSubscription(userId: string) {
+  assertAccountMemoryPersistenceAllowed("getAccountSubscription");
   const subscription = subscriptionStore.get(userId) ?? defaultSubscription();
   subscriptionStore.set(userId, subscription);
   return subscription;
@@ -55,4 +57,8 @@ export function setAccountSubscription(userId: string, value: Partial<AccountSub
 
   subscriptionStore.set(userId, next);
   return next;
+}
+
+export function clearAccountSubscriptionMemory(userId: string) {
+  return subscriptionStore.delete(userId);
 }

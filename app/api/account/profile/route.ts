@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountProfile, setAccountProfile } from "@/lib/account-profile";
-import { getAccountPersistenceUserId, readProfileFromDatabase, writeProfileToDatabase } from "@/lib/account-database";
+import { getAccountProfile, getDefaultAccountProfile, setAccountProfile } from "@/lib/account-profile";
+import { canUseDatabasePersistence, getAccountPersistenceUserId, readProfileFromDatabase, writeProfileToDatabase } from "@/lib/account-database";
+import { throwAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import type { AccountProfileSnapshot } from "@/types/capitol";
@@ -10,24 +11,25 @@ async function readSession() {
   return session?.user ?? null;
 }
 
-export async function GET() {
+async function getProfile() {
   const user = await readSession();
 
   if (!user) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
   }
 
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
-  const databaseProfile = await readProfileFromDatabase(accountUserId).catch(() => null);
+  const accountUserId = await getAccountPersistenceUserId(user);
+  const databaseProfile = await readProfileFromDatabase(accountUserId);
+  const usesDatabase = canUseDatabasePersistence();
 
   return NextResponse.json({
-    mode: databaseProfile ? "database" : "account",
-    profile: databaseProfile ?? getAccountProfile(accountUserId),
+    mode: usesDatabase ? "database" : "account",
+    profile: databaseProfile ?? (usesDatabase ? getDefaultAccountProfile() : getAccountProfile(accountUserId)),
     user
   });
 }
 
-export async function POST(request: NextRequest) {
+async function updateProfile(request: NextRequest) {
   const guard = guardMutationRequest(request, "account-profile");
   if (guard) return guard;
 
@@ -38,13 +40,19 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<AccountProfileSnapshot>;
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
-  const databaseProfile = await writeProfileToDatabase(accountUserId, body).catch(() => null);
-  const profile = databaseProfile ?? setAccountProfile(accountUserId, body);
+  const accountUserId = await getAccountPersistenceUserId(user);
+  const usesDatabase = canUseDatabasePersistence();
+  const profile = usesDatabase
+    ? await writeProfileToDatabase(accountUserId, body)
+    : setAccountProfile(accountUserId, body);
+  if (!profile) throwAccountPersistenceUnavailable("updateProfile");
 
   return NextResponse.json({
-    mode: databaseProfile ? "database" : "account",
+    mode: usesDatabase ? "database" : "account",
     profile,
     user
   });
 }
+
+export const GET = withAccountPersistenceRoute(getProfile);
+export const POST = withAccountPersistenceRoute(updateProfile);

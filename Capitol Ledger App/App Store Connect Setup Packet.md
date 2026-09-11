@@ -1,6 +1,6 @@
 # App Store Connect Setup Packet
 
-Status: pricing-aligned TestFlight prep as of July 17, 2026.
+Status: pricing-aligned TestFlight prep, reconciled September 10, 2026. The App Privacy correction is prepared locally but has not been applied or published remotely.
 
 ## Scope
 
@@ -91,6 +91,8 @@ CapitolWonk helps users follow federal bills, votes, officials, alerts, and save
 To test purchases, open Settings > Plan or the Upgrade screen, choose a Pro cycle or a supported Team cycle and seat count, and complete the Apple sandbox/TestFlight purchase. Pro Monthly should show a 7-day free trial that converts to $4.99/month unless canceled before renewal. Team should allow 3-20 monthly seats or 3-16 annual seats and Apple should show the exact fixed total. Restore Purchases is available from the Upgrade screen.
 
 Team purchases open the Team workspace with the selected number of teammate seats. Owner access does not consume a team seat. Annual 17-20 and all 21+ counts use the custom-plan contact path.
+
+To review account deletion, sign in with a disposable production test account, open Settings, scroll to Your data, choose Delete account, acknowledge the permanent-deletion and separate-Apple-billing warning, type DELETE, and choose Permanently delete account. A verified success response creates the browser receipt needed to show completion and signs the account out; an interrupted or ambiguous result is labeled deletion not confirmed instead of claiming success. Do not use a reusable reviewer account: a successful test permanently removes the account, linked data, sessions, and any Team workspace it owns. Deleting CapitolWonk does not cancel an App Store subscription.
 ```
 
 Add reviewer credentials outside git after production auth is configured. Do not commit reviewer email addresses or passwords.
@@ -128,25 +130,32 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 
 - Support page: `/support`
 - Privacy page: `/privacy`
-- Privacy copy is launch-prep copy and should be reviewed against the exact production services enabled at submission.
-- Signed-in users initiate permanent account deletion from Settings > Your data. The flow requires explicit confirmation, explains that Apple subscription billing continues until separately canceled, and enters a durable review queue with a seven-day completion target.
+- Provisional correction packet: [`docs/app-store-privacy-correction-2026-09-10.md`](../docs/app-store-privacy-correction-2026-09-10.md)
+- The provisional matrix retains the nine existing App Privacy data types and adds **Emails or Text Messages, Device ID, Crash Data, Performance Data, and Other Diagnostic Data**. The proposed 14-type result uses No for tracking under the current no-video/no-analytics configuration.
+- The resolved native Sentry SDK creates a persistent installation identifier and device-and-app hash despite default PII being disabled. Until those identifiers are stripped and verified absent, prepare Device ID plus all three diagnostic types as linked Yes. The SDK privacy manifest alone is not sufficient evidence for linkage.
+- Before publication, reconcile the exact Release archive's aggregate privacy report and separately audit WKWebView/server/provider traffic, verify representative runtime events, confirm deletion/retention operations, verify the public privacy page in production, and clear every gate in the correction packet.
+- The updated privacy-page source is local until a separately approved release. The App Store Connect questionnaire remains unchanged and requires exact action-time approval before publication.
+- Signed-in production users initiate permanent account deletion from Settings > Your data. After the billing acknowledgement and exact `DELETE` confirmation, the action attempts immediate atomic database deletion, erases the implemented account inventory, clears sessions/cookies plus current-device storage, and retains a deidentified completion audit. Exact-ID/read-only persistence prevents stale user recreation/email remap. The deletion transaction snapshots required Team-member/legacy-Stripe cleanup and makes no precommit member/provider mutation. Cleanup jobs remain only while pending/retrying and are erased after success; terminal/missing Stripe outcomes count as complete and transient errors retry. Signed webhooks apply timestamp/current-state checks and, before acknowledgement, stop an active deleted-user renewal and detach metadata where Stripe permits. Concurrent Team-seat pauses serialize against deletion and attempt compensation on their own transaction failure. The completed result requires an explicit browser receipt, ambiguous results are unconfirmed, and a multi-tab fence blocks browser/native writers. Apple billing remains separate.
+- This deletion implementation is local only. Do not describe it as production-verified until all three supporting migrations are deployed and the known-sentinel/unexpected-orphan behavior plus live tables/indexes/FKs are inspected; the protected cleanup-task secret, schedule, no-payload age monitor and retry path operate; exact-ID/no-memory behavior, webhook semantics, a disposable account, real-Postgres pause/delete concurrency, legacy-Stripe cleanup/compensation, and terminal/transient outcomes pass; a physical-device TestFlight pass confirms receipt, ambiguous-result, multi-tab/device-writer and session/storage behavior; backup/PITR tombstone handling is approved; and provider retention/removal procedures are recorded.
+- Account deletion does not cancel App Store billing. Separately submitted Sentry feedback is not linked by CapitolWonk account ID by default and therefore is not found by the account transaction; Support must handle a specific provider-side removal request when a report contains an email or other identifying details.
 - Export, correction, and other privacy questions continue to route through Support.
 
 ## Apple-Side Checklist
 
 1. Confirm final bundle ID `com.capitolwonk.ce`, SKU `capitolwonk-ce-ios-v1`, and subscription product IDs.
 2. Keep native bundle ID, product IDs, setup docs, and readiness checks aligned with these final Apple values.
-3. Create App Store Connect app record with `com.capitolwonk.ce`.
-4. Create the paid plans subscription group.
-5. Create `com.capitolwonk.pro.monthly` with the 7-day free trial introductory offer.
-6. Create `com.capitolwonk.pro.annual`.
+3. Verify the existing App Store Connect app record uses `com.capitolwonk.ce`; do not create a duplicate.
+4. Verify the existing paid-plans subscription group.
+5. Verify `com.capitolwonk.pro.monthly` retains the 7-day free trial introductory offer.
+6. Verify the existing `com.capitolwonk.pro.annual` record.
 7. Keep `com.capitolwonk.team.monthly` and `com.capitolwonk.team.annual` as the three-seat products.
 8. Keep all 34 additional Team records, but configure pricing/availability only for monthly 4-20 and annual 4-16; reserve annual 17-20 without sale availability.
 9. July 17, 2026 audit: all 38 records exist; monthly 4-20 and annual 4-16 are U.S.-only with exact matrix prices and English (U.S.) metadata; annual 17-20 remain unavailable without prices or localization.
 10. Before review, reorder subscription levels so Team 20 is highest, lower seat counts descend through Team 3, monthly and annual products for the same seat count share a level, and Pro is lowest. App Store Connect initially placed the additional records in creation order.
 11. Confirm Pro is `$4.99/month` or `$39.99/year`; confirm every launch-active Team product matches its seat count and matrix price.
-12. Add support and privacy URLs after deployment.
-13. Use the `CapitolWonk Server API` In-App Purchase key generated July 17, 2026; keep the one-time `.p8` download outside git.
-14. Add required host environment variables.
-15. Run strict local readiness checks.
-16. Run sandbox/TestFlight purchase, restore, renewal, cancellation, expiration, plan-switching, Team workspace, and second-account-linking QA.
+12. Reconcile and approve the App Privacy correction packet against the exact Release archive and enabled production services; include all three account-deletion migrations, sentinel/orphan and live-schema/FK verification, cleanup-task secret/schedule/no-payload age-monitor/retry evidence, exact-ID/webhook/rate-limit safeguards, disposable-account plus real-Postgres Team/legacy-Stripe cleanup and compensation evidence, successful-job erasure with pending-only retention, receipt/ambiguous-result and multi-tab/device-writer QA, backup/PITR tombstone policy, and provider removal procedures. Do not publish the questionnaire from this local preparation alone.
+13. Deploy and verify the updated support and privacy URLs before publishing their App Store metadata.
+14. Use the `CapitolWonk Server API` In-App Purchase key generated July 17, 2026; keep the one-time `.p8` download outside git.
+15. Add required host environment variables.
+16. Run strict local readiness checks.
+17. Run sandbox/TestFlight purchase, restore, renewal, cancellation, expiration, plan-switching, Team workspace, and second-account-linking QA.

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 const subscriptionStorageKey = "capitol-ledger:subscription";
@@ -13,6 +14,7 @@ function hasActiveTeamAccess(subscription?: AccountSubscriptionSnapshot): subscr
 }
 
 function writeBrowserSubscription(subscription: AccountSubscriptionSnapshot) {
+  if (isBrowserAccountDeletionFenced()) return;
   window.localStorage.setItem(subscriptionStorageKey, JSON.stringify(subscription));
   window.dispatchEvent(new CustomEvent(subscriptionEvent, { detail: subscription }));
 }
@@ -33,7 +35,7 @@ export function TeamPurchaseReturnSync() {
       const data = response?.ok ? ((await response.json().catch(() => null)) as { subscription?: AccountSubscriptionSnapshot } | null) : null;
       const subscription = data?.subscription;
 
-      if (cancelled) return;
+      if (cancelled || isBrowserAccountDeletionFenced()) return;
 
       if (hasActiveTeamAccess(subscription)) {
         writeBrowserSubscription(subscription);

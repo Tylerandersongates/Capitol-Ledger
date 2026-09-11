@@ -24,7 +24,7 @@ const supportOptions = [
   },
   {
     title: "Account deletion",
-    body: "Start permanent account deletion directly in Settings. Requests are completed within 7 days.",
+    body: "Permanently delete your account and linked CapitolWonk data directly in Settings. Completion is shown in the app.",
     href: "/settings#delete-account",
     cta: "Delete account"
   },

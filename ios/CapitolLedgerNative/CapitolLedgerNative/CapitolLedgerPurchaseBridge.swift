@@ -75,7 +75,16 @@ final class CapitolLedgerPurchaseBridge: NSObject, WKScriptMessageHandler {
         let script = """
         (() => {
           const result = \(json);
+          const deletionFenceKey = window.__capitolLedgerAccountDeletionFenceKey || "capitolwonk:account-deletion-fence";
+          const accountDeletionFenceActive = () => {
+            try {
+              return window.localStorage.getItem(deletionFenceKey) === "active";
+            } catch {
+              return true;
+            }
+          };
           const publishResult = (nextResult) => {
+            if (accountDeletionFenceActive()) return;
             const publicResult = { ...nextResult };
             delete publicResult.signedTransactionJWS;
             if (publicResult.subscription) {
@@ -84,8 +93,9 @@ final class CapitolLedgerPurchaseBridge: NSObject, WKScriptMessageHandler {
             }
             window.dispatchEvent(new CustomEvent("capitol-ledger:native-purchase-result", { detail: publicResult }));
           };
+          if (accountDeletionFenceActive()) return;
           publishResult(result);
-          if (result.signedTransactionJWS) {
+          if (result.signedTransactionJWS && !accountDeletionFenceActive()) {
             fetch("/api/account/subscription/app-store", {
               method: "POST",
               credentials: "same-origin",

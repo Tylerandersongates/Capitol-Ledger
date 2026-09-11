@@ -1,4 +1,9 @@
 import { randomUUID } from "crypto";
+import {
+  assertAccountMemoryPersistenceAllowed,
+  runAccountPersistenceOperation,
+  throwAccountPersistenceUnavailable
+} from "@/lib/account-persistence-safety";
 import { getCivicPetitionById, type CivicPetition } from "@/lib/civic-petitions";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 
@@ -75,9 +80,10 @@ async function ensurePetitionSignatureSchema() {
   if (globalThis.__capitolLedgerPetitionSignatureSchemaReady) return globalThis.__capitolLedgerPetitionSignatureSchemaReady;
 
   globalThis.__capitolLedgerPetitionSignatureSchemaReady = (async () => {
-    const prisma = getPrisma();
+    try {
+      const prisma = getPrisma();
 
-    await prisma.$executeRawUnsafe(`
+      await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "PetitionSignature" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "userId" TEXT NOT NULL,
@@ -88,19 +94,24 @@ async function ensurePetitionSignatureSchema() {
         "targetLabel" TEXT,
         "signedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "PetitionSignature_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
       )
     `);
-    await prisma.$executeRawUnsafe(`
+      await prisma.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "PetitionSignature_userId_petitionId_key"
       ON "PetitionSignature"("userId", "petitionId")
     `);
-    await prisma.$executeRawUnsafe(`
+      await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "PetitionSignature_userId_signedAt_idx"
       ON "PetitionSignature"("userId", "signedAt")
     `);
 
-    return true;
+      return true;
+    } catch (error) {
+      globalThis.__capitolLedgerPetitionSignatureSchemaReady = undefined;
+      throwAccountPersistenceUnavailable("ensurePetitionSignatureSchema", error);
+    }
   })();
 
   return globalThis.__capitolLedgerPetitionSignatureSchemaReady;
@@ -113,44 +124,47 @@ export async function recordPetitionSignatureForUser(userId: string, petitionId:
   const input = petitionToRecordInput(petition);
 
   if (await ensurePetitionSignatureSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbSignedPetitionRecord[]>`
-      INSERT INTO "PetitionSignature" (
-        "id",
-        "userId",
-        "petitionId",
-        "title",
-        "body",
-        "progressLabel",
-        "targetLabel",
-        "signedAt",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${randomUUID()},
-        ${userId},
-        ${input.petitionId},
-        ${input.title},
-        ${input.body ?? null},
-        ${input.progressLabel ?? null},
-        ${input.targetLabel ?? null},
-        NOW(),
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT ("userId", "petitionId") DO UPDATE
-      SET "title" = EXCLUDED."title",
-          "body" = EXCLUDED."body",
-          "progressLabel" = EXCLUDED."progressLabel",
-          "targetLabel" = EXCLUDED."targetLabel",
-          "updatedAt" = NOW()
-      RETURNING "id", "petitionId", "title", "body", "progressLabel", "targetLabel", "signedAt"
-    `;
+    return runAccountPersistenceOperation("recordPetitionSignatureForUser", async () => {
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw<DbSignedPetitionRecord[]>`
+        INSERT INTO "PetitionSignature" (
+          "id",
+          "userId",
+          "petitionId",
+          "title",
+          "body",
+          "progressLabel",
+          "targetLabel",
+          "signedAt",
+          "createdAt",
+          "updatedAt"
+        )
+        VALUES (
+          ${randomUUID()},
+          ${userId},
+          ${input.petitionId},
+          ${input.title},
+          ${input.body ?? null},
+          ${input.progressLabel ?? null},
+          ${input.targetLabel ?? null},
+          NOW(),
+          NOW(),
+          NOW()
+        )
+        ON CONFLICT ("userId", "petitionId") DO UPDATE
+        SET "title" = EXCLUDED."title",
+            "body" = EXCLUDED."body",
+            "progressLabel" = EXCLUDED."progressLabel",
+            "targetLabel" = EXCLUDED."targetLabel",
+            "updatedAt" = NOW()
+        RETURNING "id", "petitionId", "title", "body", "progressLabel", "targetLabel", "signedAt"
+      `;
 
-    return rows[0] ? normalizeRecord(rows[0]) : null;
+      return rows[0] ? normalizeRecord(rows[0]) : null;
+    });
   }
 
+  assertAccountMemoryPersistenceAllowed("recordPetitionSignatureForUser");
   const existing = petitionSignatureStore.find((record) => record.userId === userId && record.petitionId === petitionId);
   if (existing) return toPublicRecord(existing);
 
@@ -166,20 +180,36 @@ export async function recordPetitionSignatureForUser(userId: string, petitionId:
 
 export async function readPetitionSignaturesForUser(userId: string, limit = 50) {
   if (await ensurePetitionSignatureSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbSignedPetitionRecord[]>`
-      SELECT "id", "petitionId", "title", "body", "progressLabel", "targetLabel", "signedAt"
-      FROM "PetitionSignature"
-      WHERE "userId" = ${userId}
-      ORDER BY "signedAt" DESC
-      LIMIT ${Math.max(1, Math.min(100, limit))}
-    `;
+    return runAccountPersistenceOperation("readPetitionSignaturesForUser", async () => {
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw<DbSignedPetitionRecord[]>`
+        SELECT "id", "petitionId", "title", "body", "progressLabel", "targetLabel", "signedAt"
+        FROM "PetitionSignature"
+        WHERE "userId" = ${userId}
+        ORDER BY "signedAt" DESC
+        LIMIT ${Math.max(1, Math.min(100, limit))}
+      `;
 
-    return rows.map(normalizeRecord);
+      return rows.map(normalizeRecord);
+    });
   }
 
+  assertAccountMemoryPersistenceAllowed("readPetitionSignaturesForUser");
   return petitionSignatureStore
     .filter((record) => record.userId === userId)
     .slice(0, Math.max(1, Math.min(100, limit)))
     .map(toPublicRecord);
+}
+
+export function clearPetitionSignatureMemory(userId: string) {
+  let deleted = 0;
+
+  for (let index = petitionSignatureStore.length - 1; index >= 0; index -= 1) {
+    if (petitionSignatureStore[index].userId !== userId) continue;
+
+    petitionSignatureStore.splice(index, 1);
+    deleted += 1;
+  }
+
+  return deleted;
 }

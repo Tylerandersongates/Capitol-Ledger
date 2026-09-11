@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { getAccountSubscription, normalizeAccountSubscription } from "@/lib/account-subscription";
+import { canUseDatabasePersistence, getAccountPersistenceUserId, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { createStripeBillingPortalSession } from "@/lib/billing/stripe";
 import { guardMutationRequest } from "@/lib/request-security";
@@ -15,7 +16,7 @@ function hasStripeCustomerId(value?: string) {
   return Boolean(value?.startsWith("cus_"));
 }
 
-export async function POST(request: NextRequest) {
+async function openBillingPortal(request: NextRequest) {
   const guard = guardMutationRequest(request, "account-subscription-portal", { limit: 12, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
@@ -28,15 +29,17 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     returnPath?: string;
   };
-  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId).catch(() => null);
-  const subscription = databaseSubscription ?? getAccountSubscription(accountUserId);
+  const accountUserId = await getAccountPersistenceUserId(session.user);
+  const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
+  const usesDatabase = canUseDatabasePersistence();
+  const subscription = databaseSubscription ??
+    (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
 
   if (subscription.provider !== "stripe" || !hasStripeCustomerId(subscription.providerCustomerId)) {
     return NextResponse.json(
       {
         error: "Legacy Stripe billing management is available only after a Stripe subscription is connected.",
-        mode: databaseSubscription ? "database" : "account",
+        mode: usesDatabase ? "database" : "account",
         subscription
       },
       { status: 409 }
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
       {
         error: "Stripe billing portal is not ready.",
         missingConfiguration: portal.missing,
-        mode: databaseSubscription ? "database" : "account",
+        mode: usesDatabase ? "database" : "account",
         subscription
       },
       { status: 503 }
@@ -70,3 +73,5 @@ export async function POST(request: NextRequest) {
     subscription
   });
 }
+
+export const POST = withAccountPersistenceRoute(openBillingPortal);

@@ -67,6 +67,17 @@ assert.ok(
   "legacy Team cancellations should look for an active Pro subscription before writing Free"
 );
 assert.ok(webhookSource.includes("staleSubscriptionEvent"), "webhook should expose stale-event ignore path");
+assert.ok(
+  webhookSource.includes("accountPersistenceUserExists") &&
+    webhookSource.includes("cancelDeletedAccountStripeSubscription") &&
+    webhookSource.includes("deletedAccountCleanup"),
+  "late Stripe events for a deleted account must stop renewal and detach account metadata before acknowledgement"
+);
+assert.ok(
+  webhookSource.includes("readStripeSubscription(eventSubscriptionId)") &&
+    webhookSource.includes("readStripeSubscription(object.subscription)"),
+  "replayed Stripe events should reconcile against live subscription state"
+);
 assert.ok(transitionSource.includes("team-owner-upgrade"), "owner Team upgrades should be tracked distinctly in the pause table");
 assert.ok(
   transitionSource.includes("cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId)"),
@@ -75,6 +86,15 @@ assert.ok(
 assert.ok(
   transitionSource.includes("isActiveTeamSubscription") && transitionSource.includes("cancelPreviousTeamSubscriptionForProCheckout"),
   "owner Pro downgrades should detect and cancel the previous active Team subscription"
+);
+assert.ok(
+  transitionSource.includes("FOR KEY SHARE OF workspace, account") &&
+    transitionSource.includes("failed to compensate an uncommitted Stripe pause"),
+  "member subscription pausing should serialize with workspace/account deletion and compensate a rolled-back provider change"
+);
+assert.ok(
+  stripeSource.includes("toleranceSeconds = 5 * 60") && stripeSource.includes("Math.abs(nowSeconds - timestampSeconds)"),
+  "Stripe signatures should reject replay outside the configured timestamp tolerance"
 );
 assert.ok(stripeSource.includes("metadata[userEmail]"), "Stripe checkout metadata should include user email for future audit records");
 assert.ok(stripeSource.includes("readStripeCustomerSubscriptionForPlan"), "Stripe helper should expose plan-specific subscription lookup");

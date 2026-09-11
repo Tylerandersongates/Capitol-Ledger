@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { readLocalAccountProfile } from "@/lib/browser-account-profile";
-import { markBrowserAccountCreated, setBrowserSessionAuthenticated } from "@/lib/browser-auth-state";
+import {
+  beginFreshBrowserAuthentication,
+  completeFreshBrowserAuthentication,
+  isBrowserAccountDeletionFenced,
+  markBrowserAccountCreated,
+  setBrowserSessionAuthenticated
+} from "@/lib/browser-auth-state";
 import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
@@ -15,6 +21,8 @@ const readAlertsKey = "capitol-ledger:read-alerts";
 const subscriptionKey = "capitol-ledger:subscription";
 
 function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return fallback;
+
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
   } catch {
@@ -85,6 +93,7 @@ export function DemoAccountButton({
   async function startDemoAccount() {
     setError("");
     setPending(true);
+    beginFreshBrowserAuthentication();
 
     const response = await fetch("/api/auth/demo", {
       method: "POST"
@@ -97,8 +106,8 @@ export function DemoAccountButton({
       return;
     }
 
+    if (!completeFreshBrowserAuthentication(true)) return;
     markBrowserAccountCreated();
-    setBrowserSessionAuthenticated(true);
     void syncLocalAccountData();
 
     router.push(href);

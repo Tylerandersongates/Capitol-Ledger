@@ -1,5 +1,9 @@
 import type { AccountNotificationPreferences, AccountProfileSnapshot } from "@/types/capitol";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import {
+  activateBrowserAccountDeletionFence,
+  hasActiveBrowserSession,
+  isBrowserAccountDeletionFenced
+} from "@/lib/browser-auth-state";
 import { normalizeOfficialStatePreference } from "@/lib/official-states";
 
 export const accountProfileChangedEvent = "capitol-ledger:account-profile-changed";
@@ -32,6 +36,7 @@ const localAccountStateKeyPrefixes = [
   "capitol-ledger:gamification-dedupe:",
   "capitol-ledger:gamification-streak-date:"
 ];
+const capitolLedgerStoragePrefix = "capitol-ledger:";
 let accountProfileFetchPromise: Promise<AccountProfileSnapshot | null> | null = null;
 let accountProfileCache: AccountProfileSnapshot | null = null;
 let accountProfileCacheUpdatedAt = 0;
@@ -58,7 +63,7 @@ export const defaultDistrictProfile: Required<LocalDistrictProfile> = {
 };
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return fallback;
 
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
@@ -68,7 +73,7 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   window.localStorage.setItem(key, JSON.stringify(value));
   window.dispatchEvent(new Event(accountProfileChangedEvent));
@@ -118,12 +123,12 @@ export function writeLocalDistrictProfile(value: LocalDistrictProfile) {
 }
 
 export function readLocalOfficialSearchState() {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return null;
   return normalizeOfficialStatePreference(window.localStorage.getItem(officialSearchStateKey));
 }
 
 export function writeLocalOfficialSearchState(value: string) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   const normalized = normalizeOfficialStatePreference(value);
   if (!normalized || window.localStorage.getItem(officialSearchStateKey) === normalized) return;
@@ -133,6 +138,15 @@ export function writeLocalOfficialSearchState(value: string) {
 }
 
 export function readLocalAccountProfile(): Partial<AccountProfileSnapshot> {
+  if (isBrowserAccountDeletionFenced()) {
+    return {
+      ...defaultDistrictProfile,
+      notificationPreferences: defaultNotificationPreferences,
+      partyAffiliation: "",
+      timeZone: undefined
+    };
+  }
+
   const district = readLocalDistrictProfile();
   const notificationPreferences = readLocalNotificationPreferences();
   const partyAffiliation = typeof window === "undefined" ? "" : window.localStorage.getItem(partyAffiliationKey) ?? "";
@@ -149,6 +163,7 @@ export function readLocalAccountProfile(): Partial<AccountProfileSnapshot> {
 }
 
 export function writeLocalAccountProfile(profile: Partial<AccountProfileSnapshot>) {
+  if (isBrowserAccountDeletionFenced()) return;
   if (hasOwn(profile, "notificationPreferences")) writeLocalNotificationPreferences(profile.notificationPreferences ?? defaultNotificationPreferences);
   if (hasOwn(profile, "districtCode") || hasOwn(profile, "districtLabel") || hasOwn(profile, "districtState")) writeLocalDistrictProfile(profile);
   if (typeof window !== "undefined" && typeof profile.partyAffiliation === "string") {
@@ -172,7 +187,9 @@ export function resetLocalAccountSetupState() {
         window.localStorage.removeItem(key);
       }
     });
-    window.localStorage.setItem(notificationPreferencesKey, JSON.stringify(freshAccountNotificationPreferences));
+    if (!isBrowserAccountDeletionFenced()) {
+      window.localStorage.setItem(notificationPreferencesKey, JSON.stringify(freshAccountNotificationPreferences));
+    }
   } catch {
     // Fresh account setup should continue even when browser storage is restricted.
   }
@@ -184,6 +201,51 @@ export function resetLocalAccountSetupState() {
   window.dispatchEvent(new Event("capitol-ledger:gamification-changed"));
   window.dispatchEvent(new Event("capitol-ledger:persistence-changed"));
   window.dispatchEvent(new Event("capitol-ledger:subscription-changed"));
+}
+
+export function clearLocalAccountDataAfterDeletion() {
+  if (typeof window === "undefined") return;
+
+  activateBrowserAccountDeletionFence();
+
+  function clearAccountKeys(storage: Storage) {
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(
+      (key): key is string => Boolean(key)
+    );
+    keys.forEach((key) => {
+      if (key.startsWith(capitolLedgerStoragePrefix)) storage.removeItem(key);
+    });
+  }
+
+  try {
+    clearAccountKeys(window.localStorage);
+  } catch {
+    // Continue with session storage when local storage is restricted.
+  }
+
+  try {
+    clearAccountKeys(window.sessionStorage);
+  } catch {
+    // The in-memory fence still blocks this document when session storage is restricted.
+  }
+
+  // Retry persistence after clearing space while retaining the in-memory fence throughout.
+  activateBrowserAccountDeletionFence();
+
+  accountProfileFetchPromise = null;
+  accountProfileCache = null;
+  accountProfileCacheUpdatedAt = 0;
+  [
+    accountProfileChangedEvent,
+    "capitol-ledger:bill-stances-changed",
+    "capitol-ledger:follows-changed",
+    "capitol-ledger:gamification-changed",
+    "capitol-ledger:persistence-changed",
+    "capitol-ledger:read-alerts-changed",
+    "capitol-ledger:sent-letters-changed",
+    "capitol-ledger:signed-petitions-changed",
+    "capitol-ledger:subscription-changed"
+  ].forEach((eventName) => window.dispatchEvent(new Event(eventName)));
 }
 
 export async function fetchAccountProfile() {
@@ -203,6 +265,7 @@ async function fetchAccountProfileFromApi() {
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
+  if (isBrowserAccountDeletionFenced()) return null;
   if (data?.profile) {
     accountProfileCache = data.profile;
     accountProfileCacheUpdatedAt = Date.now();
@@ -228,11 +291,11 @@ export async function syncAccountProfile(profile: Partial<AccountProfileSnapshot
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { profile?: AccountProfileSnapshot } | null;
-  if (data?.profile) {
+  if (data?.profile && !isBrowserAccountDeletionFenced()) {
     accountProfileFetchPromise = null;
     accountProfileCache = data.profile;
     accountProfileCacheUpdatedAt = Date.now();
     writeLocalAccountProfile(data.profile);
   }
-  return data?.profile ?? null;
+  return isBrowserAccountDeletionFenced() ? null : data?.profile ?? null;
 }

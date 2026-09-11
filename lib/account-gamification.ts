@@ -7,6 +7,7 @@ import {
   type GamificationEventCount,
   type GamificationEventType
 } from "./gamification";
+import { assertAccountMemoryPersistenceAllowed } from "./account-persistence-safety";
 
 export type AccountGamificationSnapshot = {
   civicScore: number;
@@ -177,6 +178,7 @@ export function mergeAccountGamificationForWrite(
 }
 
 export function getAccountGamification(userId: string) {
+  assertAccountMemoryPersistenceAllowed("getAccountGamification");
   const gamification = gamificationStore.get(userId) ?? getDefaultAccountGamification();
   gamificationStore.set(userId, gamification);
   return gamification;
@@ -201,4 +203,8 @@ export function recordAccountGamificationEvent(userId: string, event: Gamificati
   return setAccountGamification(userId, {
     eventCounts: Array.from(counts.entries()).map(([event, count]) => ({ event, count }))
   });
+}
+
+export function clearAccountGamificationMemory(userId: string) {
+  return gamificationStore.delete(userId);
 }

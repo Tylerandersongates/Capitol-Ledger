@@ -35,6 +35,7 @@ export function SiteHeader() {
     pathname === "/upgrade" ||
     pathname === "/search" ||
     pathname === "/account" ||
+    pathname === "/account-deleted" ||
     pathname === "/profile" ||
     pathname === "/settings" ||
     pathname === "/beta" ||

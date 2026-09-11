@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { getAccountSubscription, normalizeAccountSubscription, setAccountSubscription } from "@/lib/account-subscription";
+import { canUseDatabasePersistence, getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
+import { throwAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { cancelStripeSubscriptionAtPeriodEnd, createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
@@ -24,7 +25,7 @@ function canCancelStripeSubscription(subscription: {
   return subscription.provider === "stripe" && subscription.plan !== "free" && Boolean(subscription.providerSubscriptionId?.startsWith("sub_"));
 }
 
-export async function POST(request: NextRequest) {
+async function startCheckout(request: NextRequest) {
   const guard = guardMutationRequest(request, "account-subscription-checkout", { limit: 12, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
@@ -59,8 +60,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (plan === "free") {
-    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-    const currentSubscription = (await readSubscriptionFromDatabase(accountUserId).catch(() => null)) ?? getAccountSubscription(accountUserId);
+    const accountUserId = await getAccountPersistenceUserId(session.user);
+    const usesDatabase = canUseDatabasePersistence();
+    const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
+    const currentSubscription = databaseSubscription ??
+      (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
     let canceledPreviousSubscription = false;
 
     if (canCancelStripeSubscription(currentSubscription) && currentSubscription.providerSubscriptionId) {
@@ -81,13 +85,15 @@ export async function POST(request: NextRequest) {
       seatCount,
       status: "active"
     } as const;
-    const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
-    const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, nextSubscription);
+    const subscription = usesDatabase
+      ? await writeSubscriptionToDatabase(accountUserId, nextSubscription)
+      : setAccountSubscription(accountUserId, nextSubscription);
+    if (!subscription) throwAccountPersistenceUnavailable("startFreeCheckout");
 
     return NextResponse.json({
       canceledPreviousSubscription,
       checkoutMode: "demo",
-      mode: databaseSubscription ? "database" : "account",
+      mode: usesDatabase ? "database" : "account",
       subscription
     });
   }
@@ -107,7 +113,8 @@ export async function POST(request: NextRequest) {
   }));
 
   if (!checkout.configured) {
-    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+    const accountUserId = await getAccountPersistenceUserId(session.user);
+    const usesDatabase = canUseDatabasePersistence();
     const nextSubscription = {
       cycle,
       plan,
@@ -117,12 +124,14 @@ export async function POST(request: NextRequest) {
       seatCount,
       status: "active"
     } as const;
-    const databaseSubscription = await writeSubscriptionToDatabase(accountUserId, nextSubscription).catch(() => null);
-    const subscription = databaseSubscription ?? setAccountSubscription(accountUserId, nextSubscription);
+    const subscription = usesDatabase
+      ? await writeSubscriptionToDatabase(accountUserId, nextSubscription)
+      : setAccountSubscription(accountUserId, nextSubscription);
+    if (!subscription) throwAccountPersistenceUnavailable("startDemoCheckout");
 
     return NextResponse.json({
       checkoutMode: "demo",
-      mode: databaseSubscription ? "database" : "account",
+      mode: usesDatabase ? "database" : "account",
       missingConfiguration: checkout.missing,
       subscription
     });
@@ -135,3 +144,5 @@ export async function POST(request: NextRequest) {
     sessionId: checkout.sessionId
   });
 }
+
+export const POST = withAccountPersistenceRoute(startCheckout);

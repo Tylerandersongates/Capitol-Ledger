@@ -1,5 +1,5 @@
 import { getCivicPetitionById, type CivicPetition } from "@/lib/civic-petitions";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import type { SignedPetitionRecord } from "@/lib/account-petition-signatures";
 
 export type BrowserSignedPetitionRecord = SignedPetitionRecord & {
@@ -12,7 +12,7 @@ const signedPetitionIdsKey = "capitol-ledger:signed-petitions";
 const signedPetitionRecordsKey = "capitol-ledger:signed-petition-records";
 
 function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined" || !window.localStorage) return fallback;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return fallback;
 
   try {
     return JSON.parse(window.localStorage.getItem(key) ?? "") as T;
@@ -22,7 +22,7 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined" || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -135,6 +135,7 @@ export function readLocalSignedPetitionIds() {
 }
 
 export function recordLocalSignedPetition(petition: CivicPetition | BrowserSignedPetitionRecord) {
+  if (isBrowserAccountDeletionFenced()) return null;
   const record = "petitionId" in petition ? normalizeSignedPetition(petition, petition.source ?? "local") : petitionToRecord(petition);
   if (!record) return null;
 
@@ -150,6 +151,7 @@ export async function fetchAccountSignedPetitions() {
   if (!response?.ok) return [];
 
   const data = (await response.json().catch(() => null)) as { petitions?: unknown[] } | null;
+  if (isBrowserAccountDeletionFenced()) return [];
   const records = Array.isArray(data?.petitions) ? data.petitions : [];
   return records.map((record) => normalizeSignedPetition(record, "account")).filter(Boolean) as BrowserSignedPetitionRecord[];
 }
@@ -157,6 +159,7 @@ export async function fetchAccountSignedPetitions() {
 export async function hydrateSignedPetitions() {
   const localPetitions = readLocalSignedPetitions();
   const accountPetitions = await fetchAccountSignedPetitions();
+  if (isBrowserAccountDeletionFenced()) return [];
   const merged = mergePetitions([...accountPetitions, ...localPetitions]);
 
   if (accountPetitions.length && JSON.stringify(localPetitions) !== JSON.stringify(merged)) {
@@ -166,6 +169,7 @@ export async function hydrateSignedPetitions() {
 }
 
 export async function recordSignedPetition(petition: CivicPetition) {
+  if (isBrowserAccountDeletionFenced()) return null;
   const localRecord = recordLocalSignedPetition(petition);
 
   if (await hasActiveBrowserSession()) {

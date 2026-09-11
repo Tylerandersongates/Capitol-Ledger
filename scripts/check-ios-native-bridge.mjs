@@ -91,6 +91,15 @@ assert.ok(
 );
 
 assert.ok(
+  webView.includes("__capitolLedgerAccountDeletionFenceKey") &&
+    webView.includes("capitolwonk:account-deletion-fence") &&
+    bridge.includes("accountDeletionFenceActive") &&
+    bridge.includes("if (accountDeletionFenceActive()) return") &&
+    bridge.includes("result.signedTransactionJWS && !accountDeletionFenceActive()"),
+  "native StoreKit publication and server sync should stay fenced after account deletion until a new authenticated sign-in"
+);
+
+assert.ok(
     appStoreRoute.includes("validateAppStoreTransaction") &&
     appStoreRoute.includes("createAppStoreAccountToken") &&
     appStoreRoute.includes("findSubscriptionUserIdByProvider") &&

@@ -32,7 +32,7 @@ export async function readTeamAccessSummaryForUser(
   user: TeamAccessUser,
   subscription?: AccountSubscriptionSnapshot | null
 ): Promise<TeamAccessSummary | null> {
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const accountUserId = await getAccountPersistenceUserId(user);
   const activeSubscription = subscription ?? (await getSubscriptionForAccountUser(user));
 
   if (hasActiveTeamSubscription(activeSubscription)) {
