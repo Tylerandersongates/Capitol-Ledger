@@ -22,7 +22,7 @@ import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass 
 import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { publicBrandName } from "@/lib/brand";
-import { getBill, getBillStatus, getMember, getRecentUpdates } from "@/lib/data";
+import { getBillStatus, getDashboardDataWithLiveData, getRecentUpdates, getRecentUpdatesWithLiveData } from "@/lib/data";
 import { requireAccountSession } from "@/lib/route-guards";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
@@ -111,8 +111,12 @@ export default async function TeamWorkspacePage(props: { searchParams?: Promise<
   const canSeedWorkspaceLedger = canManageTeam || viewerMembership?.role === "analyst";
   const openSeats = teamWorkspace.openSeats;
   const workspaceLedger = await readSharedWorkspaceLedger(teamWorkspace.members, accountUserId, accountLedger);
-  const watchlistBills = buildWatchlistBills(workspaceLedger.follows);
-  const alertQueue = buildAlertQueue(workspaceLedger);
+  const [dashboardData, recentUpdates] = await Promise.all([
+    getDashboardDataWithLiveData(),
+    getRecentUpdatesWithLiveData()
+  ]);
+  const watchlistBills = buildWatchlistBills(workspaceLedger.follows, dashboardData.favoriteTargets.bills);
+  const alertQueue = buildAlertQueue(workspaceLedger, recentUpdates, dashboardData.favoriteTargets);
   const teamRoles = buildRoleMetrics(teamWorkspace.members, teamWorkspace.invites);
   const teamMetrics: Metric[] = [
     { label: "Team seats", value: String(teamWorkspace.seatCount) },
@@ -662,19 +666,24 @@ function mergeLedgerSnapshots(ledgers: AccountLedgerSnapshot[]): AccountLedgerSn
   };
 }
 
-function buildWatchlistBills(follows: SavedFollowRecord[]): WatchlistBillRow[] {
+function buildWatchlistBills(
+  follows: SavedFollowRecord[],
+  bills: Awaited<ReturnType<typeof getDashboardDataWithLiveData>>["favoriteTargets"]["bills"]
+): WatchlistBillRow[] {
+  const billsById = new Map(bills.filter((bill) => !bill.id.startsWith("demo-")).map((bill) => [bill.id, bill]));
+
   return follows
-    .filter((record) => record.type === "bill")
+    .filter((record) => record.type === "bill" && !record.id.startsWith("demo-"))
     .slice(0, 3)
     .flatMap((record) => {
-      const bill = getBill(record.id);
+      const bill = billsById.get(record.id);
       if (!bill) return [];
 
       return [
         {
           href: `/bills/${bill.id}`,
           id: bill.id,
-          meta: bill.committeeName ?? bill.policyArea,
+          meta: bill.policyArea,
           status: getBillStatus(bill),
           title: bill.shortTitle,
           value: bill.displayNumber
@@ -683,16 +692,23 @@ function buildWatchlistBills(follows: SavedFollowRecord[]): WatchlistBillRow[] {
     });
 }
 
-function buildAlertQueue(ledger: AccountLedgerSnapshot): AlertQueueRow[] {
+function buildAlertQueue(
+  ledger: AccountLedgerSnapshot,
+  updates: ReturnType<typeof getRecentUpdates>,
+  targets: Awaited<ReturnType<typeof getDashboardDataWithLiveData>>["favoriteTargets"]
+): AlertQueueRow[] {
   const followKeys = new Set(ledger.follows.map((record) => `${record.type}:${record.id}`));
   const savedAlerts = new Set(ledger.savedAlerts);
+  const billsById = new Map(targets.bills.map((bill) => [bill.id, bill]));
+  const membersById = new Map(targets.members.map((member) => [member.bioguideId, member]));
 
-  return getRecentUpdates()
+  return updates
+    .filter((event) => !event.targetId.startsWith("demo-"))
     .filter((event) => savedAlerts.has(event.id) || followKeys.has(`${event.targetType}:${event.targetId}`))
     .slice(0, 4)
     .map((event) => {
-      const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
-      const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
+      const bill = event.targetType === "bill" ? billsById.get(event.targetId) : undefined;
+      const member = event.targetType === "member" ? membersById.get(event.targetId) : undefined;
       const href = bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search";
 
       return {

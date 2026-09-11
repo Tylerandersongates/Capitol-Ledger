@@ -21,7 +21,7 @@ import {
 import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { hydrateAccountLedgerFromAccount } from "@/lib/browser-account-ledger";
 import { useSubscriptionState } from "@/components/subscription-controls";
-import { recordCompletedDistrictSetupIfReady, recordGamificationEvent } from "@/lib/browser-gamification";
+import { recordCompletedDistrictSetupIfReady } from "@/lib/browser-gamification";
 import {
   betaDistrictPresets,
   betaDistrictZipExamples,
@@ -31,7 +31,7 @@ import {
 } from "@/lib/beta-district-presets";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import { getPartyLabel } from "@/components/party-affiliation-control";
-import type { AccountNotificationPreferences, Member, SavedFollowRecord } from "@/types/capitol";
+import type { AccountNotificationPreferences, Member } from "@/types/capitol";
 
 type NotificationPreferenceKey = keyof AccountNotificationPreferences;
 type SetupMetrics = ReturnType<typeof useSetupMetrics>;
@@ -58,10 +58,7 @@ const preferenceRows: { detail: string; key: NotificationPreferenceKey; label: s
 ];
 
 const issueInterestsKey = "capitol-ledger:issue-interests";
-const followsKey = "capitol-ledger:follows";
 const persistenceEvent = "capitol-ledger:persistence-changed";
-const followsChangedEvent = "capitol-ledger:follows-changed";
-const accountLedgerEndpoint = "/api/account/ledger";
 
 type DistrictMatchResult =
   | {
@@ -118,77 +115,6 @@ function normalizeDistrictCode(code: string) {
 
 function removeDistrictCode(value: string) {
   return value.replace(/\s*[-·]\s*[A-Z]{2}-0?\d{1,2}/i, "").trim();
-}
-
-function districtNumberFromProfileCode(code?: string) {
-  return code?.match(/^[A-Z]{2}-0?(\d{1,2})$/i)?.[1] ?? "";
-}
-
-function readSavedFollowRecords() {
-  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [] as SavedFollowRecord[];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(followsKey) ?? "[]") as unknown;
-    return uniqueFollowRecords(Array.isArray(parsed) ? (parsed as SavedFollowRecord[]) : []);
-  } catch {
-    return [];
-  }
-}
-
-function uniqueFollowRecords(records: SavedFollowRecord[]) {
-  const seen = new Set<string>();
-  const follows: SavedFollowRecord[] = [];
-
-  records.forEach((record) => {
-    if ((record.type !== "member" && record.type !== "bill") || !record.id) return;
-
-    const key = `${record.type}:${record.id}`;
-    if (seen.has(key)) return;
-
-    seen.add(key);
-    follows.push(record);
-  });
-
-  return follows;
-}
-
-function getDistrictDelegationFollowRecords(members: Member[], districtCode?: string) {
-  const districtNumber = districtNumberFromProfileCode(districtCode);
-
-  return getMatchedOfficials(members, districtCode)
-    .filter((member) => member.chamber === "Senate" || (Boolean(districtNumber) && member.chamber === "House" && member.district === districtNumber))
-    .map<SavedFollowRecord>((member) => ({ id: member.bioguideId, type: "member" }));
-}
-
-async function syncFollowRecordsToAccount(follows: SavedFollowRecord[]) {
-  if (!(await hasActiveBrowserSession())) return;
-
-  await fetch(accountLedgerEndpoint, {
-    body: JSON.stringify({ follows }),
-    headers: {
-      "Content-Type": "application/json"
-    },
-    method: "POST"
-  }).catch(() => null);
-}
-
-function saveDistrictDelegationFollows(members: Member[], districtCode?: string) {
-  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return 0;
-
-  const districtFollows = getDistrictDelegationFollowRecords(members, districtCode);
-  if (!districtFollows.length) return 0;
-
-  const current = readSavedFollowRecords();
-  const currentKeys = new Set(current.map((record) => `${record.type}:${record.id}`));
-  const newlyAddedFollows = districtFollows.filter((record) => !currentKeys.has(`${record.type}:${record.id}`));
-  const next = uniqueFollowRecords([...districtFollows, ...current]);
-  window.localStorage.setItem(followsKey, JSON.stringify(next));
-  window.dispatchEvent(new Event(persistenceEvent));
-  window.dispatchEvent(new Event(followsChangedEvent));
-  void syncFollowRecordsToAccount(next);
-  newlyAddedFollows.forEach((record) => recordGamificationEvent("save-official", record.id));
-
-  return newlyAddedFollows.length;
 }
 
 function degreesToRadians(value: number) {
@@ -379,7 +305,7 @@ export function AccountDistrictSettingRow() {
   );
 }
 
-export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }) {
+export function OnboardingDistrictSetup() {
   const district = useDistrictProfile();
   const [districtInput, setDistrictInput] = useState("");
   const [locationLookupStatus, setLocationLookupStatus] = useState<"idle" | "locating">("idle");
@@ -394,12 +320,11 @@ export function OnboardingDistrictSetup({ members = [] }: { members?: Member[] }
     setMatchedDistrict(nextDistrict);
     setDistrictInput("");
     writeLocalDistrictProfile(nextDistrict);
-    const seededOfficialsCount = saveDistrictDelegationFollows(members, nextDistrict.districtCode);
     const awardedGamification = recordCompletedDistrictSetupIfReady();
     setMatchNotice({
-      detail: `${detailPrefix} ${
-        seededOfficialsCount ? `${seededOfficialsCount} district officials added to your watchlist.` : "Your district officials are already saved."
-      } ${awardedGamification ? "+100 Civic Score." : "Civic Score already counted."}`,
+      detail: `${detailPrefix} Review your live district officials below and save only the ones you want to follow. ${
+        awardedGamification ? "+100 Civic Score." : "Civic Score already counted."
+      }`,
       title: "District saved",
       tone: "success"
     });
@@ -581,6 +506,11 @@ export function OnboardingMatchedOfficials({ members }: { members: Member[] }) {
 
   return (
     <div className="mt-5 divide-y divide-white/8">
+      {!officials.length ? (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-5 text-[14px] leading-snug text-white/56">
+          Live official records are unavailable right now. Your district was saved without adding placeholder officials.
+        </div>
+      ) : null}
       {officials.map((official) => (
         <Link key={official.bioguideId} href={`/members/${official.bioguideId}`} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 py-4">
           {official.photoUrl ? (

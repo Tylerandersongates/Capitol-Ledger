@@ -28,7 +28,7 @@ export type AccountGamificationSnapshot = {
 const validEvents = new Set(gamificationEventRules.map((rule) => rule.event));
 const validBadgeIds = new Set(badgeCatalog.map((badge) => badge.id));
 const legacyDemoCounts = new Map(demoGamificationEventCounts.map((record) => [record.event, record.count]));
-const accountCreationDayStreak = 1;
+const accountCreationDayStreak = 0;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -120,13 +120,17 @@ export function normalizeAccountGamification(value: Partial<AccountGamificationS
   const summary = getGamificationSummary(eventCounts, earnedBadgeIds);
   const civicScore = calculateGamificationScore(eventCounts);
   const hasCivicActions = eventCounts.some((record) => record.count > 0);
+  const lastStreakCreditDate = normalizeDateKey(value.lastStreakCreditDate);
+  const dayStreak = hasCivicActions || lastStreakCreditDate
+    ? Math.max(accountCreationDayStreak, toPositiveInteger(value.dayStreak))
+    : accountCreationDayStreak;
 
   return {
     civicScore,
-    dayStreak: Math.max(accountCreationDayStreak, toPositiveInteger(value.dayStreak)),
+    dayStreak,
     earnedBadgeIds,
     eventCounts,
-    lastStreakCreditDate: normalizeDateKey(value.lastStreakCreditDate),
+    lastStreakCreditDate,
     level: summary.level,
     levelTitle: summary.levelTitle,
     monthlyGain: hasCivicActions ? toPositiveInteger(value.monthlyGain) : 0,

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 
 const data = readFileSync("lib/data.ts", "utf8");
 const searchPage = readFileSync("app/search/page.tsx", "utf8");
+const searchSuggestions = readFileSync("lib/search-suggestions.ts", "utf8");
 const liveSearchStart = data.indexOf("export async function searchRecordsWithLiveData");
 const liveSearchEnd = data.indexOf("export function getDemoStats", liveSearchStart);
 const liveSearch = data.slice(liveSearchStart, liveSearchEnd);
@@ -18,5 +19,7 @@ assert.ok(!liveSearch.includes("mergeBy"), "Customer vote Search must not merge 
 assert.ok(searchPage.includes("No live bills are available."), "Bills Search should render an honest unavailable-source state.");
 assert.ok(searchPage.includes("No live officials are available."), "Officials Search should render an honest unavailable-source state.");
 assert.ok(searchPage.includes("No live votes are available."), "Votes Search should render an honest unavailable-source state.");
+assert.ok(data.includes("return liveMembers ?? [];"), "Customer official catalogs must not fall back to seeded members.");
+assert.ok(searchSuggestions.includes("getAllMembersWithLiveData"), "Search typeahead must use the customer-safe official catalog.");
 
 console.log("Search live-fallback guard passed.");

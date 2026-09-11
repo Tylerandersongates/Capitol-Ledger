@@ -32,7 +32,10 @@ assert.ok(data.includes("function dedupeDashboardBills"), "Dashboard data should
 assert.ok(data.includes("const dashboardBills = dedupeDashboardBills(sourceBills);"), "Dashboard data should derive counts from deduped bills");
 assert.ok(data.includes("billsInAction: dashboardBills.length"), "Live docket counts should derive from deduped live bill identities");
 assert.ok(data.includes("bills: dashboardBills.map"), "Live docket favorite targets should render deduped live bill identities");
-assert.ok(data.includes("return buildDashboardData([], []);"), "Live docket should use an honest empty state when live records are unavailable");
+assert.ok(
+  data.includes("return buildDashboardData([], [], { sourceMembers: [], sourceUpdates: [] });"),
+  "Live docket should use an honest empty state when live records are unavailable"
+);
 assert.ok(data.includes("mergeBillsByRecordKey"), "Live+demo bill merges should use a stable bill identity key");
 assert.ok(data.includes("const maximumDashboardBillResults = 50;"), "The live docket should have an explicit moving-bill ceiling");
 assert.ok(data.includes("take: maximumDashboardBillResults"), "The dashboard should not load the full searchable bill catalog");

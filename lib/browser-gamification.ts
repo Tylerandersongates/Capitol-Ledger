@@ -336,9 +336,8 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
     if (nextCount >= progress.threshold) earnedBadgeIds.add(progress.badgeId);
   });
 
-  const baselineStreakCredit = rule.streakCredit && current.dayStreak <= 1 && current.totalActions === 0;
-  const streakCredit = rule.streakCredit && !baselineStreakCredit && lastStreakCredit !== currentDay;
-  if (streakCredit || baselineStreakCredit) {
+  const streakCredit = rule.streakCredit && lastStreakCredit !== currentDay;
+  if (streakCredit) {
     writeLocalStreakCreditDate(currentDay);
   }
   if (key && !dedupeKeys.includes(key)) writeJson(activeGamificationStorageKeys.dedupeKey, [...dedupeKeys, key]);
@@ -348,7 +347,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
     dayStreak: streakCredit ? current.dayStreak + 1 : current.dayStreak,
     earnedBadgeIds: Array.from(earnedBadgeIds),
     eventCounts: Array.from(counts.entries()).map(([event, count]) => ({ event, count })),
-    lastStreakCreditDate: streakCredit || baselineStreakCredit ? currentDay : current.lastStreakCreditDate,
+    lastStreakCreditDate: streakCredit ? currentDay : current.lastStreakCreditDate,
     monthlyGain: current.monthlyGain + rule.points
   });
 
@@ -378,9 +377,8 @@ export function setGamificationEventCount(event: GamificationEventType, count: n
 
   const currentDay = todayKey();
   const lastStreakCredit = current.lastStreakCreditDate ?? readLocalStreakCreditDate();
-  const baselineStreakCredit = rule.streakCredit && current.dayStreak <= 1 && current.totalActions === 0;
-  const streakCredit = rule.streakCredit && didIncrease && !baselineStreakCredit && lastStreakCredit !== currentDay;
-  if ((streakCredit || (didIncrease && baselineStreakCredit)) && rule.streakCredit) {
+  const streakCredit = rule.streakCredit && didIncrease && lastStreakCredit !== currentDay;
+  if (streakCredit) {
     writeLocalStreakCreditDate(currentDay);
   }
 
@@ -389,7 +387,7 @@ export function setGamificationEventCount(event: GamificationEventType, count: n
     dayStreak: streakCredit ? current.dayStreak + 1 : current.dayStreak,
     earnedBadgeIds: deriveEarnedBadgeIdsForCounts(current, counts),
     eventCounts: Array.from(counts.entries()).map(([recordEvent, recordCount]) => ({ event: recordEvent, count: recordCount })),
-    lastStreakCreditDate: streakCredit || (didIncrease && baselineStreakCredit) ? currentDay : current.lastStreakCreditDate,
+    lastStreakCreditDate: streakCredit ? currentDay : current.lastStreakCreditDate,
     monthlyGain: Math.max(0, current.monthlyGain + (nextCount - previousCount) * rule.points)
   });
 

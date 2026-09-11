@@ -31,7 +31,7 @@ assert.ok(
   "Dashboard must not render placeholder bill totals."
 );
 assert.ok(
-  data.includes("return buildDashboardData([], []);"),
+  data.includes("return buildDashboardData([], [], { sourceMembers: [], sourceUpdates: [] });"),
   "Customer dashboard fallback must be empty when live records are unavailable."
 );
 assert.ok(

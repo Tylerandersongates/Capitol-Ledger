@@ -431,8 +431,7 @@ async function getViewerScoreContext() {
 export default async function MemberPage(props: MemberPageProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const canonicalBioguideId = params.bioguideId === "FCA030" ? "F000483" : params.bioguideId;
-  const detail = await getMemberDetailWithLiveData(canonicalBioguideId);
+  const detail = await getMemberDetailWithLiveData(params.bioguideId);
   if (!detail) notFound();
 
   const { caucusMemberships, chamberMembers, cosponsoredBills, member, memberVotes, sponsoredBills } = detail;
