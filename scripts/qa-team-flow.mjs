@@ -1,6 +1,5 @@
 const baseUrl = (process.env.TEAM_QA_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://project-qosv1.vercel.app").replace(/\/$/, "");
 const shouldCreateAccounts = process.env.TEAM_QA_CREATE_ACCOUNTS === "true";
-const shouldCheckCheckout = process.env.TEAM_QA_CHECKOUT === "true";
 const requireActiveTeam = process.env.TEAM_QA_REQUIRE_ACTIVE_TEAM === "true";
 const requireInviteAcceptance = process.env.TEAM_QA_ACCEPT_INVITE === "true";
 const shouldRunSeatReplacementScenario = process.env.TEAM_QA_SEAT_REPLACEMENT_SCENARIO === "true";
@@ -240,42 +239,27 @@ async function runSafeChecks() {
 }
 
 async function runCheckoutCheck(owner) {
-  if (!shouldCheckCheckout) {
-    skip("Team checkout session", "set TEAM_QA_CHECKOUT=true to create a Stripe Checkout session");
-    return null;
-  }
-
-  const seatCount = Number.parseInt(process.env.TEAM_QA_SEAT_COUNT || "3", 10);
   const result = await assertStatus(
-    "Team checkout session can be created",
+    "Legacy web checkout is retired",
     "/api/account/subscription/checkout",
     {
       body: {
-        cycle: process.env.TEAM_QA_CYCLE === "annual" ? "annual" : "monthly",
+        cycle: "monthly",
         plan: "team",
-        seatCount: Number.isFinite(seatCount) ? seatCount : 3
+        seatCount: 3
       },
       jar: owner.jar,
       method: "POST"
     },
-    [200]
+    [410]
   );
 
-  if (!result.ok) return null;
-
-  if (result.data?.checkoutMode === "stripe" && result.data.checkoutUrl) {
-    pass("Team checkout uses Stripe", "checkout URL returned");
-    if (shouldPrintLinks) info("Team checkout URL", result.data.checkoutUrl);
-    return result.data.checkoutUrl;
+  if (result.ok && result.data?.code === "APP_STORE_ONLY_CHECKOUT_RETIRED") {
+    pass("Legacy checkout cannot grant Team access", "App Store-only retirement marker returned");
+    return;
   }
 
-  if (result.data?.checkoutMode === "demo") {
-    warn("Team checkout uses demo fallback", "Stripe checkout did not run for this environment");
-    return null;
-  }
-
-  fail("Team checkout response is usable", "missing checkoutMode or checkoutUrl");
-  return null;
+  fail("Legacy checkout retirement marker is present", result.data?.code ?? "missing response code");
 }
 
 async function runInviteCheck(owner, invitee) {

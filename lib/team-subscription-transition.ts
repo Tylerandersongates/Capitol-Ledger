@@ -8,8 +8,19 @@ import {
 import {
   assertAccountMemoryPersistenceAllowed,
   fallbackUnlessAccountPersistenceUnavailable,
+  isAccountPersistenceUnavailableError,
   throwAccountPersistenceUnavailable
 } from "@/lib/account-persistence-safety";
+import {
+  reconcileAppStoreSubscription,
+  type CanonicalAppStoreSubscription
+} from "@/lib/billing/app-store-server";
+import {
+  finalizeAppStoreTeamSeatRelease,
+  persistCanonicalAppStoreState,
+  readAppStoreSubscriptionState
+} from "@/lib/billing/app-store-state";
+import { completedAppStoreTeamSeatReleaseResult } from "@/lib/billing/team-seat-release-result";
 import {
   cancelStripeSubscriptionAtPeriodEnd,
   readStripeSubscriptionDetails,
@@ -90,6 +101,10 @@ function isActiveProSubscription(subscription: Pick<AccountSubscriptionSnapshot,
 
 function isActiveTeamSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
   return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
+}
+
+function isActivePaidSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
+  return isActiveProSubscription(subscription) || isActiveTeamSubscription(subscription);
 }
 
 function canUpdateStripeSubscription(subscription: AccountSubscriptionSnapshot) {
@@ -285,6 +300,45 @@ async function persistSubscription(userId: string, subscription: AccountSubscrip
   const databaseSubscription = await writeSubscriptionToDatabase(userId, subscription);
   if (!databaseSubscription) throwAccountPersistenceUnavailable("persistTeamSubscriptionTransition");
   return databaseSubscription;
+}
+
+async function persistReconciledAppStoreState(
+  userId: string,
+  appAccountToken: string,
+  canonical: CanonicalAppStoreSubscription
+) {
+  return persistCanonicalAppStoreState({
+    appAccountToken,
+    appleStatus: canonical.appleStatus,
+    autoRenewProductId: canonical.autoRenewProductId,
+    autoRenewStatus: canonical.autoRenewStatus,
+    environment: canonical.environment,
+    expiresAt: canonical.expiresAt,
+    gracePeriodExpiresAt: canonical.gracePeriodExpiresAt,
+    observedAt: canonical.observedAt,
+    observationVersion: canonical.observationVersion,
+    originalTransactionId: canonical.originalTransactionId,
+    productId: canonical.productId,
+    signedAt: canonical.signedAt,
+    subscription: canonical.snapshot,
+    transactionId: canonical.transactionId,
+    transactionPurchasedAt: canonical.transactionPurchasedAt,
+    transactionRevokedAt: canonical.transactionRevokedAt,
+    userId
+  });
+}
+
+async function requireCheckoutAfterAppleTeamSeatRelease(
+  userId: string,
+  subscription: AccountSubscriptionSnapshot
+): Promise<TeamSubscriptionRestoreResult> {
+  await markPauseRecordStatus(userId, "checkout_required");
+  const checkoutSubscription = await persistSubscription(userId, checkoutRequiredSubscription(subscription));
+  return {
+    checkoutRequired: true,
+    restored: false,
+    subscription: checkoutSubscription
+  };
 }
 
 async function pauseDatabasePersonalProSubscriptionForTeamSeat(
@@ -585,6 +639,84 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
       checkoutRequired: false,
       restored: true,
       subscription: restoredSubscription
+    };
+  }
+
+  if (previousSubscription.provider === "app-store") {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const state = await readAppStoreSubscriptionState(userId);
+      if (!state?.originalTransactionId || !state.environment || !state.appAccountToken) {
+        return requireCheckoutAfterAppleTeamSeatRelease(userId, previousSubscription);
+      }
+
+      let canonical: CanonicalAppStoreSubscription;
+      try {
+        canonical = await reconcileAppStoreSubscription({
+          anyTransactionId: state.originalTransactionId,
+          environment: state.environment,
+          expectedAppAccountToken: state.appAccountToken,
+          expectedOriginalTransactionId: state.originalTransactionId
+        });
+      } catch (error) {
+        if (isAccountPersistenceUnavailableError(error)) throw error;
+        if (!state.productId) {
+          return {
+            checkoutRequired: false,
+            restored: false
+          };
+        }
+        const checkoutSubscription = normalizeAccountSubscription({
+          ...previousSubscription,
+          plan: "free",
+          provider: "app-store",
+          providerEntitlementId: state.productId,
+          providerSubscriptionId: state.originalTransactionId,
+          seatCount: undefined,
+          status: "canceled"
+        });
+        const finalization = await finalizeAppStoreTeamSeatRelease({
+          appAccountToken: state.appAccountToken,
+          observationVersion: state.observationVersion ?? null,
+          originalTransactionId: state.originalTransactionId,
+          pauseStatus: "checkout_required",
+          productId: state.productId,
+          subscription: checkoutSubscription,
+          userId
+        });
+        const completed = completedAppStoreTeamSeatReleaseResult(
+          finalization,
+          checkoutSubscription,
+          false
+        );
+        if (completed) return completed;
+        continue;
+      }
+
+      if (canonical.originalTransactionId !== state.originalTransactionId) continue;
+      const persistence = await persistReconciledAppStoreState(userId, state.appAccountToken, canonical);
+      if (!persistence.observationApplied) continue;
+
+      const restoresPaidAccess = isActivePaidSubscription(canonical.snapshot);
+      const finalization = await finalizeAppStoreTeamSeatRelease({
+        appAccountToken: state.appAccountToken,
+        observationVersion: canonical.observationVersion,
+        originalTransactionId: canonical.originalTransactionId,
+        pauseStatus: restoresPaidAccess ? "restored" : "checkout_required",
+        productId: canonical.productId,
+        subscription: canonical.snapshot,
+        userId
+      });
+      const completed = completedAppStoreTeamSeatReleaseResult(
+        finalization,
+        canonical.snapshot,
+        restoresPaidAccess
+      );
+      if (completed) return completed;
+    }
+
+    return {
+      checkoutRequired: false,
+      restored: false
     };
   }
 

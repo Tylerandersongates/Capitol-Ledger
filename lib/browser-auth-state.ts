@@ -1,3 +1,5 @@
+import { requestNativePendingStoreKitSync } from "@/lib/native-storekit-sync";
+
 const accountCreatedKey = "capitol-ledger:account-created";
 export const accountDeletionFenceStorageKey = "capitolwonk:account-deletion-fence";
 export const accountDeletionReceiptStorageKey = "capitolwonk:account-deletion-confirmed";
@@ -114,6 +116,7 @@ export function completeFreshBrowserAuthentication(authenticated: boolean) {
   clearBrowserAccountDeletionReceipt();
   activeSession = authenticated ? true : null;
   activeSessionPromise = authenticated ? Promise.resolve(true) : null;
+  if (authenticated) requestNativePendingStoreKitSync();
   return true;
 }
 
@@ -148,6 +151,7 @@ export function setBrowserSessionAuthenticated(authenticated: boolean) {
     clearBrowserAccountDeletionReceipt();
     activeSession = true;
     activeSessionPromise = Promise.resolve(true);
+    requestNativePendingStoreKitSync();
     return true;
   }
 

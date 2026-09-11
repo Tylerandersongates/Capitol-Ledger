@@ -14,7 +14,6 @@ const guardedRoutePaths = [
   "app/api/account/profile/route.ts",
   "app/api/account/subscription/app-store/account-token/route.ts",
   "app/api/account/subscription/app-store/route.ts",
-  "app/api/account/subscription/checkout/route.ts",
   "app/api/account/subscription/portal/route.ts",
   "app/api/account/subscription/route.ts",
   "app/api/account/weekly-brief/route.ts",
@@ -45,6 +44,15 @@ for (const routePath of guardedRoutePaths) {
   assert.match(source, /withAccountPersistenceRoute/, `${routePath} must translate persistence outages to HTTP 503.`);
   assert.doesNotMatch(source, /getAccountPersistenceUserId\([^;]+\.catch\(/, `${routePath} must not hide persistence identity failures.`);
 }
+
+const retiredCheckoutSource = await readSource("app/api/account/subscription/checkout/route.ts");
+assert.match(retiredCheckoutSource, /APP_STORE_ONLY_CHECKOUT_RETIRED/, "Retired web checkout must keep its stable fail-closed marker.");
+assert.match(retiredCheckoutSource, /status:\s*410/, "Retired web checkout must return HTTP 410.");
+assert.doesNotMatch(
+  retiredCheckoutSource,
+  /account-database|account-subscription|billing\/stripe|setAccountSubscription|writeSubscriptionToDatabase/,
+  "Retired web checkout must not call persistence or grant an entitlement."
+);
 
 for (const modulePath of memoryGuardPaths) {
   const source = await readSource(modulePath);

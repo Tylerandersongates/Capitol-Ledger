@@ -41,6 +41,8 @@ type LockedUserRow = {
 
 type DeletionTableRegistration = {
   accountDeletionCleanupJob: string | null;
+  appStoreNotificationReceipt: string | null;
+  appStoreSubscriptionState: string | null;
   betaFeedback: string | null;
   officialContactMessage: string | null;
   petitionSignature: string | null;
@@ -220,6 +222,8 @@ async function readDeletionTableRegistration(transaction: AccountDeletionTransac
   const rows = await transaction.$queryRawUnsafe<DeletionTableRegistration[]>(`
     SELECT
       to_regclass('public."AccountDeletionCleanupJob"')::text AS "accountDeletionCleanupJob",
+      to_regclass('public."AppStoreNotificationReceipt"')::text AS "appStoreNotificationReceipt",
+      to_regclass('public."AppStoreSubscriptionState"')::text AS "appStoreSubscriptionState",
       to_regclass('public."BetaFeedback"')::text AS "betaFeedback",
       to_regclass('public."OfficialContactMessage"')::text AS "officialContactMessage",
       to_regclass('public."PetitionSignature"')::text AS "petitionSignature",
@@ -231,6 +235,8 @@ async function readDeletionTableRegistration(transaction: AccountDeletionTransac
 
   return rows[0] ?? {
     accountDeletionCleanupJob: null,
+    appStoreNotificationReceipt: null,
+    appStoreSubscriptionState: null,
     betaFeedback: null,
     officialContactMessage: null,
     petitionSignature: null,
@@ -493,6 +499,16 @@ async function assertAccountRowsDeleted(
   if (!requiredRows[0] || hasRemainingRows(requiredRows[0])) throw new AccountDeletionUnavailableError();
 
   const optionalChecks: Array<{ enabled: boolean; query: string; values: unknown[] }> = [
+    {
+      enabled: Boolean(tables.appStoreSubscriptionState),
+      query: `SELECT COUNT(*)::int AS "count" FROM "AppStoreSubscriptionState" WHERE "userId" = $1`,
+      values: [userId]
+    },
+    {
+      enabled: Boolean(tables.appStoreNotificationReceipt),
+      query: `SELECT COUNT(*)::int AS "count" FROM "AppStoreNotificationReceipt" WHERE "userId" = $1`,
+      values: [userId]
+    },
     {
       enabled: Boolean(tables.teamMember),
       query: `SELECT COUNT(*)::int AS "count" FROM "TeamMember" WHERE "userId" = $1 OR lower("email") = $2`,

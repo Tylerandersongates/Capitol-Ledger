@@ -26,27 +26,11 @@ import {
   readStripeSubscriptionDetails,
   verifyStripeWebhookSignature
 } from "@/lib/billing/stripe";
-import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import {
-  cancelPreviousTeamSubscriptionForProCheckout,
-  rememberPersonalProSubscriptionForTeamOwnerUpgrade,
   restorePausedPersonalSubscriptionForReleasedTeamSeat
 } from "@/lib/team-subscription-transition";
-import type { AccountSubscriptionSnapshot, BillingCycle, SubscriptionPlanId } from "@/types/capitol";
-
-function readPlan(value?: string): SubscriptionPlanId {
-  if (value === "pro" || value === "team") return value;
-  return "free";
-}
-
-function readCycle(value?: string): BillingCycle {
-  return value === "annual" ? "annual" : "monthly";
-}
-
-function readSeatCount(plan: SubscriptionPlanId, value?: string) {
-  return plan === "team" ? normalizeTeamSeatCount(value) : undefined;
-}
+import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 function readEventSubscriptionId(object: { id?: string; subscription?: string }) {
   return object.id ?? object.subscription;
@@ -82,23 +66,33 @@ async function receiveStripeWebhook(request: NextRequest) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  const supportedSubscriptionEvent =
-    event.type === "checkout.session.completed" ||
-    event.type === "customer.subscription.updated" ||
-    event.type === "customer.subscription.deleted";
+  if (event.type === "checkout.session.completed") {
+    return NextResponse.json({ checkoutRetired: true, ignored: true, received: true });
+  }
+
+  const supportedSubscriptionEvent = event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted";
   if (!supportedSubscriptionEvent) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  const userId =
-    metadata.userId ??
-    object.client_reference_id ??
-    (await findSubscriptionUserIdByProvider({
-      customerId: object.customer,
-      subscriptionId: object.id ?? object.subscription
-    }));
+  const eventSubscriptionId = readEventSubscriptionId(object);
+  const userId = await findSubscriptionUserIdByProvider({
+    customerId: object.customer,
+    subscriptionId: eventSubscriptionId
+  });
 
   if (!userId) {
+    const deletedUserId = metadata.userId;
+    if (deletedUserId && !(await accountPersistenceUserExists(deletedUserId))) {
+      await executeAccountDeletionCleanupJob({
+        kind: accountDeletionCleanupKinds.cancelDeletedAccountStripeSubscription,
+        payload: {
+          customerId: object.customer,
+          subscriptionId: eventSubscriptionId
+        }
+      });
+      return NextResponse.json({ deletedAccountCleanup: true, received: true });
+    }
     return NextResponse.json({ received: true, ignored: true });
   }
 
@@ -107,57 +101,18 @@ async function receiveStripeWebhook(request: NextRequest) {
       kind: accountDeletionCleanupKinds.cancelDeletedAccountStripeSubscription,
       payload: {
         customerId: object.customer,
-        subscriptionId: event.type === "checkout.session.completed" ? object.subscription : readEventSubscriptionId(object)
+        subscriptionId: eventSubscriptionId
       }
     });
     return NextResponse.json({ deletedAccountCleanup: true, received: true });
   }
 
-  if (event.type === "checkout.session.completed") {
-    let liveSubscription: Awaited<ReturnType<typeof readStripeSubscription>> | null = null;
-    if (object.subscription?.startsWith("sub_")) {
-      try {
-        liveSubscription = await readStripeSubscription(object.subscription);
-      } catch (error) {
-        if (!isStripeResourceMissingError(error)) throw error;
-        return NextResponse.json({ received: true, staleCheckoutSession: true });
-      }
-    }
-    const liveDetails = liveSubscription ? readStripeSubscriptionDetails(liveSubscription) : null;
-    const plan = liveDetails?.plan ?? readPlan(metadata.plan);
-    const cycle = liveDetails?.cycle ?? readCycle(metadata.cycle);
-    const seatCount = liveDetails?.seatCount ?? readSeatCount(plan, metadata.seatCount);
-    const currentSubscription = await readSubscriptionFromDatabase(userId);
-    if (plan === "team") {
-      await rememberPersonalProSubscriptionForTeamOwnerUpgrade({
-        email: metadata.userEmail,
-        previousSubscription: currentSubscription,
-        teamSubscriptionId: object.subscription,
-        userId
-      }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
-    }
-    if (plan === "pro") {
-      await cancelPreviousTeamSubscriptionForProCheckout({
-        previousSubscription: currentSubscription
-      }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
-    }
-
-    const nextSubscription = {
-      cycle,
-      plan,
-      provider: "stripe" as const,
-      providerCustomerId: liveSubscription?.customer ?? object.customer,
-      providerEntitlementId: `capitol-ledger-${plan}`,
-      providerSubscriptionId: liveSubscription?.id ?? object.subscription,
-      seatCount,
-      status: liveDetails?.status ?? ("active" as const)
-    };
-
-    await persistWebhookSubscription(userId, nextSubscription);
-  }
-
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    const eventSubscriptionId = readEventSubscriptionId(object);
+    const currentSubscription = await readSubscriptionFromDatabase(userId);
+    if (shouldIgnoreStaleStripeSubscriptionEvent(currentSubscription, eventSubscriptionId)) {
+      return NextResponse.json({ received: true, staleSubscriptionEvent: true });
+    }
+
     let providerObject = object;
     if (event.type === "customer.subscription.updated" && eventSubscriptionId?.startsWith("sub_")) {
       try {
@@ -185,11 +140,6 @@ async function receiveStripeWebhook(request: NextRequest) {
       seatCount: details.seatCount,
       status: details.status
     };
-    const currentSubscription = await readSubscriptionFromDatabase(userId);
-    if (shouldIgnoreStaleStripeSubscriptionEvent(currentSubscription, eventSubscriptionId)) {
-      return NextResponse.json({ received: true, staleSubscriptionEvent: true });
-    }
-
     if (currentSubscription?.providerEntitlementId === teamPausedProEntitlementId && details.plan === "free") {
       return NextResponse.json({ received: true, pausedForTeam: true });
     }

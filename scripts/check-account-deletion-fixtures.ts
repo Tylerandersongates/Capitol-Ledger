@@ -70,6 +70,8 @@ type FakeState = {
 };
 
 const optionalTableKeys = {
+  AppStoreNotificationReceipt: "appStoreNotificationReceipt",
+  AppStoreSubscriptionState: "appStoreSubscriptionState",
   BetaFeedback: "betaFeedback",
   OfficialContactMessage: "officialContactMessage",
   PetitionSignature: "petitionSignature",
@@ -117,6 +119,9 @@ function matchesOptionalQuery(table: string, row: OptionalRow, query: string, va
 
   const userId = values[0] as string;
   const email = (values[1] as string | undefined) ?? "";
+  if (table === "AppStoreNotificationReceipt" || table === "AppStoreSubscriptionState") {
+    return row.userId === userId;
+  }
   if (table === "OfficialContactMessage") {
     const senderKeys = new Set(values.slice(2, 4).filter((value): value is string => typeof value === "string"));
     return (
@@ -142,6 +147,7 @@ class FakeDeletionDatabase implements AccountDeletionDatabaseClient {
   calls: string[] = [];
   failOn = "";
   ignoreDeleteFor = "";
+  skipAppStoreForeignKeyEffects = false;
   isolationLevels: string[] = [];
   transactionCount = 0;
 
@@ -311,6 +317,14 @@ class FakeDeletionDatabase implements AccountDeletionDatabaseClient {
       state.requests.forEach((request) => {
         if (request.userId === userId) request.userId = null;
       });
+      if (!this.skipAppStoreForeignKeyEffects) {
+        state.optionalRows.AppStoreSubscriptionState = (state.optionalRows.AppStoreSubscriptionState ?? []).filter(
+          (row) => row.userId !== userId
+        );
+        state.optionalRows.AppStoreNotificationReceipt = (state.optionalRows.AppStoreNotificationReceipt ?? []).map(
+          (row) => row.userId === userId ? { ...row, userId: null } : row
+        );
+      }
       for (const table of ["TeamMember", "TeamInvite"]) {
         state.optionalRows[table] = (state.optionalRows[table] ?? []).filter((row) => !row.workspaceId || !ownedWorkspaceIds.has(row.workspaceId));
       }
@@ -343,6 +357,8 @@ function fixtureState(): FakeState {
     ],
     cleanupJobs: [],
     optionalRows: {
+      AppStoreNotificationReceipt: [{ userId: "target-user" }, { userId: "other-user" }],
+      AppStoreSubscriptionState: [{ userId: "target-user" }, { userId: "other-user" }],
       BetaFeedback: [
         { userId: "target-user" },
         { contactEmail: "TARGET@EXAMPLE.COM" },
@@ -451,6 +467,21 @@ const now = new Date("2026-09-10T18:00:00.000Z");
   );
   assert.ok(database.calls.findIndex((call) => call.startsWith('DELETE FROM "User"')) > database.calls.findIndex((call) => call.startsWith('DELETE FROM "OfficialContactMessage"')));
   assert.ok(database.calls.findIndex((call) => call.startsWith('UPDATE "AccountDeletionRequest"')) > database.calls.findIndex((call) => call.startsWith('DELETE FROM "User"')));
+}
+
+{
+  const database = new FakeDeletionDatabase(fixtureState());
+  database.skipAppStoreForeignKeyEffects = true;
+  await assert.rejects(
+    runAccountDeletionTransaction(database, { email: "target@example.com", id: "target-user" }, now),
+    /Account deletion could not be completed/
+  );
+  assert.equal(database.state.users.some((user) => user.id === "target-user"), true);
+  assert.equal(
+    database.state.optionalRows.AppStoreSubscriptionState.some((row) => row.userId === "target-user"),
+    true,
+    "a failed App Store cascade postcondition must roll the deletion transaction back"
+  );
 }
 
 {

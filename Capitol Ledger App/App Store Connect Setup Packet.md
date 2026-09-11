@@ -1,6 +1,6 @@
 # App Store Connect Setup Packet
 
-Status: pricing-aligned TestFlight prep, reconciled September 10, 2026. The App Privacy correction is prepared locally but has not been applied or published remotely.
+Status: pricing-aligned TestFlight prep, reconciled September 11, 2026. The App Privacy correction is prepared locally but has not been applied or published remotely.
 
 ## Scope
 
@@ -32,7 +32,7 @@ Use one auto-renewable subscription group.
 
 | Product | Product ID | Reference name | Display name | Current app price copy |
 | --- | --- | --- | --- | --- |
-| Pro monthly | `com.capitolwonk.pro.monthly` | `CapitolWonk Pro Monthly` | Pro Monthly | 7-day free trial, then `$4.99` monthly |
+| Pro monthly | `com.capitolwonk.pro.monthly` | `CapitolWonk Pro Monthly` | Pro Monthly | Eligible new-subscriber offer: 7 days free, then `$4.99` monthly; Apple confirms eligibility |
 | Pro annual | `com.capitolwonk.pro.annual` | `CapitolWonk Pro Annual` | Pro Annual | `$39.99` annual |
 | Team monthly, 3 seats | `com.capitolwonk.team.monthly` | `CapitolWonk Team 3 Monthly` | Team Monthly - 3 Seats | `$17.99` monthly |
 | Team annual, 3 seats | `com.capitolwonk.team.annual` | `CapitolWonk Team 3 Annual` | Team Annual - 3 Seats | `$179.99` annually |
@@ -40,7 +40,7 @@ Use one auto-renewable subscription group.
 
 If the final product IDs change for trademark or naming reasons, update the web controls, native StoreKit models, server validation, setup packet, and readiness checks before creating products in App Store Connect. If the launch price changes in App Store Connect, update `lib/subscription-plans.ts` before sandbox/TestFlight purchase QA so app copy and Apple pricing do not drift.
 
-Configure Pro monthly with an App Store introductory offer: 7-day free trial, then automatic monthly renewal at `$4.99` unless the user cancels before renewal in Apple subscription settings. Keep this offer on the monthly Pro product only unless the app copy and QA plan are intentionally expanded.
+Configure Pro monthly with an App Store introductory offer for eligible new subscribers: 7 days free, then automatic monthly renewal at `$4.99` unless the user cancels before renewal in Apple subscription settings. This is product configuration, not an eligibility guarantee. Apple determines eligibility and shows the exact offer, price, duration, and renewal terms before confirmation. Keep this offer on the monthly Pro product only unless the app copy and QA plan are intentionally expanded.
 
 StoreKit does not apply a quantity to auto-renewable subscriptions. Team therefore uses one product per supported seat count and cycle. The three-seat products keep the original IDs; higher tiers use `com.capitolwonk.team.{seatCount}.{cycle}`. Monthly supports 3-20 seats. Annual supports 3-16 because this account's current App Store price ceiling cannot preserve the approved annual economics above 16 seats. The four annual 17-20 records remain reserved and unavailable; those customers use the custom-plan contact path. Teams above 20 seats also use custom planning.
 
@@ -74,7 +74,7 @@ Monthly pricing follows the approved `$5.99`-per-seat economics using App Store 
 Use this as the starting note for subscription review:
 
 ```text
-CapitolWonk Pro unlocks deeper civic tracking features in the app, including expanded dashboard panels, topic and official tracking, exportable reports, priority vote reminders, AI bill summaries, source maps, and personalized Daily Brief coverage. The public Daily Brief video is free for everyone. Monthly Pro includes a 7-day free trial, then renews at $4.99/month unless canceled before renewal.
+CapitolWonk Pro unlocks deeper civic tracking features in the app, including expanded dashboard panels, topic and official tracking, exportable reports, priority vote reminders, AI bill summaries, source maps, and personalized Daily Brief coverage. The public Daily Brief video is free for everyone. Eligible new Monthly Pro subscribers may receive 7 days free, then renew at $4.99/month unless canceled before renewal. Apple confirms eligibility and shows the exact terms before purchase.
 
 CapitolWonk Team unlocks a shared workspace with owner access, invites, shared watchlists, Team alerts, and shared tracking. Customers choose 3-20 monthly seats or 3-16 annual seats before purchase. The billing owner is included and does not consume a teammate seat. Team starts at $17.99/month or $179.99/year for three seats; Apple shows the fixed total for the selected seat count. Annual 17-20 seat workspaces and all organizations needing more than 20 seats are directed to work with us on a custom plan.
 
@@ -88,7 +88,7 @@ Use this as the starting note for App Review:
 ```text
 CapitolWonk helps users follow federal bills, votes, officials, alerts, and saved legislative updates. Paid upgrades use Apple in-app purchase only.
 
-To test purchases, open Settings > Plan or the Upgrade screen, choose a Pro cycle or a supported Team cycle and seat count, and complete the Apple sandbox/TestFlight purchase. Pro Monthly should show a 7-day free trial that converts to $4.99/month unless canceled before renewal. Team should allow 3-20 monthly seats or 3-16 annual seats and Apple should show the exact fixed total. Restore Purchases is available from the Upgrade screen.
+To test purchases, open Settings > Plan or the Upgrade screen, choose a Pro cycle or a supported Team cycle and seat count, and complete the Apple sandbox/TestFlight purchase. With an offer-eligible new subscriber, Pro Monthly should show exactly 7 days free and then $4.99/month unless canceled before renewal. With an ineligible or previously subscribed tester, the app must not promise a trial and Apple's sheet should show the standard $4.99/month terms. Team should allow 3-20 monthly seats or 3-16 annual seats and Apple should show the exact fixed total. Restore Purchases is available from the Upgrade screen. Record both Pro eligibility cases in the separate sandbox QA matrix.
 
 Team purchases open the Team workspace with the selected number of teammate seats. Owner access does not consume a team seat. Annual 17-20 and all 21+ counts use the custom-plan contact path.
 
@@ -96,12 +96,14 @@ To review account deletion, sign in with a disposable production test account, o
 ```
 
 Add reviewer credentials outside git after production auth is configured. Do not commit reviewer email addresses or passwords.
+Use the [App Store sandbox QA matrix](../docs/app-store-sandbox-qa-matrix-2026-09-11.md) for the eligible/ineligible offer execution record; the reviewer note above should remain plain text when pasted into App Store Connect.
 
 ## Required Host Environment
 
 Set these through the deployment provider, never in git:
 
 - `APP_STORE_BUNDLE_ID`
+- `APP_STORE_APP_APPLE_ID` (numeric app ID, not a bundle or in-app product ID)
 - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `APP_STORE_CONNECT_KEY_ID`
@@ -137,7 +139,7 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 - The updated privacy-page source is local until a separately approved release. The App Store Connect questionnaire remains unchanged and requires exact action-time approval before publication.
 - Signed-in production users initiate permanent account deletion from Settings > Your data. After the billing acknowledgement and exact `DELETE` confirmation, the action attempts immediate atomic database deletion, erases the implemented account inventory, clears sessions/cookies plus current-device storage, and retains a deidentified completion audit. Exact-ID/read-only persistence prevents stale user recreation/email remap. The deletion transaction snapshots required Team-member/legacy-Stripe cleanup and makes no precommit member/provider mutation. Cleanup jobs remain only while pending/retrying and are erased after success; terminal/missing Stripe outcomes count as complete and transient errors retry. Signed webhooks apply timestamp/current-state checks and, before acknowledgement, stop an active deleted-user renewal and detach metadata where Stripe permits. Concurrent Team-seat pauses serialize against deletion and attempt compensation on their own transaction failure. The completed result requires an explicit browser receipt, ambiguous results are unconfirmed, and a multi-tab fence blocks browser/native writers. Apple billing remains separate.
 - This deletion implementation is local only. Do not describe it as production-verified until all three supporting migrations are deployed and the known-sentinel/unexpected-orphan behavior plus live tables/indexes/FKs are inspected; the protected cleanup-task secret, schedule, no-payload age monitor and retry path operate; exact-ID/no-memory behavior, webhook semantics, a disposable account, real-Postgres pause/delete concurrency, legacy-Stripe cleanup/compensation, and terminal/transient outcomes pass; a physical-device TestFlight pass confirms receipt, ambiguous-result, multi-tab/device-writer and session/storage behavior; backup/PITR tombstone handling is approved; and provider retention/removal procedures are recorded.
-- Account deletion does not cancel App Store billing. Separately submitted Sentry feedback is not linked by CapitolWonk account ID by default and therefore is not found by the account transaction; Support must handle a specific provider-side removal request when a report contains an email or other identifying details.
+- Account deletion does not cancel App Store billing. Separately submitted Sentry feedback is not linked by CapitolWonk account ID by default and therefore is not found by the account transaction. Current provider guidance says User Feedback cannot be deleted individually and may require whole-project deletion; resolve the intake/expiry design and correct public/reviewer copy before publication rather than promising a specific provider-side removal.
 - Export, correction, and other privacy questions continue to route through Support.
 
 ## Apple-Side Checklist
@@ -146,7 +148,7 @@ Capture final screenshots only after purchase QA and final text-tone QA are stab
 2. Keep native bundle ID, product IDs, setup docs, and readiness checks aligned with these final Apple values.
 3. Verify the existing App Store Connect app record uses `com.capitolwonk.ce`; do not create a duplicate.
 4. Verify the existing paid-plans subscription group.
-5. Verify `com.capitolwonk.pro.monthly` retains the 7-day free trial introductory offer.
+5. Verify `com.capitolwonk.pro.monthly` retains the eligible-new-subscriber 7-day free-trial introductory offer followed by $4.99/month, and capture the redacted App Store Connect product-configuration screenshot required by the [sandbox QA matrix](../docs/app-store-sandbox-qa-matrix-2026-09-11.md). This verifies configuration, not a given subscriber's eligibility.
 6. Verify the existing `com.capitolwonk.pro.annual` record.
 7. Keep `com.capitolwonk.team.monthly` and `com.capitolwonk.team.annual` as the three-seat products.
 8. Keep all 34 additional Team records, but configure pricing/availability only for monthly 4-20 and annual 4-16; reserve annual 17-20 without sale availability.

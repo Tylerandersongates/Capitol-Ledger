@@ -7,7 +7,18 @@ import {
   readStripeSubscriptionDetails,
   resumeStripeSubscriptionFromPeriodEnd
 } from "@/lib/billing/stripe";
+import {
+  reconcileAppStoreSubscription,
+  type CanonicalAppStoreSubscription
+} from "@/lib/billing/app-store-server";
+import { createAppStoreAccountToken } from "@/lib/billing/app-store";
+import {
+  clearUnlinkedAppStoreSubscriptionProjection,
+  persistCanonicalAppStoreState,
+  readAppStoreSubscriptionState
+} from "@/lib/billing/app-store-state";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
+import { runPrivacyRetentionSweep, type PrivacyRetentionRun } from "@/lib/privacy-retention";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 export const accountDeletionCleanupKinds = {
@@ -33,6 +44,7 @@ export type AccountDeletionCleanupDependencies = {
   detachStripeSubscription: (subscriptionId: string) => Promise<unknown>;
   persistMemberSubscription: (userId: string, subscription: AccountSubscriptionSnapshot) => Promise<void>;
   readStripeCustomerSubscriptionIds: (customerId: string) => Promise<string[]>;
+  reconcileAppStoreSubscriptionForMember: (userId: string) => Promise<void>;
   resumeStripeSubscription: (subscriptionId: string) => Promise<CleanupStripeDetails>;
 };
 
@@ -52,6 +64,7 @@ export type AccountDeletionCleanupRun = {
   completed: number;
   failed: number;
   claimed: number;
+  retention?: PrivacyRetentionRun;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -130,6 +143,53 @@ async function persistMemberSubscription(userId: string, subscription: AccountSu
   clearAccountSubscriptionMemory(userId);
 }
 
+async function persistReconciledAppStoreState(
+  userId: string,
+  appAccountToken: string,
+  canonical: CanonicalAppStoreSubscription
+) {
+  await persistCanonicalAppStoreState({
+    appAccountToken,
+    appleStatus: canonical.appleStatus,
+    autoRenewProductId: canonical.autoRenewProductId,
+    autoRenewStatus: canonical.autoRenewStatus,
+    environment: canonical.environment,
+    expiresAt: canonical.expiresAt,
+    gracePeriodExpiresAt: canonical.gracePeriodExpiresAt,
+    observedAt: canonical.observedAt,
+    observationVersion: canonical.observationVersion,
+    originalTransactionId: canonical.originalTransactionId,
+    productId: canonical.productId,
+    signedAt: canonical.signedAt,
+    subscription: canonical.snapshot,
+    transactionId: canonical.transactionId,
+    transactionPurchasedAt: canonical.transactionPurchasedAt,
+    transactionRevokedAt: canonical.transactionRevokedAt,
+    userId
+  });
+}
+
+async function reconcileAppStoreSubscriptionForMember(userId: string) {
+  const state = await readAppStoreSubscriptionState(userId);
+  if (!state?.originalTransactionId || !state.environment || !state.appAccountToken) {
+    await clearUnlinkedAppStoreSubscriptionProjection({
+      appAccountToken: state?.appAccountToken ?? createAppStoreAccountToken(userId),
+      userId
+    });
+    return;
+  }
+
+  const canonical = await reconcileAppStoreSubscription({
+    anyTransactionId: state.originalTransactionId,
+    environment: state.environment,
+    expectedAppAccountToken: state.appAccountToken,
+    expectedOriginalTransactionId: state.originalTransactionId
+  });
+  if (canonical.originalTransactionId !== state.originalTransactionId) return;
+
+  await persistReconciledAppStoreState(userId, state.appAccountToken, canonical);
+}
+
 async function restoreTeamMemberSubscription(
   payload: TeamMemberRestorePayload,
   dependencies: AccountDeletionCleanupDependencies
@@ -139,6 +199,11 @@ async function restoreTeamMemberSubscription(
   const previous = normalizeAccountSubscription(payload.previousSubscription);
   if (previous.plan !== "pro") {
     await dependencies.persistMemberSubscription(payload.userId, checkoutRequiredSubscription(previous));
+    return;
+  }
+
+  if (previous.provider === "app-store") {
+    await dependencies.reconcileAppStoreSubscriptionForMember(payload.userId);
     return;
   }
 
@@ -169,7 +234,10 @@ async function restoreTeamMemberSubscription(
     return;
   }
 
-  await dependencies.persistMemberSubscription(payload.userId, previous);
+  await dependencies.persistMemberSubscription(
+    payload.userId,
+    checkoutRequiredSubscription(previous)
+  );
 }
 
 const defaultCleanupDependencies: AccountDeletionCleanupDependencies = {
@@ -177,6 +245,7 @@ const defaultCleanupDependencies: AccountDeletionCleanupDependencies = {
   detachStripeSubscription: detachStripeSubscriptionFromDeletedAccount,
   persistMemberSubscription,
   readStripeCustomerSubscriptionIds,
+  reconcileAppStoreSubscriptionForMember,
   resumeStripeSubscription: async (subscriptionId) => {
     const stripeSubscription = await resumeStripeSubscriptionFromPeriodEnd(subscriptionId);
     return readStripeSubscriptionDetails(stripeSubscription);
@@ -272,6 +341,15 @@ export async function processAccountDeletionCleanupJobs({
 } = {}): Promise<AccountDeletionCleanupRun> {
   if (!hasDatabaseUrl()) return { claimed: 0, completed: 0, failed: 0 };
 
+  let retention: PrivacyRetentionRun | undefined;
+  if (!deletionRequestId) {
+    try {
+      retention = await runPrivacyRetentionSweep({ limit });
+    } catch {
+      console.error("[privacy-retention] sweep failed; retry on the next scheduled run.");
+    }
+  }
+
   const jobs = await claimCleanupJobs(limit, deletionRequestId);
   let completed = 0;
   let failed = 0;
@@ -281,12 +359,8 @@ export async function processAccountDeletionCleanupJobs({
       await executeAccountDeletionCleanupJob(job);
       await completeCleanupJob(job.id);
       completed += 1;
-    } catch (error) {
-      console.error("[account-deletion-cleanup] cleanup attempt failed", {
-        jobId: job.id,
-        kind: job.kind,
-        message: error instanceof Error ? error.name : "unknown"
-      });
+    } catch {
+      console.error("[account-deletion-cleanup] cleanup attempt failed; automatic retry remains pending.");
       await retryCleanupJob(job.id).catch(() => undefined);
       failed += 1;
     }
@@ -295,6 +369,7 @@ export async function processAccountDeletionCleanupJobs({
   return {
     claimed: jobs.length,
     completed,
-    failed
+    failed,
+    ...(retention ? { retention } : {})
   };
 }

@@ -18,6 +18,7 @@ function fixtureDependencies(overrides: Partial<AccountDeletionCleanupDependenci
   const detached: string[] = [];
   const persisted: Array<{ subscription: AccountSubscriptionSnapshot; userId: string }> = [];
   const resumed: string[] = [];
+  const appStoreReconciliations: string[] = [];
   const dependencies: AccountDeletionCleanupDependencies = {
     accountExists: async () => true,
     detachStripeSubscription: async (subscriptionId) => {
@@ -27,6 +28,9 @@ function fixtureDependencies(overrides: Partial<AccountDeletionCleanupDependenci
       persisted.push({ subscription, userId });
     },
     readStripeCustomerSubscriptionIds: async () => ["sub_from_customer"],
+    reconcileAppStoreSubscriptionForMember: async (userId) => {
+      appStoreReconciliations.push(userId);
+    },
     resumeStripeSubscription: async (subscriptionId) => {
       resumed.push(subscriptionId);
       return { cycle: "monthly", plan: "pro", status: "active" };
@@ -34,7 +38,7 @@ function fixtureDependencies(overrides: Partial<AccountDeletionCleanupDependenci
     ...overrides
   };
 
-  return { dependencies, detached, persisted, resumed };
+  return { appStoreReconciliations, dependencies, detached, persisted, resumed };
 }
 
 async function main() {
@@ -180,10 +184,61 @@ async function main() {
       },
       fixture.dependencies
     );
-    assert.equal(fixture.persisted[0]?.userId, "member-user");
-    assert.equal(fixture.persisted[0]?.subscription.plan, "pro");
-    assert.equal(fixture.persisted[0]?.subscription.provider, "app-store");
+    assert.equal(fixture.persisted.length, 0, "App Store cleanup must not rewrite a fenced canonical projection generically");
+    assert.deepEqual(fixture.appStoreReconciliations, ["member-user"]);
     assert.deepEqual(fixture.resumed, []);
+  }
+
+  {
+    const fixture = fixtureDependencies({
+      reconcileAppStoreSubscriptionForMember: async () => undefined
+    });
+    await executeAccountDeletionCleanupJob(
+      {
+        kind: accountDeletionCleanupKinds.restoreTeamMemberSubscription,
+        payload: {
+          previousSubscription: {
+            cycle: "annual",
+            plan: "pro",
+            provider: "app-store",
+            providerSubscriptionId: "stale-apple-lineage",
+            status: "active"
+          },
+          userId: "member-user"
+        }
+      },
+      fixture.dependencies
+    );
+    assert.equal(fixture.persisted.length, 0, "Inactive App Store reconciliation must remain inside the fenced persistence path");
+  }
+
+  {
+    const fixture = fixtureDependencies({
+      reconcileAppStoreSubscriptionForMember: async () => {
+        throw new Error("Apple reconciliation temporarily unavailable");
+      }
+    });
+    await assert.rejects(
+      executeAccountDeletionCleanupJob(
+        {
+          kind: accountDeletionCleanupKinds.restoreTeamMemberSubscription,
+          payload: {
+            previousSubscription: {
+              cycle: "annual",
+              plan: "pro",
+              provider: "app-store",
+              providerSubscriptionId: "stale-apple-lineage",
+              status: "active"
+            },
+            userId: "member-user"
+          }
+        },
+        fixture.dependencies
+      ),
+      /Apple reconciliation temporarily unavailable/,
+      "Apple provider failures must leave the cleanup job retryable instead of restoring stale access"
+    );
+    assert.equal(fixture.persisted.length, 0);
   }
 
   {
@@ -256,6 +311,32 @@ async function main() {
       fixture.dependencies
     );
     assert.equal(fixture.persisted[0]?.subscription.plan, "free");
+    assert.equal(fixture.persisted[0]?.subscription.providerEntitlementId, "capitol-ledger-free");
+  }
+
+  for (const provider of ["demo", "revenuecat"] as const) {
+    const fixture = fixtureDependencies();
+    await executeAccountDeletionCleanupJob(
+      {
+        kind: accountDeletionCleanupKinds.restoreTeamMemberSubscription,
+        payload: {
+          previousSubscription: {
+            cycle: "monthly",
+            plan: "pro",
+            provider,
+            providerSubscriptionId: `${provider}-ended`,
+            status: "canceled"
+          },
+          userId: "member-user"
+        }
+      },
+      fixture.dependencies
+    );
+    assert.equal(
+      fixture.persisted[0]?.subscription.plan,
+      "free",
+      `An unvalidated canceled ${provider} snapshot must not restore paid access`
+    );
     assert.equal(fixture.persisted[0]?.subscription.providerEntitlementId, "capitol-ledger-free");
   }
 

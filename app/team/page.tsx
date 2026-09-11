@@ -537,7 +537,8 @@ function EmptyPanel({
 }
 
 function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 function formatStatusLabel(status: AccountSubscriptionSnapshot["status"]) {

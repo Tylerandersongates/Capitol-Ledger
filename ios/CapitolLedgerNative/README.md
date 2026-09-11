@@ -25,7 +25,7 @@ When StoreKit returns a signed transaction JWS, the WebView also posts it to `/a
 
 ## Product IDs
 
-- Pro monthly: `com.capitolwonk.pro.monthly` with the App Store Connect 7-day free trial introductory offer, then $4.99/month
+- Pro monthly: `com.capitolwonk.pro.monthly` at $4.99/month, with the App Store Connect 7-day introductory offer only for subscribers Apple determines are eligible
 - Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
 - Team monthly/annual, 3 seats: `com.capitolwonk.team.monthly` and `com.capitolwonk.team.annual`
 - Team monthly, 4-20 seats; annual, 4-16 seats: `com.capitolwonk.team.{seatCount}.{cycle}`
@@ -47,6 +47,7 @@ The native target uses Sentry Cocoa for crash diagnostics. Set `CAPITOL_LEDGER_S
 Account-wide paid subscription sync requires these deployment variables:
 
 - `APP_STORE_BUNDLE_ID`
+- `APP_STORE_APP_APPLE_ID` (the numeric app ID from App Store Connect, not a product ID)
 - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `APP_STORE_CONNECT_KEY_ID`
@@ -56,4 +57,4 @@ Local Xcode StoreKit transactions can unlock the device preview, but Apple does 
 
 ## Next Step
 
-Create the App Store Connect subscription products and API key, add the server variables in the host, then run purchase, restore, renewal, cancellation, and expiration QA in sandbox/TestFlight.
+Apply the reviewed App Store state migration, add the server variables in the host, then run purchase, restore, renewal, cancellation, expiration, and Notifications V2 QA in sandbox/TestFlight. Configure the App Store Connect notification URL only after the endpoint passes sandbox verification.

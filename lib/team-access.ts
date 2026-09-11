@@ -25,7 +25,8 @@ export type TeamAccessSummary = {
 };
 
 function hasActiveTeamSubscription(subscription: AccountSubscriptionSnapshot) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 export async function readTeamAccessSummaryForUser(

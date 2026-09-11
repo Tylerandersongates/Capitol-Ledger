@@ -45,7 +45,7 @@ export function DailyBriefProOffer({ initialSubscription = null }: { initialSubs
           <div className="[&>div]:whitespace-normal [&>div]:text-[14px] [&>div]:leading-relaxed">
             <PlanTrialDisclosure plan="pro" initialSubscription={initialSubscription} defaultCycle="monthly" />
           </div>
-          <p className="mt-3 text-[14px] leading-relaxed text-white/55">Trial eligibility and final purchase terms are confirmed by Apple.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-white/55">Apple confirms introductory-offer eligibility and shows exact terms before purchase.</p>
         </div>
 
         {initialSubscription ? (

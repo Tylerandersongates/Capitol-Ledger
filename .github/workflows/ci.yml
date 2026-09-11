@@ -54,5 +54,14 @@ jobs:
       - name: Feedback readiness
         run: pnpm run feedback:check
 
+      - name: Production dependency audit
+        run: pnpm run audit:prod
+
+      - name: Full dependency audit
+        run: pnpm run audit:full
+
+      - name: Release source safeguards
+        run: pnpm run release-source:check
+
       - name: Build
         run: pnpm run build

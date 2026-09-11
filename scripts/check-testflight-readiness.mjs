@@ -12,6 +12,7 @@ const testFlightChecklistPath = `${appDocsDir}/TestFlight Readiness Checklist.md
 const publicReleaseCandidateChecklistPath = "docs/public-testflight-release-candidate-checklist.md";
 const publicTesterGuidePath = "docs/public-testflight-tester-guide.md";
 const privacyCorrectionPacketPath = "docs/app-store-privacy-correction-2026-09-10.md";
+const sandboxQaMatrixPath = "docs/app-store-sandbox-qa-matrix-2026-09-11.md";
 
 const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj",
@@ -24,8 +25,12 @@ const requiredFiles = [
   "ios/CapitolLedgerNative/CapitolLedgerNative/Info.plist",
   "ios/CapitolLedgerNative/README.md",
   "lib/billing/app-store.ts",
+  "lib/billing/app-store-products.ts",
+  "lib/billing/app-store-server.ts",
+  "lib/billing/app-store-state.ts",
   "app/api/account/subscription/app-store/route.ts",
   "app/api/account/subscription/app-store/account-token/route.ts",
+  "app/api/billing/app-store/notifications/route.ts",
   "app/api/account/deletion-request/route.ts",
   "components/account-deletion-control.tsx",
   "lib/account-deletion.ts",
@@ -38,6 +43,7 @@ const requiredFiles = [
   appStoreSetupPacketPath,
   privacyCorrectionPacketPath,
   testFlightChecklistPath,
+  sandboxQaMatrixPath,
   publicReleaseCandidateChecklistPath,
   publicTesterGuidePath
 ];
@@ -51,6 +57,7 @@ const requiredProductIds = [
 
 const appStoreEnvNames = [
   "APP_STORE_BUNDLE_ID",
+  "APP_STORE_APP_APPLE_ID",
   "APP_STORE_ACCOUNT_TOKEN_NAMESPACE",
   "APP_STORE_CONNECT_ISSUER_ID",
   "APP_STORE_CONNECT_KEY_ID",
@@ -111,7 +118,7 @@ function checkProductIds() {
   console.log("\nStoreKit products");
   const webControls = read("components/subscription-controls.tsx");
   const nativeModels = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
-  const serverValidator = read("lib/billing/app-store.ts");
+  const serverProducts = read("lib/billing/app-store-products.ts");
   const teamSeats = read("lib/subscription-seat-count.ts");
   const productPlan = `${read(testFlightChecklistPath)}\n${read(appStoreSetupPacketPath)}`;
 
@@ -120,10 +127,10 @@ function checkProductIds() {
     const wired = teamProduct
       ? webControls.includes("getTeamAppStoreProductId") &&
         nativeModels.includes(productId) &&
-        serverValidator.includes("getTeamAppStoreProducts") &&
+        serverProducts.includes("getTeamAppStoreProducts") &&
         teamSeats.includes(productId) &&
         productPlan.includes(productId)
-      : webControls.includes(productId) && nativeModels.includes(productId) && serverValidator.includes(productId) && productPlan.includes(productId);
+      : webControls.includes(productId) && nativeModels.includes(productId) && serverProducts.includes(productId) && productPlan.includes(productId);
     if (wired) {
       pass(`${productId} is wired`);
     } else {
@@ -141,7 +148,10 @@ function checkAppStoreSetupPacket() {
   const accountDeletionRoute = read("app/api/account/deletion-request/route.ts");
   const accountDeletionControl = read("components/account-deletion-control.tsx");
   const accountDeletionService = read("lib/account-deletion.ts");
+  const dailyBriefProOffer = read("components/daily-brief-pro-offer.tsx");
   const privacyCorrection = read(privacyCorrectionPacketPath);
+  const sandboxQaMatrix = read(sandboxQaMatrixPath);
+  const upgradePage = read("app/upgrade/page.tsx");
 
   const requiredPacketPhrases = [
     "App Store Connect Setup Packet",
@@ -153,7 +163,9 @@ function checkAppStoreSetupPacket() {
     "com.capitolwonk.team.monthly",
     "com.capitolwonk.team.annual",
     "com.capitolwonk.team.{seatCount}.{cycle}",
-    "7-day free trial",
+    "eligible new subscribers",
+    "Apple confirms eligibility",
+    "7 days free",
     "$4.99/month",
     "$39.99",
     "$17.99",
@@ -177,7 +189,7 @@ function checkAppStoreSetupPacket() {
   const subscriptionControls = read("components/subscription-controls.tsx");
   const seatConfiguration = read("lib/subscription-seat-count.ts");
   const nativeModels = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
-  const serverValidator = read("lib/billing/app-store.ts");
+  const serverProducts = read("lib/billing/app-store-products.ts");
   const pricingAligned =
     subscriptionPlans.includes('monthly: "$4.99"') &&
     subscriptionPlans.includes('annual: "$39.99"') &&
@@ -191,12 +203,47 @@ function checkAppStoreSetupPacket() {
     nativeModels.includes("maximumTeamSeatCount = 20") &&
     nativeModels.includes("maximumAnnualTeamSeatCount = 16") &&
     nativeModels.includes("teamProductId") &&
-    serverValidator.includes("getTeamAppStoreProducts");
+    serverProducts.includes("getTeamAppStoreProducts");
 
   if (pricingAligned) {
     pass("Pro and supported Team seat prices are aligned");
   } else {
     fail("Pro and supported Team seat prices are aligned", "Expected $4.99/$39.99 Pro plus monthly 3-20 and annual 3-16 Team products using $5.99/$59.99 per-seat economics.");
+  }
+
+  const truthfulIntroductoryOfferCopy =
+    subscriptionPlans.includes('ctaLabel: "Continue with Apple"') &&
+    subscriptionPlans.includes("Eligible new subscribers may receive 7 days free, then $4.99/month.") &&
+    subscriptionControls.includes("Apple will confirm ${trial.label} eligibility and show the exact terms") &&
+    upgradePage.includes("Eligible new monthly Pro subscribers may receive 7 days free, then $4.99/month") &&
+    supportPage.includes("Apple confirms eligibility and shows exact terms before purchase") &&
+    dailyBriefProOffer.includes("Apple confirms introductory-offer eligibility and shows exact terms before purchase") &&
+    !`${subscriptionPlans}\n${subscriptionControls}\n${upgradePage}\n${supportPage}`.includes("Start 7-day free trial") &&
+    !`${upgradePage}\n${supportPage}`.includes("Monthly Pro starts with 7 days free");
+
+  if (truthfulIntroductoryOfferCopy) {
+    pass("Introductory-offer copy is conditional on Apple eligibility and exact purchase terms");
+  } else {
+    fail("Introductory-offer copy is conditional on Apple eligibility and exact purchase terms", "Eligible and ineligible subscribers must not see an unconditional seven-day trial promise.");
+  }
+
+  const requiredSandboxOfferEvidence = [
+    "App Store Connect product-configuration screenshot",
+    "Eligible new subscriber",
+    "Ineligible or previously subscribed",
+    "7 days free",
+    "$4.99/month",
+    "Cancel during introductory offer",
+    "Conversion to standard monthly renewal",
+    "Offer expires without conversion",
+    "Notifications V2",
+    "canonical server state"
+  ];
+
+  if (requiredSandboxOfferEvidence.every((phrase) => sandboxQaMatrix.includes(phrase))) {
+    pass("Sandbox matrix covers introductory-offer eligibility, exact terms, lifecycle, notifications, and server state");
+  } else {
+    fail("Sandbox matrix covers introductory-offer eligibility, exact terms, lifecycle, notifications, and server state", "Add eligible/ineligible offer proof, exact 7-day/$4.99 terms, conversion/cancel/expiry cases, notification evidence, and canonical-state evidence.");
   }
 
   if (
@@ -244,13 +291,28 @@ function checkNativeBridge() {
   const webView = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerWebView.swift");
   const purchaseBridge = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerPurchaseBridge.swift");
   const storeKit = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerStoreKitService.swift");
+  const nativeSync = read("lib/native-storekit-sync.ts");
+  const pageBridge = read("components/native-storekit-sync-bridge.tsx");
   const validator = read("lib/billing/app-store.ts");
 
   if (
     webControls.includes("capitolLedgerPurchase") &&
     webView.includes('name: "capitolLedgerPurchase"') &&
-    purchaseBridge.includes('fetch("/api/account/subscription/app-store"') &&
-    storeKit.includes(".appAccountToken(uuid)") &&
+    webView.includes("decidePolicyFor navigationAction") &&
+    webView.includes("guard !trustedOrigin.matches(url)") &&
+    pageBridge.includes('fetch("/api/account/subscription/app-store"') &&
+    pageBridge.includes("window.__capitolWonkSyncAppStoreResult = sync") &&
+    nativeSync.includes("const sourceAction = result.action") &&
+    purchaseBridge.includes("message.frameInfo.isMainFrame") &&
+    purchaseBridge.includes("trustedOrigin.matches(message.frameInfo.securityOrigin)") &&
+    purchaseBridge.includes("callAsyncJavaScript") &&
+    purchaseBridge.includes("acceptedTransactionId == transactionId") &&
+    storeKit.includes("let appAccountToken = UUID(uuidString: token)") &&
+    storeKit.includes("product.purchase(options: [.appAccountToken(appAccountToken)])") &&
+    storeKit.includes("Transaction.unfinished") &&
+    storeKit.includes("stillPending.signedTransactionJWS == update.signedTransactionJWS") &&
+    (storeKit.match(/\.finish\(\)/g) ?? []).length === 1 &&
+    !storeKit.includes("return []") &&
     validator.includes("expectedAppAccountToken")
   ) {
     pass("StoreKit bridge and account binding are wired");

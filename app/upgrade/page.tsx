@@ -80,13 +80,13 @@ export default async function UpgradePage() {
         <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
           <PremiumUpgradeHeader
             aside={<span className={premiumHeaderIconClass}><Crown /></span>}
-            description="Start Pro with 7 days free, then $4.99/month. Cancel anytime."
+            description="Eligible new monthly Pro subscribers may receive 7 days free, then $4.99/month. Apple confirms eligibility and exact terms before purchase."
             eyebrow="Plans"
             title="Choose a plan"
           />
           <div className="mt-5 grid grid-cols-3 gap-2">
             <ValuePill label="Alerts" value="Faster" />
-            <ValuePill label="Trial" value="7 days" />
+            <ValuePill label="If eligible" value="7 days" />
             <ValuePill label="Briefs" value="Daily" />
           </div>
           <Link href="#plans" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
@@ -122,10 +122,10 @@ export default async function UpgradePage() {
 
         <section className="space-y-3" aria-label="Subscription plans">
           <PlanTierCard
-            badge="7-Day Trial"
+            badge="Eligible offer"
             featured
             icon={<Crown />}
-            inactiveLabel="Start Pro Trial"
+            inactiveLabel="Continue with Apple"
             initialSubscription={initialSubscription}
             defaultCycle={upgradeDefaultCycle}
             plan="pro"

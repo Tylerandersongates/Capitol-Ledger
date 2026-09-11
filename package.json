@@ -17,18 +17,24 @@
     "production-auth:check": "node scripts/check-production-auth.mjs",
     "production-auth:qa": "node scripts/qa-production-auth.mjs",
     "team:qa": "node scripts/qa-team-flow.mjs",
+    "team-invite-billing:check": "node --import tsx scripts/check-team-invite-apple-billing.ts",
     "auth-email:check": "node scripts/check-auth-email-delivery.mjs",
     "weekly-brief:check": "node scripts/check-weekly-brief-delivery.mjs",
     "weekly-brief:in-app-check": "node scripts/check-weekly-brief-in-app.mjs && node --import tsx scripts/check-daily-brief-video.ts && node --import tsx scripts/check-weekly-brief-editorial-fixtures.ts && node --import tsx scripts/check-weekly-brief-daily-editions.ts",
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
-    "billing:check": "node scripts/check-billing-readiness.mjs",
-    "billing-transition:check": "node scripts/check-billing-transition-fixtures.mjs",
+    "billing:check": "node scripts/check-billing-readiness.mjs && node --import tsx scripts/check-app-store-subscription-fixtures.ts && node --import tsx scripts/check-app-store-state-fixtures.ts && node --import tsx scripts/check-app-store-relink-fixtures.ts",
+    "billing-legacy:audit": "tsx scripts/audit-legacy-billing-state.ts",
+    "billing-transition:check": "node --import tsx scripts/check-billing-transition-fixtures.mjs",
     "ios-native:check": "node scripts/check-ios-native-bridge.mjs",
     "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs",
     "launch-copy:check": "node scripts/check-launch-copy-tone.mjs",
     "brand:check": "tsx scripts/check-public-brand.ts",
     "testflight:check": "node scripts/check-testflight-readiness.mjs",
-    "account-deletion:check": "node --import tsx scripts/check-account-deletion-fixtures.ts && node --import tsx scripts/check-account-deletion-cleanup-fixtures.ts && node --import tsx scripts/check-account-persistence-safety.ts && node scripts/check-account-deletion-readiness.mjs",
+    "audit:prod": "pnpm audit --prod --audit-level high",
+    "audit:full": "pnpm audit --audit-level high",
+    "release-source:check": "pnpm run billing:check && pnpm run billing-transition:check && pnpm run team-invite-billing:check && pnpm run privacy-retention:check && pnpm run account-deletion:check && pnpm run ios-native:check && pnpm run testflight-ui:check && pnpm run testflight:check && pnpm run launch-copy:check",
+    "release-candidate:check": "pnpm run audit:prod && pnpm run audit:full && BILLING_REQUIRE_APP_STORE=true TESTFLIGHT_REQUIRE_READY=true pnpm run release-source:check",
+    "account-deletion:check": "node --import tsx scripts/check-account-deletion-activation-fixtures.ts && node --import tsx scripts/check-account-deletion-fixtures.ts && node --import tsx scripts/check-account-deletion-cleanup-fixtures.ts && node --import tsx scripts/check-account-persistence-safety.ts && node scripts/check-account-deletion-readiness.mjs",
     "account-persistence:check": "node --import tsx scripts/check-account-persistence-safety.ts",
     "policy-edge:check": "node scripts/check-policy-edge-routes.mjs && node scripts/check-policy-edge-feed.mjs",
     "live-docket:check": "node scripts/check-live-docket-route.mjs",
@@ -56,6 +62,7 @@
     "youtube-statements:sync": "tsx scripts/sync-youtube-bill-statements.ts",
     "youtube-statements:check": "node scripts/check-youtube-bill-statements.mjs",
     "feedback:check": "node scripts/check-feedback-readiness.mjs",
+    "privacy-retention:check": "node --import tsx scripts/check-privacy-retention-fixtures.ts",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",
     "congress-roster:check": "tsx scripts/check-congress-member-roster.ts",
@@ -66,6 +73,7 @@
     "sync:congress": "tsx scripts/sync-congress.ts"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "3.1.0",
     "@prisma/client": "^5.14.0",
     "@sentry/nextjs": "10.69.0",
     "lucide-react": "^0.468.0",
@@ -87,6 +95,11 @@
     "tailwindcss": "^3.4.3",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "next@15.5.25>postcss": "8.5.25"
+    }
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

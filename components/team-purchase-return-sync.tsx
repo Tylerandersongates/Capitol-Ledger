@@ -10,7 +10,8 @@ const subscriptionStorageKey = "capitol-ledger:subscription";
 const subscriptionEvent = "capitol-ledger:subscription-changed";
 
 function hasActiveTeamAccess(subscription?: AccountSubscriptionSnapshot): subscription is AccountSubscriptionSnapshot {
-  return subscription?.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription?.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 function writeBrowserSubscription(subscription: AccountSubscriptionSnapshot) {

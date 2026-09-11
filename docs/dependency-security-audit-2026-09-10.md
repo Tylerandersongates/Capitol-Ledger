@@ -1,5 +1,7 @@
 # CapitolWonk Dependency Security Audit — September 10, 2026
 
+> Historical evidence for exact candidate `f4f04de`. The live September 11 working graph and its new audit controls/results are recorded separately in the [September 11 dependency security note](dependency-security-audit-2026-09-11.md).
+
 ## Decision
 
 **T03 is closed for exact candidate `f4f04de` with Tyler's explicit candidate-specific residual-risk acceptance.** The candidate aligns `next`, `eslint-config-next` and `@next/swc-wasm-nodejs` on `15.5.25` and refreshes the lockfile, including every compatible vulnerable transitive. Normal resolution also advances compatible packages inside the affected Next/ESLint/Sharp/Sentry build subtrees; the direct manifest still changes only the three aligned Next pins. The fresh production and full audits both improve to **0 critical, 2 high and 2 moderate** findings. All four accepted residual findings are in `postcss@8.4.31`, which Next 15.5.25 pins exactly.
@@ -105,7 +107,7 @@ The full graph reports **18 package-version findings: 2 critical, 14 high and 2 
 
 ## Control observations
 
-- CI pins pnpm `9.15.9` and Node major `22`, but does not run a dependency audit. A green CI run does not establish security-audit status.
+- At the time of exact candidate `f4f04de`, CI pinned pnpm `9.15.9` and Node major `22` but did not run a dependency audit, so that candidate's green CI did not itself establish audit status. The September 11 working-tree controls now run both production and full audits; see the current note.
 - `package.json` has no Node `engines` field, `.nvmrc` or `.node-version`; the exact local Node patch therefore comes from historical tooling evidence, not repository enforcement.
 - `pnpm-workspace.yaml` uses `allowBuilds`, while the cached pnpm 9.15.9 help/config surface exposes `onlyBuiltDependencies`. The candidate frozen install ran dependency postinstall scripts, confirming the intended allowlist is not enforced by this pnpm 9 surface. Review that configuration separately; it was not expanded into this vulnerability patch.
 - No repository, user pnpm or `.npmrc` `minimumReleaseAge` setting was found. The isolated install passed without a bypass, but this does not establish compliance with the historical external guard: the incidentally resolved `@typescript-eslint@8.70.0` family was only about two days old at resolution. Its owner/window remains unverified and must not be described as a repository control.

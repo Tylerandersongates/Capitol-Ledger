@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, LockKeyhole, Search, Settings, ShieldCheck } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { isAccountDeletionEnabled } from "@/lib/account-deletion-activation";
 import { publicBrand } from "@/lib/brand";
 
 export const metadata = {
@@ -78,6 +79,8 @@ const policySections: Array<{
 ];
 
 export default function PrivacyPage() {
+  const accountDeletionEnabled = isAccountDeletionEnabled();
+
   return (
     <MobileShell
       minHeight="min-h-[1120px]"
@@ -136,11 +139,15 @@ export default function PrivacyPage() {
             <div className="min-w-0">
               <h2 className="text-[20px] font-medium leading-tight text-white">Privacy requests</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
-                Permanently delete your account and linked data immediately in Settings. Use Support for data correction, export, consent withdrawal, removal of a separately submitted report, or help with saved account data.
+                {accountDeletionEnabled
+                  ? "Permanently delete your account and linked data immediately in Settings. Use Support for data correction, export, consent withdrawal, removal of a separately submitted report, or help with saved account data."
+                  : "Use Support for data correction, export, consent withdrawal, removal of a separately submitted report, account-deletion assistance, or help with saved account data."}
               </p>
-              <Link href="/settings#delete-account" className={`${mobileViewAllClass} mt-4 inline-flex`}>
-                Delete account
-              </Link>
+              {accountDeletionEnabled ? (
+                <Link href="/settings#delete-account" className={`${mobileViewAllClass} mt-4 inline-flex`}>
+                  Delete account
+                </Link>
+              ) : null}
             </div>
           </div>
         </MobileCard>

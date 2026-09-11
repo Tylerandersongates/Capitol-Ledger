@@ -4,10 +4,26 @@ import {
   deleteAccountAndAssociatedData,
   getActiveAccountDeletionRequest
 } from "@/lib/account-deletion";
+import { isAccountDeletionEnabled } from "@/lib/account-deletion-activation";
 import { clearAuthCookies, getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { clearRateLimitSubjects, guardMutationRequest } from "@/lib/request-security";
 
+function accountDeletionDisabledResponse() {
+  return NextResponse.json(
+    {
+      code: "ACCOUNT_DELETION_DISABLED",
+      error: "Account deletion is temporarily unavailable. No account data was changed."
+    },
+    {
+      headers: { "Cache-Control": "no-store" },
+      status: 503
+    }
+  );
+}
+
 export async function GET() {
+  if (!isAccountDeletionEnabled()) return accountDeletionDisabledResponse();
+
   const session = await getCurrentSession({ includeUnverified: true });
   if (!session?.user) {
     return NextResponse.json(requireAuthMessage(), { status: 401 });
@@ -24,6 +40,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAccountDeletionEnabled()) return accountDeletionDisabledResponse();
+
   const originGuard = guardMutationRequest(request, "account-deletion-request");
   if (originGuard) return originGuard;
 

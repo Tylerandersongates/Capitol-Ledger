@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, MessageSquarePlus } from "lucide-react";
 import { publicBrandName } from "@/lib/brand";
+import { sanitizeUrlForTelemetry } from "@/lib/privacy-telemetry";
 
 type SubmissionState = "idle" | "submitting" | "sent" | "error";
 
@@ -54,7 +55,7 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
             feedback_source: source || "manual",
             feedback_surface: "capitolwonk-ce"
           },
-          url: window.location.href
+          url: sanitizeUrlForTelemetry(window.location.href)
         },
         {
           errorMessages: feedbackErrorMessages,

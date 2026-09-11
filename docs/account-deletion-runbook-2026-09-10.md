@@ -62,9 +62,11 @@ The production scheduler interval and alert threshold must be chosen and recorde
 
 ## Data Outside The Account Transaction
 
+The source-observed inventory, current provider-document baseline, exact evidence fields, and recoverability options are maintained in the [September 11 backup/PITR and provider-retention checklist](backup-pitr-provider-retention-evidence-2026-09-11.md). Vendor defaults are not proof of CapitolWonk's exact plan or settings.
+
 - **Apple:** deleting CapitolWonk does not cancel or erase App Store billing. The user manages renewal through Apple; Apple may retain transaction records under its own terms.
 - **Legacy Stripe:** this is separate from the current Apple launch path. When the deleted account still has a legacy Stripe subscription reference, the post-commit cleanup job schedules an active subscription not to renew and detaches account ID/email metadata where Stripe permits. Already-terminal or missing subscriptions are treated as complete; Stripe may retain metadata or transaction records under its own terms. The worker must have an approved test/production credential path if such rows exist; otherwise prove before deployment that no legacy Stripe cleanup can be queued.
-- **Sentry:** feedback and diagnostics are submitted separately and are not linked by CapitolWonk account ID by default. If the user supplied an email or identifying message, Support must locate the specific report by the details the user provides and follow the Sentry removal procedure. Diagnostics without identifying details may not be attributable to an account.
+- **Sentry:** feedback and diagnostics are submitted separately and are not linked by CapitolWonk account ID by default. Current Sentry guidance says User Feedback cannot be deleted individually and may require deleting the entire project. The exact expiration/removal path is therefore an open release blocker; Support must not promise removal of one report until the intake design changes or the provider confirms a supportable procedure. Diagnostics without identifying details may not be attributable to an account.
 - **Email providers and officials:** a provider or recipient may independently retain a delivered message. CapitolWonk deletes its own matching official-contact history; Support must explain the boundary and use any available provider deletion process.
 - **Hosting/request logs:** verify URL, query-string, IP/geography, and retention settings for the exact production configuration. Account deletion does not by itself prove removal from provider logs.
 - **Backups and point-in-time recovery:** deletion from the live database does not erase older snapshots. The release gate below must prevent a restore from silently resurrecting a deleted account.
@@ -85,8 +87,8 @@ Do not call the workflow production-ready until all items are evidenced:
 - [ ] Complete the web end-to-end procedure below with a uniquely marked disposable production-shaped account.
 - [ ] Complete the same user-visible flow on the exact signed physical-device TestFlight candidate and verify current-device storage/cookie clearing, explicit success-receipt behavior, ambiguous-response treatment, multi-tab/device-writer fencing, and invalidation of a second session.
 - [ ] Verify the Team-owner case: the deletion transaction snapshots each affected member before workspace deletion and performs no member/provider mutation before its own commit; the post-commit worker restores the member exactly once; concurrent Team-seat pauses serialize through the account/workspace locks with compensation on a failed pause transaction; and unrelated users/workspaces/invitations are preserved.
-- [ ] Approve and exercise a backup/PITR tombstone or deletion-replay policy in a restore drill.
-- [ ] Record retention and removal procedures for Apple, Sentry, the host/request-log provider, email delivery, and official-message recipients.
+- [ ] Approve one recoverability option and exercise it through the [backup/PITR checklist's](backup-pitr-provider-retention-evidence-2026-09-11.md) isolated restore drill.
+- [ ] Close the provider register, Sentry-feedback contradiction, and sensitive URL/query logging gate in the [provider-retention checklist](backup-pitr-provider-retention-evidence-2026-09-11.md).
 - [ ] Deploy and visually verify `/privacy` and `/support`, then reconcile the App Privacy answers with the exact archive and enabled providers.
 
 ## Disposable-Account End-To-End Procedure
@@ -104,7 +106,7 @@ This is destructive. Obtain action-time approval and use only an account created
 9. For the Team-owner variant, confirm the owned workspace/member/invitation rows are gone and the committed job contains the pre-delete member snapshot. Run or await the authenticated worker, confirm each affected member reaches its expected restored or checkout-required result, and confirm the completed job is erased. Confirm unrelated workspaces, users, and the cross-workspace invitation remain.
 10. For separately approved legacy Stripe test-mode variants, confirm the account commit precedes provider mutation; an active subscription is scheduled not to renew and its account metadata is detached where Stripe permits; terminal/missing subscriptions complete; and every successful job is erased. Force one retryable provider failure and prove the job remains pending without restoring the deleted account or duplicating the external effect.
 11. Confirm the Apple sandbox subscription, if this separately approved scenario includes one, was not canceled by CapitolWonk deletion. Do not repurchase merely to establish a state.
-12. If the disposable user submitted Sentry feedback with an identifying marker, confirm account deletion did not falsely claim to remove it, then exercise the specific provider-removal procedure and record only sanitized evidence.
+12. If the disposable user submitted Sentry feedback with an identifying marker, confirm account deletion did not falsely claim to remove it. Exercise only the approved Sentry expiry/removal design and record sanitized evidence; do not attempt whole-project deletion under this test.
 
 ## Failure And Retry Procedure
 
@@ -123,7 +125,7 @@ For a pre-commit incident, preserve the account, stop repeated attempts, capture
 
 ## Backup/PITR Tombstone Gate
 
-Before launch, approve one recoverability design and test it:
+Before launch, approve one recoverability design and test it. The [September 11 backup/PITR and provider-retention checklist](backup-pitr-provider-retention-evidence-2026-09-11.md) recommends the constrained restore floor as the minimum v1 design, but the recommendation is not approval:
 
 - retain a tightly access-controlled deletion ledger outside the database restore boundary and replay it after restoring an older snapshot; or
 - constrain restoration so traffic cannot resume from a point before the last verified deletion without first applying a complete deletion ledger.
@@ -141,6 +143,6 @@ Keep only sanitized evidence:
 - cleanup-task schedule/authorization and aggregate monitoring evidence, with no secret or payload;
 - Team-member restoration and legacy Stripe cleanup results without personal, subscription, customer, or transaction identifiers;
 - backup/PITR drill result; and
-- links to internal provider retention/removal procedures, without credentials or private case/account identifiers.
+- the closed [provider-retention evidence register](backup-pitr-provider-retention-evidence-2026-09-11.md), without credentials or private case/account identifiers.
 
 Account-deletion production verification, TestFlight distribution, App Store questionnaire publication, and review submission each retain their separate approval gates.

@@ -3,8 +3,10 @@ import { getAccountSubscription, normalizeAccountSubscription, setAccountSubscri
 import { canUseDatabasePersistence, getAccountPersistenceUserId, readSubscriptionFromDatabase, writeSubscriptionToDatabase } from "@/lib/account-database";
 import { fallbackUnlessAccountPersistenceUnavailable, throwAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
+import { readAppStoreSubscriptionState } from "@/lib/billing/app-store-state";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { guardMutationRequest } from "@/lib/request-security";
+import { requiresAppleTeamBillingAcknowledgement } from "@/lib/team-invite-billing";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 async function readSession() {
@@ -32,6 +34,9 @@ async function getSubscription(request: NextRequest) {
 
   const personalSubscription = databaseSubscription ??
     (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
+  const appStoreState = personalSubscription.provider === "app-store"
+    ? await readAppStoreSubscriptionState(accountUserId)
+    : null;
   const effective = request.nextUrl.searchParams.get("scope") === "effective";
   const subscription = effective
     ? await getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch((error) =>
@@ -40,6 +45,10 @@ async function getSubscription(request: NextRequest) {
     : personalSubscription;
 
   return NextResponse.json({
+    appleTeamBillingAcknowledgementRequired: requiresAppleTeamBillingAcknowledgement(
+      personalSubscription,
+      appStoreState
+    ),
     mode: effective ? "effective" : usesDatabase ? "database" : "account",
     user,
     subscription

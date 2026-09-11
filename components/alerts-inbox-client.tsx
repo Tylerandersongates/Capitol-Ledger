@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Bell, CheckCircle2, FileText, Home, Loader2, Scale, Search, Sparkles, Settings, UserRound } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle2, ExternalLink, FileText, Home, Loader2, Scale, Search, Sparkles, Settings, TriangleAlert, UserRound } from "lucide-react";
 import { MobileBottomNav, MobileCard } from "@/components/mobile-ui";
 import { PlanFeatureGate, useSubscriptionState } from "@/components/subscription-controls";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
 import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
 import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
+import {
+  openAppleSubscriptionManagement,
+  requiresAppleTeamBillingAcknowledgement
+} from "@/lib/team-invite-billing";
 import {
   accountProfileChangedEvent,
   defaultNotificationPreferences,
@@ -183,7 +187,34 @@ export function AlertsInboxClient({
   const [acceptedTeamInviteIds, setAcceptedTeamInviteIds] = useState<string[]>([]);
   const [pendingTeamInviteId, setPendingTeamInviteId] = useState("");
   const [teamInviteErrors, setTeamInviteErrors] = useState<Record<string, string>>({});
+  const [appleBillingRequiredInviteIds, setAppleBillingRequiredInviteIds] = useState<string[]>([]);
+  const [appleBillingAcknowledgedInviteIds, setAppleBillingAcknowledgedInviteIds] = useState<string[]>([]);
   const priorityAlertsEnabled = isPlanFeatureEnabled(subscription.plan, "priorityAlerts");
+
+  function requiresAppleBillingAcknowledgement(notification: AlertsInboxItem) {
+    return Boolean(
+      notification.teamInviteId &&
+        (requiresAppleTeamBillingAcknowledgement(subscription) ||
+          appleBillingRequiredInviteIds.includes(notification.teamInviteId))
+    );
+  }
+
+  function hasAppleBillingAcknowledgement(notification: AlertsInboxItem) {
+    return Boolean(
+      notification.teamInviteId && appleBillingAcknowledgedInviteIds.includes(notification.teamInviteId)
+    );
+  }
+
+  function setAppleBillingAcknowledgement(notification: AlertsInboxItem, acknowledged: boolean) {
+    if (!notification.teamInviteId) return;
+    setAppleBillingAcknowledgedInviteIds((current) =>
+      acknowledged
+        ? current.includes(notification.teamInviteId!)
+          ? current
+          : [...current, notification.teamInviteId!]
+        : current.filter((inviteId) => inviteId !== notification.teamInviteId)
+    );
+  }
 
   useEffect(() => {
     function refreshPreferences() {
@@ -266,6 +297,9 @@ export function AlertsInboxClient({
 
   async function acceptTeamInvite(notification: AlertsInboxItem) {
     if (!notification.teamInviteId || pendingTeamInviteId) return;
+    const acknowledgementRequired = requiresAppleBillingAcknowledgement(notification);
+    const appleBillingAcknowledged = hasAppleBillingAcknowledgement(notification);
+    if (acknowledgementRequired && !appleBillingAcknowledged) return;
 
     setPendingTeamInviteId(notification.teamInviteId);
     setTeamInviteErrors((current) => {
@@ -276,15 +310,23 @@ export function AlertsInboxClient({
 
     try {
       const response = await fetch("/api/team/invites/accept", {
-        body: JSON.stringify({ inviteId: notification.teamInviteId }),
+        body: JSON.stringify({
+          appleBillingAcknowledged: acknowledgementRequired && appleBillingAcknowledged,
+          inviteId: notification.teamInviteId
+        }),
         headers: {
           "Content-Type": "application/json"
         },
         method: "POST"
       });
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      const data = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
 
       if (!response.ok) {
+        if (data?.code === "APPLE_BILLING_ACKNOWLEDGEMENT_REQUIRED") {
+          setAppleBillingRequiredInviteIds((current) =>
+            current.includes(notification.teamInviteId!) ? current : [...current, notification.teamInviteId!]
+          );
+        }
         setTeamInviteErrors((current) => ({
           ...current,
           [notification.id]: data?.error ?? "This invite could not be accepted."
@@ -292,6 +334,11 @@ export function AlertsInboxClient({
         return;
       }
 
+      if (acknowledgementRequired) {
+        setAppleBillingRequiredInviteIds((current) =>
+          current.includes(notification.teamInviteId!) ? current : [...current, notification.teamInviteId!]
+        );
+      }
       setAcceptedTeamInviteIds((current) => (current.includes(notification.teamInviteId!) ? current : [...current, notification.teamInviteId!]));
       markRead(notification.id);
     } catch {
@@ -351,8 +398,13 @@ export function AlertsInboxClient({
               acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
               actionError={teamInviteErrors[notification.id]}
               actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
+              appleBillingAcknowledged={hasAppleBillingAcknowledgement(notification)}
+              appleBillingAcknowledgementRequired={requiresAppleBillingAcknowledgement(notification)}
               opened={readIds.includes(notification.id)}
               unread={isUnread(notification)}
+              onAppleBillingAcknowledgementChange={(acknowledged) =>
+                setAppleBillingAcknowledgement(notification, acknowledged)
+              }
               onAcceptTeamInvite={() => acceptTeamInvite(notification)}
               onRead={() => markRead(notification.id)}
             />
@@ -430,9 +482,14 @@ export function AlertsInboxClient({
                     acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
                     actionError={teamInviteErrors[notification.id]}
                     actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
+                    appleBillingAcknowledged={hasAppleBillingAcknowledgement(notification)}
+                    appleBillingAcknowledgementRequired={requiresAppleBillingAcknowledgement(notification)}
                     opened={readIds.includes(notification.id)}
                     priorityRank={index + 1}
                     unread={isUnread(notification)}
+                    onAppleBillingAcknowledgementChange={(acknowledged) =>
+                      setAppleBillingAcknowledgement(notification, acknowledged)
+                    }
                     onAcceptTeamInvite={() => acceptTeamInvite(notification)}
                     onRead={() => markRead(notification.id)}
                   />
@@ -451,8 +508,13 @@ export function AlertsInboxClient({
                       acceptedTeamInvite={Boolean(notification.teamInviteId && acceptedTeamInviteIds.includes(notification.teamInviteId))}
                       actionError={teamInviteErrors[notification.id]}
                       actionPending={Boolean(notification.teamInviteId && pendingTeamInviteId === notification.teamInviteId)}
+                      appleBillingAcknowledged={hasAppleBillingAcknowledgement(notification)}
+                      appleBillingAcknowledgementRequired={requiresAppleBillingAcknowledgement(notification)}
                       opened={readIds.includes(notification.id)}
                       unread={isUnread(notification)}
+                      onAppleBillingAcknowledgementChange={(acknowledged) =>
+                        setAppleBillingAcknowledgement(notification, acknowledged)
+                      }
                       onAcceptTeamInvite={() => acceptTeamInvite(notification)}
                       onRead={() => markRead(notification.id)}
                     />
@@ -528,23 +590,30 @@ function NotificationCard({
   actionPending = false,
   actionNeeded,
   acceptedTeamInvite = false,
+  appleBillingAcknowledged = false,
+  appleBillingAcknowledgementRequired = false,
   body,
   categoryLabel,
   href,
   iconElement,
   onAcceptTeamInvite,
+  onAppleBillingAcknowledgementChange,
   onRead,
   opened,
   priorityRank,
   time,
+  teamInviteId,
   title,
   unread
 }: AlertsInboxItem & {
   acceptedTeamInvite?: boolean;
+  appleBillingAcknowledged?: boolean;
+  appleBillingAcknowledgementRequired?: boolean;
   actionError?: string;
   actionPending?: boolean;
   iconElement: ReactNode;
   onAcceptTeamInvite?: () => void;
+  onAppleBillingAcknowledgementChange?: (acknowledged: boolean) => void;
   onRead: () => void;
   opened: boolean;
   priorityRank?: number;
@@ -576,11 +645,40 @@ function NotificationCard({
           </div>
           <h3 className="mt-3 text-[21px] font-medium leading-tight text-white">{title}</h3>
           <p className="mt-3 text-[17px] leading-snug text-white/58">{body}</p>
+          {isTeamInviteAction && appleBillingAcknowledgementRequired && !acceptedTeamInvite ? (
+            <div className="mt-4 rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-4 py-4">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-[#ffcf54]">
+                <TriangleAlert className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+                Personal Apple Pro billing
+              </div>
+              <p id={`apple-team-billing-${teamInviteId}`} className="mt-2 text-[12px] leading-snug text-white/62">
+                Joining this Team does not pause or cancel your personal Apple subscription. Apple may continue billing until you manage or cancel the subscription with Apple.
+              </p>
+              <button
+                type="button"
+                onClick={openAppleSubscriptionManagement}
+                className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#ffcf54]"
+              >
+                Manage Apple subscription
+                <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.9} aria-hidden="true" />
+              </button>
+              <label className="mt-3 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-3 text-[12px] leading-snug text-white/68">
+                <input
+                  type="checkbox"
+                  checked={appleBillingAcknowledged}
+                  onChange={(event) => onAppleBillingAcknowledgementChange?.(event.target.checked)}
+                  aria-describedby={`apple-team-billing-${teamInviteId}`}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#ffb12b]"
+                />
+                <span>I understand joining this Team does not pause or cancel my Apple subscription.</span>
+              </label>
+            </div>
+          ) : null}
           {isTeamInviteAction && !acceptedTeamInvite ? (
             <button
               type="button"
               onClick={onAcceptTeamInvite}
-              disabled={actionPending}
+              disabled={actionPending || (appleBillingAcknowledgementRequired && !appleBillingAcknowledged)}
               className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#43ed74]/24 bg-[#43ed74]/10 px-4 py-2 text-[15px] font-semibold text-[#74f49a] transition hover:brightness-110 disabled:opacity-45"
             >
               {actionPending ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.9} aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />}
@@ -592,7 +690,12 @@ function NotificationCard({
               <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
             </Link>
           )}
-          {acceptedTeamInvite ? <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">Invite accepted.</div> : null}
+          {acceptedTeamInvite ? (
+            <div className="mt-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-2 text-[12px] font-semibold text-[#74f49a]">
+              Invite accepted.
+              {appleBillingAcknowledgementRequired ? " Your personal Apple subscription was not paused or canceled." : ""}
+            </div>
+          ) : null}
           {actionError ? <div className="mt-3 rounded-xl border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 px-3 py-2 text-[12px] font-semibold text-[#ffb1b1]">{actionError}</div> : null}
         </div>
       </div>

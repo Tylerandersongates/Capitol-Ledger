@@ -13,14 +13,14 @@ Current status: TestFlight preparation is active as of July 18, 2026. App Store 
 - Browser, server, and native iOS errors are also sent to Sentry when their protected DSN values are configured.
 - Sentry session replay and default PII collection are disabled.
 - Account deletion uses the dedicated in-app deletion workflow and never enters the feedback system. The action commits account erasure together with any required Team-member/legacy-Stripe cleanup jobs, then clears sessions/cookies and fences current-device CapitolWonk storage across tabs and native purchase publication. A deidentified completion audit remains; a cleanup job is retained only while pending/retrying and is erased after success. The completed page requires an explicit receipt from a verified success response; an ambiguous result is labeled unconfirmed.
-- Sentry feedback submitted separately is not linked by CapitolWonk account ID by default. Account deletion therefore does not locate it; a tester who included an email or other identifying details must identify the specific report through Support for provider-side removal.
+- Sentry feedback submitted separately is not linked by CapitolWonk account ID by default. Account deletion therefore does not locate it. Current provider guidance says User Feedback cannot be individually deleted and may require whole-project deletion, so one-report removal is an unresolved release blocker; testers must not be promised that Support can remove a specific report until the intake or retention design is corrected and evidenced.
 - The retired `BetaFeedback` table is retained temporarily as a read-only archive until its production records are exported and verified.
 
 ## Recommended Order
 
 These are ordered gates, not standing authorization. Obtain Tyler's action-time approval before any production migration, provider/project creation, protected configuration, deployment, build upload, distribution, or destructive QA.
 
-1. After production-migration approval, apply the migration that creates `AccountDeletionRequest`, then the deletion-integrity, cleanup-outbox, and Team-pause workspace-integrity migrations before the matching source. Verify live table/index/foreign-key shape before any destructive QA.
+1. Follow the current approval packet rather than this historical migration shorthand. The read-only September 11 preflight proves `20260718154000_account_deletion_requests` is already applied; after separate approval, only `20260910150000`, `20260910151000`, and `20260910152000` may be applied in order before matching gated source. Verify live table/index/foreign-key shape before any destructive QA.
 2. After provider-configuration approval, create or verify the private Sentry organization/project and configure protected deployment and Xcode values without committing secrets.
 3. After cleanup-task approval, configure its protected secret, authenticated schedule, and no-payload monitoring/retry alerts without committing or displaying the secret.
 4. Run the feedback, account-deletion, TestFlight, billing, lint, type, web-build, and native-build checks.
@@ -28,7 +28,7 @@ These are ordered gates, not standing authorization. Obtain Tyler's action-time 
 6. Verify a test `/feedback` report arrives in Sentry and contains no unintended personal data.
 7. Verify a deliberate browser error, server error, and native test crash arrive in the correct project before inviting testers.
 8. With explicit assignment only, verify deletion first with a disposable production-shaped account, including post-commit Team-member/legacy-Stripe cleanup and retry, then on a physical-device TestFlight candidate. Do not use a reusable reviewer or tester account.
-9. Confirm backup/PITR tombstone handling plus Apple, Stripe, Sentry, email-provider, and official-message retention/removal procedures.
+9. Close the internal September 11 backup/PITR and provider-retention evidence checklist, including the safe deletion-activation, Sentry-feedback and sensitive URL/log gates.
 10. Invite a small TestFlight tester group and direct testers to Apple's TestFlight feedback control or `/feedback`.
 11. Triage Sentry issues and Apple TestFlight feedback after each round as blocker, current-beta fix, or later.
 12. Keep the App Store review submission separate and obtain Tyler's approval immediately before **Submit for Review**.
@@ -110,7 +110,7 @@ These are release exit criteria. An unchecked item remains open unless its evide
 - [ ] All auth sessions and response cookies are invalid after success; all `capitol-ledger:` local/session storage is gone on the current device; an explicit receipt distinguishes verified completion from an ambiguous unconfirmed result; and the multi-tab fence prevents browser and native StoreKit writers from recreating state.
 - [ ] Migration `20260910152000_team_subscription_pause_workspace_integrity` converts only the known empty/owner-upgrade sentinels to `NULL`, aborts on an unexpected orphan, and enforces the nullable real-workspace cascade.
 - [ ] Production migration/live schema and FK checks, cleanup-task secret/schedule/age-monitoring/retry checks, disposable-account verification, real-Postgres concurrency, Stripe webhook/cleanup/compensation, physical-device multi-tab/native-writer QA, backup/PITR tombstone policy, and external-provider retention/removal procedures are complete.
-- [ ] App Store billing is confirmed unaffected by account deletion. A specific Sentry report containing identifying details can be found and removed through the documented provider process.
+- [ ] App Store billing is confirmed unaffected by account deletion. The Sentry User Feedback limitation is resolved through an approved intake/expiry design and public/tester copy does not promise unsupported one-report deletion.
 - [ ] Legacy feedback records are preserved until a private export is verified; no tester data is exposed in source control.
 - [ ] Production auth QA passes.
 - [ ] Subscription purchase, relaunch persistence, restore, account-token association, and server validation are verified.

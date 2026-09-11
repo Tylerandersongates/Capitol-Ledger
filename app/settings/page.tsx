@@ -9,6 +9,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileProfileShortcutClass } from "@/components/mobile-ui";
 import { PartyAffiliationSelector } from "@/components/party-affiliation-control";
 import { SettingsAccountSyncStatus } from "@/components/settings-account-sync-status";
+import { isAccountDeletionEnabled } from "@/lib/account-deletion-activation";
 import { getCurrentSession, getProductionSession } from "@/lib/auth";
 import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
@@ -60,14 +61,15 @@ const settingRows = [
     value: "Free video briefing",
     href: "/brief",
     icon: <CalendarClock />
-  },
-  {
-    label: "Delete account",
-    value: "Permanent account deletion",
-    href: "#delete-account",
-    icon: <Trash2 />
   }
 ];
+
+const accountDeletionSettingRow = {
+  label: "Delete account",
+  value: "Permanent account deletion",
+  href: "#delete-account",
+  icon: <Trash2 />
+};
 
 const premiumEyebrowClass = "text-[12px] font-semibold uppercase tracking-[0.08em] text-white/46";
 const premiumCardTitleClass = "text-[22px] font-medium leading-tight text-white";
@@ -78,12 +80,18 @@ const premiumHeaderGreenIconClass =
   "grid h-12 w-12 place-items-center rounded-2xl border border-white/14 bg-[#43ed74]/12 text-[#43ed74] shadow-[0_12px_28px_rgba(1,8,24,0.3)] [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.8]";
 
 export default async function SettingsPage() {
+  const accountDeletionEnabled = isAccountDeletionEnabled();
   const [session, persistedProductionSession] = await Promise.all([
     getCurrentSession(),
-    getProductionSession({ includeUnverified: true })
+    accountDeletionEnabled
+      ? getProductionSession({ includeUnverified: true })
+      : Promise.resolve(null)
   ]);
   const authenticated = Boolean(session);
   const hasProductionAccount = Boolean(persistedProductionSession);
+  const visibleSettingRows = accountDeletionEnabled
+    ? [...settingRows, accountDeletionSettingRow]
+    : settingRows;
 
   return (
     <MobileShell
@@ -133,7 +141,7 @@ export default async function SettingsPage() {
                 <NotificationPreferencesEditor compact dense />
               </div>
             </details>
-            {settingRows.map((row) => (
+            {visibleSettingRows.map((row) => (
               <SettingRow key={row.label} {...row} />
             ))}
             {authenticated ? (
@@ -179,7 +187,9 @@ export default async function SettingsPage() {
                 Support requests
               </Link>
             </div>
-            <AccountDeletionControl authenticated={hasProductionAccount} />
+            {accountDeletionEnabled ? (
+              <AccountDeletionControl authenticated={hasProductionAccount} enabled />
+            ) : null}
           </MobileCard>
         </div>
       </main>

@@ -6,7 +6,7 @@ CapitolWonk is now app-only for paid upgrades. Pro and Team are purchased throug
 
 ## Current App Path
 
-1. `/upgrade` lets a user choose Pro or Team monthly/annual and starts Apple in-app purchase from the native shell. Monthly Pro presents a 7-day free trial that renews at $4.99/month unless canceled before renewal.
+1. `/upgrade` lets a user choose Pro or Team monthly/annual and starts Apple in-app purchase from the native shell. Eligible new Monthly Pro subscribers may receive 7 days free, then $4.99/month; Apple confirms eligibility and exact terms before purchase.
 2. Native StoreKit handles purchase, restore, and App Store subscription management.
 3. The device unlocks the paid plan immediately after StoreKit returns an active entitlement.
 4. `/api/account/subscription/app-store` validates the signed transaction through App Store Server API before writing account subscription state.
@@ -20,6 +20,7 @@ DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 AUTH_COOKIE_SECURE="true"
 APP_STORE_BUNDLE_ID="com.capitolwonk.ce"
+APP_STORE_APP_APPLE_ID="1234567890"
 APP_STORE_ACCOUNT_TOKEN_NAMESPACE="com.capitolwonk.ce"
 APP_STORE_CONNECT_ISSUER_ID="..."
 APP_STORE_CONNECT_KEY_ID="..."
@@ -40,11 +41,11 @@ BILLING_REQUIRE_APP_STORE=true pnpm billing:check
 
 Do not commit App Store Connect keys or private-key material. Add them through Apple/Vercel tooling and keep the `.p8` key in a secure password manager.
 
-For the App Store launch path, `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` should fail until `APP_STORE_BUNDLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, and all App Store Server API credentials are explicitly configured.
+For the App Store launch path, `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` should fail until `APP_STORE_BUNDLE_ID`, the numeric `APP_STORE_APP_APPLE_ID`, `APP_STORE_ACCOUNT_TOKEN_NAMESPACE`, and all App Store Server API credentials are explicitly configured.
 
 ## Product Mapping
 
-- Pro monthly: `com.capitolwonk.pro.monthly` with 7-day free trial, then $4.99/month
+- Pro monthly: `com.capitolwonk.pro.monthly` at $4.99/month, with a configured 7-day introductory offer only for subscribers Apple determines are eligible
 - Pro annual: `com.capitolwonk.pro.annual` at $39.99/year
 - Team monthly, 3 seats: `com.capitolwonk.team.monthly` at $17.99
 - Team annual, 3 seats: `com.capitolwonk.team.annual` at $179.99
@@ -57,10 +58,10 @@ The July 17, 2026 App Store Connect audit configured every additional launch-act
 ## QA Order
 
 1. Apply Prisma migrations and run `pnpm production-auth:check`.
-2. Reorder App Store Connect subscription levels, complete required review information, and re-audit the existing Pro monthly trial. Team monthly 3-20, annual 3-16, and the four unavailable annual 17-20 records are otherwise configured.
-3. Add App Store Server API credentials and a stable `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` to the host environment.
+2. Reorder App Store Connect subscription levels, complete required review information, and re-audit the existing Pro monthly introductory-offer configuration. Capture a redacted product-configuration screenshot proving the exact 7-day/$4.99 terms, then test both eligible and ineligible subscribers through the [sandbox QA matrix](../docs/app-store-sandbox-qa-matrix-2026-09-11.md). Team monthly 3-20, annual 3-16, and the four unavailable annual 17-20 records are otherwise configured.
+3. Apply the reviewed App Store state migration, then add the numeric Apple app ID, App Store Server API credentials, and a stable `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` to the host environment.
 4. Run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
-5. Build the native iOS shell and run purchase, restore, renewal, cancellation, and expiration in sandbox/TestFlight.
+5. Build the native iOS shell and run purchase, restore, renewal, cancellation, expiration, retry/grace, duplicate-delivery, and out-of-order notification cases in sandbox/TestFlight. Do not activate the App Store Connect Notifications V2 URL until this pass succeeds.
 6. Confirm `/account`, `/settings`, `/team`, and gated paid surfaces reflect account-synced access after validation.
 7. Keep Stripe checkout disabled unless a web checkout path is deliberately reintroduced later.
 

@@ -9,7 +9,8 @@ import { readOrCreateTeamWorkspaceForOwner, readTeamWorkspaceForMember, releaseT
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 async function readTeamAccount() {

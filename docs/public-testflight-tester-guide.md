@@ -100,9 +100,10 @@ Use either of these approved paths:
   or disabled, use TestFlight feedback instead.
 
 Feedback sent through Sentry or TestFlight is separate from the CapitolWonk
-account-deletion transaction. If you included an email address, name, or other
-identifying details and want that report removed, contact Support and identify
-the specific report so it can be handled through the relevant provider.
+account-deletion transaction. Avoid including information that is not needed to
+diagnose the issue. Provider retention applies independently; Support can explain
+the applicable retention and available privacy-request options but cannot promise
+that one Sentry feedback item can be deleted.
 
 Include:
 

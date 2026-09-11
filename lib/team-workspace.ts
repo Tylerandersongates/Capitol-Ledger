@@ -315,7 +315,8 @@ function inviteExpiresAt() {
 }
 
 function hasActiveTeamAccess(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined) {
