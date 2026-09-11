@@ -2,7 +2,7 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
-import { hasCompleteMemberRosterCounts, mergeMemberRosterWithFallback } from "@/lib/congress/member-roster";
+import { mergeMemberRosterWithFallback } from "@/lib/congress/member-roster";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -39,7 +39,6 @@ export type SearchRecordsResult = ReturnType<typeof searchRecords>;
 
 type DatabaseSearchRecordsResult = SearchRecordsResult & {
   billResultCount?: number;
-  completeMemberRoster: boolean;
   voteResultCount?: number;
 };
 
@@ -2244,7 +2243,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
     };
 
     const shouldSearchMembers = type === "all" || type === "members";
-    const [memberRows, billRows, voteRows, memberChamberCounts, billResultCount, voteResultCount] = await Promise.all([
+    const [memberRows, billRows, voteRows, billResultCount, voteResultCount] = await Promise.all([
       shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
@@ -2292,33 +2291,15 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
             where: voteWhere
           })
         : Promise.resolve([]),
-      shouldSearchMembers
-        ? prisma.member.groupBy({
-            _count: {
-              _all: true
-            },
-            by: ["chamber"],
-            where: {
-              active: true
-            }
-          })
-        : Promise.resolve([]),
       shouldSearchBills ? prisma.bill.count({ where: billWhere }) : Promise.resolve(undefined),
       shouldSearchVotes ? prisma.vote.count({ where: voteWhere }) : Promise.resolve(undefined)
     ]);
 
     const mappedBills = billRows.map(mapDatabaseBill);
-    const houseCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.HOUSE)?._count._all ?? 0;
-    const senateCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.SENATE)?._count._all ?? 0;
 
     return {
       billResultCount,
       bills: mappedBills,
-      completeMemberRoster: hasCompleteMemberRosterCounts({
-        houseCount,
-        memberCount: houseCount + senateCount,
-        senateCount
-      }),
       members: memberRows.map(mapDatabaseMember),
       voteResultCount,
       votes: voteRows.map(mapDatabaseVote)
@@ -2329,43 +2310,36 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
 }
 
 export async function searchRecordsWithLiveData(filters: SearchFilters) {
-  const demoResults = searchRecords(filters);
   const liveResults = await withOptionalDatabaseReadTimeout(() => searchDatabaseRecords(filters));
 
   if (!liveResults) {
+    const results: SearchRecordsResult = { bills: [], members: [], votes: [] };
+
     return {
-      mode: "demo" as const,
+      mode: "unavailable" as const,
       resultCounts: {
-        bills: demoResults.bills.length,
-        members: demoResults.members.length,
-        votes: demoResults.votes.length
+        bills: 0,
+        members: 0,
+        votes: 0
       },
-      results: demoResults
+      results
     };
   }
 
-  const mergedResults = {
-    bills:
-      liveResults.billResultCount !== undefined
-        ? liveResults.bills
-        : mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
-    members: liveResults.completeMemberRoster
-      ? liveResults.members
-      : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
-    votes:
-      liveResults.voteResultCount !== undefined
-        ? liveResults.votes
-        : mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
+  const results: SearchRecordsResult = {
+    bills: liveResults.bills,
+    members: liveResults.members,
+    votes: liveResults.votes
   };
 
   return {
-    mode: "live+demo" as const,
+    mode: "live" as const,
     resultCounts: {
-      bills: liveResults.billResultCount ?? mergedResults.bills.length,
-      members: mergedResults.members.length,
-      votes: liveResults.voteResultCount ?? mergedResults.votes.length
+      bills: liveResults.billResultCount ?? results.bills.length,
+      members: results.members.length,
+      votes: liveResults.voteResultCount ?? results.votes.length
     },
-    results: mergedResults
+    results
   };
 }
 
