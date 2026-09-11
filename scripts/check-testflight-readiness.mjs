@@ -217,6 +217,7 @@ function checkAppStoreSetupPacket() {
     subscriptionControls.includes("Apple will confirm ${trial.label} eligibility and show the exact terms") &&
     upgradePage.includes("Eligible new monthly Pro subscribers may receive 7 days free, then $4.99/month") &&
     supportPage.includes("Apple confirms eligibility and shows exact terms before purchase") &&
+    dailyBriefProOffer.includes('selectedDisclosure="Eligible new subscribers may receive 7 days free, then $4.99/month."') &&
     dailyBriefProOffer.includes("Apple confirms introductory-offer eligibility and shows exact terms before purchase") &&
     !`${subscriptionPlans}\n${subscriptionControls}\n${upgradePage}\n${supportPage}`.includes("Start 7-day free trial") &&
     !`${upgradePage}\n${supportPage}`.includes("Monthly Pro starts with 7 days free");

@@ -224,6 +224,7 @@ assert.ok(
     supportPageSource.includes("Apple confirms eligibility and shows exact terms before purchase") &&
     !supportPageSource.includes("Monthly Pro starts with 7 days free") &&
     !supportPageSource.includes("Review the 7-day Pro trial") &&
+    dailyBriefProOfferSource.includes('selectedDisclosure="Eligible new subscribers may receive 7 days free, then $4.99/month."') &&
     dailyBriefProOfferSource.includes("Apple confirms introductory-offer eligibility and shows exact terms before purchase"),
   "support and Daily Brief purchase copy must not promise an introductory offer to ineligible subscribers"
 );

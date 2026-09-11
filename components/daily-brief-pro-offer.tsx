@@ -42,8 +42,13 @@ export function DailyBriefProOffer({ initialSubscription = null }: { initialSubs
         <div className="mt-5 rounded-2xl border border-white/10 bg-[#020914]/40 px-4 py-4">
           <p className="text-[14px] font-medium text-white/60">Pro subscription</p>
           <PlanPrice plan="pro" initialSubscription={initialSubscription} defaultCycle="monthly" className="mt-2 flex flex-wrap items-baseline gap-2" priceClassName="text-[32px] font-semibold leading-none text-[#ffb12b]" unitClassName="text-[16px] text-white/60" />
-          <div className="[&>div]:whitespace-normal [&>div]:text-[14px] [&>div]:leading-relaxed">
-            <PlanTrialDisclosure plan="pro" initialSubscription={initialSubscription} defaultCycle="monthly" />
+          <div className="[&>div]:mt-3 [&>div]:whitespace-normal [&>div]:rounded-xl [&>div]:px-3 [&>div]:py-2.5 [&>div]:text-[13px] [&>div]:leading-snug">
+            <PlanTrialDisclosure
+              plan="pro"
+              initialSubscription={initialSubscription}
+              defaultCycle="monthly"
+              selectedDisclosure="Eligible new subscribers may receive 7 days free, then $4.99/month."
+            />
           </div>
           <p className="mt-3 text-[14px] leading-relaxed text-white/55">Apple confirms introductory-offer eligibility and shows exact terms before purchase.</p>
         </div>

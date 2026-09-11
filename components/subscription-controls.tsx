@@ -399,11 +399,13 @@ export function PlanPrice({
 export function PlanTrialDisclosure({
   defaultCycle,
   initialSubscription = null,
-  plan
+  plan,
+  selectedDisclosure
 }: {
   defaultCycle?: SubscriptionDefaultCycle;
   initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
+  selectedDisclosure?: string;
 }) {
   const [subscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const trial = subscriptionPlans[plan].trial;
@@ -415,7 +417,7 @@ export function PlanTrialDisclosure({
   return (
     <div className="mt-4 whitespace-normal rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-3 text-[11px] leading-relaxed text-[#ffe0a1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
       {trialSelected
-        ? trial.disclosure
+        ? selectedDisclosure ?? trial.disclosure
         : `The ${trial.label} is only for eligible new monthly Pro subscribers. Annual Pro is ${annualPrice}/year. Apple shows exact terms before purchase.`}
     </div>
   );
