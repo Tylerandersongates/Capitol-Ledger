@@ -1,6 +1,6 @@
 # CapitolWonk Dependency Security Note — September 11, 2026
 
-Status: **current working-tree evidence, not release approval.** The dependency bundle is uncommitted and unfrozen. The September 11 audit result replaces the earlier preliminary result for this live working tree, but it has no frozen candidate SHA, exact-head CI result, matching Preview, deployment, provider-console proof, Apple sandbox proof, or signed-device evidence.
+Status: **exact committed-candidate evidence, not release approval.** Source candidate `3dbba3a260b10924dff254deed7f65a5e392c239` is committed on `codex/logo-refresh-sept10` and matches its remote. Its parent `bbe63e4` passed a clean isolated Node `22.22.3`/pnpm `9.15.9` frozen install, production/full advisory audits, the complete release-source suite, TypeScript, ESLint, and normal Prisma client generation. Exact-head CI run `34666462130` then correctly failed on four unused demo paths; `3dbba3a` removes only those paths, passes the exact strict TypeScript command and release-source suite locally, and passes [exact-head CI run `34668039916`](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34668039916). Matching Vercel deployment `6K9Xd24c4Pg4Nz1pRLorNzo6MxGb` is Ready, and anonymous Preview smoke passes on `/dashboard`, `/search?type=bills`, and `/brief`, including zero demo bill/vote results. The local Next production build reached compilation but the memory-constrained host exhausted the JavaScript heap at 512 MB; Vercel built the same SHA in 1m 32s. Provider-console proof, Apple sandbox proof, signed-device evidence, and the `jsrsasign` maintenance-risk decision remain open.
 
 ## Current result
 
@@ -11,14 +11,14 @@ The pnpm 9 dependency configuration and lockfile now force the copy of PostCSS u
 | Production graph: `pnpm run audit:prod` | **No known vulnerabilities reported** |
 | Full graph: `pnpm run audit:full` | **No known vulnerabilities reported** |
 
-These are npm advisory-database results for the live working tree on September 11, 2026. They clear the earlier preliminary two-high/two-moderate PostCSS result for this graph; they do not prove that an uncommitted graph is reproducible or otherwise release-ready. Freeze the bundle and repeat both audits with the frozen install before candidate approval.
+These are npm advisory-database results for the isolated frozen install of parent `bbe63e4` on September 11, 2026. Candidate `3dbba3a` changes only dead TypeScript helpers/imports and no dependency file; its passing exact-head CI reruns both audits on a frozen install. The results clear the earlier preliminary two-high/two-moderate PostCSS result for this graph, but do not replace the provider, sandbox, device, or owner-decision gates.
 
 ## PostCSS remediation boundary
 
 - `next@15.5.25` previously resolved its exact nested `postcss@8.4.31`, which produced the two high and two moderate findings recorded in the [September 10 audit](dependency-security-audit-2026-09-10.md).
 - The pnpm 9 override and lockfile now resolve that Next path to `postcss@8.5.25`.
 - The September 10 `f4f04de` residual-risk acceptance remains historical and candidate-specific. It is no longer the current working-tree result and does not approve the new override, lockfile, or bundle.
-- A frozen install, strict source checks, build/regression checks, exact-head CI, and matching Preview remain required to prove the override is reproducible and compatible on one exact candidate.
+- The frozen install, strict source checks, TypeScript, ESLint, audits, and matching Ready Preview now pass for `bbe63e4`. Exact-head CI is running; the local production build remains host-memory-limited and must be reconciled to the successful Vercel build before candidate approval.
 
 ## `jsrsasign@11.1.5` maintenance risk
 
@@ -42,9 +42,8 @@ These controls ensure future CI and strict-candidate runs re-query the advisory 
 
 ## Remaining release gates
 
-- commit and freeze the exact manifest/lock/source bundle;
-- complete a frozen pnpm 9 install and repeat production/full audits;
-- pass strict TypeScript, lint, readiness fixtures, production build, exact-head CI, matching Preview, and smoke;
+- preserve [successful exact-head CI run `34668039916`](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34668039916), matching Ready Vercel deployment `6K9Xd24c4Pg4Nz1pRLorNzo6MxGb`, and passing `/dashboard`, `/search?type=bills`, and `/brief` Preview smoke as candidate evidence;
+- treat the local 512 MB heap failure as a constrained-host limitation reconciled by the successful exact-SHA Vercel build, not as local build-pass evidence;
 - obtain owner acceptance of the `jsrsasign@11.1.5` maintenance risk or move to a maintained upstream path; and
 - complete the provider, App Store sandbox, Notifications V2, Team, and signed-device evidence in the [App Store sandbox QA matrix](app-store-sandbox-qa-matrix-2026-09-11.md).
 
