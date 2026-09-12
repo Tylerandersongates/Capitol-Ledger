@@ -89,6 +89,8 @@ function main() {
   const nativeProject = read("ios/CapitolLedgerNative/CapitolLedgerNative.xcodeproj/project.pbxproj");
   const deletionService = read("lib/account-deletion.ts");
   const privacyPage = read("app/privacy/page.tsx");
+  const privacyRequestPage = read("app/privacy/request/page.tsx");
+  const supportPage = read("app/support/page.tsx");
   const privacyCorrection = read("docs/app-store-privacy-correction-2026-09-10.md");
 
   record(packageJson.includes('"@sentry/nextjs"'), "Sentry Next.js SDK is installed");
@@ -115,9 +117,14 @@ function main() {
       privacyPage.includes("Messages to officials") &&
       privacyPage.includes("Service providers and recipients") &&
       privacyPage.includes("Retention and deletion") &&
-      privacyPage.includes("withdraw consent") &&
+      privacyPage.includes("consent withdrawal") &&
+      privacyPage.includes('href="/privacy/request"') &&
+      privacyPage.includes("does not currently promise deletion of one individual Sentry feedback item") &&
+      privacyRequestPage.includes("does not send the request to Sentry") &&
+      supportPage.includes('href: "/privacy/request"') &&
+      !supportPage.includes("feedback?source=privacy-request") &&
       privacyPage.includes("YouTube"),
-    "Prepared public privacy copy includes current disclosure sections"
+    "Public privacy copy and first-party rights routing include current disclosure sections"
   );
   record(
     ["Provisional Answer Matrix", "Emails or Text Messages", "Device ID", "Crash Data", "Performance Data", "Other Diagnostic Data", "App Functionality", "neither is deployed, applied, or published", "does not authorize"].every((phrase) =>

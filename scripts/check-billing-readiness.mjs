@@ -271,7 +271,7 @@ function checkAppStorePersistenceFoundation() {
   const state = readIfPresent("lib/billing/app-store-state.ts");
   const schemaWired =
     schema.includes("model AppStoreSubscriptionState") &&
-    schema.includes("observationVersion    BigInt?") &&
+    /observationVersion\s+BigInt\?/.test(schema) &&
     schema.includes("model AppStoreNotificationReceipt") &&
     migration.includes('CREATE SEQUENCE "AppStoreObservationSequence"') &&
     migration.includes('"observationVersion" BIGINT') &&

@@ -67,9 +67,10 @@ async function checkDisabledApi() {
       !disabledSupportMarkup.includes('/settings#delete-account'),
       "support must not expose the deletion entry point while disabled"
     );
+    assert.ok(disabledSupportMarkup.includes('/privacy/request'), "support should link the dedicated privacy-request path");
     assert.ok(
-      disabledSupportMarkup.includes('/feedback?source=privacy-request'),
-      "support should keep its non-destructive privacy-request path while deletion is disabled"
+      !disabledSupportMarkup.includes('/feedback?source=privacy-request'),
+      "support must not route privacy-rights requests through Sentry feedback"
     );
 
     process.env.ACCOUNT_DELETION_ENABLED = "true";

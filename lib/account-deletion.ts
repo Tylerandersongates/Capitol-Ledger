@@ -77,6 +77,7 @@ type RemainingAccountRows = {
   follows: number;
   issueInterests: number;
   passwordResetTokens: number;
+  privacyRequests: number;
   readAlerts: number;
   savedAlerts: number;
   teamWorkspaces: number;
@@ -492,7 +493,8 @@ async function assertAccountRowsDeleted(
         (SELECT COUNT(*)::int FROM "WeeklyBriefEdition" WHERE "userId" = $1) AS "weeklyBriefEditions",
         (SELECT COUNT(*)::int FROM "UpdateEvent" WHERE "userId" = $1) AS "updateEvents",
         (SELECT COUNT(*)::int FROM "TeamWorkspace" WHERE "ownerUserId" = $1) AS "teamWorkspaces",
-        (SELECT COUNT(*)::int FROM "AccountDeletionRequest" WHERE "userId" = $1) AS "accountDeletionRequests"
+        (SELECT COUNT(*)::int FROM "AccountDeletionRequest" WHERE "userId" = $1) AS "accountDeletionRequests",
+        (SELECT COUNT(*)::int FROM "PrivacyRequest" WHERE "userId" = $1) AS "privacyRequests"
     `,
     userId
   );

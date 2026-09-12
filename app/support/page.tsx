@@ -31,8 +31,8 @@ const supportOptions = [
   },
   {
     title: "Privacy requests",
-    body: "For data correction, export, or saved-data questions, submit a report with \"Privacy request\" in the title.",
-    href: "/feedback?source=privacy-request",
+    body: "Use the dedicated first-party path for access, export, correction, deletion assistance, consent withdrawal, or saved-data questions.",
+    href: "/privacy/request",
     cta: "Start request"
   }
 ];

@@ -38,7 +38,7 @@ const policySections: Array<{
   {
     title: "Feedback and support",
     body:
-      "A report you choose to submit can include its title and message, the current app page, technical context, and an optional contact email. Because those details are sent together, a voluntary report may be linked to you when you provide an email or identifying content."
+      "A product or bug report you choose to submit can include its title and message, the current app page, technical context, and an optional contact email. Because those details are sent together, a voluntary report may be linked to you when you provide an email or identifying content. Product feedback is not the privacy-rights request channel."
   },
   {
     title: "Messages to officials",
@@ -69,12 +69,12 @@ const policySections: Array<{
   {
     title: "Retention and deletion",
     body:
-      "Account, profile, saved-item, Team, preference, official-contact history, local subscription entitlement, and product-activity records are kept while your account is active. Permanent account deletion is started from Settings > Your data and completed during the confirmed in-app action. It removes the account and linked records, signs out every session, and clears CapitolWonk data on the current device. CapitolWonk retains a non-identifying deletion-completion record and, only when external cleanup is needed, a limited retry record containing the minimum provider or Team-member subscription reference. That retry record is retained only while cleanup remains pending and is erased after cleanup succeeds. An active referenced legacy Stripe plan is queued not to renew, and its CapitolWonk account metadata is detached where Stripe permits; an already-ended or missing plan requires no renewal action and may no longer permit metadata changes. CapitolWonk does not otherwise retain an account record after deletion unless a specific law requires a particular record, in which case it is limited to that legal purpose and period. Apple and Stripe may retain billing records under their own terms, and an email provider or official may independently retain a delivered message. Separately submitted Sentry feedback or diagnostics follow provider retention settings because they are not linked to your CapitolWonk account ID by default; use Support if you included identifying details and want a specific report removed."
+      "Account, profile, saved-item, Team, preference, official-contact history, local subscription entitlement, and product-activity records are kept while your account is active. When the protected deletion feature is enabled, permanent account deletion is started from Settings > Your data and completed during the confirmed in-app action. It removes the account and linked records, signs out every session, and clears CapitolWonk data on the current device. When that feature is unavailable, use the Privacy requests page for the currently available assistance path. CapitolWonk retains a non-identifying deletion-completion record and, only when external cleanup is needed, a limited retry record containing the minimum provider or Team-member subscription reference. That retry record is retained only while cleanup remains pending and is erased after cleanup succeeds. An active referenced legacy Stripe plan is queued not to renew, and its CapitolWonk account metadata is detached where Stripe permits; an already-ended or missing plan requires no renewal action and may no longer permit metadata changes. CapitolWonk does not otherwise retain an account record after deletion unless a specific law requires a particular record, in which case it is limited to that legal purpose and period. Apple and Stripe may retain billing records under their own terms, and an email provider or official may independently retain a delivered message. Separately submitted Sentry feedback and diagnostics follow configured provider retention. CapitolWonk does not currently promise deletion of one individual Sentry feedback item."
   },
   {
     title: "Your choices",
     body:
-      "You can avoid optional current-location matching, feedback, official messaging, and video playback; revoke location access in iOS Settings; and change district, interest, notification, and plan settings in the app. Use Support to withdraw consent for optional processing or request access, export, correction, deletion, or another privacy action."
+      "You can avoid optional current-location matching, product feedback, official messaging, and video playback; revoke location access in iOS Settings; and change district, interest, notification, and plan settings in the app. Use Privacy requests to see the currently available first-party or verified-email path for access, export, correction, deletion assistance, consent withdrawal, or another privacy action."
   }
 ];
 
@@ -100,7 +100,7 @@ export default function PrivacyPage() {
         <div className="text-[18px] uppercase tracking-wide text-white/54">Privacy</div>
         <h1 className="mt-1 text-[28px] font-medium leading-tight text-white">{publicBrand.privacyTitle}</h1>
         <p className="mt-4 max-w-[25rem] text-[16px] leading-6 text-white/58">
-          Policy reviewed September 10, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, messages, diagnostics, video playback, and Apple purchases.
+          Policy reviewed September 12, 2026. This page summarizes how {publicBrand.name} handles data for accounts, civic tracking, messages, diagnostics, video playback, and Apple purchases.
         </p>
       </section>
 
@@ -140,14 +140,19 @@ export default function PrivacyPage() {
               <h2 className="text-[20px] font-medium leading-tight text-white">Privacy requests</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
                 {accountDeletionEnabled
-                  ? "Permanently delete your account and linked data immediately in Settings. Use Support for data correction, export, consent withdrawal, removal of a separately submitted report, or help with saved account data."
-                  : "Use Support for data correction, export, consent withdrawal, removal of a separately submitted report, account-deletion assistance, or help with saved account data."}
+                  ? "Permanently delete your account and linked data immediately in Settings. Use the dedicated privacy-request path for access, export, correction, consent withdrawal, or help with saved account data."
+                  : "Use the dedicated privacy-request path for access, export, correction, consent withdrawal, account-deletion assistance, or help with saved account data."}
               </p>
-              {accountDeletionEnabled ? (
-                <Link href="/settings#delete-account" className={`${mobileViewAllClass} mt-4 inline-flex`}>
-                  Delete account
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link href="/privacy/request" className={mobileViewAllClass}>
+                  Start request
                 </Link>
-              ) : null}
+                {accountDeletionEnabled ? (
+                  <Link href="/settings#delete-account" className={mobileViewAllClass}>
+                    Delete account
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         </MobileCard>

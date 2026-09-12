@@ -11,7 +11,6 @@ type SubmissionState = "idle" | "submitting" | "sent" | "error";
 const sourceLabels: Record<string, string> = {
   beta: "Live app testing",
   "live-testing": "Live app testing",
-  "privacy-request": "Privacy request",
   support: "Support",
   "team-custom-plan": "Team custom plan"
 };
@@ -172,6 +171,7 @@ function FieldLabel({ label }: { label: string }) {
 }
 
 function normalizeSource(value: string) {
+  if (value === "privacy-request") return "support";
   return value === "round-3" ? "live-testing" : value;
 }
 
