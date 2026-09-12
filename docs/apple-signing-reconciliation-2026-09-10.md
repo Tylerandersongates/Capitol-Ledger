@@ -2,11 +2,15 @@
 
 ## Decision
 
-**T04 remains active and blocked pending Apple Developer Support guidance.** The current read-only pass confirms that macOS still exposes zero usable code-signing identities. One current Xcode-managed App Store provisioning profile exists and matches the project, but a profile alone cannot sign without a usable matching certificate/private-key identity.
+**T04 remains active and blocked pending Apple Developer Support guidance as of September 12.** The current read-only signing evidence still records zero usable code-signing identities. One current Xcode-managed App Store provisioning profile exists and matches the project, but a profile alone cannot sign without a usable matching certificate/private-key identity.
 
 Tyler confirmed that Apple had not replied. The existing open Support case was located in the authenticated Apple Developer portal. After reviewing the exact sanitized correction, Tyler explicitly approved adding the private case ID and sending the message on that existing case. Apple displayed its receipt confirmation. The case ID and all Apple account, team, bundle, certificate, profile and device identifiers are intentionally omitted from repository documentation.
 
 No certificate, CSR, private key, Keychain, profile, Xcode signing setting, Apple account, device trust/pairing, archive, upload or distribution state changed.
+
+## September 12 Reply Recheck
+
+The authenticated mailbox was inspected read-only. The newest Apple Developer Support message remains the September 10 receipt acknowledgment; no later substantive guidance was present. No message was sent, no case was created or changed, and no private case/account value was copied into this repository.
 
 ## Current read-only evidence
 
@@ -39,7 +43,7 @@ Until Apple replies and Tyler approves one exact action, do not:
 
 ## Exact next action
 
-Wait for Apple Developer Support to reply on the existing case. When a response arrives, inspect it read-only, record only a redacted technical summary, reconcile it with the zero-identity/current-profile evidence, and present Tyler one narrowly scoped action for explicit approval. If no response arrives in the planned window, present a schedule impact and an approval-gated escalation option; do not create a duplicate case automatically.
+Take no signing or provisioning action now. Wait for Apple Developer Support to reply on the existing case. When a response arrives, inspect it read-only, record only a redacted technical summary, reconcile it with the zero-identity/current-profile evidence, and present Tyler one narrowly scoped action for explicit approval. If no substantive response exists at the **September 17 slip trigger**, prepare one sanitized same-case escalation plus its effect on the September 25 readiness checkpoint and October 19 submission target for Tyler's explicit approval. Do not send it or create a duplicate case automatically.
 
 ## Workspace-integrity resolution
 
