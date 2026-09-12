@@ -2,7 +2,6 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
-import { mergeMemberRosterWithFallback } from "@/lib/congress/member-roster";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -1003,17 +1002,6 @@ export function getVote(id: string) {
   return votes.find((vote) => vote.id === id);
 }
 
-function getDemoVoteDetailData(voteId: string): VoteDetailData | null {
-  const vote = getVote(voteId);
-  if (!vote) return null;
-
-  return {
-    bill: vote.billId ? getBill(vote.billId) : undefined,
-    memberPositions: getVoteMemberPositions(vote.id) as VoteMemberPositionRecord[],
-    vote
-  };
-}
-
 async function getDatabaseVoteDetailData(voteId: string): Promise<VoteDetailData | null> {
   if (!hasDatabaseUrl()) return null;
 
@@ -1097,20 +1085,6 @@ export function getMemberVotes(bioguideId: string) {
 
 export function getMemberCaucusMemberships(bioguideId: string) {
   return memberCaucusMemberships[bioguideId] ?? [];
-}
-
-function getDemoMemberDetailData(bioguideId: string): MemberDetailData | null {
-  const member = getMember(bioguideId);
-  if (!member) return null;
-
-  return {
-    chamberMembers: getAllMembers().filter((candidate) => candidate.chamber === member.chamber),
-    caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
-    cosponsoredBills: getCosponsoredBills(member.bioguideId),
-    member,
-    memberVotes: selectMemberVoteRecords([], getMemberVotes(member.bioguideId) as MemberVoteRecord[], 20),
-    sponsoredBills: getSponsoredBills(member.bioguideId)
-  };
 }
 
 async function getLiveMemberDetailData(bioguideId: string): Promise<MemberDetailData | null> {
@@ -1620,24 +1594,6 @@ export function getBillSourceMatches(billId: string) {
     videos: getBillVideos(billId),
     votes: getBillVotes(billId)
   });
-}
-
-function getDemoBillDetailData(billId: string): BillDetailData | null {
-  const bill = getBill(billId);
-  if (!bill) return null;
-
-  const billVotes = getBillVotes(bill.id);
-
-  return {
-    bill,
-    billActions: buildBillActionsForDetail(bill, billVotes),
-    billVideos: getBillVideos(bill.id),
-    billVotes,
-    cosponsors: getBillCosponsors(bill.id),
-    sourceMatches: getBillSourceMatches(bill.id),
-    sponsor: getBillSponsor(bill),
-    voteMemberPositionsByVoteId: getDemoVoteMemberPositionsByVoteId(billVotes)
-  };
 }
 
 async function fetchLiveBillSponsor(bill: Bill, fallback?: Member) {
