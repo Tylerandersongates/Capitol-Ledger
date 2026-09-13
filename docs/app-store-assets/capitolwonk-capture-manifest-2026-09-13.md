@@ -16,9 +16,9 @@ Preserve these historical files. Do not delete, overwrite, upload, or present th
 
 | Field | Required value |
 | --- | --- |
-| Exact source SHA | Eventual separately approved release SHA; source candidate `92b61b9` and branch/documentation head `0c09abc` are current non-production evidence only |
+| Exact source SHA | Eventual separately approved release SHA; source candidate `92b61b9` and verified predecessor checkpoint `0c09abc` are non-production evidence only |
 | Production/base SHA | `7ec68bcf142d6defe865c12959b0f9a84fce72d5`; it is not the candidate source for new captures |
-| Current branch verification | Open PR #8 head `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa`; exact-head CI #321 succeeded; matching Vercel Preview deployment `7d1i8rinVS8iUhUTPUyba4DMwUfy` is Ready |
+| Branch verification | Verified predecessor PR checkpoint `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa`; exact-head CI #321 succeeded and matching Vercel Preview deployment `7d1i8rinVS8iUhUTPUyba4DMwUfy` is Ready. Verify the documentation-only packet descendant at its own live SHA before capture. |
 | Build/archive identity | Exact build/archive reference; omit protected identifiers from tracked evidence |
 | Capture surface | Simulator, physical device, or local browser; never imply physical-device proof when unavailable |
 | Route and UI state | Exact route plus a short reproducible state description |

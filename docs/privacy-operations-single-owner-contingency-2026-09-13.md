@@ -8,7 +8,7 @@ This is an engineering and operations packet, not legal advice. A legal/owner re
 
 | Item | Current evidence |
 | --- | --- |
-| Source candidate | `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86`; isolated and unmerged in open PR #8 at branch/documentation head `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa` |
+| Source candidate | `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86`; isolated and unmerged in open PR #8; `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa` is the verified predecessor checkpoint, and the documentation-only packet descendant requires its own live-head verification |
 | Current branch evidence | Exact-head [CI #321](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34780116093) succeeded and matching Vercel Preview deployment `7d1i8rinVS8iUhUTPUyba4DMwUfy` is Ready |
 | Production source | `7ec68bcf142d6defe865c12959b0f9a84fce72d5` |
 | First-party activation | Exact opt-in `PRIVACY_REQUEST_INTAKE_ENABLED=true`; blank, missing, `false`, or any other value fails closed before authentication, body parsing, or database access |
