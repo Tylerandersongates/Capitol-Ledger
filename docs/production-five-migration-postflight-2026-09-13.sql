@@ -53,32 +53,35 @@ BEGIN
   FROM "_prisma_migrations"
   WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL;
 
+  -- Preserve the exact resolved-retry history: the successful
+  -- 20260618162000 row has applied_steps_count 0, while the other historical
+  -- successes and all five migrations applied by this run must each have 1.
   SELECT count(*) INTO matched_successful_migrations
   FROM "_prisma_migrations" actual
   JOIN (VALUES
-    ('20260521150000_initial_capitol_ledger', 'a5ddc29c4dd2b8c19035b575816e65ddbd24929f467a15fb448b8a3caff95d20'),
-    ('20260521161000_weekly_brief_delivery_history', '27332d98cec4313aee82ccb1c6fc7e82998bed345985b52a801f5d7efdfac481'),
-    ('20260522103000_congress_committees_source_links', 'fcad79cfb1f207859abcd45dd7da1a78a7f4149b3c5a37380597ba64d3113523'),
-    ('20260527103000_beta_feedback', '6b55eb641022ef73ea79e7e2a0b4eeca49671ecfd63af75252476c3b392eba71'),
-    ('20260527104500_beta_feedback_release_decision', 'b68d67d9d20326fec9fb7ef8e1c5c5ddda239ef585524c0ae6a8ddb9c48b12f0'),
-    ('20260528110000_user_first_last_name', 'a8fd86043b2d662509bb6cb49d55f83f0fe78101271c9ef9718e1a88cdb78da4'),
-    ('20260614114500_account_subscription_seat_count', '4fea7f8b483d56303115353d18da7dedb4d424f645ca574c5c029e83c8ba9563'),
-    ('20260614143000_team_workspace_phase_2', '2b894a446a0d905952c1a17760090b4ef964266cd83873e0ed309364ba8e421a'),
-    ('20260618162000_account_gamification_streak_date', 'f0687e13bab49ffd6046e0e9606b661c43ec74c517925fa98013702e7ff44af6'),
-    ('20260718154000_account_deletion_requests', '2bce52b4c8c6f77b8ec83a2bbbe7afb2c5da4dd9036f305fa974bd08e9ed4ec1'),
-    ('20260728193000_vote_session_identity', 'cf1c98bb34789cd873af51c0990fc98d77ab13eca59301735c3589b9329c437b'),
-    ('20260903120000_weekly_brief_daily_editions', 'ca425a4924e5562edcb29d8411d4004356260487d3f2a72c1e97d004d775b53b'),
-    ('20260910150000_account_deletion_integrity', '0ad52fea6bc1539b0f10fefd9efd5d512093c3da69c09a6c530452dc9327d64b'),
-    ('20260910151000_account_deletion_cleanup_outbox', 'dc438284e2ba8afaf6f17f512b2e67a90b9b1d6cbc3c57510094532700e348b3'),
-    ('20260910152000_team_subscription_pause_workspace_integrity', '08a1501d97991b3c7e6b82294dc648787c6fe16d99cca49451a6dff306b616a4'),
-    ('20260911110000_app_store_server_state', '79f3b5d15fe0f2517e12de3b90488b9f863a0367070629cd56474bb06e5a64b8'),
-    ('20260912120000_privacy_request_intake', '3ccb24f3742c58c7dbd84a4c7e4b665472c585eccf042aa16888e943cdc3e1b5')
-  ) expected(migration_name, checksum)
+    ('20260521150000_initial_capitol_ledger', 'a5ddc29c4dd2b8c19035b575816e65ddbd24929f467a15fb448b8a3caff95d20', 1),
+    ('20260521161000_weekly_brief_delivery_history', '27332d98cec4313aee82ccb1c6fc7e82998bed345985b52a801f5d7efdfac481', 1),
+    ('20260522103000_congress_committees_source_links', 'fcad79cfb1f207859abcd45dd7da1a78a7f4149b3c5a37380597ba64d3113523', 1),
+    ('20260527103000_beta_feedback', '6b55eb641022ef73ea79e7e2a0b4eeca49671ecfd63af75252476c3b392eba71', 1),
+    ('20260527104500_beta_feedback_release_decision', 'b68d67d9d20326fec9fb7ef8e1c5c5ddda239ef585524c0ae6a8ddb9c48b12f0', 1),
+    ('20260528110000_user_first_last_name', 'a8fd86043b2d662509bb6cb49d55f83f0fe78101271c9ef9718e1a88cdb78da4', 1),
+    ('20260614114500_account_subscription_seat_count', '4fea7f8b483d56303115353d18da7dedb4d424f645ca574c5c029e83c8ba9563', 1),
+    ('20260614143000_team_workspace_phase_2', '2b894a446a0d905952c1a17760090b4ef964266cd83873e0ed309364ba8e421a', 1),
+    ('20260618162000_account_gamification_streak_date', 'f0687e13bab49ffd6046e0e9606b661c43ec74c517925fa98013702e7ff44af6', 0),
+    ('20260718154000_account_deletion_requests', '2bce52b4c8c6f77b8ec83a2bbbe7afb2c5da4dd9036f305fa974bd08e9ed4ec1', 1),
+    ('20260728193000_vote_session_identity', 'cf1c98bb34789cd873af51c0990fc98d77ab13eca59301735c3589b9329c437b', 1),
+    ('20260903120000_weekly_brief_daily_editions', 'ca425a4924e5562edcb29d8411d4004356260487d3f2a72c1e97d004d775b53b', 1),
+    ('20260910150000_account_deletion_integrity', '0ad52fea6bc1539b0f10fefd9efd5d512093c3da69c09a6c530452dc9327d64b', 1),
+    ('20260910151000_account_deletion_cleanup_outbox', 'dc438284e2ba8afaf6f17f512b2e67a90b9b1d6cbc3c57510094532700e348b3', 1),
+    ('20260910152000_team_subscription_pause_workspace_integrity', '08a1501d97991b3c7e6b82294dc648787c6fe16d99cca49451a6dff306b616a4', 1),
+    ('20260911110000_app_store_server_state', '79f3b5d15fe0f2517e12de3b90488b9f863a0367070629cd56474bb06e5a64b8', 1),
+    ('20260912120000_privacy_request_intake', '3ccb24f3742c58c7dbd84a4c7e4b665472c585eccf042aa16888e943cdc3e1b5', 1)
+  ) expected(migration_name, checksum, applied_steps_count)
     ON actual."migration_name" = expected.migration_name
    AND actual."checksum" = expected.checksum
+   AND actual."applied_steps_count" = expected.applied_steps_count
   WHERE actual."finished_at" IS NOT NULL
-    AND actual."rolled_back_at" IS NULL
-    AND actual."applied_steps_count" = 1;
+    AND actual."rolled_back_at" IS NULL;
 
   IF successful_migrations <> 17
      OR distinct_successful_migrations <> 17
@@ -93,7 +96,11 @@ BEGIN
     SELECT 1 FROM "_prisma_migrations"
     WHERE "finished_at" IS NULL
       AND "rolled_back_at" IS NOT NULL
-      AND "migration_name" <> '20260618162000_account_gamification_streak_date'
+      AND (
+        "migration_name" <> '20260618162000_account_gamification_streak_date'
+        OR "checksum" <> 'f0687e13bab49ffd6046e0e9606b661c43ec74c517925fa98013702e7ff44af6'
+        OR "applied_steps_count" <> 0
+      )
   ) OR (SELECT count(*) FROM "_prisma_migrations") <> 18 THEN
     RAISE EXCEPTION 'STOP: resolved rollback/history-row postflight differs';
   END IF;
