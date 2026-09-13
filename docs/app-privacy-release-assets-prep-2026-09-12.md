@@ -39,7 +39,7 @@ Under the current no-player assumptions, the provisional negative classification
 
 ## Public-Copy Corrections Required
 
-The candidate policy is not ready to publish:
+The candidate policy is not ready to publish, although its two historical copy blockers are corrected in source:
 
 1. Source candidate `92b61b9` now gates the deletion wording: with first-party intake disabled, the policy points people to `/privacy/request` and its available configured assistance path rather than promising that deletion starts and completes in-app. Exact-candidate runtime verification and coordinated policy/intake activation remain required before publication.
 2. Source candidate `92b61b9` also narrows the Sentry wording so it no longer promises deletion of an individual feedback report. Provider-level retention/removal evidence is still incomplete, so do not broaden that statement without authoritative provider evidence and a workable operating procedure.
@@ -55,6 +55,7 @@ The approved local copy changes are frozen in source candidate `92b61b9` and hav
 - Vercel Pro with Observability Plus exposes a 30-day runtime-log window; no project drains or project webhooks were present, but sanitized runtime evidence remains missing and the team-global webhook list was not visible to the current role.
 - Sentry project scrubbers/default scrubbers/IP prevention and the recursive `$user.geo.**` rule are enabled on both projects. Organization-wide 2FA enforcement, Enhanced Privacy, default data scrubber, and default IP prevention are off; shared issues are enabled. Minidump storage is disabled. No current event sample proves actual retained fields.
 - Resend Pro documents 30-day email/log retention and seven-day backups. `capitolwonk.com` is verified for sending and the existing Vercel Resend secret was preserved; no test message was sent and no Resend webhook is configured.
+- The [September 13 static provider/logging audit](provider-logging-static-audit-2026-09-13.md) closes only narrow source-level minimization claims and identifies two P1 fixes before affected-path activation: make Weekly Brief task output aggregate-only and prevent legacy Stripe response bodies from reaching clients or Sentry. Any implementation changes the frozen source candidate and requires refreeze, full verification, and packet reconciliation.
 - Vercel Production and Preview now configure the auth sender, Weekly Brief sender, and privacy-contact alias. Team invites intentionally inherit the auth sender. This is configuration evidence, not end-to-end delivery, retention, webhook, or removal proof.
 
 ## Existing Asset Audit

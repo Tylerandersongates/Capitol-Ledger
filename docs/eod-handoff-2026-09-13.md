@@ -66,7 +66,7 @@ Tyler reports that Apple Support still has not replied and plans to call Apple o
 
 ## Schedule
 
-- September 13–14: Neon cleanup and candidate evidence are complete. Pull forward the five-migration packet and privacy-operations work while Apple remains external.
+- September 13–14: Neon cleanup and candidate evidence are complete. The five-migration packet and privacy-operations draft are prepared; continue packet review, local static evidence, privacy decisions, and release-asset preparation while Apple remains external.
 - September 14: Tyler plans to call Apple Support. A useful answer can reopen T04; no answer or ambiguous guidance leaves the freeze intact.
 - September 15–21: execute only the Apple-supported signing step after exact review, then progress toward a signed candidate and native/device checks. The September 17 no-reply trigger remains a fallback if the call does not produce substantive guidance.
 - September 22–29: target native monitoring, device QA, Apple/Team sandbox proof, and the September 25 verifier decision when prerequisites clear.
