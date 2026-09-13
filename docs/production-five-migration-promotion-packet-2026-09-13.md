@@ -1,6 +1,6 @@
 # CapitolWonk Five-Migration Production Promotion Packet — September 13, 2026
 
-Status: **documentation and read-only verification preparation only; production migration is not approved and is not ready for approval.** Exact source candidate `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86` remains isolated and unmerged on `codex/sept12-privacy-neon-candidate`. September 13 handoff checkpoint `c96662a12d59ee033988d97b4454c0cf36c2d78e` is synchronized in [PR #8](https://github.com/Tylerandersongates/Capitol-Ledger/pull/8); [CI #319](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34777993751) passed and the matching Vercel Preview completed successfully. Production remains `main` at `7ec68bcf142d6defe865c12959b0f9a84fce72d5`.
+Status: **documentation and read-only verification preparation only; production migration is not approved and is not ready for approval.** Exact source candidate `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86` remains isolated and unmerged on `codex/sept12-privacy-neon-candidate`. September 13 preparation-packet checkpoint `69040c51e6b450f004bb93154757e06817425228` is synchronized in [PR #8](https://github.com/Tylerandersongates/Capitol-Ledger/pull/8); [CI #320](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34779661993) passed and the matching [Vercel Preview](https://vercel.com/capitolwonkce/project-qosv1/58bEqizjwAtXyPrpzDFq5JCzvYvQ) reached Ready. Production remains `main` at `7ec68bcf142d6defe865c12959b0f9a84fce72d5`.
 
 This packet supersedes every older four-migration instruction. Approval of an isolated drill, production preflight, production migration, source deployment, scheduler configuration, gate activation, destructive QA, App Store action, or release is separate. Nothing in this document authorizes any of them.
 
@@ -18,7 +18,7 @@ This packet supersedes every older four-migration instruction. Approval of an is
 | Repository | `Tylerandersongates/Capitol-Ledger` |
 | Candidate branch | `codex/sept12-privacy-neon-candidate` |
 | Exact source candidate | `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86` |
-| Verified handoff checkpoint | `c96662a12d59ee033988d97b4454c0cf36c2d78e` |
+| Verified preparation-packet checkpoint | `69040c51e6b450f004bb93154757e06817425228` |
 | Production source | `7ec68bcf142d6defe865c12959b0f9a84fce72d5` |
 | Package manager | pnpm `9.15.9` |
 | Prisma runtime in locked graph | `5.22.0` |
