@@ -125,12 +125,9 @@ For a pre-commit incident, preserve the account, stop repeated attempts, capture
 
 ## Backup/PITR Tombstone Gate
 
-Before launch, approve one recoverability design and test it. The [September 11 backup/PITR and provider-retention checklist](backup-pitr-provider-retention-evidence-2026-09-11.md) recommends the constrained restore floor as the minimum v1 design, but the recommendation is not approval:
+Before launch, test the approved recoverability design. Tyler approved **Option A, the constrained restore floor**, as the minimum v1 design on September 12; the [September 11 backup/PITR and provider-retention checklist](backup-pitr-provider-retention-evidence-2026-09-11.md) is the controlling procedure. Phase 1 and automatic temporary-resource cleanup are complete, while restore-drill phases 2–5 remain unapproved and unperformed. Under Option A, public traffic stays disabled, the newest trustworthy deletion watermark is established read-only, every earlier restore point is rejected, and the candidate restore is validated in isolation before any separately approved traffic switch.
 
-- retain a tightly access-controlled deletion ledger outside the database restore boundary and replay it after restoring an older snapshot; or
-- constrain restoration so traffic cannot resume from a point before the last verified deletion without first applying a complete deletion ledger.
-
-The current deidentified completion audit cannot identify which account to delete after restoration. If a keyed/pseudonymous tombstone is introduced to make replay possible, document its purpose, access, retention, deletion, and App Privacy impact before deployment. A restore drill must prove that a deleted disposable account cannot reappear to users.
+The current deidentified completion audit can establish a time floor while the newest state remains trustworthy, but it cannot identify accounts for replay after an older restore. **Option B, an external keyed/pseudonymous deletion ledger, is not approved and must not be improvised.** If that capability is ever required, separately approve and document its provider, key/access model, atomicity, retention, deletion, recovery behavior, and App Privacy impact before implementation. The approved Option A drill must prove that a deleted disposable account cannot reappear to users.
 
 ## Evidence Packet
 

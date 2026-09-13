@@ -8,7 +8,7 @@ Do not begin signed-device execution until all of these are true:
 
 - Apple Support has resolved T04 and Tyler has approved the exact signing action.
 - The tested build is tied to one frozen commit and matching CI/Preview evidence.
-- The four pending production migrations are reconciled in their exact order; any deployment or migration has separate action-time approval.
+- The exact five pending candidate-to-production migrations are reconciled in the [September 13 promotion packet](production-five-migration-promotion-packet-2026-09-13.md); any deployment or migration has separate action-time approval.
 - The protected App Store Server API configuration, numeric Apple app ID, bundle ID, token namespace, sandbox products, and tester accounts are available through approved channels.
 - A redacted App Store Connect product-configuration screenshot for `com.capitolwonk.pro.monthly` shows the configured 7-day introductory offer, standard `$4.99/month` renewal price, territory/currency, and current configuration status. This proves product configuration only; it does not prove that a particular subscriber is eligible.
 - Two separate sandbox tester aliases are assigned: one fresh tester with no known history in the subscription group and one previously subscribed tester expected to be ineligible. These assignments establish the test setup only; Apple's purchase sheet remains the authoritative eligibility result. Do not infer eligibility from CapitolWonk account state.
