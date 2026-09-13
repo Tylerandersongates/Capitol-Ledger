@@ -173,7 +173,7 @@ Never place a DSN, password, token, cookie, user/account/email value, row payloa
 ## Separate Later Gates
 
 - Batch B: matching default-off source deployment after verifier/security, recovery, and privacy-operations prerequisites.
-- Persistent restore-control creation, destructive synthetic deletion, historical comparison branches/views, and temporary-resource cleanup are separately approved steps. The completed compatibility fixture was temporary and is not a persistent restore control.
+- Persistent restore-control creation is complete under its separate approval. Destructive synthetic deletion, historical comparison branches/views, and temporary-resource cleanup remain separately approved steps. The completed compatibility fixture was temporary and is not a persistent restore control.
 - The production compatibility sequence—minimal source deployment or legacy checkout/webhook quiescence plus delayed-event reconciliation—is a separate decision before Batch A.
 - Batch C: cleanup secret, scheduler, and no-payload monitoring.
 - Batch D: non-destructive live schema/runtime verification.
