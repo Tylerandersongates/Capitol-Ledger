@@ -70,7 +70,7 @@
     "youtube-statements:check": "node scripts/check-youtube-bill-statements.mjs",
     "feedback:check": "node scripts/check-feedback-readiness.mjs",
     "privacy-retention:check": "node --import tsx scripts/check-privacy-retention-fixtures.ts",
-    "privacy-request:check": "node --import tsx scripts/check-privacy-request-intake-fixtures.ts && node --import tsx scripts/check-privacy-request-monitor-fixtures.ts && node scripts/check-privacy-request-intake-readiness.mjs",
+    "privacy-request:check": "node --import tsx scripts/check-privacy-request-intake-fixtures.ts && node --import tsx scripts/check-privacy-request-monitor-fixtures.ts && node scripts/check-privacy-request-intake-readiness.mjs && node scripts/check-privacy-operations-policy.mjs",
     "privacy-request-monitor:read": "node --import tsx scripts/read-privacy-request-monitor.ts",
     "local-preview:check": "node scripts/check-local-preview-runtime.mjs",
     "congress:check": "node scripts/check-congress-readiness.mjs",
