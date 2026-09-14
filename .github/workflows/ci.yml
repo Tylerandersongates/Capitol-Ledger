@@ -63,5 +63,8 @@ jobs:
       - name: Release source safeguards
         run: pnpm run release-source:check
 
+      - name: Pre-migration Stripe compatibility
+        run: pnpm run pre-migration-stripe-compatibility:check
+
       - name: Build
         run: pnpm run build
