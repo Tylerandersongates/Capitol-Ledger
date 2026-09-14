@@ -89,7 +89,7 @@ Keep only the minimum fields:
 | Received time | UTC |
 | Machine receipt | Boolean/time; never label it human acknowledgement |
 | Human acknowledgement | Nullable UTC time plus operator |
-| Identity state | `intake_identity`, `reauthenticated`, `email_control`, `escalation_required`, or `not_applicable`; the final vocabulary needs owner review |
+| Identity state | `intake_identity`, `reauthenticated`, `email_control`, `escalation_required`, or `not_applicable`; the September 14 owner policy and implementation contract finalize this closed vocabulary |
 | Workflow status | Map to `new`, `reviewing`, or `resolved` |
 | Source boundaries checked | Boolean/category checklist only; no export payload or message body |
 | Provider/legal exception | Category and owner only; do not paste provider payloads or legal identity documents |

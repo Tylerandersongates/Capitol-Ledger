@@ -24,11 +24,65 @@ assert.equal(policy.reviewCadence.internalHumanAcknowledgementTargetBusinessDays
 assert.equal(policy.reviewCadence.internalCasePlanTargetBusinessDays, 5);
 assert.equal(policy.reviewCadence.publicUniversalDeadline, null);
 
-assert.equal(policy.register.currentState, "not_implemented");
+assert.equal(
+  policy.register.currentState,
+  "source_implemented_default_off_synthetic_validation_passed"
+);
+assert.equal(policy.register.productionMigrationState, "source_only_not_applied");
+assert.equal(policy.register.runtimeSurface, "server_only_no_public_route");
 assert.equal(policy.register.syntheticBoundary, "ephemeral_isolated_postgresql_with_synthetic_identities_only");
 for (const prohibitedField of ["passwords", "government_identity_documents", "raw_mailbox_bodies", "export_payloads"]) {
   assert.ok(policy.register.prohibitedData.includes(prohibitedField));
 }
+assert.deepEqual(policy.register.vocabulary.lanes, ["first_party", "mailbox"]);
+assert.deepEqual(policy.register.vocabulary.operatorRoles, ["privacy_owner"]);
+assert.deepEqual(policy.register.vocabulary.requestTypes, [
+  "access_summary",
+  "data_export",
+  "correction",
+  "account_deletion",
+  "consent_withdrawal",
+  "other"
+]);
+assert.deepEqual(policy.register.vocabulary.identityStates, [
+  "intake_identity",
+  "reauthenticated",
+  "email_control",
+  "escalation_required",
+  "not_applicable"
+]);
+assert.deepEqual(policy.register.vocabulary.workflowStatuses, ["new", "reviewing", "resolved"]);
+assert.deepEqual(policy.register.vocabulary.sourceBoundaryCategories, [
+  "account_profile",
+  "sessions_tokens",
+  "saved_activity",
+  "team",
+  "subscription",
+  "messaging",
+  "brief",
+  "deletion_audit_cleanup",
+  "legacy_feedback",
+  "provider",
+  "device_local"
+]);
+assert.deepEqual(policy.register.vocabulary.exceptionCategories, [
+  "none",
+  "identity_ambiguity",
+  "legal_requirement",
+  "security_safety",
+  "provider_boundary",
+  "scope_limitation",
+  "coverage_gap"
+]);
+assert.deepEqual(policy.register.vocabulary.resolutions, [
+  "fulfilled",
+  "partially_fulfilled",
+  "denied",
+  "redirected_to_account_deletion",
+  "withdrawn",
+  "duplicate",
+  "no_action_needed"
+]);
 
 assert.equal(policy.identity.highRiskFulfillment, "fresh_reauthentication_within_15_minutes_using_existing_account_channel");
 assert.equal(policy.identity.governmentIdAllowed, false);
@@ -54,6 +108,7 @@ assert.ok(policyDocument.includes("24 months after resolution"));
 for (const setting of [
   'PRIVACY_REQUEST_INTAKE_ENABLED="false"',
   'PRIVACY_REQUEST_MONITOR_ENABLED="false"',
+  'PRIVACY_REQUEST_OPERATIONS_ENABLED="false"',
   'CAPITOLWONK_PRIVACY_RETENTION_SWEEP_ENABLED="false"',
   'ACCOUNT_DELETION_ENABLED="false"',
   'APP_STORE_SERVER_VERIFICATION_ENABLED="false"',

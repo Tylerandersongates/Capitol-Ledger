@@ -8,8 +8,10 @@
     "coverageModel": "single_owner_pause"
   },
   "register": {
-    "currentState": "not_implemented",
+    "currentState": "source_implemented_default_off_synthetic_validation_passed",
     "productionBoundary": "dedicated_server_only_record_in_controlled_neon_project",
+    "productionMigrationState": "source_only_not_applied",
+    "runtimeSurface": "server_only_no_public_route",
     "syntheticBoundary": "ephemeral_isolated_postgresql_with_synthetic_identities_only",
     "accessPrincipals": [
       "privacy_owner"
@@ -41,7 +43,67 @@
       "diagnostic_payloads",
       "export_payloads",
       "apple_or_stripe_transaction_identifiers"
-    ]
+    ],
+    "vocabulary": {
+      "lanes": [
+        "first_party",
+        "mailbox"
+      ],
+      "operatorRoles": [
+        "privacy_owner"
+      ],
+      "requestTypes": [
+        "access_summary",
+        "data_export",
+        "correction",
+        "account_deletion",
+        "consent_withdrawal",
+        "other"
+      ],
+      "identityStates": [
+        "intake_identity",
+        "reauthenticated",
+        "email_control",
+        "escalation_required",
+        "not_applicable"
+      ],
+      "workflowStatuses": [
+        "new",
+        "reviewing",
+        "resolved"
+      ],
+      "sourceBoundaryCategories": [
+        "account_profile",
+        "sessions_tokens",
+        "saved_activity",
+        "team",
+        "subscription",
+        "messaging",
+        "brief",
+        "deletion_audit_cleanup",
+        "legacy_feedback",
+        "provider",
+        "device_local"
+      ],
+      "exceptionCategories": [
+        "none",
+        "identity_ambiguity",
+        "legal_requirement",
+        "security_safety",
+        "provider_boundary",
+        "scope_limitation",
+        "coverage_gap"
+      ],
+      "resolutions": [
+        "fulfilled",
+        "partially_fulfilled",
+        "denied",
+        "redirected_to_account_deletion",
+        "withdrawn",
+        "duplicate",
+        "no_action_needed"
+      ]
+    }
   },
   "reviewCadence": {
     "timezone": "America/Los_Angeles",

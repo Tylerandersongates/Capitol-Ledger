@@ -1,6 +1,6 @@
 # CapitolWonk Privacy Operations Policy — September 14, 2026
 
-Status: **owner decisions approved for implementation and isolated synthetic validation; production operation and every activation remain off and unauthorized.** This policy closes the decision gap for the private-register boundary, review cadence, single-owner absence rule, identity escalation, and retention worksheet. It does not create a production register, read or write production data, access a mailbox, send a message, deploy a scheduler, run the aggregate monitor, activate privacy intake, or authorize any real request fulfillment.
+Status: **owner decisions are implemented in default-off source and the isolated synthetic lifecycle passes; production operation and every activation remain off and unauthorized.** This policy closes the decision gap for the private-register boundary, review cadence, single-owner absence rule, identity escalation, and retention worksheet. The source implementation does not create a production register, apply its migration, read or write production data, access a mailbox, send a message, deploy a scheduler, run the aggregate monitor, activate privacy intake, or authorize any real request fulfillment.
 
 The machine-readable companion is [`privacy-operations-policy-2026-09-14.json`](privacy-operations-policy-2026-09-14.json). It is configuration evidence for fixtures and future implementation, not runtime configuration.
 
@@ -19,7 +19,7 @@ This is an engineering and owner operating decision, not legal advice. Jurisdict
 | Human owner | Tyler is the sole privacy-request owner. No backup operator is claimed. |
 | Coverage | Single-owner pause model. The first-party lane remains off whenever the review cadence cannot be met. |
 | Production register | A future dedicated, server-only operations record in the same controlled Neon project as the request queue. It must be reachable only through a least-privileged operator path and must never be exposed through a public route, client bundle, Sentry, Vercel logs, a shared spreadsheet, or source control. |
-| Current register state | Not implemented. No live register is approved for use. |
+| Current register state | The minimized schema, closed contract, default-off server service, retention path, and isolated synthetic exercise exist in source. The migration is not applied to production, no operator route exists, and no live register is approved for use. |
 | Synthetic register | An ephemeral isolated PostgreSQL database with synthetic identities only. No production clone, mailbox content, provider payload, or real account may be used. |
 | Public deadline | None. Internal targets are not published as a universal statutory promise. |
 | Activation | Not authorized. `PRIVACY_REQUEST_INTAKE_ENABLED`, `PRIVACY_REQUEST_MONITOR_ENABLED`, and every deletion/retention/App Store gate remain off. |
@@ -113,3 +113,11 @@ Before any production activation, implementation must provide and test:
 8. the single-owner pause/return runbook.
 
 The next approved engineering activity may be an isolated synthetic lifecycle harness against ephemeral PostgreSQL. It may create only synthetic records, must not use a production clone or protected provider credential, and must not send mail, call Apple/Stripe/Sentry, change Vercel configuration, or activate a production gate. A real provider exercise, production monitor read, scheduler, retention run, or request fulfillment remains separate.
+
+## Implemented source and synthetic evidence
+
+The September 14 source candidate adds a separate `PrivacyRequestOperation` model and migration containing only the approved field allowlist. Closed database checks enforce the lane, request type, role, identity state, workflow status, source-boundary categories, exception category, resolution state, human-acknowledgement relationship, high-risk identity state, and the exact 24-month delete-at rule. The service has no public route and requires the exact `PRIVACY_REQUEST_OPERATIONS_ENABLED=true` opt-in before any database call. Retention additionally requires the existing exact retention gate.
+
+`pnpm privacy-request:synthetic-exercise` runs the real migration SQL in PGlite `0.5.8`, an ephemeral PostgreSQL WASM runtime. It covers a signed-in high-risk fulfillment, a mailbox identity escalation, the exact 15-minute reauthentication boundary, 30-day detail minimization, 24-month closed-record expiry, invalid-category rejection, and both default-off gates. Case references, the synthetic identity, and optional detail are randomized in memory; the command emits only an aggregate pass/fail line and awaits database close in all outcomes. See the [exercise record](privacy-request-operations-synthetic-exercise-2026-09-14.md).
+
+This completes the source portion of the first four implementation gates and adds aggregate retention evidence plus the two-window pause decision. It does **not** complete a least-privileged production binding, production migration, mailbox/export artifact deletion, restore-floor verification, exact Vercel pause/return procedure, scheduler, live monitor read, provider exercise, or real fulfillment. Those remain separate, approval-gated work.
