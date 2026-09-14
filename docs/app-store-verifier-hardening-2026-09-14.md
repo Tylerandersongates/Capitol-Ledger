@@ -1,6 +1,6 @@
 # App Store Verifier Source Hardening — September 14, 2026
 
-Status: **local source containment implemented; activation remains blocked.** This work is isolated on `codex/apple-verifier-hardening` from pre-change SHA `b3a799f2d485e8617fac00c0f6e0b72a4a3fda4c`. It changes application source, deterministic source fixtures, readiness checks, and documentation only. It does not change `package.json` dependencies, `pnpm-lock.yaml`, Apple configuration, protected environment, database/schema/migrations, provider state, deployment, signing, upload, distribution, submission, or production.
+Status: **source containment is deployed to production with both switches off; activation remains blocked.** This work originated on `codex/apple-verifier-hardening` from pre-change SHA `b3a799f2d485e8617fac00c0f6e0b72a4a3fda4c`. PR #12 merged into `main` at `4836e3e48d95d677f8b64713a7f8af62204ea631`; both GitHub checks passed and Vercel production deployment `9F3k4yumJTfqDQtEBcAz1bZ6qgnr` reached Ready. The release did not change `package.json` dependencies, `pnpm-lock.yaml`, Apple configuration, protected environment, database/schema/migrations, signing, upload, distribution, submission, or either activation switch.
 
 The first complete fail-closed hardening checkpoint is `4431fde72b4b79875386334c1aa59c23e8b87327`. The pre-change SHA above is provenance, not an eligible fail-closed rollback target.
 
