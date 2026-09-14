@@ -29,7 +29,7 @@ const packageDocument = JSON.parse(read("package.json"));
 const runnerSource = read("lib/privacy-request-operator-runner.ts");
 
 assert.equal(contract.contractVersion, privacyRequestOperatorCommandVersion);
-assert.equal(contract.decisionStatus, "dispatcher_core_only_locally_validated");
+assert.equal(contract.decisionStatus, "dispatcher_core_deployed_after_pr19");
 assert.equal(contract.productionExecutionAuthorized, false);
 assert.equal(contract.implementation.executableEntrypointImplemented, false);
 assert.equal(contract.implementation.stdinReaderImplemented, false);
@@ -379,7 +379,7 @@ for (const prohibitedField of [
   assert.equal(contract.output.prohibitedFields.includes(prohibitedField), true);
 }
 
-assert.match(runbook, /dispatcher core only/i);
+assert.match(runbook, /dispatcher core deployed after PR #19/i);
 assert.match(runbook, /no executable entrypoint/i);
 assert.match(runbook, /production binding remains absent/i);
 assert.match(runbook, /single JSON document/i);
@@ -410,11 +410,6 @@ for (const applicationFile of listSourceFiles(path.join(repositoryRoot, "app")))
   );
 }
 
-assert.equal(
-  fs.existsSync(path.join(repositoryRoot, "scripts/run-privacy-request-operator.ts")),
-  false,
-  "an executable operator entrypoint must remain absent"
-);
 assert.match(
   packageDocument.scripts["privacy-request:operator-runner-core:check"],
   /check-privacy-request-operator-runner\.ts/

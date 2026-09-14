@@ -1,12 +1,12 @@
 # Privacy-request operator runner core — September 14, 2026
 
-Status: **local dispatcher core only; no executable entrypoint or production binding exists.** The machine-readable companion is [`privacy-request-operator-runner-core-2026-09-14.json`](privacy-request-operator-runner-core-2026-09-14.json).
+Status: **dispatcher core deployed after PR #19; that checkpoint added no executable entrypoint or production binding.** Merge `b92ad1dde374638f0fd584a2645d4437bd76853c`, all three GitHub checks, exact-source Vercel production deployment `BejdtoqtPvpa9LtbKcz5Y6VSro73`, and gate-off smoke pass. The machine-readable companion is [`privacy-request-operator-runner-core-2026-09-14.json`](privacy-request-operator-runner-core-2026-09-14.json).
 
 ## Decision
 
 Prepare and validate the security-critical command parser and dispatcher before adding any standard-input reader, database adapter, credential, principal, production migration, provider capability, scheduler, or application route. The core accepts one closed JSON document as a string, checks the existing exact operator/operations/action gates, and dispatches only to a dependency injected by the caller.
 
-This checkpoint does not add the future executable command. It cannot read standard input, command-line arguments, the filesystem, a database, a mailbox, an export store, a provider, or the network. It has no logging output and no default adapter. Production binding remains absent.
+The PR #19 checkpoint did not add the future executable command. Its core cannot read standard input, command-line arguments, the filesystem, a database, a mailbox, an export store, a provider, or the network. It has no logging output and no default adapter. Production binding remains absent.
 
 ## Input boundary
 
@@ -49,6 +49,6 @@ Run:
 pnpm privacy-request:operator-runner-core:check
 ```
 
-The check covers every action, exact gates, input size/shape, malformed and contradictory commands, timestamp normalization, dependency-call suppression while disabled, strict output minimization, fixed error vocabulary, application-route isolation, and the continued absence of an executable script or production adapter. It also runs inside `pnpm privacy-request:check`.
+The check covers every action, exact gates, input size/shape, malformed and contradictory commands, timestamp normalization, dependency-call suppression while disabled, strict output minimization, fixed error vocabulary, application-route isolation, and the continued absence of stdio or a production adapter from the dispatcher core itself. It also runs inside `pnpm privacy-request:check`.
 
-Passing this checkpoint closes only the parser/dispatcher-core gap. A standard-input executable, service/monitor adapter, least-privileged production principal and credential, production migration, protected runtime exercise, provider/storage deletion, scheduler, retention run, activation, and any real privacy-request operation remain separate reviewed actions. It does not authorize any external or destructive action.
+Passing and deploying this checkpoint closed only the parser/dispatcher-core gap. The next [stdin-shell checkpoint](privacy-request-operator-stdin-shell-2026-09-14.md) adds a bounded fail-closed transport with an intentionally unbound adapter. A service/monitor adapter, least-privileged production principal and credential, production migration, protected runtime exercise, provider/storage deletion, scheduler, retention run, activation, and any real privacy-request operation remain separate reviewed actions. It does not authorize any external or destructive action.

@@ -27,17 +27,25 @@ const packageDocument = JSON.parse(read("package.json"));
 const guardSource = read("lib/privacy-request-operator-boundary.ts");
 
 assert.equal(boundary.boundaryVersion, "2026-09-14");
-assert.equal(boundary.decisionStatus, "guard_and_dispatcher_core_locally_validated");
+assert.equal(
+  boundary.decisionStatus,
+  "guard_dispatcher_and_stdin_shell_locally_validated"
+);
 assert.equal(boundary.productionExecutionAuthorized, false);
 assert.equal(
   boundary.runner.implementationState,
-  "guard_and_dispatcher_core_no_executable_runner"
+  "guard_dispatcher_and_stdin_shell_no_adapter"
 );
 assert.equal(
   boundary.runner.dispatcherCoreContract,
   "privacy-request-operator-runner-core-2026-09-14.json"
 );
-assert.equal(boundary.runner.surface, "future_local_server_command_only");
+assert.equal(
+  boundary.runner.stdinShellContract,
+  "privacy-request-operator-stdin-shell-2026-09-14.json"
+);
+assert.equal(boundary.runner.surface, "local_server_command_transport_only");
+assert.equal(boundary.runner.adapterState, "intentionally_unbound");
 assert.equal(boundary.runner.publicRouteAllowed, false);
 assert.equal(boundary.runner.clientBundleAllowed, false);
 assert.equal(boundary.runner.productionBindingState, "absent");
@@ -271,14 +279,15 @@ for (const scenario of boundary.syntheticCoverageScenarios) {
   );
 }
 
-assert.match(runbook, /no executable runner or production binding exists/i);
+assert.match(runbook, /no database adapter or production binding exists/i);
+assert.match(runbook, /stdin shell/i);
 assert.match(runbook, /does not preauthorize its configuration change/i);
 assert.match(runbook, /Production-scoped `PRIVACY_REQUEST_INTAKE_ENABLED` from `true` to exact lowercase `false`/);
 assert.match(runbook, /Production-scoped `PRIVACY_REQUEST_INTAKE_ENABLED` from exact lowercase `false` to exact lowercase `true`/);
 assert.match(runbook, /two scheduled review windows/i);
 assert.match(runbook, /oldest-unreviewed-first/i);
 assert.match(runbook, /Do not touch Vercel/i);
-assert.match(runbook, /does not make the runner/i);
+assert.match(runbook, /does not make the transport shell/i);
 
 assert.equal(
   /getPrisma|\$queryRaw|console\.|\bfetch\s*\(|process\.argv|node:fs/.test(guardSource),
