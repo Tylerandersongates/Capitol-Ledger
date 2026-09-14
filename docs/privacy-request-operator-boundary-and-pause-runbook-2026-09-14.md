@@ -1,12 +1,12 @@
 # Privacy-request operator boundary and Vercel pause/return runbook — September 14, 2026
 
-Status: **guard and dispatcher core deployed after PRs #17 and #19; no database adapter or production binding exists.** The active [fail-closed stdin shell candidate](privacy-request-operator-stdin-shell-2026-09-14.md) adds only the bounded standard-input transport and keeps its adapter intentionally unbound. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
+Status: **guard, dispatcher core, and fail-closed stdin shell are deployed after PRs #17, #19, and #20; no production binding exists.** The active [explicit-dependency service-adapter candidate](privacy-request-operator-service-adapter-2026-09-14.md) composes only the existing lifecycle and aggregate-monitor services, requires its caller to inject every dependency, and remains disconnected from the stdin shell. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
 
 The machine-readable companion is [`privacy-request-operator-boundary-2026-09-14.json`](privacy-request-operator-boundary-2026-09-14.json). The existing [privacy-operations policy](privacy-operations-policy-2026-09-14.md) remains controlling where this packet is silent.
 
 ## Decision
 
-Keep the local, server-only operator command behind the exact opt-in gate and separate transport review from any service or production binding. The repository contains the pure authorization guard, closed parser/dispatcher core, and a fail-closed stdin shell whose adapter cannot perform an action. No credential or production path exists.
+Keep the local, server-only operator command behind the exact opt-in gate and separate service composition from any executable or production binding. The repository contains the pure authorization guard, closed parser/dispatcher core, a fail-closed stdin shell whose adapter cannot perform an action, and a separate adapter factory that accepts only explicit dependencies. No credential or production path exists.
 
 The runner boundary is:
 
@@ -19,7 +19,7 @@ The runner boundary is:
 - a single JSON document over standard input for case instructions; no payload or credential in command-line arguments or a persisted command file; and
 - aggregate queue output or a minimized single-case status only. Contact values, request detail, mailbox bodies, export artifacts, provider identifiers, credentials, and raw errors must not leave the process.
 
-All gates remain `false`. The guard and dispatcher core have no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked stdin shell has an intentionally unbound adapter, so even an allowed local command returns only `operator_action_failed`. A service/monitor adapter and every production binding remain new reviewed source actions.
+All gates remain `false`. The guard and dispatcher core have no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked stdin shell has an intentionally unbound adapter, so even an allowed local command returns only `operator_action_failed`. The explicit-dependency service adapter is not imported by the shell or an application route and cannot discover a database, credential, environment, or clock. Every executable or production binding remains a new reviewed source action.
 
 ## Least-privileged production binding — required later, absent now
 
@@ -31,13 +31,13 @@ Any future credential must be short-lived or managed, injected at execution time
 
 | Action | Additional boundary | Current state |
 | --- | --- | --- |
-| `queue_summary` | Aggregate counts/age bands only; monitor gate required | Guard contract only |
-| `open_first_party_case` | Existing request reference only; no account/contact payload | Guard contract only |
-| `open_mailbox_case` | Minimized type/timestamps/identity state only; never body, subject, address, or attachment | Guard contract only |
-| `acknowledge` | Human acknowledgement by `privacy_owner` | Guard contract only |
-| `review` | Closed identity, source-boundary, and exception vocabularies | Guard contract only |
-| `resolve` | Existing fresh-reauthentication and resolution constraints remain controlling | Guard contract only |
-| `retention_apply` | Separate retention gate; aggregate counts only | Guard contract only |
+| `queue_summary` | Aggregate counts/age bands only; monitor gate required | Explicit-dependency adapter; shell unbound |
+| `open_first_party_case` | Existing request reference only; no account/contact payload | Explicit-dependency adapter; shell unbound |
+| `open_mailbox_case` | Minimized type/timestamps/identity state only; never body, subject, address, or attachment | Explicit-dependency adapter; shell unbound |
+| `acknowledge` | Human acknowledgement by `privacy_owner` | Explicit-dependency adapter; shell unbound |
+| `review` | Closed identity, source-boundary, and exception vocabularies | Explicit-dependency adapter; shell unbound |
+| `resolve` | Existing fresh-reauthentication and resolution constraints remain controlling | Explicit-dependency adapter; shell unbound |
+| `retention_apply` | Separate retention gate; aggregate counts only | Explicit-dependency adapter; shell unbound |
 
 There is deliberately no arbitrary query, export-generation, mailbox deletion, provider mutation, account mutation, migration, restore, or gate-management action.
 
@@ -113,4 +113,4 @@ If return verification fails, do not submit a request or improvise a fix. Presen
 - no application route imports or names the operator guard; and
 - the contract continues to prohibit a production binding, arbitrary/batch mutation, payload/credential transport, DDL, provider access, and automatic Vercel pause/return.
 
-Passing these checks validates only the local contract. It does not make the transport shell, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.
+Passing these checks validates only the local contract and explicit service composition. It does not make the transport shell, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.

@@ -1,6 +1,6 @@
 # Privacy-request operator stdin shell — September 14, 2026
 
-Status: **local fail-closed stdin shell only; the adapter is intentionally unbound and no production binding exists.** The machine-readable companion is [`privacy-request-operator-stdin-shell-2026-09-14.json`](privacy-request-operator-stdin-shell-2026-09-14.json).
+Status: **fail-closed stdin shell deployed after PR #20; the shell adapter remains intentionally unbound and no production binding exists.** Merge `72e9a8cea004d351ca12d44efcf15898d0b047ed`, all three GitHub checks, exact-source Vercel production deployment `FgFUuXoSrbHWVFQM82tV81pKqcUh`, and the gate-off smoke pass. The machine-readable companion is [`privacy-request-operator-stdin-shell-2026-09-14.json`](privacy-request-operator-stdin-shell-2026-09-14.json).
 
 ## Decision
 
@@ -26,7 +26,7 @@ The shell emits no stderr detail, log, stack, raw exception, contact value, requ
 
 This checkpoint adds no database adapter, principal, grant SQL, credential, migration, production connection, mailbox/export/provider access, scheduler, application route, public endpoint, Vercel change, deletion, retention operation, restore, traffic switch, or activation. Every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off in tracked configuration.
 
-A service/monitor adapter, least-privileged production principal and credential, protected binding, production migration, real provider/storage evidence, scheduler, live retention run, and any real privacy-request operation remain separate reviewed and approval-gated actions.
+The next local [`service-adapter checkpoint`](privacy-request-operator-service-adapter-2026-09-14.md) composes the existing lifecycle services only through explicit injected dependencies and remains disconnected from this shell. A least-privileged production principal and credential, protected binding, production migration, real provider/storage evidence, scheduler, live retention run, and any real privacy-request operation remain separate reviewed and approval-gated actions.
 
 ## Local verification
 

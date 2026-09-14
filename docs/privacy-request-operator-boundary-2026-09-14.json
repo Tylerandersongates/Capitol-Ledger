@@ -1,13 +1,14 @@
 {
   "boundaryVersion": "2026-09-14",
-  "decisionStatus": "guard_dispatcher_and_stdin_shell_locally_validated",
+  "decisionStatus": "guard_dispatcher_stdin_and_explicit_service_adapter_locally_validated",
   "productionExecutionAuthorized": false,
   "runner": {
-    "implementationState": "guard_dispatcher_and_stdin_shell_no_adapter",
+    "implementationState": "guard_dispatcher_stdin_and_explicit_dependency_adapter",
     "dispatcherCoreContract": "privacy-request-operator-runner-core-2026-09-14.json",
     "stdinShellContract": "privacy-request-operator-stdin-shell-2026-09-14.json",
+    "serviceAdapterContract": "privacy-request-operator-service-adapter-2026-09-14.json",
     "surface": "local_server_command_transport_only",
-    "adapterState": "intentionally_unbound",
+    "adapterState": "explicit_dependency_only_not_shell_bound",
     "publicRouteAllowed": false,
     "clientBundleAllowed": false,
     "productionBindingState": "absent",

@@ -29,12 +29,12 @@ const guardSource = read("lib/privacy-request-operator-boundary.ts");
 assert.equal(boundary.boundaryVersion, "2026-09-14");
 assert.equal(
   boundary.decisionStatus,
-  "guard_dispatcher_and_stdin_shell_locally_validated"
+  "guard_dispatcher_stdin_and_explicit_service_adapter_locally_validated"
 );
 assert.equal(boundary.productionExecutionAuthorized, false);
 assert.equal(
   boundary.runner.implementationState,
-  "guard_dispatcher_and_stdin_shell_no_adapter"
+  "guard_dispatcher_stdin_and_explicit_dependency_adapter"
 );
 assert.equal(
   boundary.runner.dispatcherCoreContract,
@@ -44,8 +44,15 @@ assert.equal(
   boundary.runner.stdinShellContract,
   "privacy-request-operator-stdin-shell-2026-09-14.json"
 );
+assert.equal(
+  boundary.runner.serviceAdapterContract,
+  "privacy-request-operator-service-adapter-2026-09-14.json"
+);
 assert.equal(boundary.runner.surface, "local_server_command_transport_only");
-assert.equal(boundary.runner.adapterState, "intentionally_unbound");
+assert.equal(
+  boundary.runner.adapterState,
+  "explicit_dependency_only_not_shell_bound"
+);
 assert.equal(boundary.runner.publicRouteAllowed, false);
 assert.equal(boundary.runner.clientBundleAllowed, false);
 assert.equal(boundary.runner.productionBindingState, "absent");
@@ -279,7 +286,8 @@ for (const scenario of boundary.syntheticCoverageScenarios) {
   );
 }
 
-assert.match(runbook, /no database adapter or production binding exists/i);
+assert.match(runbook, /no production binding exists/i);
+assert.match(runbook, /explicit-dependency service-adapter candidate/i);
 assert.match(runbook, /stdin shell/i);
 assert.match(runbook, /does not preauthorize its configuration change/i);
 assert.match(runbook, /Production-scoped `PRIVACY_REQUEST_INTAKE_ENABLED` from `true` to exact lowercase `false`/);

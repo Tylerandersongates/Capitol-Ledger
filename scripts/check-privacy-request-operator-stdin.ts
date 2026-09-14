@@ -31,7 +31,7 @@ const shellPath = path.join(
 );
 
 assert.equal(contract.contractVersion, privacyRequestOperatorCommandVersion);
-assert.equal(contract.decisionStatus, "stdin_shell_only_locally_validated");
+assert.equal(contract.decisionStatus, "stdin_shell_deployed_after_pr20");
 assert.equal(contract.productionExecutionAuthorized, false);
 assert.equal(contract.implementation.executableEntrypointImplemented, true);
 assert.equal(contract.implementation.stdinReaderImplemented, true);
@@ -284,7 +284,7 @@ for (const applicationFile of listSourceFiles(path.join(repositoryRoot, "app")))
   );
 }
 
-assert.match(runbook, /fail-closed stdin shell only/i);
+assert.match(runbook, /fail-closed stdin shell deployed after PR #20/i);
 assert.match(runbook, /intentionally unbound/i);
 assert.match(runbook, /no production binding/i);
 assert.match(runbook, /does not authorize/i);

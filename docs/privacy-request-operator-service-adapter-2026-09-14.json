@@ -1,0 +1,55 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "service_adapter_only_locally_validated",
+  "productionExecutionAuthorized": false,
+  "implementation": {
+    "state": "explicit_dependency_service_adapter_only",
+    "adapterFactoryImplemented": true,
+    "stdinShellBindingState": "intentionally_unbound",
+    "explicitDatabaseDependencyRequired": true,
+    "explicitEnvironmentDependencyRequired": true,
+    "explicitClockDependencyRequired": true,
+    "defaultDatabaseResolutionAllowed": false,
+    "databaseUrlReadAllowed": false,
+    "productionPrincipalImplemented": false,
+    "productionCredentialImplemented": false,
+    "productionMigrationAuthorized": false,
+    "providerCapabilityImplemented": false,
+    "publicRouteImplemented": false,
+    "schedulerImplemented": false,
+    "loggingImplemented": false
+  },
+  "composition": {
+    "queueSummary": "aggregate_monitor_service",
+    "caseLifecycle": "privacy_operations_service",
+    "retention": "privacy_operations_retention_service",
+    "databaseTablesLimitedByServiceContract": [
+      "PrivacyRequest",
+      "PrivacyRequestOperation"
+    ],
+    "arbitraryQueryInputAllowed": false,
+    "mailboxAccess": false,
+    "exportStoreAccess": false,
+    "providerAccess": false,
+    "networkClientImplemented": false,
+    "filesystemAccess": false
+  },
+  "binding": {
+    "stdinShellImportsAdapter": false,
+    "applicationRouteImportsAdapter": false,
+    "productionBindingState": "absent",
+    "principalCreationApproved": false,
+    "grantSqlApproved": false,
+    "credentialCreationApproved": false,
+    "configurationChangeApproved": false,
+    "activationApproved": false
+  },
+  "validation": {
+    "syntheticDatabaseOnly": true,
+    "allSevenActionsCovered": true,
+    "disabledGatePreventsDatabaseAccess": true,
+    "closedOutputSchemasPreserved": true,
+    "rawErrorsAllowed": false,
+    "contactOrPayloadOutputAllowed": false
+  }
+}
