@@ -12,6 +12,8 @@ import {
   throwAccountPersistenceUnavailable
 } from "@/lib/account-persistence-safety";
 import {
+  AppStoreServerConfigurationError,
+  AppStoreServerVerificationError,
   reconcileAppStoreSubscription,
   type CanonicalAppStoreSubscription
 } from "@/lib/billing/app-store-server";
@@ -658,7 +660,13 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
           expectedOriginalTransactionId: state.originalTransactionId
         });
       } catch (error) {
-        if (isAccountPersistenceUnavailableError(error)) throw error;
+        if (
+          isAccountPersistenceUnavailableError(error) ||
+          error instanceof AppStoreServerConfigurationError ||
+          error instanceof AppStoreServerVerificationError
+        ) {
+          throw error;
+        }
         if (!state.productId) {
           return {
             checkoutRequired: false,

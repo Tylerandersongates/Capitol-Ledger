@@ -172,6 +172,20 @@ function checkAppStoreCredential(name) {
   pass(`${name} is configured`);
 }
 
+function checkAppStoreActivationGate(name, purpose) {
+  if (process.env[name] === "true") {
+    pass(`${name} is enabled`, purpose);
+    return;
+  }
+
+  const detail = `${purpose} Only the exact value true activates this default-off path.`;
+  if (requireAppStore || productionMode) {
+    fail(`${name} is enabled`, detail);
+  } else {
+    warn(`${name} is enabled`, detail);
+  }
+}
+
 function checkStoreKitProductIds() {
   const webControls = readIfPresent("components/subscription-controls.tsx");
   const nativeModels = readIfPresent("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerSubscriptionModels.swift");
@@ -215,8 +229,12 @@ function checkStoreKitProductIds() {
 function checkAppStoreServerFoundation() {
   const packageManifest = readIfPresent("package.json");
   const server = readIfPresent("lib/billing/app-store-server.ts");
+  const boundary = readIfPresent("lib/billing/app-store-verifier-boundary.ts");
   const roots = readIfPresent("lib/billing/apple-root-certificates.ts");
   const validator = readIfPresent("lib/billing/app-store.ts");
+  const syncRoute = readIfPresent("app/api/account/subscription/app-store/route.ts");
+  const accountTokenRoute = readIfPresent("app/api/account/subscription/app-store/account-token/route.ts");
+  const notificationRoute = readIfPresent("app/api/billing/app-store/notifications/route.ts");
   const dependencyPresent = packageManifest.includes('"@apple/app-store-server-library"');
   const verifierWired =
     server.includes("SignedDataVerifier") &&
@@ -242,11 +260,27 @@ function checkAppStoreServerFoundation() {
     roots.includes("getAppleRootCertificates") &&
     roots.includes("Apple Root Certificates") &&
     roots.includes("apple.com/certificateauthority");
+  const failClosedRuntimeBoundary =
+    server.includes("APP_STORE_SERVER_VERIFICATION_ENABLED") &&
+    server.includes("APP_STORE_SERVER_NOTIFICATIONS_ENABLED") &&
+    boundary.includes("appStoreMaximumActiveVerifications = 4") &&
+    boundary.includes("appStoreVerificationTimeoutMs = 15 * 1000") &&
+    boundary.includes("activeCount >= maximumActive") &&
+    syncRoute.includes('code: "APP_STORE_SERVER_VERIFICATION_DISABLED"') &&
+    accountTokenRoute.includes('code: "APP_STORE_SERVER_VERIFICATION_DISABLED"') &&
+    notificationRoute.includes('code: "APP_STORE_SERVER_NOTIFICATIONS_DISABLED"');
 
-  if (dependencyPresent && verifierWired && appIdentityBound && productAllowlistWired && reviewedTrustRoots) {
+  if (
+    dependencyPresent &&
+    verifierWired &&
+    appIdentityBound &&
+    productAllowlistWired &&
+    reviewedTrustRoots &&
+    failClosedRuntimeBoundary
+  ) {
     pass(
       "App Store server verification is wired",
-      "Official signed-data verification, Apple trust roots, app identity checks, and current-status reconciliation are present."
+      "Official signed-data verification, Apple trust roots, app identity checks, default-off gates, and bounded current-status reconciliation are present."
     );
     return;
   }
@@ -261,7 +295,9 @@ function checkAppStoreServerFoundation() {
           ? "Bind verified data to the configured bundle ID, numeric Apple app ID, and account token."
           : !productAllowlistWired
             ? "Reconcile only allowlisted auto-renewable CapitolWonk products."
-            : "Embed the reviewed Apple root certificate set used by the verifier."
+            : !reviewedTrustRoots
+              ? "Embed the reviewed Apple root certificate set used by the verifier."
+              : "Keep verification and Notifications V2 default-off with the approved timeout and no-queue capacity boundary."
   );
 }
 
@@ -426,6 +462,9 @@ function checkAppStoreNotificationEndpoint() {
     route.includes("Buffer.byteLength") &&
     /createHash\(["']sha256["']\)/.test(route) &&
     /\.digest\(["']hex["']\)/.test(route) &&
+    route.includes("appStoreServerNotificationsAreEnabled") &&
+    route.indexOf("appStoreServerNotificationsAreEnabled()", route.indexOf("async function handleAppStoreNotification")) <
+      route.indexOf("readSignedPayload(request)", route.indexOf("async function handleAppStoreNotification")) &&
     !route.includes("console.");
 
   if (verifiesSignedData && reconcilesCurrentState && idempotentReceipt && boundedAndHashOnly) {
@@ -455,14 +494,18 @@ function checkAppStoreTestCoverage() {
   const workflow = readIfPresent(".github/workflows/ci.yml");
   const subscriptionFixtures = readIfPresent("scripts/check-app-store-subscription-fixtures.ts");
   const stateFixtures = readIfPresent("scripts/check-app-store-state-fixtures.ts");
+  const verifierFixtures = readIfPresent("scripts/check-app-store-verifier-hardening.ts");
   const qaMatrix = readIfPresent("docs/app-store-sandbox-qa-matrix-2026-09-11.md");
   const automatedCoverage =
     packageManifest.includes("check-app-store-subscription-fixtures.ts") &&
     packageManifest.includes("check-app-store-state-fixtures.ts") &&
+    packageManifest.includes("check-app-store-verifier-hardening.ts") &&
     subscriptionFixtures.includes("Multiple simultaneously granting Apple lineages must fail closed") &&
     subscriptionFixtures.includes("reserved annual") &&
     stateFixtures.includes("oversized streamed notification") &&
-    stateFixtures.includes("Notification receipts must accept only normalized SHA-256 hashes");
+    stateFixtures.includes("Notification receipts must accept only normalized SHA-256 hashes") &&
+    verifierFixtures.includes("A fifth verifier operation must fail retryably without entering an in-memory queue") &&
+    verifierFixtures.includes("Missing or malformed nested App Store status data must fail closed");
   const ciCoverage =
     packageManifest.includes('"release-source:check"') &&
     packageManifest.includes('"release-candidate:check"') &&
@@ -577,6 +620,14 @@ function main() {
   checkAppStoreCredential("APP_STORE_CONNECT_ISSUER_ID");
   checkAppStoreCredential("APP_STORE_CONNECT_KEY_ID");
   checkAppStoreCredential("APP_STORE_CONNECT_PRIVATE_KEY");
+  checkAppStoreActivationGate(
+    "APP_STORE_SERVER_VERIFICATION_ENABLED",
+    "Required only after a corrected verifier candidate passes the signed OCSP acceptance matrix."
+  );
+  checkAppStoreActivationGate(
+    "APP_STORE_SERVER_NOTIFICATIONS_ENABLED",
+    "Required only for the separately approved Notifications V2 callback."
+  );
   checkStoreKitProductIds();
   checkAppStoreServerFoundation();
   checkAppStorePersistenceFoundation();

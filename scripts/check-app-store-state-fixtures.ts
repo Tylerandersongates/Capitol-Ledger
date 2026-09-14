@@ -43,22 +43,9 @@ async function assertStatus(responsePromise: Promise<Response | undefined>, expe
 }
 
 async function checkNotificationRequestBoundary() {
-  await assertStatus(receiveAppStoreNotification(request("{")), 400, "Malformed notification JSON must fail closed");
-  await assertStatus(receiveAppStoreNotification(request("{}")), 400, "A missing signed payload must fail closed");
-  await assertStatus(
-    receiveAppStoreNotification(
-      request(JSON.stringify({ signedPayload: "ignored" }), { "Content-Length": String(128 * 1024 + 1) })
-    ),
-    413,
-    "An oversized declared notification must be rejected before verification"
-  );
-  await assertStatus(
-    receiveAppStoreNotification(request(`"${"x".repeat(128 * 1024)}"`)),
-    413,
-    "An oversized streamed notification must be rejected while reading"
-  );
-
   const names = [
+    "APP_STORE_SERVER_VERIFICATION_ENABLED",
+    "APP_STORE_SERVER_NOTIFICATIONS_ENABLED",
     "APP_STORE_BUNDLE_ID",
     "APP_STORE_APP_APPLE_ID",
     "APP_STORE_CONNECT_ISSUER_ID",
@@ -67,7 +54,37 @@ async function checkNotificationRequestBoundary() {
   ] as const;
   const original = Object.fromEntries(names.map((name) => [name, process.env[name]]));
   try {
-    for (const name of names) delete process.env[name];
+    delete process.env.APP_STORE_SERVER_VERIFICATION_ENABLED;
+    delete process.env.APP_STORE_SERVER_NOTIFICATIONS_ENABLED;
+    const disabled = await assertStatus(
+      receiveAppStoreNotification(request("{")),
+      503,
+      "The default-off notification gate must reject work before reading the request body"
+    );
+    assert.equal(
+      (await disabled.json()).code,
+      "APP_STORE_SERVER_NOTIFICATIONS_DISABLED",
+      "The default-off notification gate must return its stable operator code"
+    );
+
+    process.env.APP_STORE_SERVER_VERIFICATION_ENABLED = "true";
+    process.env.APP_STORE_SERVER_NOTIFICATIONS_ENABLED = "true";
+    await assertStatus(receiveAppStoreNotification(request("{")), 400, "Malformed notification JSON must fail closed");
+    await assertStatus(receiveAppStoreNotification(request("{}")), 400, "A missing signed payload must fail closed");
+    await assertStatus(
+      receiveAppStoreNotification(
+        request(JSON.stringify({ signedPayload: "ignored" }), { "Content-Length": String(128 * 1024 + 1) })
+      ),
+      413,
+      "An oversized declared notification must be rejected before verification"
+    );
+    await assertStatus(
+      receiveAppStoreNotification(request(`"${"x".repeat(128 * 1024)}"`)),
+      413,
+      "An oversized streamed notification must be rejected while reading"
+    );
+
+    for (const name of names.slice(2)) delete process.env[name];
     const response = await assertStatus(
       receiveAppStoreNotification(request(JSON.stringify({ signedPayload: "not-a-jws" }))),
       503,

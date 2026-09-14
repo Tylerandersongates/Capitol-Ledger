@@ -108,6 +108,8 @@ Set these through the deployment provider, never in git:
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `APP_STORE_CONNECT_KEY_ID`
 - `APP_STORE_CONNECT_PRIVATE_KEY`
+- `APP_STORE_SERVER_VERIFICATION_ENABLED` (keep `false` until corrected-verifier approval)
+- `APP_STORE_SERVER_NOTIFICATIONS_ENABLED` (keep `false` until separate callback approval)
 
 Then run:
 

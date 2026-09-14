@@ -7,6 +7,7 @@ import {
   AppStoreServerConfigurationError,
   AppStoreServerVerificationError,
   AppStoreSubscriptionConflictError,
+  appStoreServerNotificationsAreEnabled,
   reconcileAppStoreSubscription,
   verifyAppStoreNotification,
   verifyAppStoreRenewalInfoInEnvironment,
@@ -100,6 +101,17 @@ async function finalizeReceipt(input: {
 }
 
 async function handleAppStoreNotification(request: NextRequest) {
+  if (!appStoreServerNotificationsAreEnabled()) {
+    return json(
+      503,
+      {
+        code: "APP_STORE_SERVER_NOTIFICATIONS_DISABLED",
+        error: "App Store notification processing is disabled."
+      },
+      true
+    );
+  }
+
   const body = await readSignedPayload(request);
   if ("error" in body) return body.error;
 

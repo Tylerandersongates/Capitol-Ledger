@@ -62,6 +62,7 @@ function candidate(input: {
 
 function checkConfigurationBoundary() {
   const names = [
+    "APP_STORE_SERVER_VERIFICATION_ENABLED",
     "APP_STORE_BUNDLE_ID",
     "APP_STORE_APP_APPLE_ID",
     "APP_STORE_CONNECT_ISSUER_ID",
@@ -77,6 +78,7 @@ function checkConfigurationBoundary() {
     assert.deepEqual(missing.missing, [...names], "Readiness must name every absent App Store server setting");
 
     process.env.APP_STORE_BUNDLE_ID = "com.capitolwonk.ce";
+    process.env.APP_STORE_SERVER_VERIFICATION_ENABLED = "true";
     process.env.APP_STORE_APP_APPLE_ID = "not-a-number";
     process.env.APP_STORE_CONNECT_ISSUER_ID = "issuer";
     process.env.APP_STORE_CONNECT_KEY_ID = "key";
