@@ -506,6 +506,29 @@ model PrivacyRequest {
   @@index([status, requestedAt])
 }
 
+/// Server-only, minimized privacy operations record. This model intentionally
+/// has no User relation, requester contact field, free-form detail, or provider
+/// payload. Production use remains behind an exact opt-in gate.
+model PrivacyRequestOperation {
+  caseReference            String    @id
+  lane                     String
+  requestType              String
+  receivedAt               DateTime  @db.Timestamptz(3)
+  machineReceiptAt         DateTime  @db.Timestamptz(3)
+  humanAcknowledgementAt   DateTime? @db.Timestamptz(3)
+  operator                 String?
+  identityState            String
+  workflowStatus           String    @default("new")
+  sourceBoundaryCategories String[]  @default([])
+  exceptionCategory        String    @default("none")
+  resolution               String?
+  resolvedAt               DateTime? @db.Timestamptz(3)
+  deleteAt                 DateTime? @db.Timestamptz(3)
+
+  @@index([workflowStatus, receivedAt])
+  @@index([deleteAt])
+}
+
 model OfficialContactMessage {
   id               String    @id
   memberBioguideId String
