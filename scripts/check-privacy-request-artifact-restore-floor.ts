@@ -258,7 +258,7 @@ for (const prohibitedField of [
   );
 }
 
-assert.match(runbook, /local pure verification only/i);
+assert.match(runbook, /deployed pure verification only after PR #18/i);
 assert.match(runbook, /not a deletion implementation/i);
 assert.match(runbook, /serviceState = keep_offline/);
 assert.match(runbook, /Eligibility does not authorize a restore/i);

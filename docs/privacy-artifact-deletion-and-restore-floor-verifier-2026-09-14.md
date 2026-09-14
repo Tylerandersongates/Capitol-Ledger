@@ -1,6 +1,6 @@
 # Privacy artifact-deletion evidence and restore-floor verifier — September 14, 2026
 
-Status: **local pure verification only.** No mailbox, export store, database, provider, route, credential, deletion action, restore, or traffic-switch binding exists. The machine-readable companion is [`privacy-artifact-deletion-and-restore-floor-2026-09-14.json`](privacy-artifact-deletion-and-restore-floor-2026-09-14.json).
+Status: **deployed pure verification only after PR #18.** Merge `aca87f50860c53c542c32e5928e19f28e582a76b`, all three GitHub checks, exact-source Vercel production deployment `3MF99WfbPcGxL7iMSWoDmKhgj9eC`, and gate-off smoke pass. No mailbox, export store, database, provider, route, credential, deletion action, restore, or traffic-switch binding exists. The machine-readable companion is [`privacy-artifact-deletion-and-restore-floor-2026-09-14.json`](privacy-artifact-deletion-and-restore-floor-2026-09-14.json).
 
 ## Decision
 
@@ -70,4 +70,4 @@ pnpm privacy-request:artifact-restore-floor:check
 
 The check covers exact retention boundaries, retrieval-shortened export expiry, malformed timestamps/counts, incomplete deletion evidence, the historical pre/post restore points, zero-watermark handling, contradictory evidence, every recovery invariant, result minimization, and application-route isolation. It also runs inside `pnpm privacy-request:check`.
 
-Passing this checkpoint closes only the repository-local pure-verifier gap. Real mailbox/export deletion evidence, a future storage/provider adapter, production database binding, production restore evaluation, traffic switching, and every destructive/provider action remain separate.
+Passing and deploying this checkpoint closes only the repository-local pure-verifier gap. The next local source checkpoint is the [operator-runner parser/dispatcher core](privacy-request-operator-runner-core-2026-09-14.md). Real mailbox/export deletion evidence, a future storage/provider adapter, production database binding, production restore evaluation, traffic switching, and every destructive/provider action remain separate.

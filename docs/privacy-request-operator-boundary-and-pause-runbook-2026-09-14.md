@@ -1,6 +1,6 @@
 # Privacy-request operator boundary and Vercel pause/return runbook — September 14, 2026
 
-Status: **local contract and verification only; no executable runner or production binding exists.** This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
+Status: **guard contract deployed after PR #17; no executable runner or production binding exists.** The active [operator-runner core candidate](privacy-request-operator-runner-core-2026-09-14.md) adds only a bounded parser and injected dispatcher, without stdin, a database adapter, a principal, or a credential. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
 
 The machine-readable companion is [`privacy-request-operator-boundary-2026-09-14.json`](privacy-request-operator-boundary-2026-09-14.json). The existing [privacy-operations policy](privacy-operations-policy-2026-09-14.md) remains controlling where this packet is silent.
 
@@ -19,7 +19,7 @@ The runner boundary is:
 - a single JSON document over standard input for future case instructions; no payload or credential in command-line arguments or a persisted command file; and
 - aggregate queue output or a minimized single-case status only. Contact values, request detail, mailbox bodies, export artifacts, provider identifiers, credentials, and raw errors must not leave the process.
 
-All gates remain `false`. The guard has no database, credential, provider, mail, route, scheduling, or logging binding. A future executable runner is a new reviewed source action.
+All gates remain `false`. The guard has no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked dispatcher core also has no executable entrypoint or adapter. A future executable runner remains a new reviewed source action.
 
 ## Least-privileged production binding — required later, absent now
 
