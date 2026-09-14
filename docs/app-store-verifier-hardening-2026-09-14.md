@@ -2,7 +2,7 @@
 
 Status: **local source containment implemented; activation remains blocked.** This work is isolated on `codex/apple-verifier-hardening` from pre-change SHA `b3a799f2d485e8617fac00c0f6e0b72a4a3fda4c`. It changes application source, deterministic source fixtures, readiness checks, and documentation only. It does not change `package.json` dependencies, `pnpm-lock.yaml`, Apple configuration, protected environment, database/schema/migrations, provider state, deployment, signing, upload, distribution, submission, or production.
 
-The first complete fail-closed hardening checkpoint is `HARDENING_SOURCE_SHA_PENDING`. Record that exact commit after the local source/test checkpoint is created; the pre-change SHA above is provenance, not an eligible fail-closed rollback target.
+The first complete fail-closed hardening checkpoint is `4431fde72b4b79875386334c1aa59c23e8b87327`. The pre-change SHA above is provenance, not an eligible fail-closed rollback target.
 
 ## Implemented Controls
 
