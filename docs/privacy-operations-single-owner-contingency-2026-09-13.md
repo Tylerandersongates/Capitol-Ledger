@@ -1,6 +1,6 @@
 # CapitolWonk Privacy Operations And Single-Owner Contingency — September 13, 2026
 
-Status: **prepared but not operational. First-party privacy intake remains disabled.** Tyler is the sole current privacy-request owner and no backup operator is available. This packet defines the minimum operating model and fail-closed absence response supported by repository evidence. It does not activate intake, create a live case register, access a mailbox, send a message, resolve a request, write production data, change a provider, or authorize account deletion.
+Status: **default-off source is deployed and an aggregate-only local monitor is implemented, but privacy operations are not active. First-party privacy intake remains disabled.** Tyler is the sole current privacy-request owner and no backup operator is available. This packet defines the minimum operating model and fail-closed absence response supported by repository evidence. It does not activate intake, create a live case register, access a mailbox, send a message, resolve a request, write production data, change a provider, or authorize account deletion.
 
 This is an engineering and operations packet, not legal advice. A legal/owner review must set applicable response targets, identity escalation, exceptions, and retention. Do not publish a universal deadline from this document.
 
@@ -8,11 +8,12 @@ This is an engineering and operations packet, not legal advice. A legal/owner re
 
 | Item | Current evidence |
 | --- | --- |
-| Source candidate | `92b61b970423ce33dc32f6a2f0a9b72a6d3e2e86`; isolated and unmerged in open PR #8; `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa` is the verified predecessor checkpoint, and the documentation-only packet descendant requires its own live-head verification |
-| Current branch evidence | Exact-head [CI #321](https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/34780116093) succeeded and matching Vercel Preview deployment `7d1i8rinVS8iUhUTPUyba4DMwUfy` is Ready |
-| Production source | `7ec68bcf142d6defe865c12959b0f9a84fce72d5` |
+| Source deployment | PR #8 merged default-off privacy/deletion source into `main` at merge commit `dca8330e012f723ecd77f2756a865e907c0fa553`; PR #12 then merged fail-closed App Store verifier containment at `4836e3e48d95d677f8b64713a7f8af62204ea631` |
+| Current production evidence | GitHub checks passed for both merges; Vercel production deployment `9F3k4yumJTfqDQtEBcAz1bZ6qgnr` for `4836e3e` reached Ready |
+| Database/schema | Production Batch A applied the exact five reviewed migrations once; Prisma status and the complete postflight passed |
 | First-party activation | Exact opt-in `PRIVACY_REQUEST_INTAKE_ENABLED=true`; blank, missing, `false`, or any other value fails closed before authentication, body parsing, or database access |
 | Current activation state | Disabled/inactive |
+| Aggregate monitor | Repository-local, exact-opt-in, read-only implementation on `codex/privacy-operations-monitor`; not deployed, configured, scheduled, or run against production |
 | Fallback | `privacy@capitolwonk.com` is configured on the controlled domain and forwards to an owner-controlled external inbox; the destination is intentionally omitted |
 | Delivery proof | Forwarding and outbound-sender exercises have not been performed |
 | Human owner / backup | Tyler / none |
@@ -20,12 +21,13 @@ This is an engineering and operations packet, not legal advice. A legal/owner re
 
 ## What is ready
 
-The candidate contains a technically conservative intake surface:
+The deployed default-off source contains a technically conservative intake surface:
 
 - [`lib/privacy-request-activation.ts`](../lib/privacy-request-activation.ts) requires exact activation and validates the optional fallback address.
 - [`app/api/privacy/requests/route.ts`](../app/api/privacy/requests/route.ts) exposes authenticated user `GET`/`POST` only, applies the shared same-origin guard, a per-process five-attempt window keyed by scope plus client IP plus authenticated-session user ID, a 4 KiB body limit, and strict validation. Its own JSON success/validation/disabled responses are `no-store`; shared guard rejections do not uniformly set that header. The limiter is not a durable account-wide ceiling and remains an open production decision.
 - [`prisma/migrations/20260912120000_privacy_request_intake/migration.sql`](../prisma/migrations/20260912120000_privacy_request_intake/migration.sql) defines bounded detail, closed request/status/resolution values, consistent resolution state, one active request per account/type, indexes, and account-deletion cascade.
 - [`lib/privacy-requests.ts`](../lib/privacy-requests.ts) defines no dedicated email, credential, provider-identifier, diagnostic, identity-document, or export-payload fields, returns an existing active duplicate, and lists only the signed-in user's 20 newest summaries. The optional 1,000-character `detail` is stored verbatim and has guidance but no content filter, so accidental sensitive text remains possible.
+- [`lib/privacy-request-monitor.ts`](../lib/privacy-request-monitor.ts) adds one exact-opt-in, aggregate-only database read for `new`/`reviewing` counts, oldest age bands, and resolved counts by closed resolution category. Its returned snapshot has no request ID, user ID, email, detail, mailbox content, provider identifier, or payload. The reader is local-only and is not a route, scheduler, alert, or production activation.
 - Candidate Support/Privacy copy routes rights requests away from Sentry. Sentry remains the bug/diagnostics surface.
 - Source-level telemetry filtering removes common credential/query fields and avoids request-payload logging; current runtime proof remains open.
 - The controlled domain, forwarding aliases, Resend sending domain, and Vercel contact/sender configuration are setting-verified without exposing the destination or secret.
@@ -40,12 +42,12 @@ The first-party lane must remain off because the repository contains no complete
 2. The status-transition helper in [`lib/privacy-request-contract.ts`](../lib/privacy-request-contract.ts) has no production caller.
 3. `acknowledgedAt` is written at record creation. It means **automated receipt**, not human review or acknowledgement.
 4. There is no export generator, reauthentication step, secure export-delivery channel, expiry job, correction workflow, mailbox ingestion, mailbox/database deduplication, deletion-assistance executor, consent-withdrawal operator, or response-email implementation.
-5. There is no aggregate new/overdue/failed privacy-request monitor and no approved review cadence.
+5. The aggregate source monitor is implemented locally, but it is not deployed, configured, scheduled, runtime-proven, or connected to an alert. No review cadence or age threshold is approved, so it reports age bands without claiming that a case is overdue.
 6. [`lib/privacy-retention.ts`](../lib/privacy-retention.ts) does not include `PrivacyRequest`. Queue-record and optional-detail retention are undefined. Forwarded mailbox-copy retention/deletion is also undefined.
 7. Mail forwarding and outbound reply/sender behavior are configured but unexercised.
 8. Signed-in session identity is sufficient for intake, not automatically for high-risk fulfillment. Former-user, lost-email, export, correction, and support-assisted deletion verification are undefined.
 9. No backup operator exists, no temporary-access process is approved, and continuous coverage cannot be claimed.
-10. Candidate deployment, the fifth migration, live runtime/provider proof, and activation all remain separate unapproved actions.
+10. The five migrations and matching default-off source deployment are complete. Monitor deployment/scheduling, live runtime/provider proof, and every activation remain separate unapproved actions.
 11. Optional `detail` has no content filter or redaction path. Because there is also no production `PrivacyRequest` update/delete path or retention sweep, accidental sensitive text cannot currently be redacted or expired except through the account cascade.
 
 ## Minimum two-lane operating model
@@ -163,18 +165,18 @@ If Lane A is still off, leave it off. If it was activated in a future separately
 
 If mailbox delivery, identity, export confidentiality, or provider state is uncertain, stop. Preserve minimal evidence and present one narrow recovery action. Do not improvise a personal inbox, shared password, unencrypted attachment, Sentry case, public issue, or production database edit.
 
-## Monitoring design — prepared, not implemented
+## Monitoring design — source implemented, not operated
 
-The future monitor may expose only:
+The local monitor exposes only:
 
 - count of `new` requests;
 - count of `reviewing` requests;
 - oldest age band for each status;
-- count requiring identity escalation;
-- count awaiting provider/legal decision; and
 - count resolved by resolution category.
 
-The repository supplies no approved acknowledgement/completion targets, so this packet does not invent alert thresholds. Tyler/legal review must set the internal targets and exceptions before implementation. The monitor must never include `id`, `userId`, detail, email, mailbox subject/body, export content, or provider identifiers.
+Identity-escalation and provider/legal-decision counts remain intentionally absent because no approved private-register schema exists for them. The monitor does not infer or fabricate those states from free-form detail.
+
+The repository supplies no approved acknowledgement/completion targets, so the implementation does not invent alert thresholds or an `overdue` label. `PRIVACY_REQUEST_MONITOR_ENABLED` must be exact lowercase `true` before any database read; it defaults to `false`. The reader returns only the aggregate snapshot and must never include `id`, `userId`, detail, email, mailbox subject/body, export content, or provider identifiers. Deployment, protected configuration, scheduling, alerts, and a first production read each require separate review.
 
 ## Retention decision required
 
@@ -214,9 +216,9 @@ Each item below is independent:
 6. any provider removal/expiry exercise;
 7. isolated database migration and synthetic privacy lifecycle exercise;
 8. constrained-restore phases and temporary-resource cleanup;
-9. Batch A production migrations;
-10. Batch B matching default-off source deployment;
-11. cleanup/retention secret, scheduler, monitor, and first worker invocation;
+9. any later database migration or schema change; Production Batch A is complete;
+10. any later source deployment; the matching default-off privacy source and fail-closed verifier containment are deployed;
+11. cleanup/retention secret, scheduler, monitor deployment/configuration, and first production monitor or worker invocation;
 12. privacy-intake activation;
 13. account-deletion, privacy-retention, and legacy-feedback activation/removal—each separately;
 14. each real access/export/correction/deletion/consent/provider mutation under the approved operational authority;
@@ -233,9 +235,9 @@ Approval to prepare this document grants none of them.
 | Mailbox/domain configuration | Setting-ready; delivery and retention unproven |
 | Human operations | Not ready |
 | Single-owner coverage | No-go for activation until the contingency controls are approved |
-| Retention and monitoring | Not defined or implemented for privacy requests |
-| Production migration/deployment/activation | Not authorized |
+| Retention and monitoring | Aggregate source monitor implemented locally; cadence, alerts, retention, deployment and runtime proof remain open |
+| Production migration/deployment/activation | Five migrations and default-off source deployments complete; every activation remains unauthorized and off |
 
-Next safest action: keep the lane disabled and have Tyler approve or revise the private-register boundary, review cadence, single-owner absence rule, identity escalation, and retention worksheet. Then implement and validate the missing operator lifecycle locally and on an approved isolated synthetic environment. A delivery exercise, production migration, deployment, or activation should not be the next action.
+Next safest action: keep the lane disabled and have Tyler approve or revise the private-register boundary, review cadence, single-owner absence rule, identity escalation, and retention worksheet. Then validate the aggregate monitor and missing operator lifecycle on an approved isolated synthetic environment. A delivery exercise, monitor deployment, protected configuration change, scheduler, production read, or activation should not be the next action.
 
-October 30 remains the target, but it is low-confidence and materially at risk. Privacy operations are now specified well enough to expose the remaining work; they are not a substitute for Apple signing, issue #447 remediation, restore phases, migrations, runtime/provider proof, sandbox/device QA, asset recapture, App Review submission, or review time.
+October 30 remains the target, but it is low-confidence and materially at risk. Privacy operations are now specified well enough to expose the remaining work; they are not a substitute for Apple signing, issue #447 remediation, operator/runtime/provider proof, retention and activation decisions, sandbox/device QA, asset recapture, App Review submission, or review time.

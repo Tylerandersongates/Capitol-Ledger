@@ -9,6 +9,8 @@ function read(path) {
 
 const activation = read("lib/privacy-request-activation.ts");
 const contract = read("lib/privacy-request-contract.ts");
+const monitor = read("lib/privacy-request-monitor.ts");
+const monitorReader = read("scripts/read-privacy-request-monitor.ts");
 const service = read("lib/privacy-requests.ts");
 const route = read("app/api/privacy/requests/route.ts");
 const page = read("app/privacy/request/page.tsx");
@@ -24,6 +26,7 @@ const packageJson = read("package.json");
 
 assert.ok(environment.includes('PRIVACY_REQUEST_INTAKE_ENABLED="false"'), "privacy intake must default off");
 assert.ok(environment.includes('PRIVACY_REQUEST_EMAIL=""'), "fallback mailbox must be explicit and blank by default");
+assert.ok(environment.includes('PRIVACY_REQUEST_MONITOR_ENABLED="false"'), "privacy monitor must default off");
 assert.ok(activation.includes('=== "true"'), "only exact true may activate first-party privacy intake");
 assert.ok(activation.includes("return null"), "an invalid or missing fallback mailbox must fail closed");
 
@@ -43,6 +46,11 @@ assert.ok(service.includes('INSERT INTO "PrivacyRequest"'), "privacy requests ne
 assert.ok(service.includes('ON CONFLICT ("userId", "requestType")'), "active duplicate requests must be idempotent");
 assert.ok(service.includes("runAccountPersistenceOperation"), "database errors must fail closed through account-persistence handling");
 assert.ok(!service.includes("console."), "privacy-request service must not log request payloads");
+assert.ok(monitor.includes('PRIVACY_REQUEST_MONITOR_ENABLED === "true"'), "privacy monitor must require exact opt-in");
+assert.ok(monitor.includes('FROM "PrivacyRequest"'), "privacy monitor must read the dedicated queue");
+assert.ok(monitor.includes("COUNT(*) FILTER"), "privacy monitor must expose aggregate counts only");
+assert.ok(!monitor.includes('SELECT "id"') && !monitor.includes('"userId"') && !monitor.includes('"detail"'), "privacy monitor must not select request payload or identifiers");
+assert.ok(monitorReader.includes("JSON.stringify(result"), "privacy monitor reader must emit only the aggregate result");
 
 assert.ok(schema.includes("model PrivacyRequest"), "Prisma schema must include the privacy-request model");
 assert.ok(migration.includes('ON DELETE CASCADE'), "account deletion must erase account-linked privacy requests");
@@ -64,5 +72,6 @@ assert.ok(privacy.includes('href="/privacy/request"'), "the policy must link the
 assert.ok(privacy.includes("does not currently promise deletion of one individual Sentry feedback item"), "Sentry retention copy must avoid an unsupported item-deletion promise");
 assert.ok(middleware.includes('pathname === "/privacy/request"') && middleware.includes('pathname === "/api/privacy/requests"'), "pending-verification sessions must be able to reach the privacy lane");
 assert.ok(packageJson.includes("check-privacy-request-intake-fixtures.ts"), "release checks must execute privacy fixtures");
+assert.ok(packageJson.includes("check-privacy-request-monitor-fixtures.ts"), "release checks must execute privacy monitor fixtures");
 
 console.log("Privacy-request intake readiness checks passed.");
