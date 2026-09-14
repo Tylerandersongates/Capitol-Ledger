@@ -11,7 +11,8 @@ import {
   VerificationStatus,
   type JWSRenewalInfoDecodedPayload,
   type JWSTransactionDecodedPayload,
-  type ResponseBodyV2DecodedPayload
+  type ResponseBodyV2DecodedPayload,
+  type StatusResponse
 } from "@apple/app-store-server-library";
 import { getAppleRootCertificates } from "@/lib/billing/apple-root-certificates";
 import {
@@ -19,11 +20,17 @@ import {
   toAppStoreSubscriptionSnapshot,
   type AppStoreEnvironmentName
 } from "@/lib/billing/app-store-products";
+import {
+  AppStoreVerificationBoundaryError,
+  runAppStoreServerVerification
+} from "@/lib/billing/app-store-verifier-boundary";
 import { reserveAppStoreObservationVersion } from "@/lib/billing/app-store-state";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 type ServerEnvironment = Exclude<AppStoreEnvironmentName, "Xcode">;
 export const appStoreServerRequestTimeoutMs = 60 * 1000;
+export const appStoreServerVerificationGateName = "APP_STORE_SERVER_VERIFICATION_ENABLED";
+export const appStoreServerNotificationsGateName = "APP_STORE_SERVER_NOTIFICATIONS_ENABLED";
 
 type AppStoreServerConfig = {
   appAppleId?: number;
@@ -99,6 +106,23 @@ function configuredAppAppleId() {
   return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
+export function appStoreServerVerificationIsEnabled() {
+  return process.env[appStoreServerVerificationGateName] === "true";
+}
+
+export function appStoreServerNotificationsAreEnabled() {
+  return (
+    appStoreServerVerificationIsEnabled() &&
+    process.env[appStoreServerNotificationsGateName] === "true"
+  );
+}
+
+function assertAppStoreServerVerificationEnabled() {
+  if (!appStoreServerVerificationIsEnabled()) {
+    throw new AppStoreServerConfigurationError([appStoreServerVerificationGateName]);
+  }
+}
+
 function readConfig(): AppStoreServerConfig {
   return {
     appAppleId: configuredAppAppleId(),
@@ -112,6 +136,7 @@ function readConfig(): AppStoreServerConfig {
 export function readAppStoreServerConfiguration() {
   const config = readConfig();
   const missing = [
+    !appStoreServerVerificationIsEnabled() ? appStoreServerVerificationGateName : "",
     !process.env.APP_STORE_BUNDLE_ID ? "APP_STORE_BUNDLE_ID" : "",
     !config.appAppleId ? "APP_STORE_APP_APPLE_ID" : "",
     !config.issuerId ? "APP_STORE_CONNECT_ISSUER_ID" : "",
@@ -130,6 +155,7 @@ function appleEnvironment(environment: ServerEnvironment) {
 }
 
 function createVerifier(environment: ServerEnvironment) {
+  assertAppStoreServerVerificationEnabled();
   const config = readConfig();
   if (environment === "Production" && !config.appAppleId) {
     throw new AppStoreServerConfigurationError(["APP_STORE_APP_APPLE_ID"]);
@@ -145,6 +171,7 @@ function createVerifier(environment: ServerEnvironment) {
 }
 
 function createClient(environment: ServerEnvironment) {
+  assertAppStoreServerVerificationEnabled();
   const config = readConfig();
   const missing = [
     !config.issuerId ? "APP_STORE_CONNECT_ISSUER_ID" : "",
@@ -163,7 +190,10 @@ function createClient(environment: ServerEnvironment) {
 }
 
 function verificationIsRetryable(error: unknown) {
-  return error instanceof VerificationException && error.status === VerificationStatus.RETRYABLE_VERIFICATION_FAILURE;
+  return (
+    error instanceof AppStoreVerificationBoundaryError ||
+    (error instanceof VerificationException && error.status === VerificationStatus.RETRYABLE_VERIFICATION_FAILURE)
+  );
 }
 
 function normalizeVerificationError(message: string, error: unknown) {
@@ -215,28 +245,44 @@ async function verifyAcrossEnvironments<T>(
   throw new AppStoreServerVerificationError("App Store signed data could not be verified.", retryable, errors.at(-1));
 }
 
+async function withAppStoreVerificationBoundary<T>(
+  operation: () => Promise<T>,
+  message: string
+) {
+  assertAppStoreServerVerificationEnabled();
+  try {
+    return await runAppStoreServerVerification(operation);
+  } catch (error) {
+    throw normalizeVerificationError(message, error);
+  }
+}
+
 export async function verifyAppStoreNotification(signedPayload: string) {
-  return verifyAcrossEnvironments<ResponseBodyV2DecodedPayload>((verifier) => verifier.verifyAndDecodeNotification(signedPayload));
+  return withAppStoreVerificationBoundary(
+    () => verifyAcrossEnvironments<ResponseBodyV2DecodedPayload>((verifier) => verifier.verifyAndDecodeNotification(signedPayload)),
+    "App Store notification verification did not complete safely."
+  );
 }
 
 export async function verifyAppStoreTransaction(signedTransactionInfo: string) {
-  return verifyAcrossEnvironments<JWSTransactionDecodedPayload>((verifier) => verifier.verifyAndDecodeTransaction(signedTransactionInfo));
+  return withAppStoreVerificationBoundary(
+    () => verifyAcrossEnvironments<JWSTransactionDecodedPayload>((verifier) => verifier.verifyAndDecodeTransaction(signedTransactionInfo)),
+    "App Store transaction verification did not complete safely."
+  );
 }
 
 export async function verifyAppStoreTransactionInEnvironment(signedTransactionInfo: string, environment: ServerEnvironment) {
-  try {
-    return await createVerifier(environment).verifyAndDecodeTransaction(signedTransactionInfo);
-  } catch (error) {
-    throw normalizeVerificationError("App Store transaction data could not be verified.", error);
-  }
+  return withAppStoreVerificationBoundary(
+    () => createVerifier(environment).verifyAndDecodeTransaction(signedTransactionInfo),
+    "App Store transaction data could not be verified."
+  );
 }
 
 export async function verifyAppStoreRenewalInfoInEnvironment(signedRenewalInfo: string, environment: ServerEnvironment) {
-  try {
-    return await createVerifier(environment).verifyAndDecodeRenewalInfo(signedRenewalInfo);
-  } catch (error) {
-    throw normalizeVerificationError("App Store renewal data could not be verified.", error);
-  }
+  return withAppStoreVerificationBoundary(
+    () => createVerifier(environment).verifyAndDecodeRenewalInfo(signedRenewalInfo),
+    "App Store renewal data could not be verified."
+  );
 }
 
 function compareTransactionRecency(left: JWSTransactionDecodedPayload, right: JWSTransactionDecodedPayload) {
@@ -317,6 +363,7 @@ export async function reassignAppStoreAccountToken(input: {
   environment: ServerEnvironment;
   originalTransactionId: string;
 }) {
+  assertAppStoreServerVerificationEnabled();
   try {
     await withAppStoreServerRequestTimeout(
       createClient(input.environment).setAppAccountToken(input.originalTransactionId, {
@@ -334,12 +381,88 @@ export async function reassignAppStoreAccountToken(input: {
   }
 }
 
+type ValidatedStatusItem = {
+  originalTransactionId: string;
+  signedRenewalInfo?: string;
+  signedTransactionInfo: string;
+  status: number;
+};
+
+type ValidatedStatusGroup = {
+  lastTransactions: ValidatedStatusItem[];
+  subscriptionGroupIdentifier?: string;
+};
+
+const supportedAppStoreStatuses = new Set<number>([
+  Status.ACTIVE,
+  Status.EXPIRED,
+  Status.BILLING_RETRY,
+  Status.BILLING_GRACE_PERIOD,
+  Status.REVOKED
+]);
+
+export function readValidatedAppStoreStatusGroups(response: StatusResponse): ValidatedStatusGroup[] {
+  if (!response || typeof response !== "object" || !Array.isArray(response.data)) {
+    throw new AppStoreServerVerificationError("App Store status response is missing its subscription data.");
+  }
+
+  return response.data.map((group) => {
+    if (!group || typeof group !== "object" || !Array.isArray(group.lastTransactions)) {
+      throw new AppStoreServerVerificationError("App Store status response contains a malformed subscription group.");
+    }
+    if (
+      group.subscriptionGroupIdentifier !== undefined &&
+      (typeof group.subscriptionGroupIdentifier !== "string" || !group.subscriptionGroupIdentifier.trim())
+    ) {
+      throw new AppStoreServerVerificationError("App Store status response contains an invalid subscription group identifier.");
+    }
+
+    const lastTransactions = group.lastTransactions.map((item) => {
+      if (!item || typeof item !== "object") {
+        throw new AppStoreServerVerificationError("App Store status response contains a malformed transaction item.");
+      }
+      if (
+        typeof item.status !== "number" ||
+        !Number.isInteger(item.status) ||
+        !supportedAppStoreStatuses.has(item.status)
+      ) {
+        throw new AppStoreServerVerificationError("App Store status response contains an invalid subscription status.");
+      }
+      if (typeof item.originalTransactionId !== "string" || !item.originalTransactionId.trim()) {
+        throw new AppStoreServerVerificationError("App Store status response is missing an original transaction id.");
+      }
+      if (typeof item.signedTransactionInfo !== "string" || !item.signedTransactionInfo.trim()) {
+        throw new AppStoreServerVerificationError("App Store status response is missing signed transaction data.");
+      }
+      if (
+        item.signedRenewalInfo !== undefined &&
+        (typeof item.signedRenewalInfo !== "string" || !item.signedRenewalInfo.trim())
+      ) {
+        throw new AppStoreServerVerificationError("App Store status response contains invalid signed renewal data.");
+      }
+
+      return {
+        originalTransactionId: item.originalTransactionId,
+        signedRenewalInfo: item.signedRenewalInfo,
+        signedTransactionInfo: item.signedTransactionInfo,
+        status: item.status
+      };
+    });
+
+    return {
+      lastTransactions,
+      subscriptionGroupIdentifier: group.subscriptionGroupIdentifier
+    };
+  });
+}
+
 export async function reconcileAppStoreSubscription(input: {
   anyTransactionId: string;
   environment: ServerEnvironment;
   expectedAppAccountToken?: string;
   expectedOriginalTransactionId?: string;
 }): Promise<CanonicalAppStoreSubscription> {
+  assertAppStoreServerVerificationEnabled();
   const observationVersion = await reserveAppStoreObservationVersion();
   const observedAt = new Date();
   let response;
@@ -365,52 +488,60 @@ export async function reconcileAppStoreSubscription(input: {
     throw new AppStoreServerVerificationError("App Store status response does not match the configured Apple app id.");
   }
 
-  const candidates: VerifiedSubscriptionCandidate[] = [];
-  const verifier = createVerifier(input.environment);
-  const expectedToken = input.expectedAppAccountToken?.toLowerCase();
-  for (const group of response.data ?? []) {
-    for (const item of group.lastTransactions ?? []) {
-      if (!item.signedTransactionInfo || typeof item.status !== "number") continue;
-
-      let transaction: JWSTransactionDecodedPayload;
-      let renewal: JWSRenewalInfoDecodedPayload | undefined;
-      try {
-        transaction = await verifier.verifyAndDecodeTransaction(item.signedTransactionInfo);
-        renewal = item.signedRenewalInfo
-          ? await verifier.verifyAndDecodeRenewalInfo(item.signedRenewalInfo)
-          : undefined;
-      } catch (error) {
-        throw normalizeVerificationError("App Store subscription status contained unverifiable signed data.", error);
+  const groups = readValidatedAppStoreStatusGroups(response);
+  const candidates = await withAppStoreVerificationBoundary(async () => {
+    const verifiedCandidates: VerifiedSubscriptionCandidate[] = [];
+    const verifier = createVerifier(input.environment);
+    const expectedToken = input.expectedAppAccountToken?.toLowerCase();
+    for (const group of groups) {
+      for (const item of group.lastTransactions) {
+        let transaction: JWSTransactionDecodedPayload;
+        let renewal: JWSRenewalInfoDecodedPayload | undefined;
+        try {
+          transaction = await verifier.verifyAndDecodeTransaction(item.signedTransactionInfo);
+          renewal = item.signedRenewalInfo
+            ? await verifier.verifyAndDecodeRenewalInfo(item.signedRenewalInfo)
+            : undefined;
+        } catch (error) {
+          throw normalizeVerificationError("App Store subscription status contained unverifiable signed data.", error);
+        }
+        if (!getAppStoreProduct(transaction.productId)) continue;
+        if (transaction.type !== Type.AUTO_RENEWABLE_SUBSCRIPTION) continue;
+        if (expectedToken && transaction.appAccountToken?.toLowerCase() !== expectedToken) continue;
+        if (
+          input.expectedOriginalTransactionId &&
+          transaction.originalTransactionId !== input.expectedOriginalTransactionId
+        ) {
+          continue;
+        }
+        if (item.originalTransactionId !== transaction.originalTransactionId) {
+          throw new AppStoreServerVerificationError("App Store status transaction lineage does not match its signed data.");
+        }
+        if (
+          group.subscriptionGroupIdentifier &&
+          transaction.subscriptionGroupIdentifier &&
+          group.subscriptionGroupIdentifier !== transaction.subscriptionGroupIdentifier
+        ) {
+          throw new AppStoreServerVerificationError("App Store status subscription group does not match its signed data.");
+        }
+        if (renewal?.originalTransactionId && renewal.originalTransactionId !== transaction.originalTransactionId) {
+          throw new AppStoreServerVerificationError("App Store renewal lineage does not match its signed transaction.");
+        }
+        if (renewal?.productId && renewal.productId !== transaction.productId) {
+          throw new AppStoreServerVerificationError("App Store renewal product does not match its signed transaction.");
+        }
+        if (
+          renewal?.appAccountToken &&
+          transaction.appAccountToken &&
+          renewal.appAccountToken.toLowerCase() !== transaction.appAccountToken.toLowerCase()
+        ) {
+          throw new AppStoreServerVerificationError("App Store renewal account token does not match its signed transaction.");
+        }
+        verifiedCandidates.push({ renewal, status: item.status, transaction });
       }
-      if (!getAppStoreProduct(transaction.productId)) continue;
-      if (transaction.type !== Type.AUTO_RENEWABLE_SUBSCRIPTION) continue;
-      if (expectedToken && transaction.appAccountToken?.toLowerCase() !== expectedToken) continue;
-      if (
-        input.expectedOriginalTransactionId &&
-        transaction.originalTransactionId !== input.expectedOriginalTransactionId
-      ) {
-        continue;
-      }
-      if (item.originalTransactionId && item.originalTransactionId !== transaction.originalTransactionId) continue;
-      if (
-        group.subscriptionGroupIdentifier &&
-        transaction.subscriptionGroupIdentifier &&
-        group.subscriptionGroupIdentifier !== transaction.subscriptionGroupIdentifier
-      ) {
-        continue;
-      }
-      if (renewal?.originalTransactionId && renewal.originalTransactionId !== transaction.originalTransactionId) continue;
-      if (renewal?.productId && renewal.productId !== transaction.productId) continue;
-      if (
-        renewal?.appAccountToken &&
-        transaction.appAccountToken &&
-        renewal.appAccountToken.toLowerCase() !== transaction.appAccountToken.toLowerCase()
-      ) {
-        continue;
-      }
-      candidates.push({ renewal, status: item.status, transaction });
     }
-  }
+    return verifiedCandidates;
+  }, "App Store subscription status verification did not complete safely.");
 
   const candidate = selectCanonicalCandidate(candidates, input.anyTransactionId);
   if (!candidate) {

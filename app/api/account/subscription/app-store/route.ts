@@ -9,6 +9,7 @@ import {
   AppStoreServerConfigurationError,
   AppStoreServerVerificationError,
   AppStoreSubscriptionConflictError,
+  appStoreServerVerificationIsEnabled,
   reconcileAppStoreSubscription,
   type CanonicalAppStoreSubscription
 } from "@/lib/billing/app-store-server";
@@ -105,6 +106,22 @@ async function persistCanonicalSubscription(
 }
 
 async function syncAppStoreSubscription(request: NextRequest) {
+  if (!appStoreServerVerificationIsEnabled()) {
+    return NextResponse.json(
+      {
+        code: "APP_STORE_SERVER_VERIFICATION_DISABLED",
+        error: "App Store subscription verification is temporarily disabled."
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "Retry-After": "30"
+        },
+        status: 503
+      }
+    );
+  }
+
   const guard = guardMutationRequest(request, "account-subscription-app-store", { limit: 20, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 

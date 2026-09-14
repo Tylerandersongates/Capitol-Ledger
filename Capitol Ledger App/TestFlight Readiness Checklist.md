@@ -126,6 +126,8 @@ pnpm exec tsc --noEmit --pretty false
 
 `release-source:check` is the secret-free CI/source safeguard. It is not protected-environment or release-candidate evidence. After App Store Connect products and protected server variables are configured, run the strict candidate gate and the focused strict checks without printing their values:
 
+Keep `APP_STORE_SERVER_VERIFICATION_ENABLED` and `APP_STORE_SERVER_NOTIFICATIONS_ENABLED` false until a corrected verifier passes the full signed OCSP/resource matrix and each activation receives separate approval. The strict commands below intentionally remain blocked while either switch is not exactly `true`.
+
 ```bash
 pnpm release-candidate:check
 TESTFLIGHT_REQUIRE_READY=true pnpm testflight:check

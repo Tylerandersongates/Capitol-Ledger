@@ -27,6 +27,7 @@ const requiredFiles = [
   "lib/billing/app-store.ts",
   "lib/billing/app-store-products.ts",
   "lib/billing/app-store-server.ts",
+  "lib/billing/app-store-verifier-boundary.ts",
   "lib/billing/app-store-state.ts",
   "app/api/account/subscription/app-store/route.ts",
   "app/api/account/subscription/app-store/account-token/route.ts",
@@ -61,8 +62,15 @@ const appStoreEnvNames = [
   "APP_STORE_ACCOUNT_TOKEN_NAMESPACE",
   "APP_STORE_CONNECT_ISSUER_ID",
   "APP_STORE_CONNECT_KEY_ID",
-  "APP_STORE_CONNECT_PRIVATE_KEY"
+  "APP_STORE_CONNECT_PRIVATE_KEY",
+  "APP_STORE_SERVER_VERIFICATION_ENABLED",
+  "APP_STORE_SERVER_NOTIFICATIONS_ENABLED"
 ];
+
+const exactTrueAppStoreEnvNames = new Set([
+  "APP_STORE_SERVER_VERIFICATION_ENABLED",
+  "APP_STORE_SERVER_NOTIFICATIONS_ENABLED"
+]);
 
 function loadLocalEnv() {
   if (!existsSync(".env.local")) return;
@@ -325,13 +333,17 @@ function checkNativeBridge() {
 function checkEnvironment() {
   console.log("\nApp Store environment");
   for (const envName of appStoreEnvNames) {
-    const configured = Boolean(process.env[envName]?.trim());
+    const exactTrue = exactTrueAppStoreEnvNames.has(envName);
+    const configured = exactTrue
+      ? process.env[envName] === "true"
+      : Boolean(process.env[envName]?.trim());
+    const label = `${envName} is ${exactTrue ? "enabled" : "configured"}`;
     if (configured) {
-      pass(`${envName} is configured`);
+      pass(label);
     } else if (requireReady) {
-      fail(`${envName} is configured`, "Required before sandbox/TestFlight account-sync QA.");
+      fail(label, "Required before sandbox/TestFlight account-sync QA; activation switches require the exact value true.");
     } else {
-      warn(`${envName} is configured`, "Needed before sandbox/TestFlight account-sync QA.");
+      warn(label, "Needed before sandbox/TestFlight account-sync QA.");
     }
   }
 }
