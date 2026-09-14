@@ -1,12 +1,12 @@
 # Privacy-request operator boundary and Vercel pause/return runbook — September 14, 2026
 
-Status: **guard contract deployed after PR #17; no executable runner or production binding exists.** The active [operator-runner core candidate](privacy-request-operator-runner-core-2026-09-14.md) adds only a bounded parser and injected dispatcher, without stdin, a database adapter, a principal, or a credential. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
+Status: **guard and dispatcher core deployed after PRs #17 and #19; no database adapter or production binding exists.** The active [fail-closed stdin shell candidate](privacy-request-operator-stdin-shell-2026-09-14.md) adds only the bounded standard-input transport and keeps its adapter intentionally unbound. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
 
 The machine-readable companion is [`privacy-request-operator-boundary-2026-09-14.json`](privacy-request-operator-boundary-2026-09-14.json). The existing [privacy-operations policy](privacy-operations-policy-2026-09-14.md) remains controlling where this packet is silent.
 
 ## Decision
 
-Prepare a future local, server-only operator command behind a new exact opt-in gate, but do not implement or bind that command yet. The repository now contains only a pure authorization guard and a closed contract so the access decision can be reviewed before any credential or production path exists.
+Keep the local, server-only operator command behind the exact opt-in gate and separate transport review from any service or production binding. The repository contains the pure authorization guard, closed parser/dispatcher core, and a fail-closed stdin shell whose adapter cannot perform an action. No credential or production path exists.
 
 The runner boundary is:
 
@@ -16,10 +16,10 @@ The runner boundary is:
 - one case and one closed-vocabulary action per invocation; no batch mutation;
 - `PRIVACY_REQUEST_MONITOR_ENABLED=true` additionally required for `queue_summary`;
 - `CAPITOLWONK_PRIVACY_RETENTION_SWEEP_ENABLED=true` additionally required for `retention_apply`;
-- a single JSON document over standard input for future case instructions; no payload or credential in command-line arguments or a persisted command file; and
+- a single JSON document over standard input for case instructions; no payload or credential in command-line arguments or a persisted command file; and
 - aggregate queue output or a minimized single-case status only. Contact values, request detail, mailbox bodies, export artifacts, provider identifiers, credentials, and raw errors must not leave the process.
 
-All gates remain `false`. The guard has no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked dispatcher core also has no executable entrypoint or adapter. A future executable runner remains a new reviewed source action.
+All gates remain `false`. The guard and dispatcher core have no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked stdin shell has an intentionally unbound adapter, so even an allowed local command returns only `operator_action_failed`. A service/monitor adapter and every production binding remain new reviewed source actions.
 
 ## Least-privileged production binding — required later, absent now
 
@@ -113,4 +113,4 @@ If return verification fails, do not submit a request or improvise a fix. Presen
 - no application route imports or names the operator guard; and
 - the contract continues to prohibit a production binding, arbitrary/batch mutation, payload/credential transport, DDL, provider access, and automatic Vercel pause/return.
 
-Passing these checks validates only the local contract. It does not make the runner, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.
+Passing these checks validates only the local contract. It does not make the transport shell, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.

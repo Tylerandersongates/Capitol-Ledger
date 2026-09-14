@@ -1,0 +1,53 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "stdin_shell_only_locally_validated",
+  "productionExecutionAuthorized": false,
+  "implementation": {
+    "state": "fail_closed_stdin_shell_only",
+    "executableEntrypointImplemented": true,
+    "stdinReaderImplemented": true,
+    "adapterState": "intentionally_unbound",
+    "databaseAdapterImplemented": false,
+    "productionCredentialImplemented": false,
+    "productionMigrationAuthorized": false,
+    "providerCapabilityImplemented": false,
+    "publicRouteImplemented": false,
+    "schedulerImplemented": false,
+    "loggingImplemented": false
+  },
+  "input": {
+    "transport": "single_json_document_over_stdin",
+    "maximumBytes": 16384,
+    "interactiveTtyAllowed": false,
+    "commandLineArgumentsAllowed": false,
+    "persistedCommandFileAllowed": false,
+    "unknownFieldsAllowed": false,
+    "operatorRole": "privacy_owner",
+    "singleCaseMutationOnly": true,
+    "batchMutationAllowed": false
+  },
+  "adapter": {
+    "state": "intentionally_unbound",
+    "externalActionPossible": false,
+    "allowedGateResult": "operator_action_failed",
+    "databaseAccess": false,
+    "mailboxAccess": false,
+    "exportStoreAccess": false,
+    "providerAccess": false,
+    "networkAccess": false,
+    "filesystemAccess": false
+  },
+  "output": {
+    "transport": "single_minimized_json_document_over_stdout",
+    "stderrAllowed": false,
+    "rawErrorAllowed": false,
+    "contactOrPayloadAllowed": false,
+    "credentialAllowed": false
+  },
+  "exitCodes": {
+    "completed": 0,
+    "notExecuted": 2,
+    "operatorActionFailed": 3,
+    "unexpectedShellFailure": 4
+  }
+}

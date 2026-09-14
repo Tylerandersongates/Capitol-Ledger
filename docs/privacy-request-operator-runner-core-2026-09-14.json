@@ -1,6 +1,6 @@
 {
   "contractVersion": "2026-09-14",
-  "decisionStatus": "dispatcher_core_only_locally_validated",
+  "decisionStatus": "dispatcher_core_deployed_after_pr19",
   "productionExecutionAuthorized": false,
   "implementation": {
     "state": "strict_parser_and_injected_dispatcher_core_only",
