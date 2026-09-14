@@ -35,11 +35,11 @@ The exercise also runs inside `pnpm privacy-request:check` and therefore the bra
 
 ## Still open
 
-- Independent source review and exact-head CI/Preview evidence.
-- Least-privileged production operator authentication/binding and production migration approval.
+- Independent review and exact-head CI/Preview evidence for any future executable runner.
+- An executable local/server operator runner, least-privileged production authentication/binding, and production migration approval. The pure guard and access contract are prepared locally only.
 - Mailbox-copy and export-artifact deletion evidence.
 - Restore-floor verifier and a restore exercise.
-- Exact protected-configuration pause/return runbook.
+- Action-time approval and live exercise of the exact protected-configuration pause/return runbook; the local procedure and fixtures are prepared only.
 - Scheduler, production aggregate monitor read, production retention run, and any alert path.
 - Any provider exercise or real privacy-request operation.
 

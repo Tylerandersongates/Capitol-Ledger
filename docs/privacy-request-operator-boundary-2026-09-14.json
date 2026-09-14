@@ -1,0 +1,141 @@
+{
+  "boundaryVersion": "2026-09-14",
+  "decisionStatus": "guard_contract_only_locally_validated",
+  "productionExecutionAuthorized": false,
+  "runner": {
+    "implementationState": "guard_only_no_executable_runner",
+    "surface": "future_local_server_command_only",
+    "publicRouteAllowed": false,
+    "clientBundleAllowed": false,
+    "productionBindingState": "absent",
+    "operatorRole": "privacy_owner",
+    "singleCaseOnly": true,
+    "batchMutationAllowed": false,
+    "inputTransport": "single_json_document_over_stdin",
+    "commandLinePayloadAllowed": false,
+    "persistedCommandFileAllowed": false,
+    "defaultGateValues": {
+      "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED": "false",
+      "PRIVACY_REQUEST_OPERATIONS_ENABLED": "false",
+      "PRIVACY_REQUEST_MONITOR_ENABLED": "false",
+      "CAPITOLWONK_PRIVACY_RETENTION_SWEEP_ENABLED": "false"
+    },
+    "allowedActions": [
+      "queue_summary",
+      "open_first_party_case",
+      "open_mailbox_case",
+      "acknowledge",
+      "review",
+      "resolve",
+      "retention_apply"
+    ],
+    "actionRequirements": {
+      "queue_summary": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED",
+        "PRIVACY_REQUEST_MONITOR_ENABLED"
+      ],
+      "open_first_party_case": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED"
+      ],
+      "open_mailbox_case": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED"
+      ],
+      "acknowledge": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED"
+      ],
+      "review": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED"
+      ],
+      "resolve": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED"
+      ],
+      "retention_apply": [
+        "PRIVACY_REQUEST_OPERATOR_RUNNER_ENABLED",
+        "PRIVACY_REQUEST_OPERATIONS_ENABLED",
+        "CAPITOLWONK_PRIVACY_RETENTION_SWEEP_ENABLED"
+      ]
+    },
+    "databaseAccess": {
+      "credentialSource": "future_short_lived_managed_secret_injection",
+      "credentialInArgumentsAllowed": false,
+      "credentialInCommandFileAllowed": false,
+      "migrationCredentialAllowed": false,
+      "ddlAllowed": false,
+      "roleAdministrationAllowed": false,
+      "unrelatedTableAccessAllowed": false,
+      "mailboxCredentialAllowed": false,
+      "providerCredentialAllowed": false
+    },
+    "output": {
+      "aggregateQueueSummaryAllowed": true,
+      "singleCaseClosedStatusAllowed": true,
+      "requestPayloadAllowed": false,
+      "contactValueAllowed": false,
+      "mailboxBodyAllowed": false,
+      "exportPayloadAllowed": false,
+      "providerIdentifierAllowed": false,
+      "credentialAllowed": false,
+      "rawErrorAllowed": false
+    }
+  },
+  "pauseReturn": {
+    "project": "capitolwonkce/project-qosv1",
+    "environment": "Production",
+    "setting": "PRIVACY_REQUEST_INTAKE_ENABLED",
+    "triggerReviewWindows": 2,
+    "inactiveLaneAction": "leave_disabled_without_vercel_change",
+    "pause": {
+      "value": "false",
+      "automaticAllowed": false,
+      "actionTimeApprovalRequired": true,
+      "redeployExactReviewedSourceRequired": true,
+      "expectedAnonymousApiStatus": 503,
+      "expectedCacheControl": "no-store"
+    },
+    "return": {
+      "value": "true",
+      "automaticAllowed": false,
+      "actionTimeApprovalRequired": true,
+      "redeployExactReviewedSourceRequired": true,
+      "productionRequestSubmissionIncluded": false,
+      "coverageWindowsRequired": 2,
+      "recoveryOrder": "oldest_unreviewed_first"
+    }
+  },
+  "syntheticCoverageScenarios": [
+    {
+      "name": "inactive_lane_planned_absence",
+      "intakeActive": false,
+      "consecutiveMissedReviewWindows": 0,
+      "expectedMissedReviewWindows": 2,
+      "expectedAction": "leave_disabled"
+    },
+    {
+      "name": "active_lane_single_missed_window",
+      "intakeActive": true,
+      "consecutiveMissedReviewWindows": 1,
+      "expectedMissedReviewWindows": 0,
+      "expectedAction": "continue_operating"
+    },
+    {
+      "name": "active_lane_planned_two_window_absence",
+      "intakeActive": true,
+      "consecutiveMissedReviewWindows": 0,
+      "expectedMissedReviewWindows": 2,
+      "expectedAction": "pause_required"
+    },
+    {
+      "name": "active_lane_two_windows_missed",
+      "intakeActive": true,
+      "consecutiveMissedReviewWindows": 2,
+      "expectedMissedReviewWindows": 0,
+      "expectedAction": "pause_required"
+    }
+  ]
+}
