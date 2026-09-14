@@ -9,27 +9,8 @@ import {
   readStripeSubscriptionDetails,
   verifyStripeWebhookSignature
 } from "@/lib/billing/stripe";
-import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
-import {
-  cancelPreviousTeamSubscriptionForProCheckout,
-  rememberPersonalProSubscriptionForTeamOwnerUpgrade,
-  restorePausedPersonalSubscriptionForReleasedTeamSeat
-} from "@/lib/team-subscription-transition";
-import type { BillingCycle, SubscriptionPlanId } from "@/types/capitol";
-
-function readPlan(value?: string): SubscriptionPlanId {
-  if (value === "pro" || value === "team") return value;
-  return "free";
-}
-
-function readCycle(value?: string): BillingCycle {
-  return value === "annual" ? "annual" : "monthly";
-}
-
-function readSeatCount(plan: SubscriptionPlanId, value?: string) {
-  return plan === "team" ? normalizeTeamSeatCount(value) : undefined;
-}
+import { restorePausedPersonalSubscriptionForReleasedTeamSeat } from "@/lib/team-subscription-transition";
 
 function readEventSubscriptionId(object: { id?: string; subscription?: string }) {
   return object.id ?? object.subscription;
@@ -57,6 +38,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
+  if (event.type === "checkout.session.completed") {
+    return NextResponse.json({ checkoutRetired: true, ignored: true, received: true });
+  }
+
   const userId =
     metadata.userId ??
     object.client_reference_id ??
@@ -67,40 +52,6 @@ export async function POST(request: NextRequest) {
 
   if (!userId) {
     return NextResponse.json({ received: true, ignored: true });
-  }
-
-  if (event.type === "checkout.session.completed") {
-    const plan = readPlan(metadata.plan);
-    const cycle = readCycle(metadata.cycle);
-    const seatCount = readSeatCount(plan, metadata.seatCount);
-    const currentSubscription = await readSubscriptionFromDatabase(userId).catch(() => null);
-    if (plan === "team") {
-      await rememberPersonalProSubscriptionForTeamOwnerUpgrade({
-        email: metadata.userEmail,
-        previousSubscription: currentSubscription,
-        teamSubscriptionId: object.subscription,
-        userId
-      }).catch(() => null);
-    }
-    if (plan === "pro") {
-      await cancelPreviousTeamSubscriptionForProCheckout({
-        previousSubscription: currentSubscription
-      }).catch(() => null);
-    }
-
-    const nextSubscription = {
-      cycle,
-      plan,
-      provider: "stripe" as const,
-      providerCustomerId: object.customer,
-      providerEntitlementId: `capitol-ledger-${plan}`,
-      providerSubscriptionId: object.subscription,
-      seatCount,
-      status: "active" as const
-    };
-
-    await writeSubscriptionToDatabase(userId, nextSubscription).catch(() => null);
-    setAccountSubscription(userId, nextSubscription);
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
