@@ -8,19 +8,173 @@ function read(path) {
 }
 
 const route = read("app/api/account/deletion-request/route.ts");
+const activation = read("lib/account-deletion-activation.ts");
 const service = read("lib/account-deletion.ts");
+const accountDatabase = read("lib/account-database.ts");
+const cleanupService = read("lib/account-deletion-cleanup.ts");
+const cleanupRoute = read("app/api/tasks/account-deletion-cleanup/route.ts");
+const stripeWebhook = read("app/api/billing/stripe/webhook/route.ts");
+const requestSecurity = read("lib/request-security.ts");
 const control = read("components/account-deletion-control.tsx");
+const result = read("components/account-deletion-result.tsx");
+const browserGuard = read("components/account-deletion-browser-guard.tsx");
+const browserAuth = read("lib/browser-auth-state.ts");
+const browserProfile = read("lib/browser-account-profile.ts");
+const browserLedger = read("lib/browser-account-ledger.ts");
+const browserGamification = read("lib/browser-gamification.ts");
+const browserLetters = read("lib/browser-letter-history.ts");
+const browserPetitions = read("lib/browser-petition-history.ts");
+const subscriptionControls = read("components/subscription-controls.tsx");
 const settings = read("app/settings/page.tsx");
+const confirmation = read("app/account-deleted/page.tsx");
+const siteHeader = read("components/site-header.tsx");
+const middleware = read("middleware.ts");
+const nativeWebView = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerWebView.swift");
+const nativePurchaseBridge = read("ios/CapitolLedgerNative/CapitolLedgerNative/CapitolLedgerPurchaseBridge.swift");
+const nativeStoreKitSync = read("lib/native-storekit-sync.ts");
+const nativeStoreKitSyncBridge = read("components/native-storekit-sync-bridge.tsx");
+const teamInviteBilling = read("lib/team-invite-billing.ts");
 const privacy = read("app/privacy/page.tsx");
+const support = read("app/support/page.tsx");
+const integrityMigration = read("prisma/migrations/20260910150000_account_deletion_integrity/migration.sql");
+const cleanupMigration = read("prisma/migrations/20260910151000_account_deletion_cleanup_outbox/migration.sql");
+const workspaceIntegrityMigration = read("prisma/migrations/20260910152000_team_subscription_pause_workspace_integrity/migration.sql");
+const appStoreStateMigration = read("prisma/migrations/20260911110000_app_store_server_state/migration.sql");
+const packageJson = read("package.json");
+const environmentExample = read(".env.example");
+const deletionPostRoute = route.slice(route.indexOf("export async function POST"));
 
+assert.ok(environmentExample.includes('ACCOUNT_DELETION_ENABLED="false"'), "sample configuration should keep account deletion off by default");
+assert.ok(activation.includes('=== "true"'), "account deletion activation should require an exact explicit opt-in");
+assert.equal((route.match(/if \(!isAccountDeletionEnabled\(\)\) return accountDeletionDisabledResponse\(\);/g) ?? []).length, 2, "both deletion API methods should enforce the activation gate before account access");
+assert.ok(route.includes('code: "ACCOUNT_DELETION_DISABLED"') && route.includes("status: 503"), "a disabled deletion API should fail closed with a stable unavailable response");
 assert.ok(route.includes('body.confirmation !== "DELETE"'), "deletion requests should require explicit DELETE confirmation");
 assert.ok(route.includes("subscriptionAcknowledged"), "deletion requests should require the Apple billing acknowledgement");
 assert.ok(service.includes('INSERT INTO "AccountDeletionRequest"'), "deletion requests should use dedicated durable storage");
-assert.ok(service.includes("accountDeletionCompletionDays = 7"), "deletion requests should state a seven-day completion target");
+assert.ok(service.includes("client.$transaction"), "account-linked deletion should run in one database transaction");
+assert.ok(service.includes('isolationLevel: "Serializable"'), "account deletion should serialize concurrent destructive attempts");
+assert.ok(service.includes('DELETE FROM "User"'), "account deletion should remove the User record and cascade-linked data");
+assert.ok(service.includes('DELETE FROM "AuthSession"'), "account deletion should revoke every account session inside the transaction");
+assert.ok(service.includes('"status" = \'resolved\''), "the deidentified deletion audit should be marked resolved");
+assert.ok(service.includes('"completedAt" = $2'), "the deletion audit should record completion time");
+for (const table of ["BetaFeedback", "OfficialContactMessage", "PetitionSignature", "TeamInvite", "TeamMember", "TeamSubscriptionPause"]) {
+  assert.ok(service.includes(`DELETE FROM "${table}"`), `${table} account-linked records should be explicitly erased`);
+}
+assert.ok(service.includes("assertAccountRowsDeleted"), "deletion should verify no account-linked rows remain before commit");
+assert.ok(service.includes('FROM "AppStoreSubscriptionState" WHERE "userId" = $1'), "deletion postconditions should verify App Store account state cascaded");
+assert.ok(service.includes('FROM "AppStoreNotificationReceipt" WHERE "userId" = $1'), "deletion postconditions should verify retained App Store receipts were deidentified");
+assert.ok(service.includes('to_regclass(\'public."AccountDeletionCleanupJob"\')'), "deletion should require the transactional cleanup outbox");
+assert.ok(service.includes("snapshotPostCommitCleanupJobs"), "provider and Team-member cleanup should be snapshotted before destructive rows are removed");
+assert.ok(!service.includes("prepareOwned"), "provider cleanup must not execute before the account transaction commits");
+assert.ok(service.includes("processAccountDeletionCleanupJobs"), "committed cleanup jobs should receive an immediate best-effort processing attempt");
+assert.ok(service.includes('DELETE FROM "TeamInvite" WHERE lower("email") = $1'), "deletion should erase invitations addressed to the account email");
+assert.ok(!service.includes('DELETE FROM "TeamInvite" WHERE "invitedByUserId"'), "deletion should preserve invitations in other owners' workspaces");
+assert.ok(service.includes("post-commit ${label} cache cleanup did not complete"), "post-commit cache cleanup should be best-effort");
 assert.ok(fs.existsSync("prisma/migrations/20260718154000_account_deletion_requests/migration.sql"), "account deletion migration should be checked in");
-assert.ok(control.includes("Request account deletion"), "settings should provide an in-app deletion request action");
+assert.ok(cleanupMigration.includes('CREATE TABLE "AccountDeletionCleanupJob"'), "the retryable cleanup outbox migration should be checked in");
+assert.ok(cleanupMigration.includes('FOREIGN KEY ("deletionRequestId") REFERENCES "AccountDeletionRequest"'), "cleanup jobs should remain linked to the deidentified deletion audit");
+assert.ok(cleanupMigration.includes('CREATE UNIQUE INDEX "AccountDeletionCleanupJob_dedupeKey_key"'), "cleanup jobs should be idempotently deduplicated");
+assert.ok(cleanupService.includes("export async function processAccountDeletionCleanupJobs"), "the cleanup worker should expose a retryable batch processor");
+assert.ok(cleanupService.includes("FOR UPDATE SKIP LOCKED"), "concurrent cleanup workers should claim jobs safely");
+assert.ok(cleanupService.includes("retryCleanupJob"), "failed provider cleanup should remain queued for retry");
+assert.ok(cleanupRoute.includes("processAccountDeletionCleanupJobs"), "the authenticated cleanup task route should execute the outbox processor");
+assert.ok(cleanupRoute.includes("ACCOUNT_DELETION_CLEANUP_SECRET") && cleanupRoute.includes("timingSafeEqual"), "the cleanup task route should require a timing-safe task secret in production");
+assert.ok(integrityMigration.includes('CONSTRAINT "OfficialContactMessage_userId_fkey"'), "official-contact rows should have a User cascade constraint");
+assert.ok(integrityMigration.includes('CONSTRAINT "PetitionSignature_userId_fkey"'), "petition rows should have a User cascade constraint");
+for (const constraint of ["OfficialContactMessage_userId_fkey", "PetitionSignature_userId_fkey", "TeamSubscriptionPause_userId_fkey"]) {
+  assert.ok(integrityMigration.includes(`DROP CONSTRAINT IF EXISTS "${constraint}"`), `${constraint} should be recreated deterministically`);
+}
+assert.equal((integrityMigration.match(/ON DELETE CASCADE ON UPDATE CASCADE/g) ?? []).length, 3, "all three runtime-table User FKs should cascade deletion");
+assert.ok(workspaceIntegrityMigration.includes("IN ('', 'team-owner-upgrade')"), "only documented owner-upgrade sentinels should be converted to a nullable workspace reference");
+assert.ok(workspaceIntegrityMigration.includes("RAISE EXCEPTION"), "unexpected orphan Team pause records should stop migration for manual repair");
+assert.ok(workspaceIntegrityMigration.includes('CONSTRAINT "TeamSubscriptionPause_workspaceId_fkey"'), "member pause records should reference a real Team workspace");
+assert.ok(appStoreStateMigration.includes('CONSTRAINT "AppStoreSubscriptionState_userId_fkey"') && appStoreStateMigration.includes("ON DELETE CASCADE"), "App Store account state must cascade with User deletion");
+assert.ok(appStoreStateMigration.includes('CONSTRAINT "AppStoreNotificationReceipt_userId_fkey"') && appStoreStateMigration.includes("ON DELETE SET NULL"), "retained App Store receipts must be deidentified by the User foreign key");
+assert.ok(packageJson.includes("check-account-deletion-fixtures.ts"), "account deletion checks should run transaction fixtures");
+assert.ok(packageJson.includes("check-account-deletion-activation-fixtures.ts"), "account deletion checks should exercise default-off activation behavior");
+assert.ok(packageJson.includes("check-account-persistence-safety.ts"), "account deletion checks should cover fail-closed persistence behavior");
+assert.ok(accountDatabase.includes('WHERE "id" = ${user.id}'), "account persistence should resolve only the authenticated immutable user ID");
+assert.ok(!accountDatabase.includes('INSERT INTO "User"'), "an account-data request must never recreate a deleted User row");
+assert.ok(stripeWebhook.includes("accountPersistenceUserExists"), "Stripe webhooks should verify that the account still exists");
+assert.ok(stripeWebhook.includes("executeAccountDeletionCleanupJob"), "late Stripe events for a deleted account should execute provider cleanup before acknowledgement");
+assert.ok(stripeWebhook.includes("readStripeSubscription"), "mutable Stripe webhook events should reconcile against live provider state");
+assert.ok(requestSecurity.includes('createHash("sha256")'), "rate-limit identities should be one-way hashed in process memory");
+assert.ok(requestSecurity.includes("pruneExpiredRateLimits"), "expired rate-limit records should be removed");
+assert.ok(requestSecurity.includes("clearRateLimitSubjects"), "account deletion should be able to clear rate-limit subject records");
+assert.ok(route.includes("clearRateLimitSubjects(session.user.id, session.user.email)"), "successful deletion should clear account-linked rate-limit records");
+assert.ok(route.includes("deleteAccountAndAssociatedData"), "the API should execute account deletion, not only record a request");
+assert.ok(route.match(/getCurrentSession\(\{ includeUnverified: true \}\)/g)?.length === 2, "unverified persisted sessions should be able to read and execute account deletion");
+assert.ok(route.includes("clearAuthCookies(response)"), "successful deletion should clear all auth cookies");
+assert.ok(deletionPostRoute.indexOf("key: session.user.id") > deletionPostRoute.indexOf("const session = await getCurrentSession({ includeUnverified: true })"), "deletion throttling should be account-keyed after authentication");
+assert.ok(control.includes("Permanently delete account"), "settings should provide an in-app permanent deletion action");
+assert.ok(control.includes("openAppleSubscriptionManagement") && !control.includes('href="https://apps.apple.com/account/subscriptions"'), "deletion safety links should use the native Apple management bridge with its web fallback");
+assert.ok(control.includes("enabled = false") && control.includes("if (!enabled) return null"), "the deletion control should remain hidden unless explicitly enabled by the server");
+assert.ok(control.includes("if (!authenticated || !enabled) return"), "a disabled deletion control should not query deletion state");
 assert.ok(control.includes("Deleting CapitolWonk does not cancel an Apple subscription"), "the flow should explain Apple billing continuity");
+assert.ok(control.includes("Retry permanent deletion"), "an incomplete prior attempt should remain retryable");
+assert.ok(control.includes("clearLocalAccountDataAfterDeletion"), "successful deletion should clear local app data");
+assert.ok(control.includes('window.location.replace("/account-deleted")'), "successful deletion should hard-navigate to a signed-out confirmation route");
+assert.ok(!control.includes('fetch("/api/auth/session"'), "an anonymous session must never be treated as proof that deletion succeeded");
+assert.ok(control.includes("finishDeletedAccountNavigation(true)"), "only an explicit successful deletion response should mark completion");
+assert.ok(control.includes("finishDeletedAccountNavigation(false)"), "an ambiguous response should navigate to an unconfirmed state");
+assert.ok(control.includes("const explicitlyRejected = Boolean("), "only a structured non-success response should be treated as a definitive failed deletion");
+assert.ok(control.includes("!response.ok") && control.includes("data.status === undefined"), "successful or conflicting deletion payloads must fall back to the unconfirmed result");
+assert.ok(control.includes("markBrowserAccountDeletionConfirmed"), "explicit success should write a non-PII per-tab confirmation receipt");
+assert.ok(control.includes('confirmation !== "DELETE" || !acknowledged'), "every deletion attempt should require fresh typed and checkbox confirmation");
+assert.ok(!control.includes('retrying ? "DELETE"') && !control.includes("retrying ? true"), "legacy requests must not fabricate deletion confirmation");
+assert.ok(teamInviteBilling.includes("https://apps.apple.com/account/subscriptions") && control.includes("openAppleSubscriptionManagement"), "Apple subscription management should remain reachable through the shared native bridge and web fallback");
+assert.ok(browserProfile.includes('key.startsWith(capitolLedgerStoragePrefix)'), "browser cleanup should erase every CapitolWonk storage key");
+assert.ok(browserProfile.includes("activateBrowserAccountDeletionFence()"), "browser cleanup should activate a deletion fence before storage events can rehydrate account data");
+assert.ok(browserProfile.includes("isBrowserAccountDeletionFenced()"), "account-profile hydration should respect the deletion fence");
+assert.ok(browserLedger.includes("isBrowserAccountDeletionFenced()"), "account-ledger hydration should respect the deletion fence");
+assert.ok(browserGamification.includes("isBrowserAccountDeletionFenced()"), "gamification hydration and writers should respect the deletion fence");
+assert.ok(browserLetters.includes("isBrowserAccountDeletionFenced()"), "letter hydration and writers should respect the deletion fence");
+assert.ok(browserPetitions.includes("isBrowserAccountDeletionFenced()"), "petition hydration and writers should respect the deletion fence");
+assert.ok(subscriptionControls.includes("isBrowserAccountDeletionFenced()"), "subscription hydration and writers should respect the deletion fence");
+assert.ok(browserAuth.includes('accountDeletionFenceStorageKey = "capitolwonk:account-deletion-fence"'), "the deletion fence should survive CapitolWonk-prefixed storage cleanup");
+assert.ok(browserAuth.includes('accountDeletionReceiptStorageKey = "capitolwonk:account-deletion-confirmed"'), "confirmed deletion should use a non-PII per-tab receipt");
+assert.ok(browserAuth.includes("if (isBrowserAccountDeletionFenced()) return false"), "the deletion fence should block stale browser session hydration");
+assert.ok(browserAuth.includes("beginFreshBrowserAuthentication"), "only an explicit fresh authentication attempt should be eligible to clear the deletion fence");
+assert.ok(browserAuth.includes("completeFreshBrowserAuthentication"), "only a completed fresh authentication attempt should clear the deletion fence");
+assert.ok(browserGuard.includes('window.addEventListener("storage", handleStorage)'), "other open tabs should react when account deletion activates the shared fence");
+assert.ok(browserGuard.includes("isBrowserAccountDeletionFenced()"), "restored tabs should enforce an already-active deletion fence on mount");
+assert.ok(browserGuard.includes("applyDeletionFence(false, false)"), "a fenced mount should stay reachable so support and fresh sign-in links can work");
+assert.ok(browserGuard.includes("applyDeletionFence(true, true)"), "a live cross-tab deletion event should hard-navigate to the unconfirmed result");
+assert.ok(browserGuard.includes("acceptRemoteBrowserAccountDeletionFenceClear"), "a fresh authentication in another tab should synchronously release the in-memory fence before new account data is written");
+assert.ok(browserAuth.includes("export function acceptRemoteBrowserAccountDeletionFenceClear"), "cross-tab fresh authentication should reset cached fence and session state without deleting new account storage");
+assert.ok(browserGuard.includes('event.key?.startsWith("capitol-ledger:")'), "the active deletion fence should quarantine late writes from another tab");
 assert.ok(settings.includes("AccountDeletionControl"), "settings should expose the account deletion control");
+assert.ok(settings.includes("const accountDeletionEnabled = isAccountDeletionEnabled()"), "settings should read the server-side deletion activation gate");
+assert.match(settings, /accountDeletionEnabled\s*\?\s*\[\.\.\.settingRows, accountDeletionSettingRow\]\s*:\s*settingRows/, "settings should hide the deletion navigation row while disabled");
+assert.ok(settings.includes("accountDeletionEnabled ? (") && settings.includes("enabled />"), "settings should render an enabled deletion control only after server activation");
+assert.ok(support.includes("const accountDeletionEnabled = isAccountDeletionEnabled()"), "support should read the server-side deletion activation gate");
+assert.ok(support.includes('supportOptions.filter((option) => option.href !== "/settings#delete-account")'), "support should hide its account-deletion entry point while disabled");
+assert.ok(privacy.includes("const accountDeletionEnabled = isAccountDeletionEnabled()"), "privacy should read the server-side deletion activation gate");
+assert.match(privacy, /accountDeletionEnabled\s*\?\s*\(\s*<Link href="\/settings#delete-account"/, "privacy should render its account-deletion entry point only while enabled");
+assert.ok(privacy.includes("account-deletion assistance"), "privacy should preserve a non-destructive support path while deletion is disabled");
+assert.ok(settings.includes("getProductionSession({ includeUnverified: true })"), "settings should expose deletion to an unverified persisted account without changing ordinary session rules");
+assert.ok(middleware.includes('pathname === "/settings"') && middleware.includes('pathname === "/api/account/deletion-request"'), "email-verification middleware should allow only the deletion entry and API needed by an unverified account");
+assert.ok(confirmation.includes("AccountDeletionResult"), "the deletion result route should verify its per-tab receipt on the client");
+assert.ok(!confirmation.includes("Your account was permanently deleted."), "server-rendered metadata and markup should not claim unverified deletion success");
+assert.ok(result.includes("hasBrowserAccountDeletionReceipt"), "the deletion result should require a per-tab success receipt");
+assert.ok(result.includes("This page cannot confirm that your account was deleted."), "direct or ambiguous result navigation should render a clear unconfirmed state");
+assert.ok(result.includes('role="alert"') && result.includes('aria-live="assertive"'), "unconfirmed deletion status should be announced accessibly");
+assert.ok(siteHeader.includes('pathname === "/account-deleted"'), "the standard site header should remain hidden on the deletion result route");
+assert.ok(nativeWebView.includes("__capitolLedgerAccountDeletionFenceKey"), "the native WebView should expose the shared deletion-fence key before page scripts run");
+assert.ok(
+  nativeStoreKitSync.includes("if (dependencies.accountDeletionFenceActive()) return rejectedDelivery") &&
+    nativeStoreKitSync.includes("if (!published || dependencies.accountDeletionFenceActive()) return rejectedDelivery") &&
+    nativePurchaseBridge.includes("accountDeletionFenceIsClear"),
+  "native StoreKit delivery should check the deletion fence before sync, before finish, and again in the native page boundary"
+);
+assert.ok(
+  nativeStoreKitSyncBridge.includes("isBrowserAccountDeletionFenced") &&
+    nativeStoreKitSyncBridge.includes("if (isBrowserAccountDeletionFenced()) return false"),
+  "the authenticated StoreKit page bridge should suppress post-deletion storage and account publication"
+);
 assert.ok(privacy.includes("Settings > Your data"), "privacy copy should point users to the in-app deletion flow");
+assert.ok(privacy.includes("completed during the confirmed in-app action"), "privacy copy should accurately describe immediate deletion");
+assert.ok(privacy.includes("where Stripe permits") && privacy.includes("already-ended or missing"), "public privacy copy should not promise metadata changes for a terminal or missing Stripe subscription");
+assert.ok(!privacy.includes("targeted for completion within 7 days"), "privacy copy should not describe the superseded request-only workflow");
 
 console.log("Account deletion readiness check passed.");

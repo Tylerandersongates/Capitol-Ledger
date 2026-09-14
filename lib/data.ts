@@ -2,7 +2,6 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
-import { hasCompleteMemberRosterCounts, mergeMemberRosterWithFallback } from "@/lib/congress/member-roster";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -39,7 +38,6 @@ export type SearchRecordsResult = ReturnType<typeof searchRecords>;
 
 type DatabaseSearchRecordsResult = SearchRecordsResult & {
   billResultCount?: number;
-  completeMemberRoster: boolean;
   voteResultCount?: number;
 };
 
@@ -116,6 +114,7 @@ const memberLegislationCacheMaxAgeMs = 10 * 60 * 1000;
 
 type DashboardRecords = {
   bills: Bill[];
+  members: Member[];
   votes: Vote[];
 };
 
@@ -1003,17 +1002,6 @@ export function getVote(id: string) {
   return votes.find((vote) => vote.id === id);
 }
 
-function getDemoVoteDetailData(voteId: string): VoteDetailData | null {
-  const vote = getVote(voteId);
-  if (!vote) return null;
-
-  return {
-    bill: vote.billId ? getBill(vote.billId) : undefined,
-    memberPositions: getVoteMemberPositions(vote.id) as VoteMemberPositionRecord[],
-    vote
-  };
-}
-
 async function getDatabaseVoteDetailData(voteId: string): Promise<VoteDetailData | null> {
   if (!hasDatabaseUrl()) return null;
 
@@ -1053,10 +1041,9 @@ async function getDatabaseVoteDetailData(voteId: string): Promise<VoteDetailData
 }
 
 export async function getVoteDetailWithLiveData(voteId: string): Promise<VoteDetailData | null> {
-  const demoDetail = getDemoVoteDetailData(voteId);
-  if (voteId.startsWith("demo-") && demoDetail) return demoDetail;
+  if (voteId.startsWith("demo-")) return null;
 
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseVoteDetailData(voteId))) ?? demoDetail;
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseVoteDetailData(voteId))) ?? null;
 }
 
 export function getBillSponsor(bill: Bill) {
@@ -1100,20 +1087,6 @@ export function getMemberCaucusMemberships(bioguideId: string) {
   return memberCaucusMemberships[bioguideId] ?? [];
 }
 
-function getDemoMemberDetailData(bioguideId: string): MemberDetailData | null {
-  const member = getMember(bioguideId);
-  if (!member) return null;
-
-  return {
-    chamberMembers: getAllMembers().filter((candidate) => candidate.chamber === member.chamber),
-    caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
-    cosponsoredBills: getCosponsoredBills(member.bioguideId),
-    member,
-    memberVotes: selectMemberVoteRecords([], getMemberVotes(member.bioguideId) as MemberVoteRecord[], 20),
-    sponsoredBills: getSponsoredBills(member.bioguideId)
-  };
-}
-
 async function getLiveMemberDetailData(bioguideId: string): Promise<MemberDetailData | null> {
   if (!/^[A-Z][0-9]{6}$/.test(bioguideId)) return null;
 
@@ -1122,10 +1095,7 @@ async function getLiveMemberDetailData(bioguideId: string): Promise<MemberDetail
 
   return {
     caucusMemberships: getMemberCaucusMemberships(member.bioguideId),
-    chamberMembers: mergeMemberRosterWithFallback(
-      [member],
-      getAllMembers().filter((candidate) => candidate.chamber === member.chamber)
-    ),
+    chamberMembers: [member],
     cosponsoredBills: [],
     member,
     memberVotes: [],
@@ -1405,7 +1375,6 @@ function hydrateMemberDetailWithLiveVotes(detail: MemberDetailData) {
 export async function getMemberDetailWithLiveData(bioguideId: string): Promise<MemberDetailData | null> {
   const detail =
     (await withOptionalDatabaseReadTimeout(() => getDatabaseMemberDetailData(bioguideId))) ??
-    getDemoMemberDetailData(bioguideId) ??
     (await getLiveMemberDetailData(bioguideId));
   if (!detail) return null;
 
@@ -1447,9 +1416,7 @@ async function getDatabaseActiveMembers(): Promise<Member[] | null> {
 export async function getAllMembersWithLiveData() {
   const liveMembers = await withOptionalDatabaseReadTimeout(getDatabaseActiveMembers);
 
-  if (!liveMembers) return members;
-
-  return mergeMemberRosterWithFallback(liveMembers, members);
+  return liveMembers ?? [];
 }
 
 export function getBillVotes(billId: string) {
@@ -1583,7 +1550,7 @@ function dedupeBillActions(actions: BillAction[]) {
 }
 
 function buildBillActionsForDetail(bill: Bill, billVotes: Vote[], officialActions: BillAction[] = []) {
-  const demoActions = getDemoBillActionsForBill(bill);
+  const demoActions = bill.id.startsWith("demo-") ? getDemoBillActionsForBill(bill) : [];
   const derivedActions = buildDerivedBillActions(bill, billVotes);
   return hydrateBillActionVoteLinks(dedupeBillActions([...officialActions, ...demoActions, ...derivedActions]), billVotes).sort(
     (left, right) => actionSortValue(right) - actionSortValue(left)
@@ -1627,24 +1594,6 @@ export function getBillSourceMatches(billId: string) {
     videos: getBillVideos(billId),
     votes: getBillVotes(billId)
   });
-}
-
-function getDemoBillDetailData(billId: string): BillDetailData | null {
-  const bill = getBill(billId);
-  if (!bill) return null;
-
-  const billVotes = getBillVotes(bill.id);
-
-  return {
-    bill,
-    billActions: buildBillActionsForDetail(bill, billVotes),
-    billVideos: getBillVideos(bill.id),
-    billVotes,
-    cosponsors: getBillCosponsors(bill.id),
-    sourceMatches: getBillSourceMatches(bill.id),
-    sponsor: getBillSponsor(bill),
-    voteMemberPositionsByVoteId: getDemoVoteMemberPositionsByVoteId(billVotes)
-  };
 }
 
 async function fetchLiveBillSponsor(bill: Bill, fallback?: Member) {
@@ -1805,13 +1754,13 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
         LIMIT 12
       `
       .catch(() => []);
-    const fallbackSponsor = billRow.sponsor ? mapDatabaseMember(billRow.sponsor) : getBillSponsor(bill);
+    const fallbackSponsor = billRow.sponsor ? mapDatabaseMember(billRow.sponsor) : undefined;
     const fallbackCosponsors = billRow.cosponsors.map((cosponsor) => mapDatabaseMember(cosponsor.member));
     const billVideos = getBillVideos(bill.id);
     const [officialActions, livePeople] = await Promise.all([
       fetchOfficialBillActionsForBill(bill),
       fetchLiveBillPeople(bill, {
-        cosponsors: fallbackCosponsors.length ? fallbackCosponsors : getBillCosponsors(bill.id),
+        cosponsors: fallbackCosponsors,
         sponsor: fallbackSponsor
       })
     ]);
@@ -1870,8 +1819,8 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
     const [officialActions, livePeople] = await Promise.all([
       fetchOfficialBillActionsForBill(bill),
       fetchLiveBillPeople(bill, {
-        cosponsors: getBillCosponsors(bill.id),
-        sponsor: getBillSponsor(bill)
+        cosponsors: [],
+        sponsor: undefined
       })
     ]);
     const { cosponsors, sponsor } = livePeople;
@@ -1897,13 +1846,9 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
 }
 
 export async function getBillDetailWithLiveData(billId: string): Promise<BillDetailData | null> {
-  const demoDetail = getDemoBillDetailData(billId);
+  if (billId.startsWith("demo-")) return null;
 
-  if (billId.startsWith("demo-") && demoDetail) {
-    return demoDetail;
-  }
-
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? (await getLiveBillDetailData(billId)) ?? demoDetail;
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? (await getLiveBillDetailData(billId));
 }
 
 export function getBillStatus(bill: Bill) {
@@ -1995,7 +1940,17 @@ function dashboardVoteSourceKind(vote: Vote) {
   return vote.id.startsWith("demo-") ? "demo" : "live";
 }
 
-function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
+function buildDashboardData(
+  sourceBills: Bill[],
+  sourceVotes: Vote[],
+  {
+    sourceMembers = members,
+    sourceUpdates = updateEvents
+  }: {
+    sourceMembers?: Member[];
+    sourceUpdates?: typeof updateEvents;
+  } = {}
+) {
   const dashboardBills = dedupeDashboardBills(sourceBills);
   const sortedBills = [...dashboardBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
@@ -2026,11 +1981,11 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
     generatedAt: new Date().toISOString(),
     defaultUnreadAlertIds: [
       recentVoteBill || trackedBill ? systemVoteReminderAlertId : "",
-      ...getRecentUpdates()
+      ...sourceUpdates
         .filter((event) => isDefaultUnreadAlertDate(event.occurredAt))
         .map((event) => event.id)
     ].filter(Boolean),
-    updateCount: updateEvents.length,
+    updateCount: sourceUpdates.length,
     statusCounts,
     recentVote: recentVote
       ? {
@@ -2056,7 +2011,7 @@ function buildDashboardData(sourceBills: Bill[], sourceVotes: Vote[]) {
         summary: bill.summary,
         title: bill.title
       })),
-      members: members.map((member) => ({
+      members: sourceMembers.map((member) => ({
         bioguideId: member.bioguideId,
         chamber: member.chamber,
         district: member.district,
@@ -2080,7 +2035,7 @@ async function getDatabaseDashboardRecords() {
 
   try {
     const prisma = getPrisma();
-    const [billRows, voteRows] = await Promise.all([
+    const [billRows, voteRows, memberRows] = await Promise.all([
       prisma.bill.findMany({
         orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
         take: maximumDashboardBillResults
@@ -2099,6 +2054,13 @@ async function getDatabaseDashboardRecords() {
           voteDate: "desc"
         },
         take: 12
+      }),
+      prisma.member.findMany({
+        orderBy: [{ state: "asc" }, { lastName: "asc" }],
+        take: 600,
+        where: {
+          active: true
+        }
       })
     ]);
 
@@ -2107,8 +2069,9 @@ async function getDatabaseDashboardRecords() {
       .filter((bill): bill is PrismaBill => Boolean(bill));
 
     return {
-      bills: mergeBillsByRecordKey([...billRows, ...voteBills].map(mapDatabaseBill), bills),
-      votes: mergeBy(voteRows.map(mapDatabaseVote), votes, (vote) => vote.id)
+      bills: dedupeDashboardBills([...billRows, ...voteBills].map(mapDatabaseBill)),
+      members: memberRows.map(mapDatabaseMember),
+      votes: voteRows.map(mapDatabaseVote)
     };
   } catch {
     return null;
@@ -2123,18 +2086,30 @@ export async function getDashboardDataWithLiveData() {
       cachedAt: Date.now(),
       records: liveRecords
     };
-    return buildDashboardData(liveRecords.bills, liveRecords.votes);
+    return buildDashboardData(liveRecords.bills, liveRecords.votes, {
+      sourceMembers: liveRecords.members,
+      sourceUpdates: []
+    });
   }
 
   if (dashboardLiveRecordsCache && Date.now() - dashboardLiveRecordsCache.cachedAt <= dashboardLiveRecordsCacheMaxAgeMs) {
-    return buildDashboardData(dashboardLiveRecordsCache.records.bills, dashboardLiveRecordsCache.records.votes);
+    return buildDashboardData(dashboardLiveRecordsCache.records.bills, dashboardLiveRecordsCache.records.votes, {
+      sourceMembers: dashboardLiveRecordsCache.records.members,
+      sourceUpdates: []
+    });
   }
 
-  return getDashboardData();
+  return buildDashboardData([], [], { sourceMembers: [], sourceUpdates: [] });
 }
 
 export function getRecentUpdates() {
   return [...updateEvents].sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
+}
+
+export async function getRecentUpdatesWithLiveData(): Promise<ReturnType<typeof getRecentUpdates>> {
+  // Update events do not have a production-backed source yet. An empty feed is
+  // safer than presenting the development fixture as account activity.
+  return [];
 }
 
 function normalizeSearchStateFilters(value?: string | string[]) {
@@ -2244,7 +2219,7 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
     };
 
     const shouldSearchMembers = type === "all" || type === "members";
-    const [memberRows, billRows, voteRows, memberChamberCounts, billResultCount, voteResultCount] = await Promise.all([
+    const [memberRows, billRows, voteRows, billResultCount, voteResultCount] = await Promise.all([
       shouldSearchMembers
         ? prisma.member.findMany({
             orderBy: [{ state: "asc" }, { lastName: "asc" }],
@@ -2292,33 +2267,15 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
             where: voteWhere
           })
         : Promise.resolve([]),
-      shouldSearchMembers
-        ? prisma.member.groupBy({
-            _count: {
-              _all: true
-            },
-            by: ["chamber"],
-            where: {
-              active: true
-            }
-          })
-        : Promise.resolve([]),
       shouldSearchBills ? prisma.bill.count({ where: billWhere }) : Promise.resolve(undefined),
       shouldSearchVotes ? prisma.vote.count({ where: voteWhere }) : Promise.resolve(undefined)
     ]);
 
     const mappedBills = billRows.map(mapDatabaseBill);
-    const houseCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.HOUSE)?._count._all ?? 0;
-    const senateCount = memberChamberCounts.find((row) => row.chamber === PrismaChamber.SENATE)?._count._all ?? 0;
 
     return {
       billResultCount,
       bills: mappedBills,
-      completeMemberRoster: hasCompleteMemberRosterCounts({
-        houseCount,
-        memberCount: houseCount + senateCount,
-        senateCount
-      }),
       members: memberRows.map(mapDatabaseMember),
       voteResultCount,
       votes: voteRows.map(mapDatabaseVote)
@@ -2329,43 +2286,36 @@ async function searchDatabaseRecords(filters: SearchFilters): Promise<DatabaseSe
 }
 
 export async function searchRecordsWithLiveData(filters: SearchFilters) {
-  const demoResults = searchRecords(filters);
   const liveResults = await withOptionalDatabaseReadTimeout(() => searchDatabaseRecords(filters));
 
   if (!liveResults) {
+    const results: SearchRecordsResult = { bills: [], members: [], votes: [] };
+
     return {
-      mode: "demo" as const,
+      mode: "unavailable" as const,
       resultCounts: {
-        bills: demoResults.bills.length,
-        members: demoResults.members.length,
-        votes: demoResults.votes.length
+        bills: 0,
+        members: 0,
+        votes: 0
       },
-      results: demoResults
+      results
     };
   }
 
-  const mergedResults = {
-    bills:
-      liveResults.billResultCount !== undefined
-        ? liveResults.bills
-        : mergeBillsByRecordKey(liveResults.bills, demoResults.bills),
-    members: liveResults.completeMemberRoster
-      ? liveResults.members
-      : mergeMemberRosterWithFallback(liveResults.members, demoResults.members),
-    votes:
-      liveResults.voteResultCount !== undefined
-        ? liveResults.votes
-        : mergeBy(liveResults.votes, demoResults.votes, (vote) => vote.id)
+  const results: SearchRecordsResult = {
+    bills: liveResults.bills,
+    members: liveResults.members,
+    votes: liveResults.votes
   };
 
   return {
-    mode: "live+demo" as const,
+    mode: "live" as const,
     resultCounts: {
-      bills: liveResults.billResultCount ?? mergedResults.bills.length,
-      members: mergedResults.members.length,
-      votes: liveResults.voteResultCount ?? mergedResults.votes.length
+      bills: liveResults.billResultCount ?? results.bills.length,
+      members: results.members.length,
+      votes: liveResults.voteResultCount ?? results.votes.length
     },
-    results: mergedResults
+    results
   };
 }
 

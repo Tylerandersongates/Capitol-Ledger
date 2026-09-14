@@ -1,3 +1,5 @@
+import { isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
+
 export type BillStance = "support" | "oppose" | "watching";
 
 export const billStanceKey = "capitol-ledger:bill-stances";
@@ -32,15 +34,17 @@ function storageScopeFromSession(data: AuthSessionResponse | null) {
 }
 
 export async function resolveBillStanceStorageKey() {
+  if (isBrowserAccountDeletionFenced()) return anonymousBillStanceKey;
   const response = await fetch("/api/auth/session", { cache: "no-store" }).catch(() => null);
   if (!response?.ok) return anonymousBillStanceKey;
 
   const data = (await response.json().catch(() => null)) as AuthSessionResponse | null;
+  if (isBrowserAccountDeletionFenced()) return anonymousBillStanceKey;
   return storageScopeFromSession(data);
 }
 
 export function readBillStances(storageKey: string) {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return {};
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Record<string, BillStance>;
@@ -56,6 +60,7 @@ export function readBillStance(billId: string, storageKey: string) {
 }
 
 export function writeBillStance(billId: string, stance: BillStance, storageKey: string) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   window.localStorage.setItem(
     storageKey,
     JSON.stringify({

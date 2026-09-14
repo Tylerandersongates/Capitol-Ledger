@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { throwAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, FollowTargetType } from "../types/capitol";
 import { mergeAccountGamificationForWrite, normalizeAccountGamification, type AccountGamificationSnapshot } from "./account-gamification";
@@ -102,29 +103,11 @@ let gamificationSchemaReady: Promise<boolean> | null = null;
 let weeklyBriefDeliverySchemaReady: Promise<boolean> | null = null;
 let weeklyBriefEditionSchemaReady: Promise<boolean> | null = null;
 
-function isDatabaseConnectionError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    message.includes("Can't reach database server") ||
-    message.includes("P1001") ||
-    message.includes("ECONNREFUSED") ||
-    message.includes("ENOTFOUND") ||
-    message.includes("timeout")
-  );
-}
-
-function logDatabaseFallback(scope: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[account-database] ${scope} fallback: ${message}`);
-}
-
-async function withDatabaseFallback<T>(scope: string, fallbackValue: T, operation: () => Promise<T>): Promise<T> {
+async function withDatabasePersistence<T>(scope: string, operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    logDatabaseFallback(scope, error);
-    if (isDatabaseConnectionError(error)) return fallbackValue;
-    throw error;
+    throwAccountPersistenceUnavailable(scope, error);
   }
 }
 
@@ -145,10 +128,8 @@ async function ensureAccountProfileSchema() {
 
       return true;
     } catch (error) {
-      logDatabaseFallback("ensureAccountProfileSchema", error);
       profileSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureAccountProfileSchema", error);
     }
   })();
 
@@ -180,10 +161,8 @@ async function ensureWeeklyBriefEditionSchema() {
 
       return true;
     } catch (error) {
-      logDatabaseFallback("ensureWeeklyBriefEditionSchema", error);
       weeklyBriefEditionSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureWeeklyBriefEditionSchema", error);
     }
   })();
 
@@ -224,10 +203,8 @@ async function ensureWeeklyBriefDeliverySchema() {
 
       return true;
     } catch (error) {
-      logDatabaseFallback("ensureWeeklyBriefDeliverySchema", error);
       weeklyBriefDeliverySchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureWeeklyBriefDeliverySchema", error);
     }
   })();
 
@@ -246,10 +223,8 @@ async function ensureAccountSubscriptionSchema() {
 
       return true;
     } catch (error) {
-      logDatabaseFallback("ensureAccountSubscriptionSchema", error);
       subscriptionSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureAccountSubscriptionSchema", error);
     }
   })();
 
@@ -266,34 +241,12 @@ async function ensureAccountGamificationSchema() {
       await prisma.$executeRawUnsafe(`ALTER TABLE "AccountGamification" ADD COLUMN IF NOT EXISTS "lastStreakCreditDate" TEXT`);
       return true;
     } catch (error) {
-      logDatabaseFallback("ensureAccountGamificationSchema", error);
       gamificationSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureAccountGamificationSchema", error);
     }
   })();
 
   return gamificationSchemaReady;
-}
-
-export async function ensureAccountUser(user: { email: string; id: string; name?: string }) {
-  if (!canUseDatabasePersistence()) return false;
-
-  try {
-    const prisma = getPrisma();
-    await prisma.$executeRaw`
-      INSERT INTO "User" ("id", "email", "name", "createdAt", "updatedAt")
-      VALUES (${user.id}, ${user.email}, ${user.name ?? null}, NOW(), NOW())
-      ON CONFLICT ("email") DO UPDATE
-      SET "name" = COALESCE(EXCLUDED."name", "User"."name"), "updatedAt" = NOW()
-    `;
-
-    return true;
-  } catch (error) {
-    logDatabaseFallback("ensureAccountUser", error);
-    if (isDatabaseConnectionError(error)) return false;
-    throw error;
-  }
 }
 
 export async function getAccountPersistenceUserId(user: { email: string; id: string; name?: string }) {
@@ -301,20 +254,30 @@ export async function getAccountPersistenceUserId(user: { email: string; id: str
 
   try {
     const prisma = getPrisma();
-    await ensureAccountUser(user);
     const records = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "User"
-      WHERE lower("email") = lower(${user.email})
+      WHERE "id" = ${user.id}
       LIMIT 1
     `;
 
-    return records[0]?.id ?? user.id;
+    const persistedUserId = records[0]?.id;
+    if (!persistedUserId) throwAccountPersistenceUnavailable("getAccountPersistenceUserId: account no longer exists");
+    return persistedUserId;
   } catch (error) {
-    logDatabaseFallback("getAccountPersistenceUserId", error);
-    if (isDatabaseConnectionError(error)) return user.id;
-    throw error;
+    throwAccountPersistenceUnavailable("getAccountPersistenceUserId", error);
   }
+}
+
+export async function accountPersistenceUserExists(userId: string) {
+  if (!canUseDatabasePersistence()) return true;
+
+  return withDatabasePersistence("accountPersistenceUserExists", async () => {
+    const rows = await getPrisma().$queryRaw<Array<{ exists: boolean }>>`
+      SELECT EXISTS(SELECT 1 FROM "User" WHERE "id" = ${userId}) AS "exists"
+    `;
+    return Boolean(rows[0]?.exists);
+  });
 }
 
 export async function readProfileFromDatabase(userId: string): Promise<AccountProfileSnapshot | null> {
@@ -352,16 +315,14 @@ export async function readProfileFromDatabase(userId: string): Promise<AccountPr
       updatedAt: record.updatedAt.toISOString()
     });
   } catch (error) {
-    logDatabaseFallback("readProfileFromDatabase", error);
-    if (isDatabaseConnectionError(error)) return null;
-    throw error;
+    throwAccountPersistenceUnavailable("readProfileFromDatabase", error);
   }
 }
 
 export async function writeProfileToDatabase(userId: string, value: Partial<AccountProfileSnapshot>): Promise<AccountProfileSnapshot | null> {
   if (!(await ensureAccountProfileSchema())) return null;
 
-  return withDatabaseFallback("writeProfileToDatabase", null, async () => {
+  return withDatabasePersistence("writeProfileToDatabase", async () => {
     const prisma = getPrisma();
     const current = (await readProfileFromDatabase(userId)) ?? normalizeAccountProfile();
     const profile = normalizeAccountProfile({
@@ -413,16 +374,14 @@ export async function readLedgerFromDatabase(userId: string): Promise<AccountLed
       savedAlerts: savedAlerts.map((record) => record.alertId)
     });
   } catch (error) {
-    logDatabaseFallback("readLedgerFromDatabase", error);
-    if (isDatabaseConnectionError(error)) return null;
-    throw error;
+    throwAccountPersistenceUnavailable("readLedgerFromDatabase", error);
   }
 }
 
 export async function mergeLedgerIntoDatabase(userId: string, value: Partial<AccountLedgerSnapshot>): Promise<AccountLedgerSnapshot | null> {
   if (!canUseDatabasePersistence()) return null;
 
-  return withDatabaseFallback("mergeLedgerIntoDatabase", null, async () => {
+  return withDatabasePersistence("mergeLedgerIntoDatabase", async () => {
     const prisma = getPrisma();
     const ledger = normalizeAccountLedger(value);
     const hasFollows = Array.isArray(value.follows);
@@ -512,7 +471,7 @@ export async function mergeLedgerIntoDatabase(userId: string, value: Partial<Acc
 export async function toggleFollowInDatabase(userId: string, targetType: FollowTargetType, targetId: string, saved?: boolean): Promise<AccountLedgerSnapshot | null> {
   if (!canUseDatabasePersistence()) return null;
 
-  return withDatabaseFallback("toggleFollowInDatabase", null, async () => {
+  return withDatabasePersistence("toggleFollowInDatabase", async () => {
     const prisma = getPrisma();
     const dbTargetType = toDbTargetType(targetType);
     const existing = await prisma.$queryRaw<Array<{ id: string }>>`
@@ -542,7 +501,7 @@ export async function toggleFollowInDatabase(userId: string, targetType: FollowT
 export async function readSubscriptionFromDatabase(userId: string): Promise<AccountSubscriptionSnapshot | null> {
   if (!canUseDatabasePersistence()) return null;
 
-  return withDatabaseFallback("readSubscriptionFromDatabase", null, async () => {
+  return withDatabasePersistence("readSubscriptionFromDatabase", async () => {
     if (!(await ensureAccountSubscriptionSchema())) return null;
 
     const prisma = getPrisma();
@@ -579,7 +538,7 @@ export async function findSubscriptionUserIdByProvider({
 }): Promise<string | null> {
   if (!canUseDatabasePersistence() || (!customerId && !subscriptionId)) return null;
 
-  return withDatabaseFallback("findSubscriptionUserIdByProvider", null, async () => {
+  return withDatabasePersistence("findSubscriptionUserIdByProvider", async () => {
     if (!(await ensureAccountSubscriptionSchema())) return null;
 
     const prisma = getPrisma();
@@ -601,7 +560,7 @@ export async function findSubscriptionUserIdByProvider({
 export async function writeSubscriptionToDatabase(userId: string, value: Partial<AccountSubscriptionSnapshot>): Promise<AccountSubscriptionSnapshot | null> {
   if (!canUseDatabasePersistence()) return null;
 
-  return withDatabaseFallback("writeSubscriptionToDatabase", null, async () => {
+  return withDatabasePersistence("writeSubscriptionToDatabase", async () => {
     if (!(await ensureAccountSubscriptionSchema())) return null;
 
     const prisma = getPrisma();
@@ -645,7 +604,7 @@ export async function writeSubscriptionToDatabase(userId: string, value: Partial
 export async function readGamificationFromDatabase(userId: string): Promise<AccountGamificationSnapshot | null> {
   if (!(await ensureAccountGamificationSchema())) return null;
 
-  return withDatabaseFallback("readGamificationFromDatabase", null, async () => {
+  return withDatabasePersistence("readGamificationFromDatabase", async () => {
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbGamification[]>`
       SELECT
@@ -685,9 +644,9 @@ export async function readGamificationFromDatabase(userId: string): Promise<Acco
 export async function writeGamificationToDatabase(userId: string, value: Partial<AccountGamificationSnapshot>): Promise<AccountGamificationSnapshot | null> {
   if (!(await ensureAccountGamificationSchema())) return null;
 
-  return withDatabaseFallback("writeGamificationToDatabase", null, async () => {
+  return withDatabasePersistence("writeGamificationToDatabase", async () => {
     const prisma = getPrisma();
-    const currentGamification = await readGamificationFromDatabase(userId).catch(() => null);
+    const currentGamification = await readGamificationFromDatabase(userId);
     const gamification = mergeAccountGamificationForWrite(currentGamification, value);
     const eventCountsJson = JSON.stringify(gamification.eventCounts);
     const earnedBadgeIdsJson = JSON.stringify(gamification.earnedBadgeIds);
@@ -744,7 +703,7 @@ export async function writeGamificationToDatabase(userId: string, value: Partial
 export async function readWeeklyBriefDeliveryHistoryFromDatabase(userId: string): Promise<WeeklyBriefDeliveryRecord[] | null> {
   if (!(await ensureWeeklyBriefDeliverySchema())) return null;
 
-  return withDatabaseFallback("readWeeklyBriefDeliveryHistoryFromDatabase", null, async () => {
+  return withDatabasePersistence("readWeeklyBriefDeliveryHistoryFromDatabase", async () => {
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbWeeklyBriefDelivery[]>`
       SELECT
@@ -793,7 +752,7 @@ export async function readWeeklyBriefDeliveryHistoryFromDatabase(userId: string)
 export async function writeWeeklyBriefDeliveryToDatabase(userId: string, value: WeeklyBriefDeliveryInput): Promise<WeeklyBriefDeliveryRecord | null> {
   if (!(await ensureWeeklyBriefDeliverySchema())) return null;
 
-  return withDatabaseFallback("writeWeeklyBriefDeliveryToDatabase", null, async () => {
+  return withDatabasePersistence("writeWeeklyBriefDeliveryToDatabase", async () => {
     const prisma = getPrisma();
     const record = normalizeWeeklyBriefDeliveryRecord(userId, {
       ...value,
@@ -858,7 +817,7 @@ export async function readWeeklyBriefEditionFromDatabase(
 ): Promise<WeeklyBriefEditionRecord | null> {
   if (!(await ensureWeeklyBriefEditionSchema())) return null;
 
-  return withDatabaseFallback("readWeeklyBriefEditionFromDatabase", null, async () => {
+  return withDatabasePersistence("readWeeklyBriefEditionFromDatabase", async () => {
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbWeeklyBriefEdition[]>`
       SELECT "id", "userId", "editionDate", "generatedAt", "snapshot"
@@ -877,7 +836,7 @@ export async function readPreviousWeeklyBriefEditionFromDatabase(
 ): Promise<WeeklyBriefEditionRecord | null> {
   if (!(await ensureWeeklyBriefEditionSchema())) return null;
 
-  return withDatabaseFallback("readPreviousWeeklyBriefEditionFromDatabase", null, async () => {
+  return withDatabasePersistence("readPreviousWeeklyBriefEditionFromDatabase", async () => {
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbWeeklyBriefEdition[]>`
       SELECT "id", "userId", "editionDate", "generatedAt", "snapshot"
@@ -897,7 +856,7 @@ export async function writeWeeklyBriefEditionToDatabase(
 ): Promise<WeeklyBriefEditionRecord | null> {
   if (!(await ensureWeeklyBriefEditionSchema())) return null;
 
-  return withDatabaseFallback("writeWeeklyBriefEditionToDatabase", null, async () => {
+  return withDatabasePersistence("writeWeeklyBriefEditionToDatabase", async () => {
     const prisma = getPrisma();
     const record = normalizeWeeklyBriefEditionRecord(userId, value);
     const snapshotJson = JSON.stringify(record.snapshot);

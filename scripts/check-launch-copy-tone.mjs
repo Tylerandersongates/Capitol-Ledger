@@ -30,6 +30,7 @@ const launchFacingPaths = [
   "components/member-email-action.tsx",
   "components/settings-account-sync-status.tsx",
   "components/subscription-controls.tsx",
+  "lib/subscription-plans.ts",
   "lib/auth.ts",
   "lib/brand.ts",
   "lib/billing/app-store.ts",
@@ -69,7 +70,14 @@ const blockedPhrases = [
   "No real payment",
   "Stripe Checkout",
   "fake Stripe",
-  "live Stripe checkout"
+  "live Stripe checkout",
+  "Start 7-day free trial",
+  "Start Pro Trial",
+  "7-Day Trial",
+  "Start Pro with 7 days free",
+  "Monthly Pro starts with 7 days free",
+  "Review the 7-day Pro trial",
+  "7 days free, then $4.99/month. Cancel anytime."
 ];
 
 const legacyBrandName = ["Capitol", "Ledger"].join(" ");

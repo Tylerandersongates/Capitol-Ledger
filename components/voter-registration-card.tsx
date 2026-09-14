@@ -5,13 +5,14 @@ import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileCard } from "@/components/mobile-ui";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
+import { isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 
 const registrationEvent = "complete-voter-registration";
 const registrationCompletionKey = "capitol-ledger:voter-registration-form-complete";
 const registrationTargetId = "voter-registration-form";
 
 function readRegistrationComplete() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
 
   try {
     return window.localStorage.getItem(registrationCompletionKey) === "true";
@@ -21,7 +22,7 @@ function readRegistrationComplete() {
 }
 
 function writeRegistrationComplete() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(registrationCompletionKey, "true");

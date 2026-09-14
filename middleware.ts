@@ -5,8 +5,13 @@ const pendingEmailVerificationCookie = "capitol-ledger-email-verification-pendin
 function isVerificationAllowedPath(pathname: string) {
   return (
     pathname === "/sign-in" ||
+    pathname === "/settings" ||
+    pathname === "/account-deleted" ||
+    pathname === "/privacy/request" ||
     pathname === "/brief" ||
     pathname === "/team/accept" ||
+    pathname === "/api/account/deletion-request" ||
+    pathname === "/api/privacy/requests" ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"

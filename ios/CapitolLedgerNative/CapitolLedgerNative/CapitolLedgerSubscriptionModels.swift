@@ -15,6 +15,7 @@ enum CapitolLedgerPurchaseAction: String, Codable {
     case purchase
     case restore
     case manage
+    case syncPending = "sync-pending"
 }
 
 struct CapitolLedgerPurchaseMessage: Decodable {
@@ -113,6 +114,7 @@ struct CapitolLedgerNativePurchaseResult: Encodable {
     let action: String
     let ok: Bool
     let message: String
+    let pendingApproval: Bool?
     let productId: String?
     let signedTransactionJWS: String?
     let transactionId: String?

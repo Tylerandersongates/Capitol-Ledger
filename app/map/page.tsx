@@ -1,11 +1,13 @@
 import { MobileShell } from "@/components/mobile-shell";
-import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { BrandWordmark } from "@/components/brand-wordmark";
+import { MapCivicScoreCard, MapDistrictCard, MapTrackedBills } from "@/components/map-account-cards";
+import { MobileAlertsBadge } from "@/components/mobile-alerts-badge";
 import { PlanFeatureGate } from "@/components/subscription-controls";
 import Image from "next/image";
 import Link from "next/link";
 import { Bell, Building2, ChevronRight, Home, Landmark, Map, Search, Settings, UsersRound } from "lucide-react";
-import { getAllBills, getBillStatus, getDemoStats } from "@/lib/data";
+import { getBillStatus, getDashboardDataWithLiveData } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 
 const levelFilters = [
@@ -41,31 +43,27 @@ const layerToggles = [
 
 export const dynamic = "force-dynamic";
 
-const mapPoints = [
-  ["12%", "45%", "#ffb12b"],
-  ["22%", "37%", "#69a8ff"],
-  ["32%", "57%", "#69a8ff"],
-  ["45%", "32%", "#ffb12b"],
-  ["54%", "51%", "#ff6f2d"],
-  ["66%", "42%", "#ffb12b"],
-  ["76%", "34%", "#ff6f2d"],
-  ["84%", "48%", "#ffb12b"]
-] as const;
-
 export default async function MapPage(props: { searchParams?: Promise<{ level?: string }> }) {
   const searchParams = await props.searchParams;
   const activeLevel = levelFilters.some((level) => level.value === searchParams?.level) ? searchParams?.level : "federal";
-  const initialSubscription = await getCurrentEffectiveAccountSubscription();
-  const stats = getDemoStats();
-  const trackedBills = getAllBills()
-    .slice(0, 3)
+  const [initialSubscription, dashboard] = await Promise.all([
+    getCurrentEffectiveAccountSubscription(),
+    getDashboardDataWithLiveData()
+  ]);
+  const stats = {
+    billCount: dashboard.billsInAction,
+    updateCount: dashboard.updateCount,
+    voteCount: dashboard.voteFeed.length
+  };
+  const trackedBills = dashboard.favoriteTargets.bills
+    .filter((bill) => !bill.id.startsWith("demo-"))
     .map((bill) => {
       const status = getBillStatus(bill);
       return {
         id: bill.id,
         displayNumber: bill.displayNumber,
         title: bill.shortTitle,
-        meta: bill.committeeName ?? bill.policyArea,
+        meta: bill.policyArea,
         status,
         tone: status === "In Committee" ? "text-[#ffb12b]" : status === "On Floor" ? "text-[#d989ff]" : "text-[#43ed74]"
       };
@@ -84,21 +82,12 @@ export default async function MapPage(props: { searchParams?: Promise<{ level?: 
               </Link>
               <Link href="/alerts" className={`relative ${mobileIconButtonClass}`} aria-label="Alerts">
                 <Bell className="h-7 w-7" strokeWidth={1.9} aria-hidden="true" />
-                <span className="absolute right-2 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[#ff8a00] text-[11px] font-semibold text-white">3</span>
+                <MobileAlertsBadge />
               </Link>
             </header>
 
             <main className="mt-7 space-y-5 pb-8">
-              <MobileCard className="px-5 py-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-[12px] font-semibold uppercase tracking-wide text-white/55">Your District</div>
-                    <h1 className="mt-2 text-[23px] font-medium leading-none text-white">Austin, Texas</h1>
-                    <p className="mt-2 text-[15px] text-white/58">Travis County · TX-10</p>
-                  </div>
-                  <Link href="/onboarding" className="rounded-xl bg-civic/20 px-4 py-2 text-[14px] font-semibold text-[#9bc5ff]">Change</Link>
-                </div>
-              </MobileCard>
+              <MapDistrictCard />
 
               <PlanFeatureGate feature="teamDashboard" initialSubscription={initialSubscription}>
                 <MobileCard className="px-5 py-5">
@@ -114,12 +103,7 @@ export default async function MapPage(props: { searchParams?: Promise<{ level?: 
                       <UsersRound className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
                     </span>
                   </div>
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    <MiniMetric value="4" label="Seats" />
-                    <MiniMetric value="12" label="Watchlists" />
-                    <MiniMetric value="38" label="Shared alerts" />
-                  </div>
-                  <Link href="/team" className={`${mobileViewAllClass} mt-5 flex h-11 items-center justify-center`}>
+                  <Link href="/team" className="mt-5 flex h-11 items-center justify-center rounded-xl border border-white/16 bg-white/[0.035] text-[14px] font-semibold text-[#ffb12b]">
                     Open Workspace
                   </Link>
                 </MobileCard>
@@ -141,23 +125,13 @@ export default async function MapPage(props: { searchParams?: Promise<{ level?: 
                 </div>
 
                 <div className="relative mt-5 h-52 overflow-hidden rounded-2xl border border-white/10 bg-[#041226]">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_45%,rgba(105,168,255,0.26),transparent_28%),radial-gradient(circle_at_70%_42%,rgba(255,138,0,0.24),transparent_32%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_45%,rgba(105,168,255,0.2),transparent_28%),radial-gradient(circle_at_70%_42%,rgba(255,138,0,0.15),transparent_32%)]" />
                   <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(rgba(234,242,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(234,242,255,0.08)_1px,transparent_1px)] [background-size:24px_24px]" />
-                  <div className="absolute left-[9%] top-[27%] h-24 w-[37%] rounded-[50%_28%_42%_36%] border border-[#69a8ff]/70 bg-[#2b8dff]/18 shadow-[0_0_32px_rgba(43,141,255,0.22)]" />
-                  <div className="absolute right-[8%] top-[25%] h-28 w-[48%] rounded-[38%_48%_44%_35%] border border-[#ffb12b]/65 bg-[#ff8a00]/17 shadow-[0_0_34px_rgba(255,138,0,0.22)]" />
-                  <div className="absolute left-[23%] top-[47%] h-14 w-[35%] rotate-6 rounded-[32%_45%_40%_45%] border border-[#69a8ff]/55 bg-[#2b8dff]/12" />
-                  <div className="absolute right-[23%] top-[49%] h-16 w-[36%] -rotate-3 rounded-[44%_38%_45%_34%] border border-[#ffb12b]/55 bg-[#ff8a00]/12" />
-                  {mapPoints.map(([left, top, color]) => (
-                    <span
-                      key={`${left}-${top}`}
-                      className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/55 shadow-[0_0_18px_currentColor]"
-                      style={{ left, top, color, backgroundColor: color }}
-                    />
-                  ))}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-[11px] uppercase tracking-wide text-white/58">
-                    <span>Policy activity</span>
-                    <span className="h-2 w-28 rounded-full bg-gradient-to-r from-[#2b8dff] via-[#ffb12b] to-[#ff503d]" />
-                    <span>High</span>
+                  <div className="absolute inset-0 grid place-items-center px-8 text-center">
+                    <div>
+                      <div className="text-[15px] font-semibold text-white">Geographic activity is not available yet</div>
+                      <p className="mt-2 text-[13px] leading-snug text-white/52">Live district and policy layers will appear here when mapped records are connected.</p>
+                    </div>
                   </div>
                 </div>
 
@@ -176,24 +150,7 @@ export default async function MapPage(props: { searchParams?: Promise<{ level?: 
                 </div>
               </MobileCard>
 
-              <MobileCard className="px-5 py-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[22px] font-medium leading-none">Legislation Tracker</h2>
-                  <Link href="/search?type=bills" className={mobileViewAllClass}>View all</Link>
-                </div>
-                <div className="mt-5 divide-y divide-white/8">
-                  {trackedBills.map((bill) => (
-                    <Link key={bill.id} href={`/bills/${bill.id}`} className="flex items-center justify-between gap-4 py-4">
-                      <div className="min-w-0">
-                        <div className="text-[16px] font-semibold text-white">{bill.displayNumber}</div>
-                        <div className="mt-1 truncate text-[15px] text-white/68">{bill.title}</div>
-                        <div className="mt-1 text-[12px] text-white/45">{bill.meta}</div>
-                      </div>
-                      <span className={`shrink-0 text-right text-[13px] font-semibold ${bill.tone}`}>{bill.status}</span>
-                    </Link>
-                  ))}
-                </div>
-              </MobileCard>
+              <MapTrackedBills bills={trackedBills} />
 
               <div className="grid grid-cols-[1fr_0.9fr] gap-5">
                 <MobileCard className="px-5 py-5">
@@ -210,19 +167,7 @@ export default async function MapPage(props: { searchParams?: Promise<{ level?: 
                   </div>
                 </MobileCard>
 
-                <MobileCard className="px-5 py-5">
-                  <h2 className="text-[20px] font-medium leading-none">Civic Score</h2>
-                  <div className="mt-5 flex items-center gap-3">
-                    <Image src="/capitol-ledger-logo.png" alt="" width={56} height={56} className="h-14 w-14 rounded-full object-cover" />
-                    <div>
-                      <div className="text-[28px] font-medium leading-none text-[#ffb12b]">1,250</div>
-                      <div className="mt-1 text-[13px] text-[#43ed74]">↑ 75 this month</div>
-                    </div>
-                  </div>
-                  <div className="mt-5 h-2 rounded-full bg-white/13">
-                    <div className="h-full w-[82%] rounded-full bg-gradient-to-r from-[#c57b0b] via-[#ffb12b] to-[#ffd45c]" />
-                  </div>
-                </MobileCard>
+                <MapCivicScoreCard />
               </div>
             </main>
 

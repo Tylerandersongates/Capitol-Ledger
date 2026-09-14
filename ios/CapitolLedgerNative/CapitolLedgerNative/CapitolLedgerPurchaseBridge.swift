@@ -6,21 +6,54 @@ import WebKit
 final class CapitolLedgerPurchaseBridge: NSObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
 
+    private var foregroundObserver: NSObjectProtocol?
     private let storeKitService: CapitolLedgerStoreKitService
+    private let trustedOrigin: CapitolLedgerTrustedOrigin
 
-    init(storeKitService: CapitolLedgerStoreKitService) {
+    init(storeKitService: CapitolLedgerStoreKitService, trustedOrigin: CapitolLedgerTrustedOrigin) {
         self.storeKitService = storeKitService
+        self.trustedOrigin = trustedOrigin
         super.init()
+
+        storeKitService.transactionUpdatePublisher = { [weak self] result in
+            guard let self else { return false }
+            return await self.publish(result)
+        }
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.storeKitService.publishPendingTransactionUpdates()
+            }
+        }
+    }
+
+    deinit {
+        if let foregroundObserver {
+            NotificationCenter.default.removeObserver(foregroundObserver)
+        }
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard
+            message.name == "capitolLedgerPurchase",
+            message.frameInfo.isMainFrame,
+            trustedOrigin.matches(message.frameInfo.securityOrigin),
+            let pageURL = message.webView?.url,
+            trustedOrigin.matches(pageURL)
+        else {
+            return
+        }
         guard let purchaseMessage = decodePurchaseMessage(message.body) else {
             Task { @MainActor in
-                publish(
+                _ = await publish(
                     CapitolLedgerNativePurchaseResult(
                         action: "unknown",
                         ok: false,
                         message: "The purchase message could not be read.",
+                        pendingApproval: nil,
                         productId: nil,
                         signedTransactionJWS: nil,
                         transactionId: nil,
@@ -39,24 +72,33 @@ final class CapitolLedgerPurchaseBridge: NSObject, WKScriptMessageHandler {
 
     @MainActor
     func publishCurrentEntitlement() async {
+        await storeKitService.publishPendingTransactionUpdates()
         let result = await storeKitService.currentEntitlementResult()
-        publish(result)
+        _ = await publish(result)
     }
 
     @MainActor
     private func handle(_ message: CapitolLedgerPurchaseMessage) async {
         switch message.action {
         case .purchase:
-            publish(await storeKitService.purchase(message))
+            let result = await storeKitService.purchase(message)
+            if result.signedTransactionJWS != nil, result.transactionId != nil {
+                await storeKitService.publishPendingTransactionUpdates()
+            } else {
+                _ = await publish(result)
+            }
         case .restore:
-            publish(await storeKitService.restore())
+            let result = await storeKitService.restore()
+            await storeKitService.publishPendingTransactionUpdates()
+            _ = await publish(result)
         case .manage:
             openSubscriptionManagement()
-            publish(
+            _ = await publish(
                 CapitolLedgerNativePurchaseResult(
                     action: message.action.rawValue,
                     ok: true,
                     message: "Opening App Store subscription management.",
+                    pendingApproval: nil,
                     productId: nil,
                     signedTransactionJWS: nil,
                     transactionId: nil,
@@ -64,56 +106,69 @@ final class CapitolLedgerPurchaseBridge: NSObject, WKScriptMessageHandler {
                     subscription: nil
                 )
             )
+        case .syncPending:
+            await publishCurrentEntitlement()
         }
     }
 
     @MainActor
-    private func publish(_ result: CapitolLedgerNativePurchaseResult) {
-        guard let webView else { return }
-        guard let jsonData = try? JSONEncoder().encode(result), let json = String(data: jsonData, encoding: .utf8) else { return }
+    private func publish(_ result: CapitolLedgerNativePurchaseResult) async -> Bool {
+        guard let webView else { return false }
+        guard let pageURL = webView.url, trustedOrigin.matches(pageURL) else { return false }
+        guard let jsonData = try? JSONEncoder().encode(result), let json = String(data: jsonData, encoding: .utf8) else { return false }
 
         let script = """
-        (() => {
-          const result = \(json);
-          const publishResult = (nextResult) => {
-            const publicResult = { ...nextResult };
-            delete publicResult.signedTransactionJWS;
-            if (publicResult.subscription) {
-              window.localStorage.setItem("capitol-ledger:subscription", JSON.stringify(publicResult.subscription));
-              window.dispatchEvent(new CustomEvent("capitol-ledger:subscription-changed", { detail: publicResult.subscription }));
-            }
-            window.dispatchEvent(new CustomEvent("capitol-ledger:native-purchase-result", { detail: publicResult }));
-          };
-          publishResult(result);
-          if (result.signedTransactionJWS) {
-            fetch("/api/account/subscription/app-store", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ signedTransactionJWS: result.signedTransactionJWS })
-            })
-              .then(async (response) => {
-                const data = await response.json().catch(() => ({}));
-                publishResult({
-                  ...result,
-                  ok: response.ok && result.ok,
-                  message: data.error || result.message,
-                  serverSynced: response.ok,
-                  subscription: data.subscription || result.subscription
-                });
-              })
-              .catch(() => {
-                publishResult({
-                  ...result,
-                  serverSynced: false,
-                  message: "Purchase is active on this device. Account sync could not be reached."
-                });
-              });
-          }
-        })();
+        const result = JSON.parse(resultJSON);
+        if (typeof window.__capitolWonkSyncAppStoreResult !== "function") {
+          return { acceptedTransactionId: null, transactionAccepted: false };
+        }
+        return await window.__capitolWonkSyncAppStoreResult(result);
         """
 
-        webView.evaluateJavaScript(script)
+        do {
+            let response = try await webView.callAsyncJavaScript(
+                script,
+                arguments: ["resultJSON": json],
+                in: nil,
+                contentWorld: .page
+            )
+            guard let currentPageURL = webView.url, trustedOrigin.matches(currentPageURL) else { return false }
+            guard
+                let acknowledgement = response as? [String: Any],
+                acknowledgement["transactionAccepted"] as? Bool == true,
+                let acceptedTransactionId = acknowledgement["acceptedTransactionId"] as? String,
+                let transactionId = result.transactionId,
+                acceptedTransactionId == transactionId
+            else {
+                return false
+            }
+            return await accountDeletionFenceIsClear(in: webView)
+        } catch {
+            return false
+        }
+    }
+
+    @MainActor
+    private func accountDeletionFenceIsClear(in webView: WKWebView) async -> Bool {
+        guard let pageURL = webView.url, trustedOrigin.matches(pageURL) else { return false }
+        let script = """
+        try {
+          const deletionFenceKey = window.__capitolLedgerAccountDeletionFenceKey || "capitolwonk:account-deletion-fence";
+          return window.localStorage.getItem(deletionFenceKey) !== "active";
+        } catch {
+          return false;
+        }
+        """
+        do {
+            return try await webView.callAsyncJavaScript(
+                script,
+                arguments: [:],
+                in: nil,
+                contentWorld: .page
+            ) as? Bool == true
+        } catch {
+            return false
+        }
     }
 
     @MainActor

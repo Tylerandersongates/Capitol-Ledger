@@ -5,6 +5,7 @@ import { CheckCircle2, Vote } from "lucide-react";
 import { useGamificationSnapshot } from "@/components/gamification-live-stats";
 import { MobileCard } from "@/components/mobile-ui";
 import { setGamificationEventCount } from "@/lib/browser-gamification";
+import { isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { getGamificationEventRule } from "@/lib/gamification";
 
 type ElectionEntry = {
@@ -36,7 +37,7 @@ const electionBadgeMilestones = [
 ];
 
 function readStoredElectionIds() {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [];
 
   try {
     const raw = JSON.parse(window.localStorage.getItem(electionParticipationKey) ?? "[]");
@@ -50,7 +51,7 @@ function readStoredElectionIds() {
 }
 
 function writeStoredElectionIds(ids: string[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(electionParticipationKey, JSON.stringify(ids));

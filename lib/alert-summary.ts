@@ -1,5 +1,5 @@
 import { systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { getDashboardDataWithLiveData, getRecentUpdates } from "@/lib/data";
+import { getDashboardDataWithLiveData, getRecentUpdates, getRecentUpdatesWithLiveData } from "@/lib/data";
 
 type RecentUpdate = ReturnType<typeof getRecentUpdates>[number];
 type AlertPreference = "districtAlerts" | "voteReminders";
@@ -29,11 +29,14 @@ export function getAlertNotificationPreference(event: RecentUpdate): AlertPrefer
 }
 
 export async function getActiveAlertSummary(): Promise<ActiveAlertSummary> {
-  const dashboardData = await getDashboardDataWithLiveData();
+  const [dashboardData, recentUpdates] = await Promise.all([
+    getDashboardDataWithLiveData(),
+    getRecentUpdatesWithLiveData()
+  ]);
   const voteAlertBill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
   const activeAlerts = [
     ...(voteAlertBill ? [{ id: systemVoteReminderAlertId, preference: "voteReminders" as const }] : []),
-    ...getRecentUpdates()
+    ...recentUpdates
       .filter(isActionNeededAlertEvent)
       .map((event) => ({
         id: event.id,

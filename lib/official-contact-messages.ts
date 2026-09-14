@@ -1,4 +1,9 @@
 import { randomUUID } from "crypto";
+import {
+  assertAccountMemoryPersistenceAllowed,
+  runAccountPersistenceOperation,
+  throwAccountPersistenceUnavailable
+} from "@/lib/account-persistence-safety";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { Chamber } from "@/types/capitol";
 
@@ -150,9 +155,10 @@ export async function ensureOfficialContactSchema() {
   if (globalThis.__capitolLedgerOfficialContactSchemaReady) return globalThis.__capitolLedgerOfficialContactSchemaReady;
 
   globalThis.__capitolLedgerOfficialContactSchemaReady = (async () => {
-    const prisma = getPrisma();
+    try {
+      const prisma = getPrisma();
 
-    await prisma.$executeRawUnsafe(`
+      await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "OfficialContactMessage" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "memberBioguideId" TEXT NOT NULL,
@@ -160,10 +166,11 @@ export async function ensureOfficialContactSchema() {
         "senderEmail" TEXT NOT NULL,
         "userId" TEXT,
         "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "OfficialContactMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
       )
     `);
-    await prisma.$executeRawUnsafe(`ALTER TABLE "OfficialContactMessage" ADD COLUMN IF NOT EXISTS "memberName" TEXT`);
+      await prisma.$executeRawUnsafe(`ALTER TABLE "OfficialContactMessage" ADD COLUMN IF NOT EXISTS "memberName" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "OfficialContactMessage" ADD COLUMN IF NOT EXISTS "memberChamber" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "OfficialContactMessage" ADD COLUMN IF NOT EXISTS "memberState" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "OfficialContactMessage" ADD COLUMN IF NOT EXISTS "memberDistrict" TEXT`);
@@ -182,12 +189,16 @@ export async function ensureOfficialContactSchema() {
       CREATE INDEX IF NOT EXISTS "OfficialContactMessage_userId_idx"
       ON "OfficialContactMessage"("userId")
     `);
-    await prisma.$executeRawUnsafe(`
+      await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "OfficialContactMessage_userId_sentAt_idx"
       ON "OfficialContactMessage"("userId", "sentAt")
     `);
 
-    return true;
+      return true;
+    } catch (error) {
+      globalThis.__capitolLedgerOfficialContactSchemaReady = undefined;
+      throwAccountPersistenceUnavailable("ensureOfficialContactSchema", error);
+    }
   })();
 
   return globalThis.__capitolLedgerOfficialContactSchemaReady;
@@ -195,18 +206,21 @@ export async function ensureOfficialContactSchema() {
 
 export async function readMostRecentOfficialContact(memberBioguideId: string, senderKey: string, cooldownKey: string) {
   if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbOfficialContactSentAt[]>`
-      SELECT "sentAt"
-      FROM "OfficialContactMessage"
-      WHERE "memberBioguideId" = ${normalizeMemberBioguideId(memberBioguideId)}
-        AND "senderKey" = ${normalizeSenderKey(senderKey)}
-      ORDER BY "sentAt" DESC
-      LIMIT 1
-    `;
-    return rows[0]?.sentAt?.getTime() ?? null;
+    return runAccountPersistenceOperation("readMostRecentOfficialContact", async () => {
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw<DbOfficialContactSentAt[]>`
+        SELECT "sentAt"
+        FROM "OfficialContactMessage"
+        WHERE "memberBioguideId" = ${normalizeMemberBioguideId(memberBioguideId)}
+          AND "senderKey" = ${normalizeSenderKey(senderKey)}
+        ORDER BY "sentAt" DESC
+        LIMIT 1
+      `;
+      return rows[0]?.sentAt?.getTime() ?? null;
+    });
   }
 
+  assertAccountMemoryPersistenceAllowed("readMostRecentOfficialContact");
   return officialContactCooldownStore.get(cooldownKey) ?? null;
 }
 
@@ -231,49 +245,53 @@ export async function recordOfficialContact({
   const normalizedMemberBioguideId = normalizeMemberBioguideId(memberBioguideId);
   const normalizedSenderKey = normalizeSenderKey(senderKey);
 
-  if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    const confirmedAtExpression = deliveryStatus === "sent" ? "NOW()" : "NULL";
-    await prisma.$executeRawUnsafe(
-      `
-        INSERT INTO "OfficialContactMessage" (
-          "id",
-          "memberBioguideId",
-          "senderKey",
-          "senderEmail",
-          "userId",
-          "memberName",
-          "memberChamber",
-          "memberState",
-          "memberDistrict",
-          "subject",
-          "messagePreview",
-          "deliveryMode",
-          "deliveryStatus",
-          "contactUrl",
-          "sentAt",
-          "confirmedAt",
-          "createdAt",
-          "updatedAt"
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), ${confirmedAtExpression}, NOW(), NOW())
-      `,
-      id,
-      normalizedMemberBioguideId,
-      normalizedSenderKey,
-      senderEmail,
-      userId ?? null,
-      memberName,
-      memberChamber ?? null,
-      memberState ?? null,
-      memberDistrict ?? null,
-      subject,
-      messagePreview,
-      deliveryMode,
-      deliveryStatus,
-      contactUrl ?? null
-    );
+  const usesDatabase = await ensureOfficialContactSchema();
+  if (usesDatabase) {
+    await runAccountPersistenceOperation("recordOfficialContact", async () => {
+      const prisma = getPrisma();
+      const confirmedAtExpression = deliveryStatus === "sent" ? "NOW()" : "NULL";
+      await prisma.$executeRawUnsafe(
+        `
+          INSERT INTO "OfficialContactMessage" (
+            "id",
+            "memberBioguideId",
+            "senderKey",
+            "senderEmail",
+            "userId",
+            "memberName",
+            "memberChamber",
+            "memberState",
+            "memberDistrict",
+            "subject",
+            "messagePreview",
+            "deliveryMode",
+            "deliveryStatus",
+            "contactUrl",
+            "sentAt",
+            "confirmedAt",
+            "createdAt",
+            "updatedAt"
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), ${confirmedAtExpression}, NOW(), NOW())
+        `,
+        id,
+        normalizedMemberBioguideId,
+        normalizedSenderKey,
+        senderEmail,
+        userId ?? null,
+        memberName,
+        memberChamber ?? null,
+        memberState ?? null,
+        memberDistrict ?? null,
+        subject,
+        messagePreview,
+        deliveryMode,
+        deliveryStatus,
+        contactUrl ?? null
+      );
+    });
   } else {
+    assertAccountMemoryPersistenceAllowed("recordOfficialContact");
     officialContactCooldownStore.set(cooldownKey, Date.now());
   }
 
@@ -295,39 +313,42 @@ export async function recordOfficialContact({
     subject
   };
 
-  officialContactMessageStore.unshift({ ...record, userId });
+  if (!usesDatabase) officialContactMessageStore.unshift({ ...record, userId });
   return record;
 }
 
 export async function confirmOfficialContactForUser(id: string, userId: string) {
   if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbOfficialContactMessage[]>`
-      UPDATE "OfficialContactMessage"
-      SET "deliveryStatus" = 'sent',
-          "confirmedAt" = COALESCE("confirmedAt", NOW()),
-          "updatedAt" = NOW()
-      WHERE "id" = ${id}
-        AND "userId" = ${userId}
-      RETURNING
-        "id",
-        "memberBioguideId",
-        "senderEmail",
-        "memberName",
-        "memberChamber",
-        "memberState",
-        "memberDistrict",
-        "subject",
-        "messagePreview",
-        "deliveryMode",
-        "deliveryStatus",
-        "contactUrl",
-        "sentAt",
-        "confirmedAt"
-    `;
-    return rows[0] ? normalizeOfficialContactRecord(rows[0]) : null;
+    return runAccountPersistenceOperation("confirmOfficialContactForUser", async () => {
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw<DbOfficialContactMessage[]>`
+        UPDATE "OfficialContactMessage"
+        SET "deliveryStatus" = 'sent',
+            "confirmedAt" = COALESCE("confirmedAt", NOW()),
+            "updatedAt" = NOW()
+        WHERE "id" = ${id}
+          AND "userId" = ${userId}
+        RETURNING
+          "id",
+          "memberBioguideId",
+          "senderEmail",
+          "memberName",
+          "memberChamber",
+          "memberState",
+          "memberDistrict",
+          "subject",
+          "messagePreview",
+          "deliveryMode",
+          "deliveryStatus",
+          "contactUrl",
+          "sentAt",
+          "confirmedAt"
+      `;
+      return rows[0] ? normalizeOfficialContactRecord(rows[0]) : null;
+    });
   }
 
+  assertAccountMemoryPersistenceAllowed("confirmOfficialContactForUser");
   const existing = officialContactMessageStore.find((record) => record.id === id && record.userId === userId);
   if (!existing) return null;
 
@@ -339,35 +360,71 @@ export async function confirmOfficialContactForUser(id: string, userId: string) 
 
 export async function readOfficialContactMessagesForUser(userId: string, limit = 50) {
   if (await ensureOfficialContactSchema()) {
-    const prisma = getPrisma();
-    const rows = await prisma.$queryRaw<DbOfficialContactMessage[]>`
-      SELECT
-        official."id",
-        official."memberBioguideId",
-        official."senderEmail",
-        COALESCE(official."memberName", member."fullName") AS "memberName",
-        COALESCE(official."memberChamber", member."chamber"::TEXT) AS "memberChamber",
-        COALESCE(official."memberState", member."state") AS "memberState",
-        COALESCE(official."memberDistrict", member."district") AS "memberDistrict",
-        official."subject",
-        official."messagePreview",
-        official."deliveryMode",
-        official."deliveryStatus",
-        official."contactUrl",
-        official."sentAt",
-        official."confirmedAt"
-      FROM "OfficialContactMessage" official
-      LEFT JOIN "Member" member ON member."bioguideId" = official."memberBioguideId"
-      WHERE official."userId" = ${userId}
-      ORDER BY COALESCE(official."confirmedAt", official."sentAt") DESC
-      LIMIT ${Math.max(1, Math.min(100, limit))}
-    `;
+    return runAccountPersistenceOperation("readOfficialContactMessagesForUser", async () => {
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw<DbOfficialContactMessage[]>`
+        SELECT
+          official."id",
+          official."memberBioguideId",
+          official."senderEmail",
+          COALESCE(official."memberName", member."fullName") AS "memberName",
+          COALESCE(official."memberChamber", member."chamber"::TEXT) AS "memberChamber",
+          COALESCE(official."memberState", member."state") AS "memberState",
+          COALESCE(official."memberDistrict", member."district") AS "memberDistrict",
+          official."subject",
+          official."messagePreview",
+          official."deliveryMode",
+          official."deliveryStatus",
+          official."contactUrl",
+          official."sentAt",
+          official."confirmedAt"
+        FROM "OfficialContactMessage" official
+        LEFT JOIN "Member" member ON member."bioguideId" = official."memberBioguideId"
+        WHERE official."userId" = ${userId}
+        ORDER BY COALESCE(official."confirmedAt", official."sentAt") DESC
+        LIMIT ${Math.max(1, Math.min(100, limit))}
+      `;
 
-    return rows.map(normalizeOfficialContactRecord);
+      return rows.map(normalizeOfficialContactRecord);
+    });
   }
 
+  assertAccountMemoryPersistenceAllowed("readOfficialContactMessagesForUser");
   return officialContactMessageStore
     .filter((record) => record.userId === userId)
     .slice(0, Math.max(1, Math.min(100, limit)))
     .map(toPublicOfficialContactRecord);
+}
+
+export function clearOfficialContactMemory(userId: string, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const senderKeys = new Set([
+    normalizeSenderKey(`user:${userId}`),
+    ...(normalizedEmail ? [normalizeSenderKey(`email:${normalizedEmail}`)] : [])
+  ]);
+  let deletedMessages = 0;
+  let deletedCooldowns = 0;
+
+  for (let index = officialContactMessageStore.length - 1; index >= 0; index -= 1) {
+    const record = officialContactMessageStore[index];
+    const matchesUser = record.userId === userId;
+    const matchesEmail = normalizedEmail && record.senderEmail?.trim().toLowerCase() === normalizedEmail;
+    if (!matchesUser && !matchesEmail) continue;
+
+    officialContactMessageStore.splice(index, 1);
+    deletedMessages += 1;
+  }
+
+  for (const cooldownKey of officialContactCooldownStore.keys()) {
+    const separatorIndex = cooldownKey.indexOf("|");
+    const senderKey = separatorIndex >= 0 ? cooldownKey.slice(separatorIndex + 1) : cooldownKey;
+    if (!senderKeys.has(normalizeSenderKey(senderKey))) continue;
+
+    if (officialContactCooldownStore.delete(cooldownKey)) deletedCooldowns += 1;
+  }
+
+  return {
+    cooldowns: deletedCooldowns,
+    messages: deletedMessages
+  };
 }

@@ -6,6 +6,22 @@ import {
   writeSubscriptionToDatabase
 } from "@/lib/account-database";
 import {
+  assertAccountMemoryPersistenceAllowed,
+  fallbackUnlessAccountPersistenceUnavailable,
+  isAccountPersistenceUnavailableError,
+  throwAccountPersistenceUnavailable
+} from "@/lib/account-persistence-safety";
+import {
+  reconcileAppStoreSubscription,
+  type CanonicalAppStoreSubscription
+} from "@/lib/billing/app-store-server";
+import {
+  finalizeAppStoreTeamSeatRelease,
+  persistCanonicalAppStoreState,
+  readAppStoreSubscriptionState
+} from "@/lib/billing/app-store-state";
+import { completedAppStoreTeamSeatReleaseResult } from "@/lib/billing/team-seat-release-result";
+import {
   cancelStripeSubscriptionAtPeriodEnd,
   readStripeSubscriptionDetails,
   resumeStripeSubscriptionFromPeriodEnd
@@ -16,6 +32,18 @@ import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 type TeamSubscriptionPauseStatus = "active" | "checkout_required" | "restored";
+
+type DatabaseSubscriptionRow = {
+  cycle: string;
+  plan: string;
+  provider: string;
+  providerCustomerId: string | null;
+  providerEntitlementId: string | null;
+  providerSubscriptionId: string | null;
+  seatCount: number | null;
+  status: string;
+  updatedAt: Date;
+};
 
 type PauseRecord = {
   previousSubscription: AccountSubscriptionSnapshot;
@@ -67,23 +95,16 @@ globalThis.__capitolLedgerTeamSubscriptionPauseStore = pauseStore;
 
 let pauseSchemaReady: Promise<boolean> | null = null;
 
-function isDatabaseConnectionError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    message.includes("Can't reach database server") ||
-    message.includes("P1001") ||
-    message.includes("ECONNREFUSED") ||
-    message.includes("ENOTFOUND") ||
-    message.includes("timeout")
-  );
-}
-
 function isActiveProSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
   return subscription.plan === "pro" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 function isActiveTeamSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
   return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
+}
+
+function isActivePaidSubscription(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
+  return isActiveProSubscription(subscription) || isActiveTeamSubscription(subscription);
 }
 
 function canUpdateStripeSubscription(subscription: AccountSubscriptionSnapshot) {
@@ -131,7 +152,7 @@ async function ensurePauseSchema() {
           "id" TEXT NOT NULL PRIMARY KEY,
           "userId" TEXT NOT NULL,
           "email" TEXT NOT NULL,
-          "workspaceId" TEXT NOT NULL,
+          "workspaceId" TEXT,
           "teamMemberId" TEXT NOT NULL,
           "previousSubscription" JSONB NOT NULL,
           "status" TEXT NOT NULL,
@@ -149,8 +170,7 @@ async function ensurePauseSchema() {
       return true;
     } catch (error) {
       pauseSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureTeamSubscriptionPauseSchema", error);
     }
   })();
 
@@ -158,96 +178,309 @@ async function ensurePauseSchema() {
 }
 
 async function readActivePauseRecord(userId: string): Promise<PauseRecord | null> {
-  if (!(await ensurePauseSchema())) return pauseStore.get(userId) ?? null;
+  if (!hasDatabaseUrl()) {
+    assertAccountMemoryPersistenceAllowed("readActiveTeamSubscriptionPause");
+    return pauseStore.get(userId) ?? null;
+  }
 
-  const prisma = getPrisma();
-  const records = await prisma.$queryRaw<
-    Array<{
-      previousSubscription: unknown;
-      status: string;
-      teamMemberId: string;
-      workspaceId: string;
-    }>
-  >`
-    SELECT "previousSubscription", "status", "teamMemberId", "workspaceId"
-    FROM "TeamSubscriptionPause"
-    WHERE "userId" = ${userId} AND "status" = 'active'
-    ORDER BY "updatedAt" DESC
-    LIMIT 1
-  `;
-  const record = records[0];
-  if (!record) return null;
+  await ensurePauseSchema();
 
-  return {
-    previousSubscription: normalizeAccountSubscription(record.previousSubscription as Partial<AccountSubscriptionSnapshot>),
-    status: record.status === "restored" || record.status === "checkout_required" ? record.status : "active",
-    teamMemberId: record.teamMemberId,
-    workspaceId: record.workspaceId
-  };
+  try {
+    const prisma = getPrisma();
+    const records = await prisma.$queryRaw<
+      Array<{
+        previousSubscription: unknown;
+        status: string;
+        teamMemberId: string;
+        workspaceId: string | null;
+      }>
+    >`
+      SELECT "previousSubscription", "status", "teamMemberId", "workspaceId"
+      FROM "TeamSubscriptionPause"
+      WHERE "userId" = ${userId} AND "status" = 'active'
+      ORDER BY "updatedAt" DESC
+      LIMIT 1
+    `;
+    const record = records[0];
+    if (!record) return null;
+
+    return {
+      previousSubscription: normalizeAccountSubscription(record.previousSubscription as Partial<AccountSubscriptionSnapshot>),
+      status: record.status === "restored" || record.status === "checkout_required" ? record.status : "active",
+      teamMemberId: record.teamMemberId,
+      workspaceId: record.workspaceId ?? undefined
+    };
+  } catch (error) {
+    throwAccountPersistenceUnavailable("readActiveTeamSubscriptionPause", error);
+  }
 }
 
 async function writeActivePauseRecord(userId: string, email: string, input: PauseRecord) {
-  pauseStore.set(userId, input);
+  if (!hasDatabaseUrl()) {
+    assertAccountMemoryPersistenceAllowed("writeActiveTeamSubscriptionPause");
+    pauseStore.set(userId, input);
+    return;
+  }
 
-  if (!(await ensurePauseSchema())) return;
+  await ensurePauseSchema();
 
-  const prisma = getPrisma();
-  const previousSubscriptionJson = JSON.stringify(input.previousSubscription);
+  try {
+    const prisma = getPrisma();
+    const previousSubscriptionJson = JSON.stringify(input.previousSubscription);
 
-  await prisma.$executeRaw`
-    WITH updated AS (
-      UPDATE "TeamSubscriptionPause"
-      SET
-        "email" = ${email},
-        "workspaceId" = ${input.workspaceId ?? ""},
-        "teamMemberId" = ${input.teamMemberId ?? ""},
-        "updatedAt" = NOW()
-      WHERE "userId" = ${userId} AND "status" = 'active'
-      RETURNING "id"
-    )
-    INSERT INTO "TeamSubscriptionPause" (
-      "id", "userId", "email", "workspaceId", "teamMemberId", "previousSubscription", "status", "pausedAt", "createdAt", "updatedAt"
-    )
-    SELECT
-      ${randomUUID()},
-      ${userId},
-      ${email},
-      ${input.workspaceId ?? ""},
-      ${input.teamMemberId ?? ""},
-      ${previousSubscriptionJson}::jsonb,
-      'active',
-      NOW(),
-      NOW(),
-      NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM updated)
-  `;
+    await prisma.$executeRaw`
+      WITH updated AS (
+        UPDATE "TeamSubscriptionPause"
+        SET
+          "email" = ${email},
+          "workspaceId" = ${input.workspaceId ?? null},
+          "teamMemberId" = ${input.teamMemberId ?? ""},
+          "updatedAt" = NOW()
+        WHERE "userId" = ${userId} AND "status" = 'active'
+        RETURNING "id"
+      )
+      INSERT INTO "TeamSubscriptionPause" (
+        "id", "userId", "email", "workspaceId", "teamMemberId", "previousSubscription", "status", "pausedAt", "createdAt", "updatedAt"
+      )
+      SELECT
+        ${randomUUID()},
+        ${userId},
+        ${email},
+        ${input.workspaceId ?? null},
+        ${input.teamMemberId ?? ""},
+        ${previousSubscriptionJson}::jsonb,
+        'active',
+        NOW(),
+        NOW(),
+        NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM updated)
+    `;
+  } catch (error) {
+    throwAccountPersistenceUnavailable("writeActiveTeamSubscriptionPause", error);
+  }
 }
 
 async function markPauseRecordStatus(userId: string, status: TeamSubscriptionPauseStatus) {
-  const current = pauseStore.get(userId);
-  if (current) {
-    if (status === "restored") pauseStore.delete(userId);
-    else pauseStore.set(userId, { ...current, status });
+  if (!hasDatabaseUrl()) {
+    assertAccountMemoryPersistenceAllowed("markTeamSubscriptionPauseStatus");
+    const current = pauseStore.get(userId);
+    if (current) {
+      if (status === "restored") pauseStore.delete(userId);
+      else pauseStore.set(userId, { ...current, status });
+    }
+    return;
   }
 
-  if (!(await ensurePauseSchema())) return;
+  await ensurePauseSchema();
 
-  const prisma = getPrisma();
-  await prisma.$executeRaw`
-    UPDATE "TeamSubscriptionPause"
-    SET "status" = ${status}, "restoredAt" = CASE WHEN ${status} <> 'active' THEN NOW() ELSE "restoredAt" END, "updatedAt" = NOW()
-    WHERE "userId" = ${userId} AND "status" = 'active'
-  `;
+  try {
+    const prisma = getPrisma();
+    await prisma.$executeRaw`
+      UPDATE "TeamSubscriptionPause"
+      SET "status" = ${status}, "restoredAt" = CASE WHEN ${status} <> 'active' THEN NOW() ELSE "restoredAt" END, "updatedAt" = NOW()
+      WHERE "userId" = ${userId} AND "status" = 'active'
+    `;
+  } catch (error) {
+    throwAccountPersistenceUnavailable("markTeamSubscriptionPauseStatus", error);
+  }
 }
 
 async function readPersonalSubscription(userId: string) {
-  const subscription = (await readSubscriptionFromDatabase(userId).catch(() => null)) ?? getAccountSubscription(userId);
-  return syncStripeSubscriptionForAccount(userId, subscription).catch(() => subscription);
+  const subscription = hasDatabaseUrl()
+    ? ((await readSubscriptionFromDatabase(userId)) ?? normalizeAccountSubscription())
+    : getAccountSubscription(userId);
+  return syncStripeSubscriptionForAccount(userId, subscription).catch((error) =>
+    fallbackUnlessAccountPersistenceUnavailable(error, subscription)
+  );
 }
 
 async function persistSubscription(userId: string, subscription: AccountSubscriptionSnapshot) {
-  const databaseSubscription = await writeSubscriptionToDatabase(userId, subscription).catch(() => null);
-  return databaseSubscription ?? setAccountSubscription(userId, subscription);
+  if (!hasDatabaseUrl()) return setAccountSubscription(userId, subscription);
+
+  const databaseSubscription = await writeSubscriptionToDatabase(userId, subscription);
+  if (!databaseSubscription) throwAccountPersistenceUnavailable("persistTeamSubscriptionTransition");
+  return databaseSubscription;
+}
+
+async function persistReconciledAppStoreState(
+  userId: string,
+  appAccountToken: string,
+  canonical: CanonicalAppStoreSubscription
+) {
+  return persistCanonicalAppStoreState({
+    appAccountToken,
+    appleStatus: canonical.appleStatus,
+    autoRenewProductId: canonical.autoRenewProductId,
+    autoRenewStatus: canonical.autoRenewStatus,
+    environment: canonical.environment,
+    expiresAt: canonical.expiresAt,
+    gracePeriodExpiresAt: canonical.gracePeriodExpiresAt,
+    observedAt: canonical.observedAt,
+    observationVersion: canonical.observationVersion,
+    originalTransactionId: canonical.originalTransactionId,
+    productId: canonical.productId,
+    signedAt: canonical.signedAt,
+    subscription: canonical.snapshot,
+    transactionId: canonical.transactionId,
+    transactionPurchasedAt: canonical.transactionPurchasedAt,
+    transactionRevokedAt: canonical.transactionRevokedAt,
+    userId
+  });
+}
+
+async function requireCheckoutAfterAppleTeamSeatRelease(
+  userId: string,
+  subscription: AccountSubscriptionSnapshot
+): Promise<TeamSubscriptionRestoreResult> {
+  await markPauseRecordStatus(userId, "checkout_required");
+  const checkoutSubscription = await persistSubscription(userId, checkoutRequiredSubscription(subscription));
+  return {
+    checkoutRequired: true,
+    restored: false,
+    subscription: checkoutSubscription
+  };
+}
+
+async function pauseDatabasePersonalProSubscriptionForTeamSeat(
+  input: PauseInput,
+  accountUserId: string
+): Promise<TeamSubscriptionPauseResult> {
+  await ensurePauseSchema();
+
+  let stripeCancellationAttempted: string | null = null;
+  let stripeCancellationError: unknown;
+  try {
+    return await getPrisma().$transaction(async (transaction) => {
+      const lockedRows = await transaction.$queryRaw<Array<{ userId: string; workspaceId: string }>>`
+        SELECT account."id" AS "userId", workspace."id" AS "workspaceId"
+        FROM "TeamWorkspace" workspace
+        JOIN "User" account ON account."id" = ${accountUserId}
+        WHERE workspace."id" = ${input.workspaceId}
+        FOR KEY SHARE OF workspace, account
+      `;
+      if (!lockedRows[0]) {
+        throwAccountPersistenceUnavailable("pauseTeamSubscription: account or workspace no longer exists");
+      }
+
+      const pauseRows = await transaction.$queryRaw<
+        Array<{
+          previousSubscription: unknown;
+          teamMemberId: string;
+          workspaceId: string | null;
+        }>
+      >`
+        SELECT "previousSubscription", "teamMemberId", "workspaceId"
+        FROM "TeamSubscriptionPause"
+        WHERE "userId" = ${accountUserId} AND "status" = 'active'
+        ORDER BY "updatedAt" DESC
+        LIMIT 1
+        FOR UPDATE
+      `;
+      const subscriptionRows = await transaction.$queryRaw<DatabaseSubscriptionRow[]>`
+        SELECT "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId",
+               "providerSubscriptionId", "seatCount", "status", "updatedAt"
+        FROM "AccountSubscription"
+        WHERE "userId" = ${accountUserId}
+        LIMIT 1
+        FOR UPDATE
+      `;
+      const subscriptionRow = subscriptionRows[0];
+      const personalSubscription = subscriptionRow
+        ? normalizeAccountSubscription({
+            cycle: subscriptionRow.cycle as AccountSubscriptionSnapshot["cycle"],
+            plan: subscriptionRow.plan as AccountSubscriptionSnapshot["plan"],
+            provider: subscriptionRow.provider as AccountSubscriptionSnapshot["provider"],
+            providerCustomerId: subscriptionRow.providerCustomerId ?? undefined,
+            providerEntitlementId: subscriptionRow.providerEntitlementId ?? undefined,
+            providerSubscriptionId: subscriptionRow.providerSubscriptionId ?? undefined,
+            seatCount: subscriptionRow.seatCount ?? undefined,
+            status: subscriptionRow.status as AccountSubscriptionSnapshot["status"],
+            updatedAt: subscriptionRow.updatedAt.toISOString()
+          })
+        : normalizeAccountSubscription();
+      const existingPause = pauseRows[0]
+        ? normalizeAccountSubscription(pauseRows[0].previousSubscription as Partial<AccountSubscriptionSnapshot>)
+        : null;
+      const previousSubscription = existingPause ?? personalSubscription;
+
+      if (!isActiveProSubscription(previousSubscription)) {
+        return {
+          paused: false,
+          subscription: personalSubscription
+        };
+      }
+
+      if (!existingPause && canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
+        stripeCancellationAttempted = previousSubscription.providerSubscriptionId;
+        try {
+          await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId);
+        } catch (error) {
+          stripeCancellationError = error;
+          throw error;
+        }
+      }
+
+      const previousSubscriptionJson = JSON.stringify(previousSubscription);
+      await transaction.$executeRaw`
+        WITH updated AS (
+          UPDATE "TeamSubscriptionPause"
+          SET
+            "email" = ${input.email},
+            "workspaceId" = ${input.workspaceId},
+            "teamMemberId" = ${input.teamMemberId},
+            "updatedAt" = NOW()
+          WHERE "userId" = ${accountUserId} AND "status" = 'active'
+          RETURNING "id"
+        )
+        INSERT INTO "TeamSubscriptionPause" (
+          "id", "userId", "email", "workspaceId", "teamMemberId", "previousSubscription",
+          "status", "pausedAt", "createdAt", "updatedAt"
+        )
+        SELECT
+          ${randomUUID()}, ${accountUserId}, ${input.email}, ${input.workspaceId}, ${input.teamMemberId},
+          ${previousSubscriptionJson}::jsonb, 'active', NOW(), NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM updated)
+      `;
+
+      const pausedSubscription = pausedPersonalSubscription(previousSubscription);
+      await transaction.$executeRaw`
+        INSERT INTO "AccountSubscription" (
+          "id", "userId", "plan", "cycle", "provider", "providerCustomerId",
+          "providerEntitlementId", "providerSubscriptionId", "seatCount", "status",
+          "createdAt", "updatedAt"
+        )
+        VALUES (
+          ${randomUUID()}, ${accountUserId}, ${pausedSubscription.plan}, ${pausedSubscription.cycle},
+          ${pausedSubscription.provider}, ${pausedSubscription.providerCustomerId ?? null},
+          ${pausedSubscription.providerEntitlementId ?? null}, ${pausedSubscription.providerSubscriptionId ?? null},
+          ${pausedSubscription.seatCount ?? null}, ${pausedSubscription.status}, NOW(), NOW()
+        )
+        ON CONFLICT ("userId") DO UPDATE
+        SET "plan" = EXCLUDED."plan",
+            "cycle" = EXCLUDED."cycle",
+            "provider" = EXCLUDED."provider",
+            "providerCustomerId" = EXCLUDED."providerCustomerId",
+            "providerEntitlementId" = EXCLUDED."providerEntitlementId",
+            "providerSubscriptionId" = EXCLUDED."providerSubscriptionId",
+            "seatCount" = EXCLUDED."seatCount",
+            "status" = EXCLUDED."status",
+            "updatedAt" = NOW()
+      `;
+
+      return {
+        paused: true,
+        subscription: pausedSubscription
+      };
+    });
+  } catch (error) {
+    if (stripeCancellationAttempted) {
+      await resumeStripeSubscriptionFromPeriodEnd(stripeCancellationAttempted).catch(() => {
+        console.error("[team-subscription] failed to compensate an uncommitted Stripe pause.");
+      });
+    }
+    if (stripeCancellationError) throw stripeCancellationError;
+    throwAccountPersistenceUnavailable("pauseDatabasePersonalProSubscriptionForTeamSeat", error);
+  }
 }
 
 export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
@@ -263,7 +496,7 @@ export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
     };
   }
 
-  const existingPause = await readActivePauseRecord(userId).catch(() => null);
+  const existingPause = await readActivePauseRecord(userId);
   if (existingPause) {
     return {
       paused: false,
@@ -278,8 +511,7 @@ export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
   await writeActivePauseRecord(userId, email, {
     previousSubscription,
     status: "active",
-    teamMemberId: teamSubscriptionId ? `team-owner-${teamSubscriptionId}` : "team-owner-upgrade",
-    workspaceId: "team-owner-upgrade"
+    teamMemberId: teamSubscriptionId ? `team-owner-${teamSubscriptionId}` : "team-owner-upgrade"
   });
 
   return {
@@ -312,8 +544,12 @@ export async function pausePersonalProSubscriptionForTeamSeat(input: PauseInput)
   const accountUserId = await getAccountPersistenceUserId({
     email: input.email,
     id: input.userId
-  }).catch(() => input.userId);
-  const existingPause = await readActivePauseRecord(accountUserId).catch(() => null);
+  });
+  if (hasDatabaseUrl()) {
+    return pauseDatabasePersonalProSubscriptionForTeamSeat(input, accountUserId);
+  }
+
+  const existingPause = await readActivePauseRecord(accountUserId);
   const personalSubscription = await readPersonalSubscription(accountUserId);
   const previousSubscription = existingPause?.previousSubscription ?? personalSubscription;
 
@@ -353,7 +589,7 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
     };
   }
 
-  const pauseRecord = await readActivePauseRecord(userId).catch(() => null);
+  const pauseRecord = await readActivePauseRecord(userId);
   if (!pauseRecord) {
     return {
       checkoutRequired: false,
@@ -364,36 +600,9 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
   const previousSubscription = pauseRecord.previousSubscription;
 
   if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
+    let stripeSubscription;
     try {
-      const stripeSubscription = await resumeStripeSubscriptionFromPeriodEnd(previousSubscription.providerSubscriptionId);
-      const details = readStripeSubscriptionDetails(stripeSubscription);
-
-      if (details.plan !== "pro" || !isActiveProSubscription(details)) {
-        await persistSubscription(userId, checkoutRequiredSubscription(previousSubscription));
-        await markPauseRecordStatus(userId, "checkout_required");
-        return {
-          checkoutRequired: true,
-          restored: false
-        };
-      }
-
-      const restoredSubscription = await persistSubscription(
-        userId,
-        normalizeAccountSubscription({
-          ...previousSubscription,
-          cycle: details.cycle,
-          plan: "pro",
-          seatCount: undefined,
-          status: details.status
-        })
-      );
-      await markPauseRecordStatus(userId, "restored");
-
-      return {
-        checkoutRequired: false,
-        restored: true,
-        subscription: restoredSubscription
-      };
+      stripeSubscription = await resumeStripeSubscriptionFromPeriodEnd(previousSubscription.providerSubscriptionId);
     } catch {
       await persistSubscription(userId, checkoutRequiredSubscription(previousSubscription));
       await markPauseRecordStatus(userId, "checkout_required");
@@ -402,6 +611,113 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
         restored: false
       };
     }
+
+    const details = readStripeSubscriptionDetails(stripeSubscription);
+
+    if (details.plan !== "pro" || !isActiveProSubscription(details)) {
+      await persistSubscription(userId, checkoutRequiredSubscription(previousSubscription));
+      await markPauseRecordStatus(userId, "checkout_required");
+      return {
+        checkoutRequired: true,
+        restored: false
+      };
+    }
+
+    const restoredSubscription = await persistSubscription(
+      userId,
+      normalizeAccountSubscription({
+        ...previousSubscription,
+        cycle: details.cycle,
+        plan: "pro",
+        seatCount: undefined,
+        status: details.status
+      })
+    );
+    await markPauseRecordStatus(userId, "restored");
+
+    return {
+      checkoutRequired: false,
+      restored: true,
+      subscription: restoredSubscription
+    };
+  }
+
+  if (previousSubscription.provider === "app-store") {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const state = await readAppStoreSubscriptionState(userId);
+      if (!state?.originalTransactionId || !state.environment || !state.appAccountToken) {
+        return requireCheckoutAfterAppleTeamSeatRelease(userId, previousSubscription);
+      }
+
+      let canonical: CanonicalAppStoreSubscription;
+      try {
+        canonical = await reconcileAppStoreSubscription({
+          anyTransactionId: state.originalTransactionId,
+          environment: state.environment,
+          expectedAppAccountToken: state.appAccountToken,
+          expectedOriginalTransactionId: state.originalTransactionId
+        });
+      } catch (error) {
+        if (isAccountPersistenceUnavailableError(error)) throw error;
+        if (!state.productId) {
+          return {
+            checkoutRequired: false,
+            restored: false
+          };
+        }
+        const checkoutSubscription = normalizeAccountSubscription({
+          ...previousSubscription,
+          plan: "free",
+          provider: "app-store",
+          providerEntitlementId: state.productId,
+          providerSubscriptionId: state.originalTransactionId,
+          seatCount: undefined,
+          status: "canceled"
+        });
+        const finalization = await finalizeAppStoreTeamSeatRelease({
+          appAccountToken: state.appAccountToken,
+          observationVersion: state.observationVersion ?? null,
+          originalTransactionId: state.originalTransactionId,
+          pauseStatus: "checkout_required",
+          productId: state.productId,
+          subscription: checkoutSubscription,
+          userId
+        });
+        const completed = completedAppStoreTeamSeatReleaseResult(
+          finalization,
+          checkoutSubscription,
+          false
+        );
+        if (completed) return completed;
+        continue;
+      }
+
+      if (canonical.originalTransactionId !== state.originalTransactionId) continue;
+      const persistence = await persistReconciledAppStoreState(userId, state.appAccountToken, canonical);
+      if (!persistence.observationApplied) continue;
+
+      const restoresPaidAccess = isActivePaidSubscription(canonical.snapshot);
+      const finalization = await finalizeAppStoreTeamSeatRelease({
+        appAccountToken: state.appAccountToken,
+        observationVersion: canonical.observationVersion,
+        originalTransactionId: canonical.originalTransactionId,
+        pauseStatus: restoresPaidAccess ? "restored" : "checkout_required",
+        productId: canonical.productId,
+        subscription: canonical.snapshot,
+        userId
+      });
+      const completed = completedAppStoreTeamSeatReleaseResult(
+        finalization,
+        canonical.snapshot,
+        restoresPaidAccess
+      );
+      if (completed) return completed;
+    }
+
+    return {
+      checkoutRequired: false,
+      restored: false
+    };
   }
 
   const restoredSubscription = await persistSubscription(userId, previousSubscription);
@@ -412,4 +728,8 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
     restored: true,
     subscription: restoredSubscription
   };
+}
+
+export function clearTeamSubscriptionTransitionMemory(userId: string) {
+  return pauseStore.delete(userId);
 }

@@ -19,16 +19,31 @@ import {
   UserCircle,
   Settings
 } from "lucide-react";
-import { getAllMembers, getDashboardData } from "@/lib/data";
+import { getAccountProfile, getDefaultAccountProfile } from "@/lib/account-profile";
+import { canUseDatabasePersistence, getAccountPersistenceUserId, readProfileFromDatabase } from "@/lib/account-database";
+import { getCurrentSession } from "@/lib/auth";
+import { getAllMembersWithLiveData, getDashboardDataWithLiveData } from "@/lib/data";
+import { getMatchedOfficials } from "@/lib/beta-district-presets";
 import { formatDate } from "@/lib/utils";
 
-export default function AlertDetailPage() {
-  const dashboardData = getDashboardData();
+export default async function AlertDetailPage() {
+  const session = await getCurrentSession();
+  if (!session?.user) return <EmptyAlertDetailPage />;
+
+  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const [dashboardData, members, databaseProfile] = await Promise.all([
+    getDashboardDataWithLiveData(),
+    getAllMembersWithLiveData(),
+    readProfileFromDatabase(accountUserId).catch(() => null)
+  ]);
+  const profile = databaseProfile ?? (canUseDatabasePersistence() ? getDefaultAccountProfile() : getAccountProfile(accountUserId));
   const vote = dashboardData.recentVote?.vote;
   const bill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
-  const members = getAllMembers();
+  if (!profile.notificationPreferences.voteReminders || !vote || !bill) return <EmptyAlertDetailPage />;
+
   const preferredChamber = vote?.chamber === "House" || vote?.chamber === "Senate" ? vote.chamber : "House";
-  const districtMember = members.find((member) => member.state === "TX" && member.chamber === preferredChamber) ?? members.find((member) => member.state === "TX") ?? members[0];
+  const districtMembers = profile.districtCode ? getMatchedOfficials(members, profile.districtCode) : [];
+  const districtMember = districtMembers.find((member) => member.chamber === preferredChamber) ?? districtMembers[0];
   const districtMemberRole = districtMember?.chamber === "Senate" ? "Senator" : "Representative";
   const districtMemberHref = districtMember ? `/members/${districtMember.bioguideId}#contact` : "/search?type=members";
   const chamber = vote?.chamber === "House" ? "House of Representatives" : vote?.chamber ?? "Congress";
@@ -36,7 +51,9 @@ export default function AlertDetailPage() {
     { label: "Bill", value: bill?.displayNumber ?? "Tracked bill", icon: <FileText /> },
     { label: "Chamber", value: chamber, icon: <Landmark /> },
     { label: "Vote date", value: vote ? formatDate(vote.voteDate) : "Date pending", icon: <CalendarDays /> },
-    { label: `Your ${districtMemberRole}`, value: districtMember?.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, "") ?? districtMemberRole, icon: <UserCircle /> }
+    ...(districtMember
+      ? [{ label: `Your ${districtMemberRole}`, value: districtMember.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, ""), icon: <UserCircle /> }]
+      : [])
   ];
 
   return (
@@ -90,9 +107,15 @@ export default function AlertDetailPage() {
               </MobileCard>
 
               <div className="mt-4 space-y-3">
-                <GamificationEventLink href={districtMemberHref} event="contact-representative" targetId={districtMember?.bioguideId ?? "vote-reminder-action"} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
-                  Contact {districtMemberRole}
-                </GamificationEventLink>
+                {districtMember ? (
+                  <GamificationEventLink href={districtMemberHref} event="contact-representative" targetId={districtMember.bioguideId} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
+                    Contact {districtMemberRole}
+                  </GamificationEventLink>
+                ) : (
+                  <Link href={districtMemberHref} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
+                    Find your officials
+                  </Link>
+                )}
                 <Link href="/petitions" className="flex h-12 items-center justify-center rounded-xl border border-[#c08dff]/52 bg-[#c08dff]/14 text-[17px] font-semibold text-[#d5b8ff]">
                   Open civic actions
                 </Link>
@@ -111,6 +134,46 @@ export default function AlertDetailPage() {
                 { href: "/settings", icon: <Settings />, label: "Settings" }
               ]}
             />
+    </MobileShell>
+  );
+}
+
+function EmptyAlertDetailPage() {
+  return (
+    <MobileShell
+      minHeight="min-h-[932px]"
+      contentClassName="px-8 pb-5 pt-8"
+      statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
+    >
+      <header className="relative mt-10 flex items-center justify-center">
+        <HistoryBackButton className={`absolute left-0 ${mobileIconButtonClass}`}>
+          <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
+        </HistoryBackButton>
+        <h1 className="text-[22px] font-medium leading-none text-white">Alert details</h1>
+      </header>
+      <main className="mt-7 pb-5">
+        <MobileCard variant="dashboard" className="px-5 py-6 text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-[#ffb12b]">
+            <Bell className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+          </div>
+          <h2 className="mt-4 text-[21px] font-medium leading-tight text-white">No alert selected</h2>
+          <p className="mt-2 text-[15px] leading-6 text-white/56">
+            Alert details appear only for live updates enabled on your account.
+          </p>
+          <Link href="/alerts" className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#ffb12b]/40 bg-[#ffb12b]/10 px-5 text-[15px] font-semibold text-[#ffb12b]">
+            Back to alerts
+          </Link>
+        </MobileCard>
+      </main>
+      <MobileBottomNav
+        items={[
+          { href: "/dashboard", icon: <Home />, label: "Home" },
+          { href: "/search?type=bills", icon: <FileText />, label: "Bills" },
+          { href: "/search", icon: <Search />, label: "Search" },
+          { active: true, href: "/alerts", icon: <Bell />, label: "Alerts" },
+          { href: "/settings", icon: <Settings />, label: "Settings" }
+        ]}
+      />
     </MobileShell>
   );
 }

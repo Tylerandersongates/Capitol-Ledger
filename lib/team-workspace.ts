@@ -1,6 +1,11 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
+import {
+  assertAccountMemoryPersistenceAllowed,
+  fallbackUnlessAccountPersistenceUnavailable,
+  throwAccountPersistenceUnavailable
+} from "@/lib/account-persistence-safety";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
-import { getAccountSubscription } from "@/lib/account-subscription";
+import { normalizeAccountSubscription } from "@/lib/account-subscription";
 import { syncStripeSubscriptionForAccount } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import {
@@ -188,23 +193,48 @@ declare global {
 const memoryWorkspaceStore = globalThis.__capitolLedgerTeamWorkspaceStore ?? new Map<string, MemoryTeamWorkspace>();
 globalThis.__capitolLedgerTeamWorkspaceStore = memoryWorkspaceStore;
 
+export function clearTeamWorkspaceMemory(userId: string, email: string) {
+  const normalizedEmail = normalizeTeamInviteEmail(email);
+  let deletedInvites = 0;
+  let deletedMemberships = 0;
+  let deletedOwnedWorkspaces = 0;
+
+  for (const [ownerUserId, workspace] of memoryWorkspaceStore) {
+    if (ownerUserId === userId || workspace.ownerUserId === userId) {
+      if (memoryWorkspaceStore.delete(ownerUserId)) deletedOwnedWorkspaces += 1;
+      continue;
+    }
+
+    const members = workspace.members.filter((member) => {
+      const matchesUser = member.userId === userId;
+      const matchesEmail = normalizedEmail && normalizeTeamInviteEmail(member.email) === normalizedEmail;
+      if (!matchesUser && !matchesEmail) return true;
+
+      deletedMemberships += 1;
+      return false;
+    });
+    const invites = workspace.invites.filter((invite) => {
+      if (!normalizedEmail || normalizeTeamInviteEmail(invite.email) !== normalizedEmail) return true;
+
+      deletedInvites += 1;
+      return false;
+    });
+
+    if (members.length !== workspace.members.length || invites.length !== workspace.invites.length) {
+      workspace.members = members;
+      workspace.invites = invites;
+      workspace.updatedAt = new Date().toISOString();
+    }
+  }
+
+  return {
+    invites: deletedInvites,
+    memberships: deletedMemberships,
+    ownedWorkspaces: deletedOwnedWorkspaces
+  };
+}
+
 let teamWorkspaceSchemaReady: Promise<boolean> | null = null;
-
-function isDatabaseConnectionError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    message.includes("Can't reach database server") ||
-    message.includes("P1001") ||
-    message.includes("ECONNREFUSED") ||
-    message.includes("ENOTFOUND") ||
-    message.includes("timeout")
-  );
-}
-
-function logTeamWorkspaceFallback(scope: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[team-workspace] ${scope} fallback: ${message}`);
-}
 
 function teamWorkspaceName(input: TeamWorkspaceOwnerInput) {
   const ownerName = input.name?.trim() || input.email.trim();
@@ -285,11 +315,12 @@ function inviteExpiresAt() {
 }
 
 function hasActiveTeamAccess(subscription: Pick<AccountSubscriptionSnapshot, "plan" | "status">) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
-function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined, ownerUserId: string) {
-  const fallback = getAccountSubscription(ownerUserId);
+function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined) {
+  const fallback = normalizeAccountSubscription();
 
   if (!record) return fallback;
 
@@ -451,10 +482,8 @@ async function ensureTeamWorkspaceSchema() {
 
       return true;
     } catch (error) {
-      logTeamWorkspaceFallback("ensureTeamWorkspaceSchema", error);
       teamWorkspaceSchemaReady = null;
-      if (isDatabaseConnectionError(error)) return false;
-      throw error;
+      throwAccountPersistenceUnavailable("ensureTeamWorkspaceSchema", error);
     }
   })();
 
@@ -462,6 +491,7 @@ async function ensureTeamWorkspaceSchema() {
 }
 
 function readOrCreateMemoryTeamWorkspace(input: TeamWorkspaceOwnerInput): TeamWorkspaceResult {
+  assertAccountMemoryPersistenceAllowed("readOrCreateMemoryTeamWorkspace");
   const now = new Date().toISOString();
   const existing = memoryWorkspaceStore.get(input.userId);
   const ownerEmail = normalizeTeamInviteEmail(input.email);
@@ -565,8 +595,10 @@ async function readOwnerTeamSeatCount(ownerUserId: string, client: RawQueryClien
     WHERE "userId" = ${ownerUserId}
     LIMIT 1
   `;
-  const ownerSubscription = normalizeOwnerSubscription(records[0], ownerUserId);
-  const subscription = await syncStripeSubscriptionForAccount(ownerUserId, ownerSubscription).catch(() => ownerSubscription);
+  const ownerSubscription = normalizeOwnerSubscription(records[0]);
+  const subscription = await syncStripeSubscriptionForAccount(ownerUserId, ownerSubscription).catch((error) =>
+    fallbackUnlessAccountPersistenceUnavailable(error, ownerSubscription)
+  );
 
   if (!hasActiveTeamAccess(subscription)) {
     throw new TeamWorkspaceError("The workspace owner needs an active Team subscription before this seat can be used.", 403);
@@ -576,7 +608,7 @@ async function readOwnerTeamSeatCount(ownerUserId: string, client: RawQueryClien
 }
 
 async function readOrCreateDatabaseTeamWorkspace(input: TeamWorkspaceOwnerInput): Promise<TeamWorkspaceResult> {
-  if (!(await ensureTeamWorkspaceSchema())) return readOrCreateMemoryTeamWorkspace(input);
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
   const workspaceName = teamWorkspaceName(input);
@@ -602,9 +634,8 @@ async function readOrCreateDatabaseTeamWorkspace(input: TeamWorkspaceOwnerInput)
       workspace: await readWorkspaceSnapshotFromDatabase(workspace, input.seatCount)
     };
   } catch (error) {
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("readOrCreateDatabaseTeamWorkspace", error);
-    return readOrCreateMemoryTeamWorkspace(input);
+    if (error instanceof TeamWorkspaceError) throw error;
+    throwAccountPersistenceUnavailable("readOrCreateDatabaseTeamWorkspace", error);
   }
 }
 
@@ -614,6 +645,7 @@ export async function readOrCreateTeamWorkspaceForOwner(input: TeamWorkspaceOwne
 }
 
 function readMemoryTeamWorkspaceForManagement(input: TeamWorkspaceOwnerInput): MemoryTeamWorkspace {
+  assertAccountMemoryPersistenceAllowed("readMemoryTeamWorkspaceForManagement");
   if (input.workspaceId) {
     const workspace = Array.from(memoryWorkspaceStore.values()).find((candidate) => candidate.id === input.workspaceId);
     if (workspace) return workspace;
@@ -628,32 +660,27 @@ function readMemoryTeamWorkspaceForManagement(input: TeamWorkspaceOwnerInput): M
 
 async function readDatabaseTeamWorkspaceForManagement(input: TeamWorkspaceOwnerInput): Promise<TeamWorkspaceResult> {
   if (!input.workspaceId) return readOrCreateDatabaseTeamWorkspace(input);
-  if (!(await ensureTeamWorkspaceSchema())) {
-    const workspace = readMemoryTeamWorkspaceForManagement(input);
+  await ensureTeamWorkspaceSchema();
+
+  try {
+    const prisma = getPrisma();
+    const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
+      SELECT "id", "ownerUserId", "name", "createdAt", "updatedAt"
+      FROM "TeamWorkspace"
+      WHERE "id" = ${input.workspaceId} AND "ownerUserId" = ${input.userId}
+      LIMIT 1
+    `;
+    const workspace = workspaces[0];
+    if (!workspace) throw new TeamWorkspaceError("Unable to load the Team workspace.", 404);
 
     return {
-      mode: "memory",
-      workspace: snapshotFromParts({
-        ...workspace,
-        seatCount: input.seatCount
-      })
+      mode: "database",
+      workspace: await readWorkspaceSnapshotFromDatabase(workspace, input.seatCount)
     };
+  } catch (error) {
+    if (error instanceof TeamWorkspaceError) throw error;
+    throwAccountPersistenceUnavailable("readDatabaseTeamWorkspaceForManagement", error);
   }
-
-  const prisma = getPrisma();
-  const workspaces = await prisma.$queryRaw<DbTeamWorkspace[]>`
-    SELECT "id", "ownerUserId", "name", "createdAt", "updatedAt"
-    FROM "TeamWorkspace"
-    WHERE "id" = ${input.workspaceId} AND "ownerUserId" = ${input.userId}
-    LIMIT 1
-  `;
-  const workspace = workspaces[0];
-  if (!workspace) throw new TeamWorkspaceError("Unable to load the Team workspace.", 404);
-
-  return {
-    mode: "database",
-    workspace: await readWorkspaceSnapshotFromDatabase(workspace, input.seatCount)
-  };
 }
 
 function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceInviteResult {
@@ -714,13 +741,12 @@ function createMemoryTeamInvite(input: TeamWorkspaceInviteInput): TeamWorkspaceI
 }
 
 async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promise<TeamWorkspaceInviteResult> {
-  if (!(await ensureTeamWorkspaceSchema())) return createMemoryTeamInvite(input);
+  await ensureTeamWorkspaceSchema();
 
   const email = normalizeTeamInviteEmail(input.inviteEmail);
   if (!isValidTeamInviteEmail(email)) throw new TeamWorkspaceError("Enter a valid teammate email.", 400);
 
   const workspaceResult = await readDatabaseTeamWorkspaceForManagement(input);
-  if (workspaceResult.mode !== "database") return createMemoryTeamInvite(input);
 
   const prisma = getPrisma();
   const role = normalizeTeamInviteRole(input.role);
@@ -799,9 +825,7 @@ async function createDatabaseTeamInvite(input: TeamWorkspaceInviteInput): Promis
     };
   } catch (error) {
     if (error instanceof TeamWorkspaceError) throw error;
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("createDatabaseTeamInvite", error);
-    return createMemoryTeamInvite(input);
+    throwAccountPersistenceUnavailable("createDatabaseTeamInvite", error);
   }
 }
 
@@ -811,6 +835,7 @@ export async function createTeamWorkspaceInvite(input: TeamWorkspaceInviteInput)
 }
 
 async function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): Promise<TeamWorkspaceSeatReleaseResult> {
+  assertAccountMemoryPersistenceAllowed("releaseMemoryTeamSeat");
   const workspace = readMemoryTeamWorkspaceForManagement(input);
 
   const seatType = normalizeSeatType(input.seatType);
@@ -855,10 +880,12 @@ async function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): Prom
   if (!release) throw new TeamWorkspaceError("Unable to release this Team seat.", 500);
   const restoreResult =
     releasedUserId && releasedUserId !== workspace.ownerUserId
-      ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch(() => ({
-          checkoutRequired: false,
-          restored: false
-        }))
+      ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch((error) =>
+          fallbackUnlessAccountPersistenceUnavailable(error, {
+            checkoutRequired: false,
+            restored: false
+          })
+        )
       : {
           checkoutRequired: false,
           restored: false
@@ -882,10 +909,9 @@ async function releaseMemoryTeamSeat(input: TeamWorkspaceSeatReleaseInput): Prom
 }
 
 async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Promise<TeamWorkspaceSeatReleaseResult> {
-  if (!(await ensureTeamWorkspaceSchema())) return releaseMemoryTeamSeat(input);
+  await ensureTeamWorkspaceSchema();
 
   const workspaceResult = await readDatabaseTeamWorkspaceForManagement(input);
-  if (workspaceResult.mode !== "database") return releaseMemoryTeamSeat(input);
 
   const prisma = getPrisma();
   const seatType = normalizeSeatType(input.seatType);
@@ -994,10 +1020,12 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
     const releasedUserId = releasedSeat.userId === workspaceResult.workspace.ownerUserId ? null : releasedSeat.userId;
     const restoreResult =
       releasedSeat.release.type === "member" && releasedUserId
-        ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch(() => ({
-            checkoutRequired: false,
-            restored: false
-          }))
+        ? await restorePausedPersonalSubscriptionForReleasedTeamSeat({ userId: releasedUserId }).catch((error) =>
+            fallbackUnlessAccountPersistenceUnavailable(error, {
+              checkoutRequired: false,
+              restored: false
+            })
+          )
         : {
             checkoutRequired: false,
             restored: false
@@ -1025,9 +1053,7 @@ async function releaseDatabaseTeamSeat(input: TeamWorkspaceSeatReleaseInput): Pr
     };
   } catch (error) {
     if (error instanceof TeamWorkspaceError) throw error;
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("releaseDatabaseTeamSeat", error);
-    return releaseMemoryTeamSeat(input);
+    throwAccountPersistenceUnavailable("releaseDatabaseTeamSeat", error);
   }
 }
 
@@ -1075,7 +1101,7 @@ function assertPendingSeatInvite(record: Pick<DbTeamInvite, "expiresAt" | "id" |
 }
 
 async function readDatabaseInviteAcceptance(token: string): Promise<TeamWorkspaceAcceptancePreview> {
-  if (!(await ensureTeamWorkspaceSchema())) return readMemoryInviteAcceptance(token);
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
 
@@ -1119,13 +1145,12 @@ async function readDatabaseInviteAcceptance(token: string): Promise<TeamWorkspac
     return invitePreviewFromRecord(record);
   } catch (error) {
     if (error instanceof TeamWorkspaceError) throw error;
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("readDatabaseInviteAcceptance", error);
-    return readMemoryInviteAcceptance(token);
+    throwAccountPersistenceUnavailable("readDatabaseInviteAcceptance", error);
   }
 }
 
 function readMemoryInviteAcceptance(token: string): TeamWorkspaceAcceptancePreview {
+  assertAccountMemoryPersistenceAllowed("readMemoryInviteAcceptance");
   const hash = tokenHash(token);
 
   for (const workspace of memoryWorkspaceStore.values()) {
@@ -1176,6 +1201,7 @@ function readMemoryPendingTeamWorkspaceInvitesForEmail({
   email: string;
   userId?: string;
 }): TeamWorkspacePendingInvite[] {
+  assertAccountMemoryPersistenceAllowed("readMemoryPendingTeamWorkspaceInvitesForEmail");
   const memberEmail = normalizeTeamInviteEmail(email);
   if (!isValidTeamInviteEmail(memberEmail)) return [];
 
@@ -1206,13 +1232,12 @@ function readMemoryPendingTeamWorkspaceInvitesForEmail({
 }
 
 async function readDatabasePendingTeamWorkspaceInvitesForEmail({
-  email,
-  userId
+  email
 }: {
   email: string;
   userId?: string;
 }): Promise<TeamWorkspacePendingInvite[]> {
-  if (!(await ensureTeamWorkspaceSchema())) return readMemoryPendingTeamWorkspaceInvitesForEmail({ email, userId });
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
   const memberEmail = normalizeTeamInviteEmail(email);
@@ -1253,16 +1278,16 @@ async function readDatabasePendingTeamWorkspaceInvitesForEmail({
 
     const previews: TeamWorkspacePendingInvite[] = [];
     for (const record of records) {
-      const seatCount = await readOwnerTeamSeatCount(record.ownerUserId).catch(() => null);
+      const seatCount = await readOwnerTeamSeatCount(record.ownerUserId).catch((error) =>
+        fallbackUnlessAccountPersistenceUnavailable(error, null)
+      );
       if (!seatCount) continue;
       previews.push(invitePreviewFromRecord(record));
     }
 
     return previews;
   } catch (error) {
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("readDatabasePendingTeamWorkspaceInvitesForEmail", error);
-    return readMemoryPendingTeamWorkspaceInvitesForEmail({ email, userId });
+    throwAccountPersistenceUnavailable("readDatabasePendingTeamWorkspaceInvitesForEmail", error);
   }
 }
 
@@ -1285,6 +1310,7 @@ async function acceptMemoryInvite({
   token: string;
   userId: string;
 }): Promise<TeamWorkspaceAcceptanceResult> {
+  assertAccountMemoryPersistenceAllowed("acceptMemoryInvite");
   const preview = readMemoryInviteAcceptance(token);
   const workspace = memoryWorkspaceStore.get(preview.workspace.ownerUserId);
   if (!workspace) throw new TeamWorkspaceError("This Team workspace is no longer available.", 404);
@@ -1338,7 +1364,7 @@ async function acceptMemoryInvite({
     teamMemberId: membership.id,
     userId,
     workspaceId: workspace.id
-  }).catch(() => null);
+  }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
   return {
     membership,
@@ -1361,7 +1387,7 @@ async function acceptDatabaseInvite({
   token: string;
   userId: string;
 }): Promise<TeamWorkspaceAcceptanceResult> {
-  if (!(await ensureTeamWorkspaceSchema())) return acceptMemoryInvite({ email, name, token, userId });
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
   const memberEmail = normalizeTeamInviteEmail(email);
@@ -1477,7 +1503,7 @@ async function acceptDatabaseInvite({
       teamMemberId: membership.id,
       userId,
       workspaceId: workspace.id
-    }).catch(() => null);
+    }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
     return {
       membership,
@@ -1486,9 +1512,7 @@ async function acceptDatabaseInvite({
     };
   } catch (error) {
     if (error instanceof TeamWorkspaceError) throw error;
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("acceptDatabaseInvite", error);
-    return acceptMemoryInvite({ email, name, token, userId });
+    throwAccountPersistenceUnavailable("acceptDatabaseInvite", error);
   }
 }
 
@@ -1514,6 +1538,7 @@ async function acceptMemoryInviteById({
   name?: string;
   userId: string;
 }): Promise<TeamWorkspaceAcceptanceResult> {
+  assertAccountMemoryPersistenceAllowed("acceptMemoryInviteById");
   const normalizedInviteId = normalizeInviteId(inviteId);
   const memberEmail = normalizeTeamInviteEmail(email);
 
@@ -1573,7 +1598,7 @@ async function acceptMemoryInviteById({
       teamMemberId: membership.id,
       userId,
       workspaceId: workspace.id
-    }).catch(() => null);
+    }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
     return {
       membership,
@@ -1599,7 +1624,7 @@ async function acceptDatabaseInviteById({
   name?: string;
   userId: string;
 }): Promise<TeamWorkspaceAcceptanceResult> {
-  if (!(await ensureTeamWorkspaceSchema())) return acceptMemoryInviteById({ email, inviteId, name, userId });
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
   const memberEmail = normalizeTeamInviteEmail(email);
@@ -1716,7 +1741,7 @@ async function acceptDatabaseInviteById({
       teamMemberId: membership.id,
       userId,
       workspaceId: workspace.id
-    }).catch(() => null);
+    }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
     return {
       membership,
@@ -1725,9 +1750,7 @@ async function acceptDatabaseInviteById({
     };
   } catch (error) {
     if (error instanceof TeamWorkspaceError) throw error;
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("acceptDatabaseInviteById", error);
-    return acceptMemoryInviteById({ email, inviteId, name, userId });
+    throwAccountPersistenceUnavailable("acceptDatabaseInviteById", error);
   }
 }
 
@@ -1748,6 +1771,7 @@ function readMemoryTeamWorkspaceForMember({
   email: string;
   userId: string;
 }): TeamWorkspaceMemberAccessResult | null {
+  assertAccountMemoryPersistenceAllowed("readMemoryTeamWorkspaceForMember");
   const memberEmail = normalizeTeamInviteEmail(email);
 
   for (const workspace of memoryWorkspaceStore.values()) {
@@ -1774,7 +1798,7 @@ async function readDatabaseTeamWorkspaceForMember({
   email: string;
   userId: string;
 }): Promise<TeamWorkspaceMemberAccessResult | null> {
-  if (!(await ensureTeamWorkspaceSchema())) return readMemoryTeamWorkspaceForMember({ email, userId });
+  await ensureTeamWorkspaceSchema();
 
   const prisma = getPrisma();
   const memberEmail = normalizeTeamInviteEmail(email);
@@ -1806,7 +1830,9 @@ async function readDatabaseTeamWorkspaceForMember({
     `;
 
     for (const membershipRecord of memberships) {
-      const seatCount = await readOwnerTeamSeatCount(membershipRecord.ownerUserId).catch(() => null);
+      const seatCount = await readOwnerTeamSeatCount(membershipRecord.ownerUserId).catch((error) =>
+        fallbackUnlessAccountPersistenceUnavailable(error, null)
+      );
       if (!seatCount) continue;
 
       const workspace = await readWorkspaceSnapshotFromDatabase(
@@ -1831,9 +1857,7 @@ async function readDatabaseTeamWorkspaceForMember({
 
     return null;
   } catch (error) {
-    if (!isDatabaseConnectionError(error)) throw error;
-    logTeamWorkspaceFallback("readDatabaseTeamWorkspaceForMember", error);
-    return readMemoryTeamWorkspaceForMember({ email, userId });
+    throwAccountPersistenceUnavailable("readDatabaseTeamWorkspaceForMember", error);
   }
 }
 

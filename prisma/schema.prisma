@@ -33,37 +33,43 @@ enum FollowTargetType {
 }
 
 model User {
-  id                      String                   @id @default(cuid())
-  email                   String                   @unique
-  name                    String?
-  firstName               String?
-  lastName                String?
-  passwordHash            String?
-  emailVerifiedAt         DateTime?
-  partyAffiliation        String?
-  districtLabel           String?
-  districtState           String?
-  districtCode            String?
-  timeZone                String?
-  notificationPreferences Json?
-  authSessions            AuthSession[]
-  emailVerificationTokens EmailVerificationToken[]
-  follows                 Follow[]
-  passwordResetTokens     PasswordResetToken[]
-  readAlerts              ReadAlert[]
-  savedAlerts             SavedAlert[]
-  issueInterests          IssueInterest[]
-  gamification            AccountGamification?
-  subscription            AccountSubscription?
-  ownedTeamWorkspace      TeamWorkspace?          @relation("OwnedTeamWorkspace")
-  teamMemberships         TeamMember[]            @relation("TeamMemberships")
-  teamInvitesCreated      TeamInvite[]            @relation("TeamInvitesCreated")
-  updateEvents            UpdateEvent[]
-  weeklyBriefDeliveries   WeeklyBriefDelivery[]
-  weeklyBriefEditions     WeeklyBriefEdition[]
-  accountDeletionRequests AccountDeletionRequest[]
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  id                           String                        @id @default(cuid())
+  email                        String                        @unique
+  name                         String?
+  firstName                    String?
+  lastName                     String?
+  passwordHash                 String?
+  emailVerifiedAt              DateTime?
+  partyAffiliation             String?
+  districtLabel                String?
+  districtState                String?
+  districtCode                 String?
+  timeZone                     String?
+  notificationPreferences      Json?
+  authSessions                 AuthSession[]
+  emailVerificationTokens      EmailVerificationToken[]
+  follows                      Follow[]
+  passwordResetTokens          PasswordResetToken[]
+  readAlerts                   ReadAlert[]
+  savedAlerts                  SavedAlert[]
+  issueInterests               IssueInterest[]
+  gamification                 AccountGamification?
+  subscription                 AccountSubscription?
+  ownedTeamWorkspace           TeamWorkspace?                @relation("OwnedTeamWorkspace")
+  teamMemberships              TeamMember[]                  @relation("TeamMemberships")
+  teamInvitesCreated           TeamInvite[]                  @relation("TeamInvitesCreated")
+  updateEvents                 UpdateEvent[]
+  weeklyBriefDeliveries        WeeklyBriefDelivery[]
+  weeklyBriefEditions          WeeklyBriefEdition[]
+  accountDeletionRequests      AccountDeletionRequest[]
+  privacyRequests              PrivacyRequest[]
+  officialContactMessages      OfficialContactMessage[]
+  petitionSignatures           PetitionSignature[]
+  teamSubscriptionPauses       TeamSubscriptionPause[]
+  appStoreSubscriptionState    AppStoreSubscriptionState?
+  appStoreNotificationReceipts AppStoreNotificationReceipt[]
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
 }
 
 model AuthSession {
@@ -130,37 +136,37 @@ model Member {
 }
 
 model Bill {
-  id               String       @id @default(cuid())
-  congress         Int
-  billType         String
-  billNumber       String
-  title            String
-  shortTitle       String?
+  id                String      @id @default(cuid())
+  congress          Int
+  billType          String
+  billNumber        String
+  title             String
+  shortTitle        String?
   sponsorBioguideId String?
-  sponsor          Member?      @relation("SponsoredBills", fields: [sponsorBioguideId], references: [bioguideId])
-  policyArea       String?
-  latestActionText String?
-  latestActionDate DateTime?
-  summary          String?
-  sourceUrl        String?
-  rawJson          Json?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  cosponsors       Cosponsor[]
-  votes            Vote[]
+  sponsor           Member?     @relation("SponsoredBills", fields: [sponsorBioguideId], references: [bioguideId])
+  policyArea        String?
+  latestActionText  String?
+  latestActionDate  DateTime?
+  summary           String?
+  sourceUrl         String?
+  rawJson           Json?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  cosponsors        Cosponsor[]
+  votes             Vote[]
 
   @@unique([congress, billType, billNumber])
   @@index([sponsorBioguideId])
 }
 
 model Cosponsor {
-  id              String    @id @default(cuid())
-  billId          String
+  id               String    @id @default(cuid())
+  billId           String
   memberBioguideId String
-  joinedAt        DateTime?
-  withdrawnAt     DateTime?
-  bill            Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
-  member          Member    @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
+  joinedAt         DateTime?
+  withdrawnAt      DateTime?
+  bill             Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  member           Member    @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
 
   @@unique([billId, memberBioguideId])
   @@index([memberBioguideId])
@@ -188,13 +194,13 @@ model Vote {
 }
 
 model MemberVote {
-  id              String       @id @default(cuid())
-  voteId          String
+  id               String       @id @default(cuid())
+  voteId           String
   memberBioguideId String
-  position        VotePosition
-  positionLabel   String?
-  vote            Vote         @relation(fields: [voteId], references: [id], onDelete: Cascade)
-  member          Member       @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
+  position         VotePosition
+  positionLabel    String?
+  vote             Vote         @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  member           Member       @relation(fields: [memberBioguideId], references: [bioguideId], onDelete: Cascade)
 
   @@unique([voteId, memberBioguideId])
   @@index([memberBioguideId])
@@ -215,7 +221,7 @@ model Committee {
 }
 
 model OfficialSourceLink {
-  id         String   @id
+  id         String    @id
   targetType String
   targetId   String
   label      String
@@ -223,8 +229,8 @@ model OfficialSourceLink {
   source     String
   sourceKind String
   verifiedAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([targetType, targetId])
   @@index([source])
@@ -254,11 +260,11 @@ model SavedAlert {
 }
 
 model ReadAlert {
-  id        String   @id @default(cuid())
-  userId    String
-  alertId   String
-  readAt    DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id      String   @id @default(cuid())
+  userId  String
+  alertId String
+  readAt  DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, alertId])
   @@index([alertId])
@@ -291,15 +297,64 @@ model AccountSubscription {
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model AppStoreSubscriptionState {
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  appAccountToken        String    @unique
+  originalTransactionId  String?   @unique
+  transactionId          String?
+  environment            String?
+  productId              String?
+  appleStatus            Int?
+  expiresAt              DateTime?
+  signedAt               DateTime?
+  transactionPurchasedAt DateTime?
+  transactionRevokedAt   DateTime?
+  autoRenewProductId     String?
+  autoRenewStatus        Int?
+  gracePeriodExpiresAt   DateTime?
+  reconciledAt           DateTime?
+  observationVersion     BigInt?
+  relinkPending          Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([environment, appleStatus])
+  @@index([reconciledAt])
+}
+
+model AppStoreNotificationReceipt {
+  id               String    @id @default(cuid())
+  notificationUUID String    @unique
+  claimToken       String?
+  userId           String?
+  payloadHash      String
+  notificationType String
+  subtype          String?
+  environment      String?
+  signedAt         DateTime?
+  status           String    @default("received")
+  errorCode        String?
+  processedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
 model TeamWorkspace {
-  id          String       @id @default(cuid())
-  ownerUserId String       @unique
-  name        String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  owner       User         @relation("OwnedTeamWorkspace", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  members     TeamMember[]
-  invites     TeamInvite[]
+  id                 String                  @id @default(cuid())
+  ownerUserId        String                  @unique
+  name               String
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  owner              User                    @relation("OwnedTeamWorkspace", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  members            TeamMember[]
+  invites            TeamInvite[]
+  subscriptionPauses TeamSubscriptionPause[]
 
   @@index([updatedAt])
 }
@@ -345,73 +400,172 @@ model TeamInvite {
 }
 
 model AccountGamification {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  civicScore      Int
-  dayStreak       Int
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  civicScore           Int
+  dayStreak            Int
   lastStreakCreditDate String?
-  monthlyGain     Int
-  level           Int
-  levelTitle      String
-  nextLevelScore  Int
-  eventCounts     Json
-  earnedBadgeIds  Json
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyGain          Int
+  level                Int
+  levelTitle           String
+  nextLevelScore       Int
+  eventCounts          Json
+  earnedBadgeIds       Json
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WeeklyBriefDelivery {
-  id                String   @id @default(cuid())
-  userId            String
-  status            String
-  deliveryMode      String
-  summary           String?
-  recipient         String?
-  plan              String
-  trackedBillCount  Int      @default(0)
-  unreadAlertCount  Int      @default(0)
-  issueCount        Int      @default(0)
-  savedRecordCount  Int      @default(0)
-  preparedAt        DateTime?
-  sentAt            DateTime?
-  failedAt          DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(cuid())
+  userId           String
+  status           String
+  deliveryMode     String
+  summary          String?
+  recipient        String?
+  plan             String
+  trackedBillCount Int       @default(0)
+  unreadAlertCount Int       @default(0)
+  issueCount       Int       @default(0)
+  savedRecordCount Int       @default(0)
+  preparedAt       DateTime?
+  sentAt           DateTime?
+  failedAt         DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([status])
 }
 
 model WeeklyBriefEdition {
-  id           String   @id @default(cuid())
-  userId       String
-  editionDate  String
-  generatedAt  DateTime
-  snapshot     Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String
+  editionDate String
+  generatedAt DateTime
+  snapshot    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, editionDate])
   @@index([userId, generatedAt])
 }
 
 model AccountDeletionRequest {
-  id                              String    @id
-  userId                          String?
-  status                          String    @default("new")
-  requestedAt                     DateTime  @default(now())
-  completionBy                    DateTime
-  appleSubscriptionAcknowledged   Boolean   @default(true)
-  completedAt                     DateTime?
-  createdAt                       DateTime  @default(now())
-  updatedAt                       DateTime  @updatedAt
-  user                            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                            String                      @id
+  userId                        String?
+  status                        String                      @default("new")
+  requestedAt                   DateTime                    @default(now())
+  completionBy                  DateTime
+  appleSubscriptionAcknowledged Boolean                     @default(true)
+  completedAt                   DateTime?
+  createdAt                     DateTime                    @default(now())
+  updatedAt                     DateTime                    @updatedAt
+  user                          User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cleanupJobs                   AccountDeletionCleanupJob[]
 
   @@index([status, requestedAt])
   @@index([userId])
+}
+
+model AccountDeletionCleanupJob {
+  id                String                 @id
+  deletionRequestId String
+  dedupeKey         String                 @unique
+  kind              String
+  payload           Json
+  status            String                 @default("pending")
+  attempts          Int                    @default(0)
+  availableAt       DateTime               @default(now())
+  lastError         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  deletionRequest   AccountDeletionRequest @relation(fields: [deletionRequestId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt])
+  @@index([deletionRequestId])
+}
+
+model PrivacyRequest {
+  id             String    @id
+  userId         String
+  requestType    String
+  detail         String?
+  status         String    @default("new")
+  requestedAt    DateTime  @default(now())
+  acknowledgedAt DateTime  @default(now())
+  resolvedAt     DateTime?
+  resolution     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+}
+
+model OfficialContactMessage {
+  id               String    @id
+  memberBioguideId String
+  senderKey        String
+  senderEmail      String
+  userId           String?
+  memberName       String?
+  memberChamber    String?
+  memberState      String?
+  memberDistrict   String?
+  subject          String?
+  messagePreview   String?
+  deliveryMode     String    @default("manual")
+  deliveryStatus   String    @default("prepared")
+  contactUrl       String?
+  sentAt           DateTime  @default(now())
+  confirmedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([memberBioguideId, senderKey, sentAt])
+  @@index([userId])
+  @@index([userId, sentAt])
+}
+
+model PetitionSignature {
+  id            String   @id
+  userId        String
+  petitionId    String
+  title         String
+  body          String?
+  progressLabel String?
+  targetLabel   String?
+  signedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, petitionId])
+  @@index([userId, signedAt])
+}
+
+model TeamSubscriptionPause {
+  id                   String         @id
+  userId               String
+  email                String
+  workspaceId          String?
+  teamMemberId         String
+  previousSubscription Json
+  status               String
+  pausedAt             DateTime       @default(now())
+  restoredAt           DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace            TeamWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([workspaceId])
 }
 
 model UpdateEvent {

@@ -1,4 +1,5 @@
 import type { AccountLedgerSnapshot, FollowTargetType, SavedFollowRecord } from "../types/capitol";
+import { assertAccountMemoryPersistenceAllowed } from "./account-persistence-safety";
 
 const emptyLedger = (): AccountLedgerSnapshot => ({
   follows: [],
@@ -48,6 +49,7 @@ export function normalizeAccountLedger(value: Partial<AccountLedgerSnapshot> = {
 }
 
 export function getAccountLedger(userId: string) {
+  assertAccountMemoryPersistenceAllowed("getAccountLedger");
   const ledger = accountStore.get(userId) ?? emptyLedger();
   accountStore.set(userId, ledger);
   return ledger;
@@ -86,4 +88,8 @@ export function toggleAccountFollow(userId: string, targetType: FollowTargetType
 
   accountStore.set(userId, next);
   return next;
+}
+
+export function clearAccountLedgerMemory(userId: string) {
+  return accountStore.delete(userId);
 }

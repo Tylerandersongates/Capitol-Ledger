@@ -8,8 +8,8 @@ export function shouldIgnoreStaleStripeSubscriptionEvent(
   currentSubscription: AccountSubscriptionSnapshot | null | undefined,
   eventSubscriptionId?: string | null
 ) {
-  if (currentSubscription?.provider !== "stripe") return false;
-  if (!hasStripeSubscriptionId(currentSubscription.providerSubscriptionId) || !hasStripeSubscriptionId(eventSubscriptionId)) return false;
+  if (currentSubscription?.provider !== "stripe") return true;
+  if (!hasStripeSubscriptionId(currentSubscription.providerSubscriptionId) || !hasStripeSubscriptionId(eventSubscriptionId)) return true;
 
   return currentSubscription.providerSubscriptionId !== eventSubscriptionId;
 }

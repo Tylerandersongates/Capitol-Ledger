@@ -4,6 +4,7 @@ import { GamificationSync } from "@/components/gamification-sync";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { recordGamificationEvent } from "@/lib/browser-gamification";
+import { isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, CheckCircle2, ExternalLink, FileText, Home, Megaphone, Settings } from "lucide-react";
@@ -33,7 +34,7 @@ type RegulationsGovStatus = "loading" | "ready" | "empty" | "error" | "not-confi
 const commentedActionIdsKey = "capitol-ledger:commented-public-actions";
 
 function readCommentedActionIds() {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [];
 
   try {
     const value = JSON.parse(window.localStorage.getItem(commentedActionIdsKey) ?? "[]");
@@ -44,7 +45,7 @@ function readCommentedActionIds() {
 }
 
 function writeCommentedActionIds(ids: string[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(commentedActionIdsKey, JSON.stringify(ids));

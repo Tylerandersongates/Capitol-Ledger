@@ -72,11 +72,11 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlanDetai
     },
     trial: {
       conversionPrice: "$4.99/month",
-      ctaLabel: "Start 7-day free trial",
+      ctaLabel: "Continue with Apple",
       cycle: "monthly",
       days: 7,
-      disclosure: "7 days free, then $4.99/month. Cancel anytime.",
-      label: "7-day free trial"
+      disclosure: "Eligible new subscribers may receive 7 days free, then $4.99/month. Apple confirms eligibility and exact terms before purchase.",
+      label: "introductory offer"
     },
     highlights: ["Deeper dashboard panels", "Topic and official tracking", "Exportable reports", "Priority vote reminders"],
     limits: ["One-person plan", "No team seats"]

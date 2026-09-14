@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { runWeeklyBriefDelivery } from "@/lib/weekly-brief-delivery-runner";
 
 function configuredTaskSecret() {
@@ -51,10 +52,5 @@ async function runFromRequest(request: NextRequest) {
   return NextResponse.json(result, { status: result.configured ? 200 : 503 });
 }
 
-export async function GET(request: NextRequest) {
-  return runFromRequest(request);
-}
-
-export async function POST(request: NextRequest) {
-  return runFromRequest(request);
-}
+export const GET = withAccountPersistenceRoute(runFromRequest);
+export const POST = withAccountPersistenceRoute(runFromRequest);

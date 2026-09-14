@@ -11,7 +11,7 @@ import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { getAlertNotificationPreference, isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getCurrentSession } from "@/lib/auth";
-import { getBill, getDashboardDataWithLiveData, getMember, getRecentUpdates } from "@/lib/data";
+import { getDashboardDataWithLiveData, getRecentUpdates, getRecentUpdatesWithLiveData } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { readPendingTeamWorkspaceInvitesForEmail, type TeamWorkspacePendingInvite } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
@@ -66,7 +66,12 @@ function teamInviteAlert(invite: TeamWorkspacePendingInvite): AlertsInboxItem {
 export default async function AlertsPage(props: { searchParams?: Promise<{ filter?: string }> }) {
   const searchParams = await props.searchParams;
   const activeFilter = normalizeNotificationFilter(searchParams?.filter);
-  const [dashboardData, initialSubscription, session] = await Promise.all([getDashboardDataWithLiveData(), getCurrentEffectiveAccountSubscription(), getCurrentSession()]);
+  const [dashboardData, initialSubscription, session, recentUpdates] = await Promise.all([
+    getDashboardDataWithLiveData(),
+    getCurrentEffectiveAccountSubscription(),
+    getCurrentSession(),
+    getRecentUpdatesWithLiveData()
+  ]);
   const pendingTeamInvites = session?.user
     ? await readPendingTeamWorkspaceInvitesForEmail({
         email: session.user.email,
@@ -74,9 +79,11 @@ export default async function AlertsPage(props: { searchParams?: Promise<{ filte
       }).catch(() => [])
     : [];
   const voteAlertBill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
-  const notifications: AlertsInboxItem[] = getRecentUpdates().map((event) => {
-    const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
-    const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
+  const billsById = new Map(dashboardData.favoriteTargets.bills.map((bill) => [bill.id, bill]));
+  const membersById = new Map(dashboardData.favoriteTargets.members.map((member) => [member.bioguideId, member]));
+  const notifications: AlertsInboxItem[] = recentUpdates.map((event) => {
+    const bill = event.targetType === "bill" ? billsById.get(event.targetId) : undefined;
+    const member = event.targetType === "member" ? membersById.get(event.targetId) : undefined;
     const href = bill ? `/bills/${bill.id}` : member ? `/members/${member.bioguideId}` : "/search";
     const targetLabel = bill?.displayNumber ?? member?.fullName ?? "Update";
     const icon: AlertsInboxIcon = bill ? "file" : member ? "user" : "scale";

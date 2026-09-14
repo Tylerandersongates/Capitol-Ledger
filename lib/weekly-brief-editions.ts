@@ -1,5 +1,6 @@
 import { getAccountProfile } from "@/lib/account-profile";
 import {
+  canUseDatabasePersistence,
   getAccountPersistenceUserId,
   readPreviousWeeklyBriefEditionFromDatabase,
   readProfileFromDatabase,
@@ -7,6 +8,7 @@ import {
   writeWeeklyBriefEditionToDatabase
 } from "@/lib/account-database";
 import { getDailyBriefEditorialOverride } from "@/lib/daily-brief-editorial";
+import { isAccountPersistenceUnavailableError } from "@/lib/account-persistence-safety";
 import {
   getDailyBriefEditionDate,
   getPreviousWeeklyBriefEdition,
@@ -27,22 +29,24 @@ export type GetDailyBriefEditionOptions = {
 };
 
 async function readCurrentEdition(userId: string, editionDate: string) {
-  return (await readWeeklyBriefEditionFromDatabase(userId, editionDate).catch(() => null)) ??
-    getWeeklyBriefEdition(userId, editionDate);
+  if (canUseDatabasePersistence()) return readWeeklyBriefEditionFromDatabase(userId, editionDate);
+  return getWeeklyBriefEdition(userId, editionDate);
 }
 
 async function readPreviousEdition(userId: string, editionDate: string) {
-  return (await readPreviousWeeklyBriefEditionFromDatabase(userId, editionDate).catch(() => null)) ??
-    getPreviousWeeklyBriefEdition(userId, editionDate);
+  if (canUseDatabasePersistence()) return readPreviousWeeklyBriefEditionFromDatabase(userId, editionDate);
+  return getPreviousWeeklyBriefEdition(userId, editionDate);
 }
 
 export async function getOrCreateDailyBriefEditionForUser(
   user: AuthUser,
   { forceRefresh = false, now = new Date(), persist = true }: GetDailyBriefEditionOptions = {}
 ): Promise<WeeklyBriefEditionRecord> {
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
-  const profile = (await readProfileFromDatabase(accountUserId).catch(() => null)) ?? getAccountProfile(accountUserId);
-  const editionDate = getDailyBriefEditionDate(now, normalizeDailyBriefTimeZone(profile.timeZone));
+  const accountUserId = await getAccountPersistenceUserId(user);
+  const databaseProfile = await readProfileFromDatabase(accountUserId);
+  const profile = databaseProfile ?? (canUseDatabasePersistence() ? undefined : getAccountProfile(accountUserId));
+  const timeZone = profile?.timeZone;
+  const editionDate = getDailyBriefEditionDate(now, normalizeDailyBriefTimeZone(timeZone));
 
   if (!forceRefresh) {
     const current = await readCurrentEdition(accountUserId, editionDate);
@@ -59,6 +63,7 @@ export async function getOrCreateDailyBriefEditionForUser(
       previousBrief: previous?.snapshot
     });
   } catch (error) {
+    if (isAccountPersistenceUnavailableError(error)) throw error;
     if (previous) return previous;
     throw error;
   }
@@ -70,8 +75,10 @@ export async function getOrCreateDailyBriefEditionForUser(
 
   if (!persist) return normalizeWeeklyBriefEditionRecord(accountUserId, recordInput);
 
-  const record = setWeeklyBriefEdition(accountUserId, recordInput);
-  const databaseRecord = await writeWeeklyBriefEditionToDatabase(accountUserId, record).catch(() => null);
+  const record = normalizeWeeklyBriefEditionRecord(accountUserId, recordInput);
+  if (canUseDatabasePersistence()) {
+    return (await writeWeeklyBriefEditionToDatabase(accountUserId, record)) ?? record;
+  }
 
-  return databaseRecord ? setWeeklyBriefEdition(accountUserId, databaseRecord) : record;
+  return setWeeklyBriefEdition(accountUserId, record);
 }

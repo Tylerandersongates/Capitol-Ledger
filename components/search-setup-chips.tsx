@@ -13,7 +13,7 @@ import {
   writeLocalDistrictProfile,
   writeLocalOfficialSearchState
 } from "@/lib/browser-account-profile";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import { stateCodeFromDistrictCode } from "@/lib/beta-district-presets";
 import { issueSignals } from "@/lib/issue-signals";
 import { memberStateCode } from "@/lib/member-display";
@@ -227,7 +227,7 @@ function SyncBadge({ state }: { state: SyncState }) {
 }
 
 function readLocalIssueInterests() {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return [];
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(issueInterestsKey) ?? "[]") as unknown;
@@ -241,7 +241,7 @@ function readLocalIssueInterests() {
 }
 
 function writeLocalIssueInterests(interests: string[], options: { pendingSync?: boolean } = {}) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
 
   try {
     window.localStorage.setItem(issueInterestsKey, JSON.stringify(uniqueStrings(interests)));
@@ -257,7 +257,7 @@ function writeLocalIssueInterests(interests: string[], options: { pendingSync?: 
 }
 
 function hasPendingIssueInterestSync() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
   return window.localStorage.getItem(issueInterestsPendingSyncKey) === "1";
 }
 
@@ -269,6 +269,7 @@ async function hydrateIssueInterestsFromAccount() {
   if (!response?.ok) return null;
 
   const data = (await response.json().catch(() => null)) as { ledger?: AccountLedgerSnapshot } | null;
+  if (isBrowserAccountDeletionFenced()) return null;
   const accountInterests = uniqueStrings(data?.ledger?.issueInterests ?? []);
   const localInterests = readLocalIssueInterests();
 

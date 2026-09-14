@@ -1,4 +1,5 @@
 import type { AccountNotificationPreferences, AccountProfileSnapshot } from "@/types/capitol";
+import { assertAccountMemoryPersistenceAllowed } from "@/lib/account-persistence-safety";
 import { normalizeDailyBriefTimeZone } from "@/lib/weekly-brief-edition";
 
 const defaultNotificationPreferences: AccountNotificationPreferences = {
@@ -45,6 +46,7 @@ export function getDefaultAccountProfile() {
 }
 
 export function getAccountProfile(userId: string) {
+  assertAccountMemoryPersistenceAllowed("getAccountProfile");
   const profile = profileStore.get(userId) ?? getDefaultAccountProfile();
   profileStore.set(userId, profile);
   return profile;
@@ -63,4 +65,8 @@ export function setAccountProfile(userId: string, value: Partial<AccountProfileS
 
   profileStore.set(userId, next);
   return next;
+}
+
+export function clearAccountProfileMemory(userId: string) {
+  return profileStore.delete(userId);
 }

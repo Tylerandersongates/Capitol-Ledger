@@ -6,14 +6,14 @@ An initially expanded Pro purchase section appears underneath the public video a
 
 For a local Pro layout demonstration, start the local server with `DAILY_BRIEF_LAYOUT_PREVIEW=true` and open `/brief?preview=pro`. This shows labeled synthetic examples through the same Pro rendering components, expanded for review, without loading or changing an account. It does not grant Pro access. The preview flag is disabled by default and ignored when `DATABASE_URL`, `VERCEL`, or `VERCEL_ENV` is set. Sample source links point back to the preview explanation rather than invented external records. The ordinary `/brief` page and account API retain their real entitlement checks.
 
-## Before the channel launches
+## Channel-only state before the first video
 
-Keep `content/daily-brief-videos.json` as `{ "channelUrl": null, "episodes": [] }`. Visitors see “First video coming soon,” without a fake play button, empty iframe, or invented social links. A YouTube channel is not required to prepare the page.
+The verified CapitolWonk channel is `https://www.youtube.com/@CapitolWonk`. Keep that URL in `content/daily-brief-videos.json` with `episodes` empty until the first real video exists. Visitors see “First video coming soon” plus the real Subscribe link, without a fake play button or empty iframe. Rendering the channel-only state makes no automatic YouTube request; choosing Subscribe opens YouTube under Google's privacy terms.
 
 ## Add the daily video
 
 1. Publish the real video on YouTube with embedding allowed. This app does not create or upload videos.
-2. Edit `content/daily-brief-videos.json`. Set `channelUrl` once to the actual channel URL. Add an entry to `episodes` with these fields:
+2. Edit `content/daily-brief-videos.json`. Preserve the verified `channelUrl` and add an entry to `episodes` with these fields:
    - `title`: the edition's actual title.
    - `videoUrl`: the real HTTPS YouTube watch, Shorts, or youtu.be URL.
    - `publishedAt`: the actual publication timestamp, including its timezone (for example, `2026-09-03T08:00:00-04:00`).

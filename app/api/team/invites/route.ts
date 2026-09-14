@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountPersistenceUserId } from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable, withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
@@ -9,14 +10,15 @@ import { createTeamWorkspaceInvite, readOrCreateTeamWorkspaceForOwner, readTeamW
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 function hasActiveTeamAccess(subscription: AccountSubscriptionSnapshot) {
-  return subscription.plan === "team" && (subscription.status === "active" || subscription.status === "trialing");
+  return subscription.plan === "team" &&
+    (subscription.status === "active" || subscription.status === "trialing" || subscription.status === "past_due");
 }
 
 async function readTeamAccount() {
   const session = await getCurrentSession();
   if (!session) return null;
 
-  const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
+  const accountUserId = await getAccountPersistenceUserId(session.user);
   const subscription = await getSubscriptionForAccountUser(session.user);
 
   return {
@@ -52,7 +54,7 @@ async function readTeamManagerAccount() {
   const memberResult = await readTeamWorkspaceForMember({
     email: account.session.user.email,
     userId: account.accountUserId
-  }).catch(() => null);
+  }).catch((error) => fallbackUnlessAccountPersistenceUnavailable(error, null));
 
   if (memberResult?.membership.role !== "admin") {
     return {
@@ -83,7 +85,7 @@ function forbiddenTeamResponse(subscription: AccountSubscriptionSnapshot) {
   );
 }
 
-export async function GET() {
+async function getTeamInvites() {
   const account = await readTeamManagerAccount();
 
   if (!account) {
@@ -100,7 +102,7 @@ export async function GET() {
   });
 }
 
-export async function POST(request: NextRequest) {
+async function createTeamInvite(request: NextRequest) {
   const guard = guardMutationRequest(request, "team-invites", {
     key: "workspace",
     limit: 18,
@@ -174,3 +176,6 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const GET = withAccountPersistenceRoute(getTeamInvites);
+export const POST = withAccountPersistenceRoute(createTeamInvite);

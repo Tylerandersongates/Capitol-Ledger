@@ -10,6 +10,7 @@ import {
   recordOfficialContact
 } from "@/lib/official-contact-messages";
 import { guardMutationRequest } from "@/lib/request-security";
+import { withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
 
 const emailRequestSchema = z.object({
   fromEmail: z.string().trim().email().optional(),
@@ -52,7 +53,7 @@ function composeContactBody({
   ].join("\n");
 }
 
-export async function POST(
+async function prepareOfficialContact(
   request: NextRequest,
   context: { params: Promise<{ bioguideId: string }> }
 ) {
@@ -210,3 +211,5 @@ export async function POST(
     status: "prepared"
   });
 }
+
+export const POST = withAccountPersistenceRoute(prepareOfficialContact);

@@ -10,7 +10,7 @@ import {
   type SubscriptionFeatureId
 } from "@/lib/subscription-plans";
 import { publicBrand } from "@/lib/brand";
-import { hasActiveBrowserSession } from "@/lib/browser-auth-state";
+import { hasActiveBrowserSession, isBrowserAccountDeletionFenced } from "@/lib/browser-auth-state";
 import {
   formatTeamSeatPrice,
   getTeamAppStoreProductId,
@@ -55,7 +55,9 @@ type NativePurchaseResult = {
   action: "entitlement" | "manage" | "purchase" | "restore" | string;
   message?: string;
   ok: boolean;
+  pendingApproval?: boolean;
   productId?: string;
+  serverSyncPending?: boolean;
   serverSynced?: boolean;
   subscription?: AccountSubscriptionSnapshot;
 };
@@ -129,7 +131,7 @@ function normalizeSubscription(value: Partial<AccountSubscriptionSnapshot> = {})
 }
 
 function readSubscription(): AccountSubscriptionSnapshot {
-  if (typeof window === "undefined") return defaultSubscription;
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return defaultSubscription;
 
   try {
     return normalizeSubscription(JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Partial<AccountSubscriptionSnapshot>);
@@ -138,11 +140,8 @@ function readSubscription(): AccountSubscriptionSnapshot {
   }
 }
 
-function shouldPreferNativeStoreKitSubscription(subscription: AccountSubscriptionSnapshot) {
-  return Boolean(typeof window !== "undefined" && window.__capitolLedgerNativeStoreKit && subscription.provider === "app-store");
-}
-
 function writeSubscription(next: AccountSubscriptionSnapshot, syncAccount = true) {
+  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return;
   window.localStorage.setItem(storageKey, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(subscriptionEvent, { detail: next }));
 
@@ -214,7 +213,7 @@ async function hydrateSubscriptionFromAccount(scope: SubscriptionHydrationScope)
   }
 
   const subscription = await accountHydrationPromises[scope];
-  if (!subscription) return null;
+  if (!subscription || isBrowserAccountDeletionFenced()) return null;
 
   if (!subscriptionsMatch(readSubscription(), subscription)) writeSubscription(subscription, false);
   return subscription;
@@ -239,7 +238,8 @@ async function readAppStoreAccountToken() {
       });
   }
 
-  return appStoreAccountTokenPromise;
+  const token = await appStoreAccountTokenPromise;
+  return isBrowserAccountDeletionFenced() ? null : token;
 }
 
 export function useSubscriptionState(
@@ -261,26 +261,12 @@ export function useSubscriptionState(
     }
 
     async function refresh() {
-      const nativeSubscription = readSubscription();
-      if (shouldPreferNativeStoreKitSubscription(nativeSubscription)) {
-        const nextSubscription = publishDefaultCycle(nativeSubscription);
-        if (active) setSubscription(nextSubscription);
-        return;
-      }
-
       if (normalizedInitialSubscription && !subscriptionsMatch(readSubscription(), normalizedInitialSubscription)) {
         writeSubscription(normalizedInitialSubscription, false);
       }
 
       if (await hasActiveBrowserSession()) {
         const accountSubscription = await hydrateSubscriptionFromAccount(scope);
-        const refreshedNativeSubscription = readSubscription();
-        if (shouldPreferNativeStoreKitSubscription(refreshedNativeSubscription)) {
-          const nextSubscription = publishDefaultCycle(refreshedNativeSubscription);
-          if (active) setSubscription(nextSubscription);
-          return;
-        }
-
         const nextSubscription = publishDefaultCycle(accountSubscription ?? normalizedInitialSubscription ?? defaultSubscription);
         if (active) setSubscription(nextSubscription);
         return;
@@ -413,11 +399,13 @@ export function PlanPrice({
 export function PlanTrialDisclosure({
   defaultCycle,
   initialSubscription = null,
-  plan
+  plan,
+  selectedDisclosure
 }: {
   defaultCycle?: SubscriptionDefaultCycle;
   initialSubscription?: AccountSubscriptionSnapshot | null;
   plan: SubscriptionPlanId;
+  selectedDisclosure?: string;
 }) {
   const [subscription] = useSubscriptionState(initialSubscription, { defaultCycle });
   const trial = subscriptionPlans[plan].trial;
@@ -427,8 +415,10 @@ export function PlanTrialDisclosure({
   const annualPrice = subscriptionPlans[plan].pricing.annual;
 
   return (
-    <div className="mt-4 whitespace-nowrap rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-3 text-[11px] leading-none text-[#ffe0a1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-      {trialSelected ? trial.disclosure : `${trial.label} is available on monthly Pro. Annual Pro is ${annualPrice}/year.`}
+    <div className="mt-4 whitespace-normal rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-3 text-[11px] leading-relaxed text-[#ffe0a1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+      {trialSelected
+        ? selectedDisclosure ?? trial.disclosure
+        : `The ${trial.label} is only for eligible new monthly Pro subscribers. Annual Pro is ${annualPrice}/year. Apple shows exact terms before purchase.`}
     </div>
   );
 }
@@ -463,11 +453,16 @@ export function PlanActionButton({
       if (!(event instanceof CustomEvent) || !pendingProductId.current) return;
 
       const result = event.detail as NativePurchaseResult | undefined;
-      if (!result || result.action !== "purchase") return;
+      if (!result || (result.action !== "purchase" && result.action !== "transaction-update")) return;
       if (result.productId && result.productId !== pendingProductId.current) return;
+      if (result.serverSyncPending) {
+        setStatusMessage(result.message || "Confirming this App Store purchase with CapitolWonk.");
+        return;
+      }
 
       setStatusMessage(result.message || (result.ok ? "Purchase completed." : "Purchase could not be completed."));
       setPending(false);
+      if (!result.pendingApproval) pendingProductId.current = null;
     }
 
     window.addEventListener(nativePurchaseResultEvent, handleNativePurchaseResult);
@@ -513,10 +508,10 @@ export function PlanActionButton({
         setStatusMessage(
           opened
             ? trialSelected && trial
-              ? `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}. Apple will show the ${trial.label} terms before you confirm.`
+              ? `Opening Apple in-app purchase for ${subscriptionPlans[plan].name}. Apple will confirm ${trial.label} eligibility and show the exact terms before you confirm.`
               : `Opening Apple in-app purchase for ${teamSeatCount ? `${teamSeatCount}-seat ` : ""}${subscriptionPlans[plan].name}.`
             : trialSelected && trial
-              ? `Open ${publicBrand.name} in the iOS app or TestFlight to start the ${trial.label}.`
+              ? `Open ${publicBrand.name} in the iOS app or TestFlight to continue with Apple. Apple confirms ${trial.label} eligibility and exact terms before purchase.`
               : `Open ${publicBrand.name} in the iOS app or TestFlight to complete this purchase.`
         );
         if (!opened) {
@@ -567,6 +562,10 @@ export function RestorePurchasesButton({ className }: { className: string }) {
 
       const result = event.detail as NativePurchaseResult | undefined;
       if (!result || result.action !== "restore") return;
+      if (result.serverSyncPending) {
+        setStatusMessage(result.message || "Confirming restored purchases with CapitolWonk.");
+        return;
+      }
 
       setStatusMessage(result.message || (result.ok ? "Purchase restored." : "No active App Store purchase was found."));
       setPending(false);

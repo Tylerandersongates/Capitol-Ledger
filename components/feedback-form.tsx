@@ -4,13 +4,13 @@ import * as Sentry from "@sentry/nextjs";
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, MessageSquarePlus } from "lucide-react";
 import { publicBrandName } from "@/lib/brand";
+import { sanitizeUrlForTelemetry } from "@/lib/privacy-telemetry";
 
 type SubmissionState = "idle" | "submitting" | "sent" | "error";
 
 const sourceLabels: Record<string, string> = {
   beta: "Live app testing",
   "live-testing": "Live app testing",
-  "privacy-request": "Privacy request",
   support: "Support",
   "team-custom-plan": "Team custom plan"
 };
@@ -54,7 +54,7 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
             feedback_source: source || "manual",
             feedback_surface: "capitolwonk-ce"
           },
-          url: window.location.href
+          url: sanitizeUrlForTelemetry(window.location.href)
         },
         {
           errorMessages: feedbackErrorMessages,
@@ -171,6 +171,7 @@ function FieldLabel({ label }: { label: string }) {
 }
 
 function normalizeSource(value: string) {
+  if (value === "privacy-request") return "support";
   return value === "round-3" ? "live-testing" : value;
 }
 

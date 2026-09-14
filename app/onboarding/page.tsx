@@ -23,7 +23,7 @@ import {
   Vote
 } from "lucide-react";
 import { publicBrandName } from "@/lib/brand";
-import { getAllMembers } from "@/lib/data";
+import { getAllMembersWithLiveData } from "@/lib/data";
 import { issueSignals } from "@/lib/issue-signals";
 import type { ReactNode } from "react";
 
@@ -35,8 +35,8 @@ const onboardingCardAccentClass =
 const onboardingSectionIconClass =
   "grid h-10 w-10 place-items-center rounded-2xl border border-white/12 bg-white/[0.055] text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.32)] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:stroke-[1.8]";
 
-export default function OnboardingPage() {
-  const allMembers = getAllMembers();
+export default async function OnboardingPage() {
+  const allMembers = await getAllMembersWithLiveData();
 
   return (
     <MobileShell
@@ -77,7 +77,7 @@ export default function OnboardingPage() {
 
                 <OnboardingCard>
                   <OnboardingSectionHeader icon={<LocateFixed />} title="Find your district" />
-                  <OnboardingDistrictSetup members={allMembers} />
+                  <OnboardingDistrictSetup />
                 </OnboardingCard>
 
                 <OnboardingCard>

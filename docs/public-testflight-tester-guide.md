@@ -1,5 +1,7 @@
 # CapitolWonk Public TestFlight Tester Guide
 
+Status: prepared but not approved for distribution. The immediate-deletion behavior below is the assigned-build contract and must be reverified on the exact deployed, signed TestFlight candidate before this guide is sent to testers.
+
 Thank you for testing CapitolWonk. Use this guide only with the TestFlight build
 and test scope shared with you.
 
@@ -47,17 +49,29 @@ subscription unless you were assigned the subscription scenario.
 
 5. **Privacy, support, and account controls**
    - Open Privacy and Support from Settings.
-   - Confirm Request Account Deletion is available and the warning is clear.
-   - Do not submit a deletion request unless you were assigned that scenario and
-     are using a disposable test account. Account deletion does not itself
-     cancel an Apple subscription.
+   - In Settings, scroll to Your data and confirm Delete account opens the
+     permanent-deletion control and that the warning is clear.
+   - Do not complete deletion unless you were assigned that scenario and are
+     using a disposable test account. A successful action immediately and
+     permanently deletes the account, linked records, all sessions, and any
+     Team workspace it owns; it also clears CapitolWonk data on the current
+     device. Account deletion does not itself cancel an Apple subscription.
+   - If you are assigned the destructive scenario, acknowledge the warning,
+     type `DELETE`, and choose Permanently delete account once. A verified
+     success should show completion and sign you out. If the result says
+     deletion is not confirmed, stop and report it; do not assume success or
+     repeatedly retry. Never use a reusable reviewer account.
+     If the app reports a failure, the account should remain usable and the
+     action should be retryable; stop and report the failure rather than repeat
+     it.
 
 6. **Relaunch and recovery**
    - Force-close the app, wait a few seconds, and relaunch it.
    - Confirm the app opens normally and that sign-in, saved items, topics, and
      eligible subscription access are still correct.
-   - Repeat the screen or action that failed once. Do not repeatedly retry a
-     destructive, payment, or privacy-sensitive action.
+   - For a non-destructive screen or navigation failure, repeat the failed step
+     once. Never retry a destructive, payment, or privacy-sensitive action
+     without a fresh explicit assignment; stop and report it.
 
 ## Subscriptions: Assigned Scenarios Only
 
@@ -84,6 +98,12 @@ Use either of these approved paths:
   screenshot is helpful when the problem is visual.
 - In CapitolWonk, open the `/feedback` screen. If in-app feedback is unavailable
   or disabled, use TestFlight feedback instead.
+
+Feedback sent through Sentry or TestFlight is separate from the CapitolWonk
+account-deletion transaction. Avoid including information that is not needed to
+diagnose the issue. Provider retention applies independently; Support can explain
+the applicable retention and available privacy-request options but cannot promise
+that one Sentry feedback item can be deleted.
 
 Include:
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, FileText, Home, LifeBuoy, Search, Settings, ShieldCheck } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass, mobileViewAllClass } from "@/components/mobile-ui";
+import { isAccountDeletionEnabled } from "@/lib/account-deletion-activation";
 import { publicBrand } from "@/lib/brand";
 
 export const metadata = {
@@ -18,25 +19,30 @@ const supportOptions = [
   },
   {
     title: "Purchases",
-    body: "Review the 7-day Pro trial, restore purchases, or manage renewal from the plan screen.",
+    body: "Check Apple introductory-offer eligibility and exact terms, restore purchases, or manage renewal from the plan screen.",
     href: "/upgrade",
     cta: "Open plans"
   },
   {
     title: "Account deletion",
-    body: "Start permanent account deletion directly in Settings. Requests are completed within 7 days.",
+    body: "Permanently delete your account and linked CapitolWonk data directly in Settings. Completion is shown in the app.",
     href: "/settings#delete-account",
     cta: "Delete account"
   },
   {
     title: "Privacy requests",
-    body: "For data correction, export, or saved-data questions, submit a report with \"Privacy request\" in the title.",
-    href: "/feedback?source=privacy-request",
+    body: "Use the dedicated first-party path for access, export, correction, deletion assistance, consent withdrawal, or saved-data questions.",
+    href: "/privacy/request",
     cta: "Start request"
   }
 ];
 
 export default function SupportPage() {
+  const accountDeletionEnabled = isAccountDeletionEnabled();
+  const visibleSupportOptions = accountDeletionEnabled
+    ? supportOptions
+    : supportOptions.filter((option) => option.href !== "/settings#delete-account");
+
   return (
     <MobileShell
       minHeight="min-h-[980px]"
@@ -75,7 +81,7 @@ export default function SupportPage() {
           </div>
         </MobileCard>
 
-        {supportOptions.map((option) => (
+        {visibleSupportOptions.map((option) => (
           <MobileCard key={option.title} variant="compact" className="px-5 py-4">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
               <div className="min-w-0">
@@ -97,7 +103,7 @@ export default function SupportPage() {
             <div className="min-w-0">
               <h2 className="text-[20px] font-medium leading-tight text-white">For App Store review</h2>
               <p className="mt-2 text-[14px] leading-6 text-white/58">
-                Monthly Pro starts with 7 days free, then renews at $4.99/month. Cancel anytime. Team starts at three seats for $17.99/month or $179.99/year. Monthly supports 3-20 seats; annual supports 3-16, with larger annual workspaces and teams above 20 routed to a custom plan.
+                Eligible new monthly Pro subscribers may receive 7 days free, then renew at $4.99/month. Apple confirms eligibility and shows exact terms before purchase; subscriptions can be canceled in App Store settings. Team starts at three seats for $17.99/month or $179.99/year. Monthly supports 3-20 seats; annual supports 3-16, with larger annual workspaces and teams above 20 routed to a custom plan.
               </p>
             </div>
           </div>

@@ -113,6 +113,7 @@ Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on accoun
 - `WEEKLY_BRIEF_WEBHOOK_SECRET` when the Weekly Brief webhook bridge should validate CapitolWonk requests
 - `WEEKLY_BRIEF_FROM` for the sending identity shown in Weekly Brief messages
 - `APP_STORE_BUNDLE_ID` for App Store transaction bundle validation
+- `APP_STORE_APP_APPLE_ID` for production signed-data verification (numeric app ID, not a product ID)
 - `APP_STORE_ACCOUNT_TOKEN_NAMESPACE` for stable StoreKit account-token generation before first TestFlight purchase
 - `APP_STORE_CONNECT_ISSUER_ID` for App Store Server API
 - `APP_STORE_CONNECT_KEY_ID` for App Store Server API

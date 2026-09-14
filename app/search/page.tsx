@@ -144,7 +144,7 @@ export default async function SearchPage(props: SearchPageProps) {
       })
     );
   }
-  const [{ resultCounts, results }, initialSubscription] = await Promise.all([
+  const [{ mode: searchMode, resultCounts, results }, initialSubscription] = await Promise.all([
     searchRecordsWithLiveData({
       billPage,
       chamber,
@@ -201,6 +201,7 @@ export default async function SearchPage(props: SearchPageProps) {
                   resultCounts={resultCounts}
                   results={results}
                   searchParams={searchParams}
+                  sourceAvailable={searchMode === "live"}
                 />
               ) : null}
 
@@ -324,6 +325,7 @@ export default async function SearchPage(props: SearchPageProps) {
                   resultCounts={resultCounts}
                   results={results}
                   searchParams={searchParams}
+                  sourceAvailable={searchMode === "live"}
                 />
               ) : null}
             </main>
@@ -356,7 +358,8 @@ function SearchResultBlocks({
   votePage,
   resultCounts,
   results,
-  searchParams
+  searchParams,
+  sourceAvailable
 }: {
   activeType: string;
   billPage: number;
@@ -364,6 +367,7 @@ function SearchResultBlocks({
   resultCounts: SearchResultCounts;
   results: SearchResultsData;
   searchParams: SearchParams;
+  sourceAvailable: boolean;
 }) {
   const totalBillPages = Math.max(1, Math.ceil(resultCounts.bills / billSearchPageSize));
   const totalVotePages = Math.max(1, Math.ceil(resultCounts.votes / voteSearchPageSize));
@@ -399,7 +403,13 @@ function SearchResultBlocks({
                   </Link>
                 ))
               ) : (
-                <EmptyState label="No officials match this search. Try fewer filters or a different state." />
+                <EmptyState
+                  label={
+                    sourceAvailable
+                      ? "No officials match this search. Try fewer filters or a different state."
+                      : "No live officials are available. Try again after the congressional feed updates."
+                  }
+                />
               )}
             </ResultSection>
           );
@@ -438,7 +448,13 @@ function SearchResultBlocks({
                     );
                   })
                 ) : (
-                  <EmptyState label="No bills match this search. Try a broader keyword or clear one filter." />
+                  <EmptyState
+                    label={
+                      sourceAvailable
+                        ? "No bills match this search. Try a broader keyword or clear one filter."
+                        : "No live bills are available. Try again after the congressional feed updates."
+                    }
+                  />
                 )}
               </ResultSection>
               {resultCounts.bills > billSearchPageSize ? (
@@ -495,7 +511,13 @@ function SearchResultBlocks({
                   </Link>
                 ))
               ) : (
-                <EmptyState label="No votes match this search. Try a broader keyword or clear one filter." />
+                <EmptyState
+                  label={
+                    sourceAvailable
+                      ? "No votes match this search. Try a broader keyword or clear one filter."
+                      : "No live votes are available. Try again after the congressional feed updates."
+                  }
+                />
               )}
             </ResultSection>
             {activeType === "votes" && resultCounts.votes > voteSearchPageSize ? (

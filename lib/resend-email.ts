@@ -38,11 +38,9 @@ export async function sendEmailWithResend(input: ResendSendInput): Promise<Resen
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Resend delivery failed with status ${response.status}.${body ? ` ${body}` : ""}`);
+    throw new Error(`Resend delivery failed with status ${response.status}.`);
   }
 
   const payload = (await response.json().catch(() => ({}))) as Partial<ResendSendResult>;
   return { id: payload.id ?? "queued" };
 }
-

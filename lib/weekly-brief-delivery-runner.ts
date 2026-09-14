@@ -1,4 +1,5 @@
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
+import { isAccountPersistenceUnavailableError, runAccountPersistenceOperation } from "@/lib/account-persistence-safety";
 import { getOrCreateDailyBriefEditionForUser } from "@/lib/weekly-brief-editions";
 import { buildWeeklyBriefDeliveryInput } from "@/lib/weekly-brief-history";
 import { writeWeeklyBriefDeliveryToDatabase } from "@/lib/account-database";
@@ -157,19 +158,21 @@ async function deliverWeeklyBrief({ brief, user }: { brief: WeeklyBriefSnapshot;
 }
 
 async function readEligibleWeeklyBriefUsers(limit: number) {
-  const prisma = getPrisma();
+  return runAccountPersistenceOperation("readEligibleWeeklyBriefUsers", async () => {
+    const prisma = getPrisma();
 
-  return prisma.$queryRaw<EligibleWeeklyBriefUser[]>`
-    SELECT "User"."id", "User"."email", "User"."name", "User"."emailVerifiedAt"
-    FROM "User"
-    INNER JOIN "AccountSubscription" ON "AccountSubscription"."userId" = "User"."id"
-    WHERE
-      COALESCE(("User"."notificationPreferences"->>'weeklyBrief')::boolean, false) = true
-      AND "AccountSubscription"."plan" IN ('pro', 'team')
-      AND "AccountSubscription"."status" IN ('active', 'trialing')
-    ORDER BY "User"."updatedAt" DESC
-    LIMIT ${limit}
-  `;
+    return prisma.$queryRaw<EligibleWeeklyBriefUser[]>`
+      SELECT "User"."id", "User"."email", "User"."name", "User"."emailVerifiedAt"
+      FROM "User"
+      INNER JOIN "AccountSubscription" ON "AccountSubscription"."userId" = "User"."id"
+      WHERE
+        COALESCE(("User"."notificationPreferences"->>'weeklyBrief')::boolean, false) = true
+        AND "AccountSubscription"."plan" IN ('pro', 'team')
+        AND "AccountSubscription"."status" IN ('active', 'trialing')
+      ORDER BY "User"."updatedAt" DESC
+      LIMIT ${limit}
+    `;
+  });
 }
 
 export async function runWeeklyBriefDelivery({
@@ -270,6 +273,7 @@ export async function runWeeklyBriefDelivery({
         summary: brief.lens.headline
       });
     } catch (error) {
+      if (isAccountPersistenceUnavailableError(error)) throw error;
       failed += 1;
       records.push({
         email: user.email,

@@ -40,6 +40,7 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
   const data = await getDashboardDataWithLiveData();
   const activeStatus = normalizeLiveDocketStatus(searchParams.status);
   const allBills = [...data.favoriteTargets.bills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
+  const hasLiveBillData = allBills.length > 0;
   const visibleBills = allBills.filter((bill) => matchesLiveDocketStatus(bill, activeStatus));
   const activeLabel = activeStatus ? liveDocketStatusLabel(activeStatus) : "All Active";
   const inProgressCount = data.statusCounts.inProgress || Math.max(0, data.billsInAction - data.statusCounts.passed - data.statusCounts.inCommittee);
@@ -87,22 +88,36 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
               <div>
                 <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">{activeLabel}</div>
                 <h2 className="mt-2 text-[24px] font-semibold leading-tight text-white">
-                  {visibleBills.length} bills moving through the ledger
+                  {hasLiveBillData ? `${visibleBills.length} bills moving through the ledger` : "Live bill data is unavailable"}
                 </h2>
               </div>
-              <span className="rounded-full border border-[#2be68d]/30 bg-[#2be68d]/10 px-2.5 py-1 text-[11px] font-medium text-[#2be68d]">Live</span>
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                  hasLiveBillData ? "border-[#2be68d]/30 bg-[#2be68d]/10 text-[#2be68d]" : "border-white/10 bg-white/[0.045] text-white/52"
+                }`}
+              >
+                {hasLiveBillData ? "Live" : "Waiting for data"}
+              </span>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <DocketMetric label="Bills" value={visibleBills.length} />
-              <DocketMetric label="Passed" value={data.statusCounts.passed} />
-              <DocketMetric label="Committee" value={data.statusCounts.inCommittee} />
-            </div>
+            {hasLiveBillData ? (
+              <>
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  <DocketMetric label="Bills" value={visibleBills.length} />
+                  <DocketMetric label="Passed" value={data.statusCounts.passed} />
+                  <DocketMetric label="Committee" value={data.statusCounts.inCommittee} />
+                </div>
 
-            <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-white/44">
-              <CalendarClock className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-              Updated {formatDate(data.generatedAt)}
-            </div>
+                <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-white/44">
+                  <CalendarClock className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                  Updated {formatDate(data.generatedAt)}
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-[14px] leading-snug text-white/52">
+                Current congressional bill activity will appear when live records are available.
+              </p>
+            )}
           </div>
         </MobileCard>
 
@@ -132,7 +147,9 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
             </div>
           </div>
         ) : (
-          <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>No bills match this live docket status.</div>
+          <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>
+            {hasLiveBillData ? "No bills match this live docket status." : "No live bill records are available yet."}
+          </div>
         )}
       </main>
 

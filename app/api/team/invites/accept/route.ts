@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountPersistenceUserId } from "@/lib/account-database";
 import { getCurrentSession, requireAuthMessage } from "@/lib/auth";
 import { guardMutationRequest } from "@/lib/request-security";
-import { acceptTeamWorkspaceInvite, acceptTeamWorkspaceInviteById, TeamWorkspaceError } from "@/lib/team-workspace";
+import { withAccountPersistenceRoute } from "@/lib/account-persistence-safety";
+import { acceptTeamInviteWithBillingGate } from "@/lib/team-invite-acceptance";
+import { TeamWorkspaceError } from "@/lib/team-workspace";
 
-export async function POST(request: NextRequest) {
+async function acceptTeamInvite(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
+    appleBillingAcknowledged?: boolean;
     inviteId?: string;
     token?: string;
   };
@@ -20,20 +22,17 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json(requireAuthMessage(), { status: 401 });
 
   try {
-    const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-    const result = body.inviteId?.trim()
-      ? await acceptTeamWorkspaceInviteById({
-          email: session.user.email,
-          inviteId: body.inviteId,
-          name: session.user.name,
-          userId: accountUserId
-        })
-      : await acceptTeamWorkspaceInvite({
-          email: session.user.email,
-          name: session.user.name,
-          token: body.token ?? "",
-          userId: accountUserId
-        });
+    const outcome = await acceptTeamInviteWithBillingGate(body, session.user);
+    if (outcome.kind === "acknowledgement-required") {
+      return NextResponse.json(
+        {
+          code: "APPLE_BILLING_ACKNOWLEDGEMENT_REQUIRED",
+          error: "Confirm that joining this Team does not pause or cancel your Apple subscription."
+        },
+        { status: 409 }
+      );
+    }
+    const result = outcome.result;
 
     return NextResponse.json({
       membership: result.membership,
@@ -48,3 +47,5 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const POST = withAccountPersistenceRoute(acceptTeamInvite);

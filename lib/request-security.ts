@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 type RateLimitOptions = {
@@ -57,7 +58,14 @@ function clientKey(request: NextRequest) {
 }
 
 function normalizeKey(value?: string) {
-  return value?.trim().toLowerCase() || "anonymous";
+  const normalized = value?.trim().toLowerCase() || "anonymous";
+  return createHash("sha256").update(normalized).digest("base64url");
+}
+
+function pruneExpiredRateLimits(now: number) {
+  for (const [key, record] of rateLimitStore) {
+    if (record.resetAt <= now) rateLimitStore.delete(key);
+  }
 }
 
 function isLocalPreviewHostname(hostname: string) {
@@ -85,7 +93,8 @@ export function rejectCrossOriginRequest(request: NextRequest) {
 
 export function rateLimitRequest(scope: string, request: NextRequest, options: RateLimitOptions) {
   const now = Date.now();
-  const key = `${scope}:${clientKey(request)}:${normalizeKey(options.key)}`;
+  pruneExpiredRateLimits(now);
+  const key = `${scope}:${normalizeKey(clientKey(request))}:${normalizeKey(options.key)}`;
   const existing = rateLimitStore.get(key);
 
   if (!existing || existing.resetAt <= now) {
@@ -114,6 +123,20 @@ export function rateLimitRequest(scope: string, request: NextRequest, options: R
   existing.count += 1;
   rateLimitStore.set(key, existing);
   return null;
+}
+
+export function clearRateLimitSubjects(...values: Array<string | undefined>) {
+  const subjectKeys = new Set(values.filter((value): value is string => Boolean(value)).map(normalizeKey));
+  if (!subjectKeys.size) return 0;
+
+  let cleared = 0;
+  for (const key of rateLimitStore.keys()) {
+    const subjectKey = key.slice(key.lastIndexOf(":") + 1);
+    if (!subjectKeys.has(subjectKey)) continue;
+    rateLimitStore.delete(key);
+    cleared += 1;
+  }
+  return cleared;
 }
 
 export function guardMutationRequest(request: NextRequest, scope: string, options?: RateLimitOptions) {

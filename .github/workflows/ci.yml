@@ -24,15 +24,15 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: "9.15.9"
 
@@ -53,6 +53,15 @@ jobs:
 
       - name: Feedback readiness
         run: pnpm run feedback:check
+
+      - name: Production dependency audit
+        run: pnpm run audit:prod
+
+      - name: Full dependency audit
+        run: pnpm run audit:full
+
+      - name: Release source safeguards
+        run: pnpm run release-source:check
 
       - name: Pre-migration Stripe compatibility
         run: pnpm run pre-migration-stripe-compatibility:check

@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { assertAccountMemoryPersistenceAllowed } from "@/lib/account-persistence-safety";
 import type { WeeklyBriefSnapshot } from "@/lib/weekly-brief";
 
 export const defaultDailyBriefTimeZone = "America/New_York";
@@ -74,10 +75,12 @@ export function normalizeWeeklyBriefEditionRecord(
 }
 
 export function getWeeklyBriefEdition(userId: string, editionDate: string) {
+  assertAccountMemoryPersistenceAllowed("getWeeklyBriefEdition");
   return editionStore.get(editionKey(userId, editionDate)) ?? null;
 }
 
 export function getPreviousWeeklyBriefEdition(userId: string, beforeEditionDate: string) {
+  assertAccountMemoryPersistenceAllowed("getPreviousWeeklyBriefEdition");
   return [...editionStore.values()]
     .filter((record) => record.userId === userId && record.editionDate < beforeEditionDate)
     .sort((left, right) => right.editionDate.localeCompare(left.editionDate))[0] ?? null;
@@ -87,7 +90,19 @@ export function setWeeklyBriefEdition(
   userId: string,
   value: Partial<WeeklyBriefEditionRecord> & Pick<WeeklyBriefEditionRecord, "editionDate" | "snapshot">
 ) {
+  assertAccountMemoryPersistenceAllowed("setWeeklyBriefEdition");
   const record = normalizeWeeklyBriefEditionRecord(userId, value);
   editionStore.set(editionKey(userId, record.editionDate), record);
   return record;
+}
+
+export function clearWeeklyBriefEditionMemory(userId: string) {
+  let deleted = 0;
+
+  for (const [key, record] of editionStore) {
+    if (record.userId !== userId) continue;
+    if (editionStore.delete(key)) deleted += 1;
+  }
+
+  return deleted;
 }

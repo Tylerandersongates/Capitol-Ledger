@@ -1,16 +1,24 @@
-import { getAccountLedger } from "@/lib/account-ledger";
-import { getAccountProfile } from "@/lib/account-profile";
-import { getAccountSubscription } from "@/lib/account-subscription";
-import { getAccountPersistenceUserId, readLedgerFromDatabase, readProfileFromDatabase, readSubscriptionFromDatabase } from "@/lib/account-database";
+import { getAccountLedger, normalizeAccountLedger } from "@/lib/account-ledger";
+import { getAccountProfile, getDefaultAccountProfile } from "@/lib/account-profile";
+import { getAccountSubscription, normalizeAccountSubscription } from "@/lib/account-subscription";
+import {
+  canUseDatabasePersistence,
+  getAccountPersistenceUserId,
+  readLedgerFromDatabase,
+  readProfileFromDatabase,
+  readSubscriptionFromDatabase
+} from "@/lib/account-database";
+import { fallbackUnlessAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { publicBrandName } from "@/lib/brand";
 import {
   getAllMembers,
-  getBill,
+  getAllMembersWithLiveData,
   getBillStatus,
   getDashboardData,
-  getMember,
+  getDashboardDataWithLiveData,
   getMemberVotes,
-  getRecentUpdates
+  getRecentUpdates,
+  getRecentUpdatesWithLiveData
 } from "@/lib/data";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { fetchGdeltDailyBriefItems, type GdeltDailyBriefArticle } from "@/lib/gdelt/client";
@@ -156,6 +164,33 @@ export type WeeklyBriefSnapshot = {
 
 const defaultCadence = "Daily at 8:00 AM";
 
+type WeeklyBriefDataSources = {
+  bills: Bill[];
+  dashboard: ReturnType<typeof getDashboardData>;
+  memberVotes: typeof getMemberVotes;
+  members: Member[];
+  recentUpdates: ReturnType<typeof getRecentUpdates>;
+};
+
+function getFixtureBriefDataSources(): WeeklyBriefDataSources {
+  const dashboard = getDashboardData();
+  return {
+    bills: dashboard.favoriteTargets.bills,
+    dashboard,
+    memberVotes: getMemberVotes,
+    members: getAllMembers(),
+    recentUpdates: getRecentUpdates()
+  };
+}
+
+function findBriefBill(sources: WeeklyBriefDataSources, billId?: string) {
+  return billId ? sources.bills.find((bill) => bill.id === billId) : undefined;
+}
+
+function findBriefMember(sources: WeeklyBriefDataSources, bioguideId?: string) {
+  return bioguideId ? sources.members.find((member) => member.bioguideId === bioguideId) : undefined;
+}
+
 function normalizeInterest(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
@@ -193,21 +228,19 @@ function uniqueMembers(values: Member[]) {
   });
 }
 
-function resolveWatchlistBills(ledger: AccountLedgerSnapshot) {
+function resolveWatchlistBills(ledger: AccountLedgerSnapshot, sources: WeeklyBriefDataSources) {
   const savedBills = ledger.follows
     .filter((record) => record.type === "bill")
-    .map((record) => getBill(record.id))
+    .map((record) => findBriefBill(sources, record.id))
     .filter((bill): bill is Bill => Boolean(bill));
-  const dashboard = getDashboardData();
-  const fallbackBills = [dashboard.trackedBill, dashboard.recentVote?.bill].filter((bill): bill is Bill => Boolean(bill));
 
-  return uniqueBills([...savedBills, ...fallbackBills]).slice(0, 3);
+  return uniqueBills(savedBills).slice(0, 3);
 }
 
-function resolveWatchlistOfficials(ledger: AccountLedgerSnapshot) {
+function resolveWatchlistOfficials(ledger: AccountLedgerSnapshot, sources: WeeklyBriefDataSources) {
   const savedOfficials = ledger.follows
     .filter((record) => record.type === "member")
-    .map((record) => getMember(record.id))
+    .map((record) => findBriefMember(sources, record.id))
     .filter((member): member is Member => Boolean(member));
 
   return uniqueMembers(savedOfficials).slice(0, 3);
@@ -236,9 +269,10 @@ function selectOfficial(
   ledger: AccountLedgerSnapshot,
   profile: AccountProfileSnapshot,
   watchlistBills: Bill[],
+  sources: WeeklyBriefDataSources,
   override?: DailyBriefEditorialOverride
 ): { member: Member; relatedBill?: Bill; whySelected: string } | undefined {
-  const editorialMember = override?.officialId ? getMember(override.officialId) : undefined;
+  const editorialMember = findBriefMember(sources, override?.officialId);
   if (editorialMember) {
     return {
       member: editorialMember,
@@ -246,7 +280,7 @@ function selectOfficial(
     };
   }
 
-  const followed = resolveWatchlistOfficials(ledger);
+  const followed = resolveWatchlistOfficials(ledger, sources);
   if (followed[0]) {
     return {
       member: followed[0],
@@ -256,7 +290,7 @@ function selectOfficial(
 
   const district = profileDistrict(profile);
   if (district) {
-    const activeMembers = getAllMembers().filter((member) => member.active && member.state === district.state);
+    const activeMembers = sources.members.filter((member) => member.active && member.state === district.state);
     const districtMember = activeMembers.find((member) => member.chamber === "House" && member.district === district.district);
     if (districtMember) {
       return {
@@ -275,7 +309,7 @@ function selectOfficial(
   }
 
   const selectedBill = resolveInterestBills(ledger, watchlistBills)[0];
-  const sponsor = selectedBill?.sponsorBioguideId ? getMember(selectedBill.sponsorBioguideId) : undefined;
+  const sponsor = findBriefMember(sources, selectedBill?.sponsorBioguideId);
   if (sponsor && selectedBill) {
     return {
       member: sponsor,
@@ -284,8 +318,8 @@ function selectOfficial(
     };
   }
 
-  const selectedVote = selectVote(ledger, override?.voteId);
-  const voteMember = selectedVote?.memberBioguideIds.map((id) => getMember(id)).find((member): member is Member => Boolean(member));
+  const selectedVote = selectVote(ledger, sources, override?.voteId);
+  const voteMember = selectedVote?.memberBioguideIds.map((id) => findBriefMember(sources, id)).find((member): member is Member => Boolean(member));
   if (!voteMember || !selectedVote) return undefined;
 
   return {
@@ -305,8 +339,8 @@ function scoreVote(
   return (entry.bill && followedBillIds.has(entry.bill.id) ? 6 : 0) + matchingInterests(ledger, entry.bill).length * 3 + (followedMemberMatch ? 2 : 0);
 }
 
-function selectVote(ledger: AccountLedgerSnapshot, overrideVoteId?: string) {
-  const voteFeed = getDashboardData().voteFeed;
+function selectVote(ledger: AccountLedgerSnapshot, sources: WeeklyBriefDataSources, overrideVoteId?: string) {
+  const voteFeed = sources.dashboard.voteFeed;
   const editorialVote = overrideVoteId ? voteFeed.find((entry) => entry.vote.id === overrideVoteId) : undefined;
   if (editorialVote) return editorialVote;
 
@@ -329,9 +363,10 @@ function billNextSignal(bill: Bill) {
 
 function buildVoteRecommendation(
   ledger: AccountLedgerSnapshot,
+  sources: WeeklyBriefDataSources,
   override?: DailyBriefEditorialOverride
 ): DailyBriefRecommendation | null {
-  const selected = selectVote(ledger, override?.voteId);
+  const selected = selectVote(ledger, sources, override?.voteId);
   if (!selected) return null;
 
   const { bill, totals, vote } = selected;
@@ -370,9 +405,10 @@ function buildVoteRecommendation(
 function buildBillRecommendation(
   ledger: AccountLedgerSnapshot,
   watchlistBills: Bill[],
+  sources: WeeklyBriefDataSources,
   override?: DailyBriefEditorialOverride
 ): DailyBriefRecommendation | null {
-  const editorialBill = override?.billId ? getBill(override.billId) : undefined;
+  const editorialBill = findBriefBill(sources, override?.billId);
   const bill = editorialBill ?? resolveInterestBills(ledger, watchlistBills)[0];
   if (!bill) return null;
 
@@ -403,13 +439,14 @@ function buildOfficialRecommendation(
   ledger: AccountLedgerSnapshot,
   profile: AccountProfileSnapshot,
   watchlistBills: Bill[],
+  sources: WeeklyBriefDataSources,
   override?: DailyBriefEditorialOverride
 ): DailyBriefRecommendation | null {
-  const selection = selectOfficial(ledger, profile, watchlistBills, override);
+  const selection = selectOfficial(ledger, profile, watchlistBills, sources, override);
   if (!selection) return null;
 
   const { member, relatedBill, whySelected } = selection;
-  const voteRecord = [...getMemberVotes(member.bioguideId)].sort((left, right) =>
+  const voteRecord = [...sources.memberVotes(member.bioguideId)].sort((left, right) =>
     Date.parse(right.vote?.voteDate ?? "0") - Date.parse(left.vote?.voteDate ?? "0")
   )[0];
   const whatHappened = relatedBill
@@ -435,12 +472,13 @@ function buildWatchToday(
   ledger: AccountLedgerSnapshot,
   profile: AccountProfileSnapshot,
   watchlistBills: Bill[],
+  sources: WeeklyBriefDataSources,
   override?: DailyBriefEditorialOverride
 ) {
   return [
-    buildVoteRecommendation(ledger, override),
-    buildBillRecommendation(ledger, watchlistBills, override),
-    buildOfficialRecommendation(ledger, profile, watchlistBills, override)
+    buildVoteRecommendation(ledger, sources, override),
+    buildBillRecommendation(ledger, watchlistBills, sources, override),
+    buildOfficialRecommendation(ledger, profile, watchlistBills, sources, override)
   ].filter((item): item is DailyBriefRecommendation => Boolean(item));
 }
 
@@ -488,8 +526,8 @@ function buildYesterdayInPolitics(
     }));
 }
 
-function buildPriorityUpdates(ledger: AccountLedgerSnapshot): WeeklyBriefUpdate[] {
-  const dashboard = getDashboardData();
+function buildPriorityUpdates(ledger: AccountLedgerSnapshot, sources: WeeklyBriefDataSources): WeeklyBriefUpdate[] {
+  const dashboard = sources.dashboard;
   const readAlerts = new Set(ledger.readAlerts);
   const recentVote = dashboard.recentVote?.vote;
   const voteUpdate: WeeklyBriefUpdate | null = recentVote
@@ -504,9 +542,9 @@ function buildPriorityUpdates(ledger: AccountLedgerSnapshot): WeeklyBriefUpdate[
       }
     : null;
 
-  const eventUpdates = getRecentUpdates().map((event) => {
-    const bill = event.targetType === "bill" ? getBill(event.targetId) : undefined;
-    const member = event.targetType === "member" ? getMember(event.targetId) : undefined;
+  const eventUpdates = sources.recentUpdates.map((event) => {
+    const bill = event.targetType === "bill" ? findBriefBill(sources, event.targetId) : undefined;
+    const member = event.targetType === "member" ? findBriefMember(sources, event.targetId) : undefined;
 
     return {
       body: event.body,
@@ -522,7 +560,7 @@ function buildPriorityUpdates(ledger: AccountLedgerSnapshot): WeeklyBriefUpdate[
   return [voteUpdate, ...eventUpdates].filter((update): update is WeeklyBriefUpdate => Boolean(update)).slice(0, 4);
 }
 
-function buildWatchlistSnapshot(watchlistBills: Bill[], watchlistOfficials: Member[]): WeeklyBriefSnapshot["watchlist"] {
+function buildWatchlistSnapshot(watchlistBills: Bill[], watchlistOfficials: Member[], sources: WeeklyBriefDataSources): WeeklyBriefSnapshot["watchlist"] {
   return {
     bills: watchlistBills.map((bill) => ({
       href: `/bills/${bill.id}`,
@@ -535,7 +573,7 @@ function buildWatchlistSnapshot(watchlistBills: Bill[], watchlistOfficials: Memb
     })),
     interests: [],
     officials: watchlistOfficials.map((member) => {
-      const latestVote = [...getMemberVotes(member.bioguideId)].sort((left, right) =>
+      const latestVote = [...sources.memberVotes(member.bioguideId)].sort((left, right) =>
         Date.parse(right.vote?.voteDate ?? "0") - Date.parse(left.vote?.voteDate ?? "0")
       )[0];
 
@@ -731,6 +769,7 @@ function buildWrittenSummary({
 }
 
 export function buildWeeklyBrief({
+  dataSources = getFixtureBriefDataSources(),
   editorialOverride,
   gdeltArticles = [],
   generatedAt = new Date().toISOString(),
@@ -739,6 +778,7 @@ export function buildWeeklyBrief({
   profile,
   subscription
 }: {
+  dataSources?: WeeklyBriefDataSources;
   editorialOverride?: DailyBriefEditorialOverride;
   gdeltArticles?: GdeltDailyBriefArticle[];
   generatedAt?: string;
@@ -747,14 +787,14 @@ export function buildWeeklyBrief({
   profile: AccountProfileSnapshot;
   subscription: AccountSubscriptionSnapshot;
 }): WeeklyBriefSnapshot {
-  const dashboard = getDashboardData();
-  const watchlistBills = resolveWatchlistBills(ledger);
-  const watchlistOfficials = resolveWatchlistOfficials(ledger);
-  const priorityUpdates = buildPriorityUpdates(ledger);
+  const dashboard = dataSources.dashboard;
+  const watchlistBills = resolveWatchlistBills(ledger, dataSources);
+  const watchlistOfficials = resolveWatchlistOfficials(ledger, dataSources);
+  const priorityUpdates = buildPriorityUpdates(ledger, dataSources);
   const unreadAlerts = priorityUpdates.filter((update) => update.unread).length;
-  const watchToday = buildWatchToday(ledger, profile, watchlistBills, editorialOverride);
+  const watchToday = buildWatchToday(ledger, profile, watchlistBills, dataSources, editorialOverride);
   const yesterdayInPolitics = buildYesterdayInPolitics(ledger, gdeltArticles);
-  const watchlist = buildWatchlistSnapshot(watchlistBills, watchlistOfficials);
+  const watchlist = buildWatchlistSnapshot(watchlistBills, watchlistOfficials, dataSources);
   watchlist.interests = ledger.issueInterests.slice(0, 6);
   const watchlistMovement = buildWatchlistMovement({ currentWatchlist: watchlist, generatedAt, previousBrief });
   const worthCheckingNext = buildWorthCheckingNext({ ledger, profile, unreadAlerts, watchToday });
@@ -827,23 +867,37 @@ export async function getWeeklyBriefForUser(
     previousBrief?: WeeklyBriefSnapshot;
   } = {}
 ) {
-  const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
+  const accountUserId = await getAccountPersistenceUserId(user);
 
   const [databaseLedger, databaseProfile, databaseSubscription] = await Promise.all([
-    readLedgerFromDatabase(accountUserId).catch(() => null),
-    readProfileFromDatabase(accountUserId).catch(() => null),
-    readSubscriptionFromDatabase(accountUserId).catch(() => null)
+    readLedgerFromDatabase(accountUserId),
+    readProfileFromDatabase(accountUserId),
+    readSubscriptionFromDatabase(accountUserId)
   ]);
 
-  const ledger = databaseLedger ?? getAccountLedger(accountUserId);
-  const profile = databaseProfile ?? getAccountProfile(accountUserId);
-  const personalSubscription = databaseSubscription ?? getAccountSubscription(accountUserId);
-  const [subscription, gdeltArticles] = await Promise.all([
-    getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch(() => personalSubscription),
-    fetchGdeltDailyBriefItems({ interests: ledger.issueInterests }).catch(() => [])
+  const usesDatabase = canUseDatabasePersistence();
+  const ledger = databaseLedger ?? (usesDatabase ? normalizeAccountLedger() : getAccountLedger(accountUserId));
+  const profile = databaseProfile ?? (usesDatabase ? getDefaultAccountProfile() : getAccountProfile(accountUserId));
+  const personalSubscription = databaseSubscription ??
+    (usesDatabase ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
+  const [subscription, gdeltArticles, dashboard, liveMembers, recentUpdates] = await Promise.all([
+    getEffectiveSubscriptionForAccountUser(user, personalSubscription).catch((error) =>
+      fallbackUnlessAccountPersistenceUnavailable(error, personalSubscription)
+    ),
+    fetchGdeltDailyBriefItems({ interests: ledger.issueInterests }).catch(() => []),
+    getDashboardDataWithLiveData(),
+    getAllMembersWithLiveData(),
+    getRecentUpdatesWithLiveData()
   ]);
 
   return buildWeeklyBrief({
+    dataSources: {
+      bills: dashboard.favoriteTargets.bills,
+      dashboard,
+      memberVotes: () => [],
+      members: liveMembers,
+      recentUpdates
+    },
     editorialOverride,
     gdeltArticles,
     generatedAt,

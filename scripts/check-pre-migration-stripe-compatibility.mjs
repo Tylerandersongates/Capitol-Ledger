@@ -31,7 +31,10 @@ for (const forbidden of [
 
 const retiredWebhookIndex = webhookSource.indexOf('event.type === "checkout.session.completed"');
 const userLookupIndex = webhookSource.indexOf("const userId =");
-const subscriptionUpdateIndex = webhookSource.indexOf('event.type === "customer.subscription.updated"');
+const subscriptionUpdateIndex = webhookSource.indexOf(
+  'if (event.type === "customer.subscription.updated"',
+  userLookupIndex
+);
 
 assert.notEqual(retiredWebhookIndex, -1, "legacy checkout completion must have an explicit retired-event branch");
 assert.notEqual(userLookupIndex, -1, "legacy subscription lifecycle events must retain their account lookup");
