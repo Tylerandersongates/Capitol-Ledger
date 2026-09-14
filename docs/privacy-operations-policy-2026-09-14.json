@@ -1,0 +1,92 @@
+{
+  "policyVersion": "2026-09-14",
+  "decisionStatus": "approved_for_implementation_and_isolated_synthetic_validation",
+  "productionActivationAuthorized": false,
+  "owner": {
+    "primary": "Tyler",
+    "backup": null,
+    "coverageModel": "single_owner_pause"
+  },
+  "register": {
+    "currentState": "not_implemented",
+    "productionBoundary": "dedicated_server_only_record_in_controlled_neon_project",
+    "syntheticBoundary": "ephemeral_isolated_postgresql_with_synthetic_identities_only",
+    "accessPrincipals": [
+      "privacy_owner"
+    ],
+    "allowedFields": [
+      "internal_case_reference",
+      "lane",
+      "request_type",
+      "received_at",
+      "machine_receipt_at",
+      "human_acknowledgement_at",
+      "operator",
+      "identity_state",
+      "workflow_status",
+      "source_boundary_categories",
+      "exception_category",
+      "resolution",
+      "resolved_at",
+      "delete_at"
+    ],
+    "prohibitedData": [
+      "passwords",
+      "tokens",
+      "cookies",
+      "provider_secrets",
+      "government_identity_documents",
+      "payment_credentials",
+      "raw_mailbox_bodies",
+      "diagnostic_payloads",
+      "export_payloads",
+      "apple_or_stripe_transaction_identifiers"
+    ]
+  },
+  "reviewCadence": {
+    "timezone": "America/Los_Angeles",
+    "businessDays": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "reviewWindows": [
+      "10:00",
+      "16:00"
+    ],
+    "internalHumanAcknowledgementTargetBusinessDays": 2,
+    "internalCasePlanTargetBusinessDays": 5,
+    "publicUniversalDeadline": null
+  },
+  "absence": {
+    "plannedTrigger": "expected_to_miss_two_consecutive_review_windows",
+    "unexpectedTrigger": "two_consecutive_review_windows_missed",
+    "activeLaneAction": "pause_intake_after_exact_change_approval",
+    "inactiveLaneAction": "leave_disabled",
+    "recoveryOrder": "oldest_unreviewed_first",
+    "credentialSharingAllowed": false
+  },
+  "identity": {
+    "intake": "authenticated_session_or_controlled_account_email",
+    "accessSummary": "current_authenticated_session",
+    "highRiskFulfillment": "fresh_reauthentication_within_15_minutes_using_existing_account_channel",
+    "lostEmailOrFormerUser": "stop_and_escalate_without_collecting_new_identity_documents",
+    "governmentIdAllowed": false,
+    "purchaseReceiptAllowed": false,
+    "providerIdentifierAllowed": false
+  },
+  "retention": {
+    "minimalClosedCaseRecordMonths": 24,
+    "optionalDetailDaysAfterResolution": 30,
+    "mailboxCopyDaysAfterResolution": 30,
+    "mailboxAttachmentDaysAfterClassification": 7,
+    "exportArtifactHours": 168,
+    "syntheticExerciseDataHours": 24,
+    "exceptionReviewDays": 30,
+    "backupRecoveryWindowDays": 7,
+    "verificationCadence": "monthly",
+    "indefiniteRetentionAllowed": false
+  }
+}
