@@ -1,0 +1,111 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "dispatcher_core_only_locally_validated",
+  "productionExecutionAuthorized": false,
+  "implementation": {
+    "state": "strict_parser_and_injected_dispatcher_core_only",
+    "executableEntrypointImplemented": false,
+    "stdinReaderImplemented": false,
+    "databaseAdapterImplemented": false,
+    "productionCredentialImplemented": false,
+    "productionMigrationAuthorized": false,
+    "providerCapabilityImplemented": false,
+    "publicRouteImplemented": false,
+    "schedulerImplemented": false,
+    "loggingImplemented": false
+  },
+  "input": {
+    "transport": "future_single_json_document_over_stdin",
+    "maximumBytes": 16384,
+    "commandLineArgumentsAllowed": false,
+    "persistedCommandFileAllowed": false,
+    "unknownFieldsAllowed": false,
+    "operatorRole": "privacy_owner",
+    "singleCaseMutationOnly": true,
+    "batchMutationAllowed": false,
+    "prohibitedFields": [
+      "email",
+      "contactValue",
+      "mailboxBody",
+      "attachment",
+      "exportPayload",
+      "providerIdentifier",
+      "credential",
+      "rawError"
+    ]
+  },
+  "actions": {
+    "queue_summary": {
+      "additionalGate": "PRIVACY_REQUEST_MONITOR_ENABLED",
+      "result": "aggregate_queue_snapshot"
+    },
+    "open_first_party_case": {
+      "input": "existing_internal_case_reference_only",
+      "result": "minimized_single_case_status"
+    },
+    "open_mailbox_case": {
+      "input": "closed_type_identity_state_and_timestamps_only",
+      "result": "minimized_single_case_status"
+    },
+    "acknowledge": {
+      "input": "internal_case_reference_only",
+      "result": "minimized_single_case_status"
+    },
+    "review": {
+      "input": "internal_case_reference_and_closed_review_vocabulary_only",
+      "result": "minimized_single_case_status"
+    },
+    "resolve": {
+      "input": "internal_case_reference_and_closed_resolution_vocabulary_only",
+      "result": "minimized_single_case_status"
+    },
+    "retention_apply": {
+      "additionalGate": "CAPITOLWONK_PRIVACY_RETENTION_SWEEP_ENABLED",
+      "result": "aggregate_counts_only"
+    }
+  },
+  "output": {
+    "runtimeSchemaValidationRequired": true,
+    "unknownFieldsAllowed": false,
+    "rawAdapterErrorsAllowed": false,
+    "failureVocabulary": [
+      "invalid_command",
+      "runner_disabled",
+      "operations_disabled",
+      "wrong_role",
+      "monitor_disabled",
+      "retention_disabled",
+      "operator_action_failed"
+    ],
+    "prohibitedFields": [
+      "email",
+      "contactValue",
+      "mailboxBody",
+      "attachment",
+      "exportPayload",
+      "providerIdentifier",
+      "credential",
+      "rawError"
+    ]
+  },
+  "leastPrivilege": {
+    "productionBindingState": "absent",
+    "migrationOwnerCredentialAllowed": false,
+    "ddlAllowed": false,
+    "roleAdministrationAllowed": false,
+    "extensionAdministrationAllowed": false,
+    "unrelatedTableAccessAllowed": false,
+    "mailboxOrProviderCredentialAllowed": false,
+    "candidateReadTables": [
+      "PrivacyRequest",
+      "PrivacyRequestOperation"
+    ],
+    "candidateMutationTables": [
+      "PrivacyRequest",
+      "PrivacyRequestOperation"
+    ],
+    "grantSqlApproved": false,
+    "principalCreationApproved": false,
+    "credentialCreationApproved": false
+  }
+}

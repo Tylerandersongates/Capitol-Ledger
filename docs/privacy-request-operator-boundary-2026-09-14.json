@@ -1,9 +1,10 @@
 {
   "boundaryVersion": "2026-09-14",
-  "decisionStatus": "guard_contract_only_locally_validated",
+  "decisionStatus": "guard_and_dispatcher_core_locally_validated",
   "productionExecutionAuthorized": false,
   "runner": {
-    "implementationState": "guard_only_no_executable_runner",
+    "implementationState": "guard_and_dispatcher_core_no_executable_runner",
+    "dispatcherCoreContract": "privacy-request-operator-runner-core-2026-09-14.json",
     "surface": "future_local_server_command_only",
     "publicRouteAllowed": false,
     "clientBundleAllowed": false,

@@ -27,9 +27,16 @@ const packageDocument = JSON.parse(read("package.json"));
 const guardSource = read("lib/privacy-request-operator-boundary.ts");
 
 assert.equal(boundary.boundaryVersion, "2026-09-14");
-assert.equal(boundary.decisionStatus, "guard_contract_only_locally_validated");
+assert.equal(boundary.decisionStatus, "guard_and_dispatcher_core_locally_validated");
 assert.equal(boundary.productionExecutionAuthorized, false);
-assert.equal(boundary.runner.implementationState, "guard_only_no_executable_runner");
+assert.equal(
+  boundary.runner.implementationState,
+  "guard_and_dispatcher_core_no_executable_runner"
+);
+assert.equal(
+  boundary.runner.dispatcherCoreContract,
+  "privacy-request-operator-runner-core-2026-09-14.json"
+);
 assert.equal(boundary.runner.surface, "future_local_server_command_only");
 assert.equal(boundary.runner.publicRouteAllowed, false);
 assert.equal(boundary.runner.clientBundleAllowed, false);
