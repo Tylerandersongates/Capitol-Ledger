@@ -1,0 +1,78 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "pure_verifiers_only_locally_validated",
+  "productionExecutionAuthorized": false,
+  "artifactDeletion": {
+    "artifactKinds": [
+      "mailbox_message_and_duplicate_copies",
+      "mailbox_attachment",
+      "export_artifact_and_access_token"
+    ],
+    "retention": {
+      "mailboxMessageDaysAfterResolution": 30,
+      "mailboxAttachmentDaysAfterClassification": 7,
+      "exportArtifactHoursAfterCreation": 168,
+      "exportConfirmedRetrievalExpiresImmediately": true
+    },
+    "requiredEvidence": [
+      "closed_artifact_kind",
+      "lifecycle_anchor_timestamp",
+      "deletion_deadline_timestamp",
+      "deletion_confirmation_timestamp",
+      "zero_remaining_artifact_copies",
+      "zero_remaining_access_tokens_for_export"
+    ],
+    "evidenceMayContain": [
+      "artifact_kind",
+      "sanitized_timestamps",
+      "aggregate_remaining_counts",
+      "closed_decision",
+      "closed_reason_codes"
+    ],
+    "evidenceMustNotContain": [
+      "case_reference",
+      "account_or_user_identifier",
+      "email_or_contact_value",
+      "mailbox_subject_or_body",
+      "attachment_name_or_content",
+      "export_content_or_download_url",
+      "access_token",
+      "provider_identifier",
+      "credential",
+      "raw_error"
+    ],
+    "deletionCapabilityImplemented": false,
+    "providerBindingImplemented": false
+  },
+  "restoreFloor": {
+    "sourcePolicy": "constrained_restore_floor",
+    "unsafeDecision": "reject",
+    "safeDecision": "eligible_for_further_recovery_review",
+    "eligibleAuthorizesTrafficSwitch": false,
+    "serviceStateForEveryDecision": "keep_offline",
+    "rejectWhen": [
+      "proposed_point_before_newest_trustworthy_deletion_watermark",
+      "newest_state_or_target_or_watermark_query_unverified",
+      "watermark_missing_or_count_inconsistent",
+      "contradictory_deletion_evidence",
+      "deleted_fixture_present",
+      "deidentified_completion_missing",
+      "survivor_control_changed_or_missing",
+      "schema_or_migration_state_unverified",
+      "cleanup_jobs_unreconciled",
+      "protected_aggregates_changed",
+      "application_traffic_present",
+      "outbound_provider_effect_present"
+    ],
+    "knownSanitizedExercise": {
+      "preDeletionPoint": "2026-09-13T22:26:52.250Z",
+      "deletionWatermark": "2026-09-13T22:50:14.926Z",
+      "postDeletionPoint": "2026-09-13T22:50:20.969Z",
+      "preDeletionDecision": "reject",
+      "postDeletionDecision": "eligible_for_further_recovery_review"
+    },
+    "restoreCapabilityImplemented": false,
+    "databaseBindingImplemented": false,
+    "trafficSwitchCapabilityImplemented": false
+  }
+}

@@ -37,10 +37,12 @@ The exercise also runs inside `pnpm privacy-request:check` and therefore the bra
 
 - Independent review and exact-head CI/Preview evidence for any future executable runner.
 - An executable local/server operator runner, least-privileged production authentication/binding, and production migration approval. The pure guard and access contract are prepared locally only.
-- Mailbox-copy and export-artifact deletion evidence.
-- Restore-floor verifier and a restore exercise.
+- Real mailbox/export provider deletion and evidence remain open. The next local checkpoint adds a pure sanitized evidence verifier only; it has no deletion or provider capability.
+- The isolated constrained restore exercise is complete through cleanup. The next local checkpoint makes its floor decision durable as a pure verifier; production restore evaluation and traffic switching remain open.
 - Action-time approval and live exercise of the exact protected-configuration pause/return runbook; the local procedure and fixtures are prepared only.
 - Scheduler, production aggregate monitor read, production retention run, and any alert path.
 - Any provider exercise or real privacy-request operation.
 
 None of those actions is authorized by this exercise.
+
+The repository-local continuation is documented in the [artifact-deletion and restore-floor verifier packet](privacy-artifact-deletion-and-restore-floor-verifier-2026-09-14.md). Its fixtures do not revisit Neon or delete any object.
