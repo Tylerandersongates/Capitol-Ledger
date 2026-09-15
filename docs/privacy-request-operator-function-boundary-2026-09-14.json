@@ -1,7 +1,20 @@
 {
   "contractVersion": "2026-09-14",
-  "decisionStatus": "source_only_function_boundary_candidate",
+  "decisionStatus": "source_only_function_boundary_deployed",
   "productionExecutionAuthorized": false,
+  "deploymentEvidence": {
+    "pullRequest": 23,
+    "branchCommit": "d5e72d8a6fc5b0fea1a4775e7d8d322cd1c29230",
+    "mergeCommit": "e4b82381de44ea2830d1b61e5b498d2a7f438a79",
+    "vercelDeploymentId": "BsLBiAcwSfnmhnLyTi9tJsaAjwjS",
+    "environment": "Production",
+    "deploymentState": "Ready",
+    "canonicalDomain": "www.capitolwonk.com",
+    "apexPrivacyRedirectStatus": 308,
+    "canonicalPrivacyStatus": 200,
+    "privacyApiStatus": 503,
+    "privacyApiCacheControl": "no-store"
+  },
   "sourceArtifact": "privacy-request-operator-function-boundary-2026-09-14.sql",
   "functions": [
     {

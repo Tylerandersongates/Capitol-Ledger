@@ -51,7 +51,13 @@ const expectedFunctions = [
 ];
 
 assert.equal(contract.contractVersion, "2026-09-14");
-assert.equal(contract.decisionStatus, "source_only_function_boundary_candidate");
+assert.equal(contract.decisionStatus, "source_only_function_boundary_deployed");
+assert.equal(contract.deploymentEvidence.pullRequest, 23);
+assert.equal(
+  contract.deploymentEvidence.mergeCommit,
+  "e4b82381de44ea2830d1b61e5b498d2a7f438a79"
+);
+assert.equal(contract.deploymentEvidence.deploymentState, "Ready");
 assert.equal(contract.productionExecutionAuthorized, false);
 assert.equal(
   accessContract.recommendedBinding.strategy,
