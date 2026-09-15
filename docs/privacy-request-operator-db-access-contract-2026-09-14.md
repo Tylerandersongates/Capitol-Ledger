@@ -36,7 +36,7 @@ Any future implementation must preserve all of these conditions:
 7. The migration owner and restore credential are never reused by the operator.
 8. The credential is short-lived or managed, injected only at execution time, and excluded from arguments, files, source control, screenshots, telemetry, logs, and retained evidence.
 
-The next local [function-boundary packet](privacy-request-operator-function-boundary-2026-09-14.md) implements the seven proposed function bodies as an inert SQL artifact outside Prisma migrations and validates them only in ephemeral PostgreSQL. It does not resolve or authorize the role name, function ownership, grant/revoke SQL, network origin, credential issuance/expiry/revocation, migration execution, connection bootstrap, shell binding, or live proof; those remain approval-gated.
+PR #23 deployed the [function-boundary packet](privacy-request-operator-function-boundary-2026-09-14.md), and PR #24 deployed its [atomic migration/ACL review](privacy-request-operator-function-migration-review-2026-09-14.md), both source-only and unexecuted. The next local [role-bootstrap review](privacy-request-operator-role-bootstrap-review-2026-09-14.md) reserves the two reviewed names only as inert roles in ephemeral PostgreSQL. It does not authorize production role creation, target ambient-privilege changes, network origin, credential issuance/expiry/revocation, migration execution, connection bootstrap, shell binding, or live proof; those remain approval-gated.
 
 ## Local verification
 

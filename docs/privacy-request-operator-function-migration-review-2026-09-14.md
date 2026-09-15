@@ -1,8 +1,10 @@
 # Privacy-request operator function migration review — September 14, 2026
 
-Status: **source-only migration-review candidate; not a Prisma migration and not approved for production execution.** The machine-readable contract is [`privacy-request-operator-function-migration-review-2026-09-14.json`](privacy-request-operator-function-migration-review-2026-09-14.json). It pins the reviewed [function source](privacy-request-operator-function-boundary-2026-09-14.sql) by SHA-256 and pairs it with the guarded [ACL segment](privacy-request-operator-function-migration-acl-2026-09-14.sql).
+Status: **deployed source-only migration review; not a Prisma migration and not approved for production execution.** The machine-readable contract is [`privacy-request-operator-function-migration-review-2026-09-14.json`](privacy-request-operator-function-migration-review-2026-09-14.json). It pins the reviewed [function source](privacy-request-operator-function-boundary-2026-09-14.sql) by SHA-256 and pairs it with the guarded [ACL segment](privacy-request-operator-function-migration-acl-2026-09-14.sql).
 
 PR #23 deployed the source-only function boundary to `main` at merge `e4b82381de44ea2830d1b61e5b498d2a7f438a79`. All three GitHub checks passed; exact-source Vercel production deployment `BsLBiAcwSfnmhnLyTi9tJsaAjwjS` reached Ready, and the canonical-domain smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`. No database, principal, credential, grant, migration, binding, configuration, or activation changed.
+
+PR #24 deployed this source-only review to `main` at merge `c7424b54232e13def08d1c0350f74d773d33b071`. All three pull-request checks passed; exact-source Vercel production deployment `FRFmoa5DuFiyAaMMEm2Ea1tik8kU` reached Ready and Current, and the same canonical-domain gate-off smoke passed. The next source-only [role-bootstrap review](privacy-request-operator-role-bootstrap-review-2026-09-14.md) reserves the two reviewed names only as inert `NOLOGIN` roles in ephemeral validation. No database, role, credential, grant, migration, binding, configuration, provider, or activation changed.
 
 ## Review result
 

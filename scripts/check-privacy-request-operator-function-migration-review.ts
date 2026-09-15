@@ -46,9 +46,16 @@ const expectedSignatures = [
 assert.equal(contract.contractVersion, "2026-09-14");
 assert.equal(
   contract.decisionStatus,
-  "source_only_function_migration_review_candidate"
+  "source_only_function_migration_review_deployed"
 );
 assert.equal(contract.productionExecutionAuthorized, false);
+assert.equal(contract.deploymentEvidence.pullRequest, 24);
+assert.equal(
+  contract.deploymentEvidence.mergeCommit,
+  "c7424b54232e13def08d1c0350f74d773d33b071"
+);
+assert.equal(contract.deploymentEvidence.deploymentState, "Ready");
+assert.equal(contract.deploymentEvidence.deploymentCurrent, true);
 assert.equal(contract.composition.singleTransactionRequired, true);
 assert.equal(contract.composition.partialInstallationAllowed, false);
 assert.equal(contract.composition.productionMigrationIncluded, false);
