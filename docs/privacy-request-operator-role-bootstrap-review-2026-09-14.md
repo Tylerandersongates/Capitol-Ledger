@@ -1,8 +1,10 @@
 # Privacy-request operator role-bootstrap review — September 14, 2026
 
-Status: **source-only role-bootstrap review candidate; not a Prisma migration and not approved for production execution.** The machine-readable contract is [`privacy-request-operator-role-bootstrap-review-2026-09-14.json`](privacy-request-operator-role-bootstrap-review-2026-09-14.json), and the guarded SQL source is [`privacy-request-operator-role-bootstrap-2026-09-14.sql`](privacy-request-operator-role-bootstrap-2026-09-14.sql).
+Status: **deployed source-only role-bootstrap review; not a Prisma migration and not approved for production execution.** The machine-readable contract is [`privacy-request-operator-role-bootstrap-review-2026-09-14.json`](privacy-request-operator-role-bootstrap-review-2026-09-14.json), and the guarded SQL source is [`privacy-request-operator-role-bootstrap-2026-09-14.sql`](privacy-request-operator-role-bootstrap-2026-09-14.sql).
 
 PR #24 deployed the source-only atomic function-migration/ACL review to `main` at merge `c7424b54232e13def08d1c0350f74d773d33b071`. All three pull-request checks passed; exact-source Vercel production deployment `FRFmoa5DuFiyAaMMEm2Ea1tik8kU` reached Ready and Current, and the canonical-domain smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`. No database, role, credential, grant, migration, binding, configuration, provider, or activation changed.
+
+PR #25 deployed this source-only review to `main` at merge `8534c7357bd6bc423d8afced5b0fa3015c2be247`. All three pull-request checks passed; exact-source Vercel Production deployment `63yd38aWH3q382bjoundusTdU8Ep` reached Ready and Current, and the same canonical-domain gate-off smoke passed. The next source-only [ambient-privilege preflight review](privacy-request-operator-ambient-privilege-preflight-review-2026-09-14.md) prepares a guarded aggregate read without connecting to the production target. No database, role, credential, grant, migration, binding, configuration, provider, or activation changed.
 
 ## Review result
 

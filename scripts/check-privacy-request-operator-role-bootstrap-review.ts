@@ -34,9 +34,24 @@ const reviewedRoles = [functionOwner, operatorPrincipal].sort();
 assert.equal(contract.contractVersion, "2026-09-14");
 assert.equal(
   contract.decisionStatus,
-  "source_only_role_bootstrap_review_candidate"
+  "source_only_role_bootstrap_review_deployed"
 );
 assert.equal(contract.productionExecutionAuthorized, false);
+assert.equal(contract.deploymentEvidence.pullRequest, 25);
+assert.equal(
+  contract.deploymentEvidence.branchCommit,
+  "ce27daa6b199ec79893ad907af1e8273680880e2"
+);
+assert.equal(
+  contract.deploymentEvidence.mergeCommit,
+  "8534c7357bd6bc423d8afced5b0fa3015c2be247"
+);
+assert.equal(
+  contract.deploymentEvidence.vercelDeploymentId,
+  "63yd38aWH3q382bjoundusTdU8Ep"
+);
+assert.equal(contract.deploymentEvidence.deploymentState, "Ready");
+assert.equal(contract.deploymentEvidence.deploymentCurrent, true);
 assert.equal(
   predecessor.decisionStatus,
   "source_only_function_migration_review_deployed"

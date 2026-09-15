@@ -1,0 +1,113 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "source_only_ambient_privilege_preflight_candidate",
+  "productionExecutionAuthorized": false,
+  "predecessor": {
+    "artifact": "privacy-request-operator-role-bootstrap-review-2026-09-14.json",
+    "decisionStatus": "source_only_role_bootstrap_review_deployed",
+    "pullRequest": 25,
+    "branchCommit": "ce27daa6b199ec79893ad907af1e8273680880e2",
+    "mergeCommit": "8534c7357bd6bc423d8afced5b0fa3015c2be247",
+    "vercelDeploymentId": "63yd38aWH3q382bjoundusTdU8Ep",
+    "deploymentState": "Ready",
+    "deploymentCurrent": true
+  },
+  "preflightSource": {
+    "artifact": "privacy-request-operator-ambient-privilege-preflight-2026-09-14.sql",
+    "sha256": "900f8ad827f704459688ce070edb7d341c387918b77af4ef8667dec49566f7d6",
+    "executionGuardSetting": "capitolwonk.operator_ambient_privilege_preflight=approved-read-only",
+    "expectedDatabaseSetting": "capitolwonk.operator_expected_database",
+    "readOnlyTransactionRequired": true,
+    "singleAggregateRow": true
+  },
+  "targetInventory": {
+    "schema": "public",
+    "relations": [
+      "PrivacyRequest",
+      "PrivacyRequestOperation"
+    ],
+    "exactRelationCount": 2,
+    "allowedRelationKinds": [
+      "ordinary_table",
+      "partitioned_table"
+    ],
+    "ambientPrivilegeScope": [
+      "all_application_schema_relations",
+      "all_application_schema_sequences",
+      "all_application_schema_routines"
+    ],
+    "reviewedRoleNames": [
+      "capitolwonk_privacy_function_owner",
+      "capitolwonk_privacy_operator"
+    ]
+  },
+  "passConditions": {
+    "databaseMatchesRuntimeExpectation": true,
+    "privacyRelationsExistExactly": true,
+    "publicDatabaseConnectAbsent": true,
+    "publicDatabaseTemporaryAbsent": true,
+    "publicSchemaCreateAbsent": true,
+    "publicPrivacyTableAccessAbsent": true,
+    "publicApplicationRelationAccessAbsent": true,
+    "publicApplicationSequenceAccessAbsent": true,
+    "publicApplicationRoutineExecuteAbsent": true,
+    "reviewedRoleNamesAvailable": true,
+    "publicSchemaUsageIsInformationalOnly": true
+  },
+  "resultBoundary": {
+    "databaseNameReturned": false,
+    "executorIdentityReturned": false,
+    "aclGrantorOrGranteeReturned": false,
+    "tableRowsRead": false,
+    "customerDataReturned": false,
+    "credentialReturned": false,
+    "aggregateBooleanFieldsOnly": true,
+    "boundedRelationCountReturned": true
+  },
+  "validation": {
+    "ephemeralPostgresOnly": true,
+    "missingGuardRejected": true,
+    "wrongDatabaseExpectationFailsClosed": true,
+    "missingRelationFailsClosed": true,
+    "publicConnectFailsClosed": true,
+    "publicTemporaryFailsClosed": true,
+    "publicSchemaCreateFailsClosed": true,
+    "publicTableGrantFailsClosed": true,
+    "publicUnrelatedRelationGrantFailsClosed": true,
+    "publicSequenceGrantFailsClosed": true,
+    "publicRoutineExecuteFailsClosed": true,
+    "reviewedRoleCollisionFailsClosed": true,
+    "reviewedSafeBaselinePasses": true,
+    "sourceMutationStatementsPresent": false,
+    "databaseClosedInAllOutcomes": true,
+    "productionConnectionUsed": false
+  },
+  "candidateBoundary": {
+    "includedInPrismaMigration": false,
+    "productionTargetInspected": false,
+    "sharedPublicAclRemediationIncluded": false,
+    "roleCreationIncluded": false,
+    "credentialIncluded": false,
+    "databaseConnectionIncluded": false,
+    "grantOrRevokeIncluded": false,
+    "migrationExecutionIncluded": false,
+    "serviceAdapterBindingIncluded": false,
+    "stdinShellBindingIncluded": false,
+    "applicationRouteIncluded": false,
+    "schedulerIncluded": false,
+    "providerCapabilityIncluded": false,
+    "configurationChangeIncluded": false,
+    "gateActivationIncluded": false
+  },
+  "remainingApprovalGates": [
+    "target_ambient_privilege_preflight_execution_and_review",
+    "shared_public_acl_remediation_if_required",
+    "production_role_creation",
+    "credential_lifecycle_and_network_origin",
+    "production_operations_and_function_migration",
+    "service_adapter_function_call_conversion",
+    "protected_connection_bootstrap",
+    "stdin_shell_binding",
+    "production_execution_and_activation"
+  ]
+}
