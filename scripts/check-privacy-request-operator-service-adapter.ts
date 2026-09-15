@@ -68,6 +68,11 @@ assert.equal(contract.implementation.schedulerImplemented, false);
 assert.equal(contract.binding.stdinShellImportsAdapter, false);
 assert.equal(contract.binding.applicationRouteImportsAdapter, false);
 assert.equal(contract.binding.productionBindingState, "absent");
+assert.equal(
+  contract.binding.functionBoundaryContract,
+  "privacy-request-operator-function-boundary-2026-09-14.json"
+);
+assert.equal(contract.binding.functionBoundaryState, "source_only_unbound_not_migrated");
 assert.equal(contract.validation.syntheticDatabaseOnly, true);
 assert.equal(contract.validation.allSevenActionsCovered, true);
 

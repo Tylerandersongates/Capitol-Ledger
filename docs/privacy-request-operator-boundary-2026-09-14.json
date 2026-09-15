@@ -1,6 +1,6 @@
 {
   "boundaryVersion": "2026-09-14",
-  "decisionStatus": "guard_dispatcher_stdin_and_service_adapter_deployed_access_contract_pending",
+  "decisionStatus": "guard_dispatcher_adapter_and_access_contract_deployed_function_boundary_candidate",
   "productionExecutionAuthorized": false,
   "runner": {
     "implementationState": "guard_dispatcher_stdin_and_service_adapter_deployed",
@@ -8,8 +8,10 @@
     "stdinShellContract": "privacy-request-operator-stdin-shell-2026-09-14.json",
     "serviceAdapterContract": "privacy-request-operator-service-adapter-2026-09-14.json",
     "databaseAccessContract": "privacy-request-operator-db-access-contract-2026-09-14.json",
+    "functionBoundaryContract": "privacy-request-operator-function-boundary-2026-09-14.json",
     "surface": "local_server_command_transport_only",
     "adapterState": "deployed_explicit_dependency_only_not_shell_bound",
+    "functionBoundaryState": "source_only_unbound_not_migrated",
     "publicRouteAllowed": false,
     "clientBundleAllowed": false,
     "productionBindingState": "absent",

@@ -29,7 +29,7 @@ const guardSource = read("lib/privacy-request-operator-boundary.ts");
 assert.equal(boundary.boundaryVersion, "2026-09-14");
 assert.equal(
   boundary.decisionStatus,
-  "guard_dispatcher_stdin_and_service_adapter_deployed_access_contract_pending"
+  "guard_dispatcher_adapter_and_access_contract_deployed_function_boundary_candidate"
 );
 assert.equal(boundary.productionExecutionAuthorized, false);
 assert.equal(
@@ -52,6 +52,11 @@ assert.equal(
   boundary.runner.databaseAccessContract,
   "privacy-request-operator-db-access-contract-2026-09-14.json"
 );
+assert.equal(
+  boundary.runner.functionBoundaryContract,
+  "privacy-request-operator-function-boundary-2026-09-14.json"
+);
+assert.equal(boundary.runner.functionBoundaryState, "source_only_unbound_not_migrated");
 assert.equal(boundary.runner.surface, "local_server_command_transport_only");
 assert.equal(
   boundary.runner.adapterState,

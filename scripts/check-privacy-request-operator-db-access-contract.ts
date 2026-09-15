@@ -22,12 +22,29 @@ const shellSource = read("scripts/run-privacy-request-operator.ts");
 const packageDocument = JSON.parse(read("package.json"));
 
 assert.equal(contract.contractVersion, "2026-09-14");
-assert.equal(contract.decisionStatus, "source_only_least_privilege_contract");
+assert.equal(
+  contract.decisionStatus,
+  "least_privilege_contract_deployed_function_boundary_candidate"
+);
 assert.equal(contract.productionExecutionAuthorized, false);
+assert.equal(contract.deploymentEvidence.pullRequest, 22);
+assert.equal(
+  contract.deploymentEvidence.mergeCommit,
+  "3977ce79e3d27d3c7f1f464af712a8454f9f730d"
+);
+assert.equal(contract.deploymentEvidence.vercelDeploymentId, "H4pm4yr5x8si8j7udgUpSMxKswPe");
+assert.equal(contract.deploymentEvidence.deploymentState, "Ready");
+assert.equal(contract.deploymentEvidence.privacyApiStatus, 503);
+assert.equal(contract.deploymentEvidence.privacyApiCacheControl, "no-store");
 assert.equal(
   contract.recommendedBinding.strategy,
   "function_mediated_dedicated_non_owner_principal"
 );
+assert.equal(
+  contract.recommendedBinding.functionBoundaryContract,
+  "privacy-request-operator-function-boundary-2026-09-14.json"
+);
+assert.equal(contract.recommendedBinding.functionBoundarySourceImplemented, true);
 assert.equal(contract.recommendedBinding.directTableDmlApproved, false);
 assert.equal(contract.recommendedBinding.principalCreationApproved, false);
 assert.equal(contract.recommendedBinding.credentialCreationApproved, false);
@@ -219,8 +236,11 @@ for (const value of Object.values(contract.candidateBoundary)) {
 assert.ok(
   contract.blockingFindings.includes("postgres_delete_privilege_is_not_column_scoped")
 );
+assert.ok(
+  contract.blockingFindings.includes("function_boundary_source_not_migrated_or_bound")
+);
 assert.ok(contract.blockingFindings.includes("operations_migration_not_applied"));
-assert.match(runbook, /source-only least-privilege contract/i);
+assert.match(runbook, /deployed source-only least-privilege contract/i);
 assert.match(runbook, /direct table DML is therefore not approved/i);
 assert.match(runbook, /no runnable `GRANT`/i);
 assert.match(

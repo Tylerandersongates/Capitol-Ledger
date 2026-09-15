@@ -1,9 +1,24 @@
 {
   "contractVersion": "2026-09-14",
-  "decisionStatus": "source_only_least_privilege_contract",
+  "decisionStatus": "least_privilege_contract_deployed_function_boundary_candidate",
   "productionExecutionAuthorized": false,
+  "deploymentEvidence": {
+    "pullRequest": 22,
+    "branchCommit": "2e640af9d5076eae6b6ad4389e91c46bcc3427eb",
+    "mergeCommit": "3977ce79e3d27d3c7f1f464af712a8454f9f730d",
+    "vercelDeploymentId": "H4pm4yr5x8si8j7udgUpSMxKswPe",
+    "environment": "Production",
+    "deploymentState": "Ready",
+    "canonicalDomain": "www.capitolwonk.com",
+    "apexPrivacyRedirectStatus": 308,
+    "canonicalPrivacyStatus": 200,
+    "privacyApiStatus": 503,
+    "privacyApiCacheControl": "no-store"
+  },
   "recommendedBinding": {
     "strategy": "function_mediated_dedicated_non_owner_principal",
+    "functionBoundaryContract": "privacy-request-operator-function-boundary-2026-09-14.json",
+    "functionBoundarySourceImplemented": true,
     "directTableDmlApproved": false,
     "principalCreationApproved": false,
     "credentialCreationApproved": false,
@@ -103,7 +118,7 @@
     "roleAdministrationAllowed": false
   },
   "blockingFindings": [
-    "function_mediated_sql_not_implemented",
+    "function_boundary_source_not_migrated_or_bound",
     "current_service_queries_require_direct_table_dml",
     "postgres_delete_privilege_is_not_column_scoped",
     "production_principal_not_created",
