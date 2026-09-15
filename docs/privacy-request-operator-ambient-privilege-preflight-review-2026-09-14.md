@@ -1,8 +1,10 @@
 # Privacy-request operator ambient-privilege preflight review — September 14, 2026
 
-Status: **source-only read-only preflight candidate; no production target was inspected and no production execution is approved.** The machine-readable contract is [`privacy-request-operator-ambient-privilege-preflight-review-2026-09-14.json`](privacy-request-operator-ambient-privilege-preflight-review-2026-09-14.json), and the guarded SQL source is [`privacy-request-operator-ambient-privilege-preflight-2026-09-14.sql`](privacy-request-operator-ambient-privilege-preflight-2026-09-14.sql).
+Status: **source-only read-only preflight deployed; no production target was inspected and no production execution is approved.** The machine-readable contract is [`privacy-request-operator-ambient-privilege-preflight-review-2026-09-14.json`](privacy-request-operator-ambient-privilege-preflight-review-2026-09-14.json), and the guarded SQL source is [`privacy-request-operator-ambient-privilege-preflight-2026-09-14.sql`](privacy-request-operator-ambient-privilege-preflight-2026-09-14.sql).
 
 PR #25 deployed the source-only inert role-bootstrap review to `main` at merge `8534c7357bd6bc423d8afced5b0fa3015c2be247`. All three pull-request checks passed; exact-source Vercel Production deployment `63yd38aWH3q382bjoundusTdU8Ep` reached Ready and Current, and the canonical-domain smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`. No database, role, credential, grant, migration, binding, configuration, provider, or activation changed.
+
+PR #26 then deployed this exact source-only preflight to `main` at merge `6ce51198af1952284df5e8ee7f80c68f653d7f9d` from branch commit `41e0f8c7f8165772fbd374faa2f85a3b2d04fe97`. All three pull-request checks passed. Exact-source Vercel Production deployment `EMC3GJiB6teFgQvWHUAtWc9eNq4k` reached Ready and Current on `www.capitolwonk.com`; the apex returned `308`, canonical `/privacy` returned `200`, and the disabled privacy API returned `503` with `cache-control: no-store`. Deployment changed no database, role, ACL, credential, migration, binding, provider, configuration, or processing gate.
 
 ## Review result
 

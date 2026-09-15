@@ -30,9 +30,23 @@ const packageDocument = JSON.parse(read("package.json"));
 assert.equal(contract.contractVersion, "2026-09-14");
 assert.equal(
   contract.decisionStatus,
-  "source_only_ambient_privilege_preflight_candidate"
+  "source_only_ambient_privilege_preflight_deployed"
 );
 assert.equal(contract.productionExecutionAuthorized, false);
+assert.deepEqual(contract.deploymentEvidence, {
+  pullRequest: 26,
+  branchCommit: "41e0f8c7f8165772fbd374faa2f85a3b2d04fe97",
+  mergeCommit: "6ce51198af1952284df5e8ee7f80c68f653d7f9d",
+  vercelDeploymentId: "EMC3GJiB6teFgQvWHUAtWc9eNq4k",
+  environment: "Production",
+  deploymentState: "Ready",
+  deploymentCurrent: true,
+  canonicalDomain: "www.capitolwonk.com",
+  apexRedirectStatus: 308,
+  canonicalPrivacyStatus: 200,
+  disabledApiStatus: 503,
+  disabledApiCacheControl: "no-store"
+});
 assert.equal(
   predecessor.decisionStatus,
   "source_only_role_bootstrap_review_deployed"
