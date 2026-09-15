@@ -1,7 +1,21 @@
 {
   "contractVersion": "2026-09-14",
-  "decisionStatus": "source_only_role_bootstrap_review_candidate",
+  "decisionStatus": "source_only_role_bootstrap_review_deployed",
   "productionExecutionAuthorized": false,
+  "deploymentEvidence": {
+    "pullRequest": 25,
+    "branchCommit": "ce27daa6b199ec79893ad907af1e8273680880e2",
+    "mergeCommit": "8534c7357bd6bc423d8afced5b0fa3015c2be247",
+    "vercelDeploymentId": "63yd38aWH3q382bjoundusTdU8Ep",
+    "environment": "Production",
+    "deploymentState": "Ready",
+    "deploymentCurrent": true,
+    "canonicalDomain": "www.capitolwonk.com",
+    "apexPrivacyRedirectStatus": 308,
+    "canonicalPrivacyStatus": 200,
+    "privacyApiStatus": 503,
+    "privacyApiCacheControl": "no-store"
+  },
   "predecessor": {
     "artifact": "privacy-request-operator-function-migration-review-2026-09-14.json",
     "decisionStatus": "source_only_function_migration_review_deployed",
@@ -114,7 +128,6 @@
     "gateActivationIncluded": false
   },
   "remainingApprovalGates": [
-    "role_bootstrap_review_and_authorization",
     "target_ambient_privilege_preflight",
     "production_role_creation",
     "credential_lifecycle_and_network_origin",
