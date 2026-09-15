@@ -32,8 +32,28 @@ const shellSource = read("scripts/run-privacy-request-operator.ts");
 const packageDocument = JSON.parse(read("package.json"));
 
 assert.equal(contract.contractVersion, privacyRequestOperatorCommandVersion);
-assert.equal(contract.decisionStatus, "service_adapter_only_locally_validated");
+assert.equal(contract.decisionStatus, "service_adapter_deployed_after_pr21");
 assert.equal(contract.productionExecutionAuthorized, false);
+assert.equal(contract.deploymentEvidence.pullRequest, 21);
+assert.equal(
+  contract.deploymentEvidence.branchCommit,
+  "17101896ccc3f0fd7e21cac1fce5a0acdb481000"
+);
+assert.equal(
+  contract.deploymentEvidence.mergeCommit,
+  "f83be73c4fdd34ffb9f8cef2faa68837d3985528"
+);
+assert.equal(
+  contract.deploymentEvidence.vercelDeploymentId,
+  "7HfnCVfeNTjHYvHmiyvkkWNmAyuU"
+);
+assert.equal(contract.deploymentEvidence.environment, "Production");
+assert.equal(contract.deploymentEvidence.deploymentState, "Ready");
+assert.equal(contract.deploymentEvidence.canonicalDomain, "www.capitolwonk.com");
+assert.equal(contract.deploymentEvidence.apexPrivacyRedirectStatus, 308);
+assert.equal(contract.deploymentEvidence.canonicalPrivacyStatus, 200);
+assert.equal(contract.deploymentEvidence.privacyApiStatus, 503);
+assert.equal(contract.deploymentEvidence.privacyApiCacheControl, "no-store");
 assert.equal(contract.implementation.adapterFactoryImplemented, true);
 assert.equal(contract.implementation.stdinShellBindingState, "intentionally_unbound");
 assert.equal(contract.implementation.explicitDatabaseDependencyRequired, true);
@@ -285,8 +305,8 @@ async function main() {
     );
   }
 
-  assert.match(runbook, /explicit-dependency adapter only/i);
-  assert.match(runbook, /not bound to the stdin shell or production/i);
+  assert.match(runbook, /explicit-dependency adapter is deployed after PR #21/i);
+  assert.match(runbook, /not bound to the stdin shell or a production database/i);
   assert.match(runbook, /does not authorize/i);
   assert.match(
     packageDocument.scripts["privacy-request:operator-service-adapter:check"],

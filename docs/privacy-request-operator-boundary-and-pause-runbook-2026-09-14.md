@@ -1,12 +1,12 @@
 # Privacy-request operator boundary and Vercel pause/return runbook — September 14, 2026
 
-Status: **guard, dispatcher core, and fail-closed stdin shell are deployed after PRs #17, #19, and #20; no production binding exists.** The active [explicit-dependency service-adapter candidate](privacy-request-operator-service-adapter-2026-09-14.md) composes only the existing lifecycle and aggregate-monitor services, requires its caller to inject every dependency, and remains disconnected from the stdin shell. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
+Status: **the guard, dispatcher core, fail-closed stdin shell, and explicit-dependency service adapter are deployed after PRs #17, #19, #20, and #21; no production binding exists.** The deployed explicit-dependency service adapter composes only the existing lifecycle and aggregate-monitor services, requires its caller to inject every dependency, and remains disconnected from the stdin shell. The active [source-only database-access contract](privacy-request-operator-db-access-contract-2026-09-14.md) selects a function-mediated dedicated non-owner principal as the future boundary without providing function SQL, a role, credential, grant, connection, migration, or binding. This packet does not authorize a protected value, production database connection, migration, scheduler, production read/write, mailbox/provider action, retention run, intake activation, or Vercel setting change.
 
 The machine-readable companion is [`privacy-request-operator-boundary-2026-09-14.json`](privacy-request-operator-boundary-2026-09-14.json). The existing [privacy-operations policy](privacy-operations-policy-2026-09-14.md) remains controlling where this packet is silent.
 
 ## Decision
 
-Keep the local, server-only operator command behind the exact opt-in gate and separate service composition from any executable or production binding. The repository contains the pure authorization guard, closed parser/dispatcher core, a fail-closed stdin shell whose adapter cannot perform an action, and a separate adapter factory that accepts only explicit dependencies. No credential or production path exists.
+Keep the local, server-only operator command behind the exact opt-in gate and separate service composition from any executable or production binding. The repository contains the pure authorization guard, closed parser/dispatcher core, a fail-closed stdin shell whose adapter cannot perform an action, a deployed adapter factory that accepts only explicit dependencies, and a source-only contract for its future least-privilege database boundary. No credential or production path exists.
 
 The runner boundary is:
 
@@ -19,11 +19,11 @@ The runner boundary is:
 - a single JSON document over standard input for case instructions; no payload or credential in command-line arguments or a persisted command file; and
 - aggregate queue output or a minimized single-case status only. Contact values, request detail, mailbox bodies, export artifacts, provider identifiers, credentials, and raw errors must not leave the process.
 
-All gates remain `false`. The guard and dispatcher core have no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked stdin shell has an intentionally unbound adapter, so even an allowed local command returns only `operator_action_failed`. The explicit-dependency service adapter is not imported by the shell or an application route and cannot discover a database, credential, environment, or clock. Every executable or production binding remains a new reviewed source action.
+All gates remain `false`. The guard and dispatcher core have no database, credential, provider, mail, route, scheduling, or logging binding. The separately checked stdin shell has an intentionally unbound adapter, so even an allowed local command returns only `operator_action_failed`. The deployed explicit-dependency service adapter is not imported by the shell or an application route and cannot discover a database, credential, environment, or clock. Every executable or production binding remains a new reviewed source action.
 
-## Least-privileged production binding — required later, absent now
+## Least-privileged production binding — source contract only; execution absent
 
-A production binding must be designed and approved separately. Its database principal must be different from the migration owner and must not be able to create, alter, drop, truncate, administer roles, install extensions, or access unrelated tables. The eventual grant should be limited to the minimum columns/operations required by the reviewed lifecycle; a migration or restore credential must never be reused as the runner credential.
+A production binding must be implemented and approved separately. The source-only database-access contract selects a dedicated non-owner principal with only exact-database `CONNECT`, exact-schema `USAGE`, and `EXECUTE` on narrowly scoped operator functions. Direct table DML is not approved: PostgreSQL `DELETE` is not column-scoped, so granting the current fixed query path table-level delete capability would exceed the approved due-date predicate. The principal must be different from the migration owner and must not be able to create, alter, drop, truncate, administer roles, install extensions, or access unrelated tables; a migration or restore credential must never be reused as the runner credential.
 
 Any future credential must be short-lived or managed, injected at execution time, and omitted from shell history, command arguments, files, source control, screenshots, Sentry, Vercel logs, terminal transcripts, and retained evidence. The runner must not carry mailbox, Resend, Apple, Stripe, Sentry, or other provider credentials. Exact principal grants, network origin, expiry, revocation, and evidence are unresolved and therefore block production binding.
 
@@ -31,13 +31,13 @@ Any future credential must be short-lived or managed, injected at execution time
 
 | Action | Additional boundary | Current state |
 | --- | --- | --- |
-| `queue_summary` | Aggregate counts/age bands only; monitor gate required | Explicit-dependency adapter; shell unbound |
-| `open_first_party_case` | Existing request reference only; no account/contact payload | Explicit-dependency adapter; shell unbound |
-| `open_mailbox_case` | Minimized type/timestamps/identity state only; never body, subject, address, or attachment | Explicit-dependency adapter; shell unbound |
-| `acknowledge` | Human acknowledgement by `privacy_owner` | Explicit-dependency adapter; shell unbound |
-| `review` | Closed identity, source-boundary, and exception vocabularies | Explicit-dependency adapter; shell unbound |
-| `resolve` | Existing fresh-reauthentication and resolution constraints remain controlling | Explicit-dependency adapter; shell unbound |
-| `retention_apply` | Separate retention gate; aggregate counts only | Explicit-dependency adapter; shell unbound |
+| `queue_summary` | Aggregate counts/age bands only; monitor gate required | Deployed explicit-dependency adapter; shell unbound |
+| `open_first_party_case` | Existing request reference only; no account/contact payload | Deployed explicit-dependency adapter; shell unbound |
+| `open_mailbox_case` | Minimized type/timestamps/identity state only; never body, subject, address, or attachment | Deployed explicit-dependency adapter; shell unbound |
+| `acknowledge` | Human acknowledgement by `privacy_owner` | Deployed explicit-dependency adapter; shell unbound |
+| `review` | Closed identity, source-boundary, and exception vocabularies | Deployed explicit-dependency adapter; shell unbound |
+| `resolve` | Existing fresh-reauthentication and resolution constraints remain controlling | Deployed explicit-dependency adapter; shell unbound |
+| `retention_apply` | Separate retention gate; aggregate counts only | Deployed explicit-dependency adapter; shell unbound |
 
 There is deliberately no arbitrary query, export-generation, mailbox deletion, provider mutation, account mutation, migration, restore, or gate-management action.
 
@@ -113,4 +113,4 @@ If return verification fails, do not submit a request or improvise a fix. Presen
 - no application route imports or names the operator guard; and
 - the contract continues to prohibit a production binding, arbitrary/batch mutation, payload/credential transport, DDL, provider access, and automatic Vercel pause/return.
 
-Passing these checks validates only the local contract and explicit service composition. It does not make the transport shell, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.
+Passing these checks validates only the local contract, deployed service composition, and source-only database-access boundary. It does not make the transport shell, database, mailbox, provider, monitor, retention path, or Vercel change production-ready.
