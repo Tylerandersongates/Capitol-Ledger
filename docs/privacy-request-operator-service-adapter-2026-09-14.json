@@ -1,7 +1,20 @@
 {
   "contractVersion": "2026-09-14",
-  "decisionStatus": "service_adapter_only_locally_validated",
+  "decisionStatus": "service_adapter_deployed_after_pr21",
   "productionExecutionAuthorized": false,
+  "deploymentEvidence": {
+    "pullRequest": 21,
+    "branchCommit": "17101896ccc3f0fd7e21cac1fce5a0acdb481000",
+    "mergeCommit": "f83be73c4fdd34ffb9f8cef2faa68837d3985528",
+    "vercelDeploymentId": "7HfnCVfeNTjHYvHmiyvkkWNmAyuU",
+    "environment": "Production",
+    "deploymentState": "Ready",
+    "canonicalDomain": "www.capitolwonk.com",
+    "apexPrivacyRedirectStatus": 308,
+    "canonicalPrivacyStatus": 200,
+    "privacyApiStatus": 503,
+    "privacyApiCacheControl": "no-store"
+  },
   "implementation": {
     "state": "explicit_dependency_service_adapter_only",
     "adapterFactoryImplemented": true,

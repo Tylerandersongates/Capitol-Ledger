@@ -1,0 +1,127 @@
+{
+  "contractVersion": "2026-09-14",
+  "decisionStatus": "source_only_least_privilege_contract",
+  "productionExecutionAuthorized": false,
+  "recommendedBinding": {
+    "strategy": "function_mediated_dedicated_non_owner_principal",
+    "directTableDmlApproved": false,
+    "principalCreationApproved": false,
+    "credentialCreationApproved": false,
+    "grantExecutionApproved": false,
+    "functionMigrationApproved": false,
+    "connectionBootstrapApproved": false,
+    "stdinShellBindingApproved": false
+  },
+  "principalFloor": {
+    "dedicatedPrincipalRequired": true,
+    "migrationOwnerReuseAllowed": false,
+    "restoreCredentialReuseAllowed": false,
+    "providerCredentialReuseAllowed": false,
+    "superuserAllowed": false,
+    "bypassRlsAllowed": false,
+    "createDatabaseAllowed": false,
+    "createRoleAllowed": false,
+    "replicationAllowed": false,
+    "roleMembershipAllowed": false,
+    "databasePrivileges": [
+      "CONNECT"
+    ],
+    "schemaPrivileges": [
+      "USAGE"
+    ],
+    "schemaCreateAllowed": false,
+    "defaultPrivilegesAllowed": false,
+    "sequencePrivilegesAllowed": false
+  },
+  "currentFixedQueryCeiling": {
+    "queryCount": 8,
+    "arbitraryQueryInputAllowed": false,
+    "tables": {
+      "PrivacyRequest": {
+        "selectColumns": [
+          "acknowledgedAt",
+          "detail",
+          "id",
+          "requestType",
+          "requestedAt",
+          "resolution",
+          "resolvedAt",
+          "status"
+        ],
+        "insertColumns": [],
+        "updateColumns": [
+          "detail",
+          "updatedAt"
+        ],
+        "deleteAllowed": false
+      },
+      "PrivacyRequestOperation": {
+        "selectColumns": [
+          "caseReference",
+          "deleteAt",
+          "exceptionCategory",
+          "humanAcknowledgementAt",
+          "identityState",
+          "lane",
+          "machineReceiptAt",
+          "operator",
+          "receivedAt",
+          "requestType",
+          "resolution",
+          "resolvedAt",
+          "sourceBoundaryCategories",
+          "workflowStatus"
+        ],
+        "insertColumns": [
+          "caseReference",
+          "exceptionCategory",
+          "identityState",
+          "lane",
+          "machineReceiptAt",
+          "receivedAt",
+          "requestType",
+          "sourceBoundaryCategories",
+          "workflowStatus"
+        ],
+        "updateColumns": [
+          "deleteAt",
+          "exceptionCategory",
+          "humanAcknowledgementAt",
+          "identityState",
+          "operator",
+          "resolution",
+          "resolvedAt",
+          "sourceBoundaryCategories",
+          "workflowStatus"
+        ],
+        "deleteAllowed": true
+      }
+    },
+    "unrelatedTableAccessAllowed": false,
+    "ddlAllowed": false,
+    "truncateAllowed": false,
+    "roleAdministrationAllowed": false
+  },
+  "blockingFindings": [
+    "function_mediated_sql_not_implemented",
+    "current_service_queries_require_direct_table_dml",
+    "postgres_delete_privilege_is_not_column_scoped",
+    "production_principal_not_created",
+    "credential_lifecycle_unresolved",
+    "network_origin_and_expiry_unresolved",
+    "operations_migration_not_applied",
+    "stdin_shell_intentionally_unbound"
+  ],
+  "candidateBoundary": {
+    "runnableGrantSqlIncluded": false,
+    "roleCreationIncluded": false,
+    "credentialIncluded": false,
+    "databaseConnectionIncluded": false,
+    "migrationIncluded": false,
+    "applicationRouteIncluded": false,
+    "schedulerIncluded": false,
+    "providerCapabilityIncluded": false,
+    "configurationChangeIncluded": false,
+    "gateActivationIncluded": false
+  }
+}

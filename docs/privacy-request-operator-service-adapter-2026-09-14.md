@@ -1,6 +1,6 @@
 # Privacy-request operator service adapter — September 14, 2026
 
-Status: **local explicit-dependency adapter only; it is not bound to the stdin shell or production.** The machine-readable companion is [`privacy-request-operator-service-adapter-2026-09-14.json`](privacy-request-operator-service-adapter-2026-09-14.json).
+Status: **the explicit-dependency adapter is deployed after PR #21, but it is not bound to the stdin shell or a production database.** PR #21 merged at `f83be73c4fdd34ffb9f8cef2faa68837d3985528`; all three GitHub checks passed, exact-source Vercel production deployment `7HfnCVfeNTjHYvHmiyvkkWNmAyuU` reached Ready, and the canonical-domain gate-off smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`. The machine-readable companion is [`privacy-request-operator-service-adapter-2026-09-14.json`](privacy-request-operator-service-adapter-2026-09-14.json).
 
 ## Decision
 
@@ -26,4 +26,4 @@ The check uses only an injected synthetic database client. It proves that a disa
 
 ## Still approval-gated
 
-A least-privileged production principal and credential, grant SQL, connection bootstrap, stdin-shell binding, production operations migration, real mailbox/export deletion evidence, provider exercise, scheduler, live monitor read, retention run, configuration change, and any activation remain separate reviewed actions. Every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off in tracked configuration.
+The [function-mediated least-privilege database-access contract](privacy-request-operator-db-access-contract-2026-09-14.md) is the active source-only candidate. Its function SQL, production principal and credential, grant execution, connection bootstrap, stdin-shell binding, production operations migration, real mailbox/export deletion evidence, provider exercise, scheduler, live monitor read, retention run, configuration change, and any activation remain separate reviewed actions. Every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off in tracked configuration.
