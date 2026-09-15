@@ -51,6 +51,8 @@
     "stdinShellImportsAdapter": false,
     "applicationRouteImportsAdapter": false,
     "productionBindingState": "absent",
+    "functionBoundaryContract": "privacy-request-operator-function-boundary-2026-09-14.json",
+    "functionBoundaryState": "source_only_unbound_not_migrated",
     "principalCreationApproved": false,
     "grantSqlApproved": false,
     "credentialCreationApproved": false,

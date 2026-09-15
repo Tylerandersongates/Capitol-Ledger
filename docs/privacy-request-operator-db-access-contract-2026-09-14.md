@@ -1,8 +1,8 @@
 # Privacy-request operator database-access contract — September 14, 2026
 
-Status: **source-only least-privilege contract; no principal, credential, grant, connection, migration, shell binding, or activation is included or authorized.** The machine-readable companion is [`privacy-request-operator-db-access-contract-2026-09-14.json`](privacy-request-operator-db-access-contract-2026-09-14.json).
+Status: **deployed source-only least-privilege contract; no principal, credential, grant, connection, migration, shell binding, or activation is included or authorized.** The machine-readable companion is [`privacy-request-operator-db-access-contract-2026-09-14.json`](privacy-request-operator-db-access-contract-2026-09-14.json).
 
-PR #21 deployed the explicit-dependency service adapter to `main` at `f83be73c4fdd34ffb9f8cef2faa68837d3985528`. All three GitHub checks passed; exact-source Vercel production deployment `7HfnCVfeNTjHYvHmiyvkkWNmAyuU` reached Ready, and the canonical-domain gate-off smoke passed. The adapter is still disconnected from the stdin shell and every application route. Every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off.
+PR #22 deployed this decision to `main` at merge `3977ce79e3d27d3c7f1f464af712a8454f9f730d`. All three GitHub checks passed; exact-source Vercel production deployment `H4pm4yr5x8si8j7udgUpSMxKswPe` reached Ready, and the canonical-domain gate-off smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`. The adapter is still disconnected from the stdin shell and every application route. Every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off.
 
 ## Decision
 
@@ -36,7 +36,7 @@ Any future implementation must preserve all of these conditions:
 7. The migration owner and restore credential are never reused by the operator.
 8. The credential is short-lived or managed, injected only at execution time, and excluded from arguments, files, source control, screenshots, telemetry, logs, and retained evidence.
 
-The function SQL, role name, grant SQL, network origin, credential issuance/expiry/revocation, migration execution, connection bootstrap, shell binding, and live proof remain unresolved and approval-gated.
+The next local [function-boundary packet](privacy-request-operator-function-boundary-2026-09-14.md) implements the seven proposed function bodies as an inert SQL artifact outside Prisma migrations and validates them only in ephemeral PostgreSQL. It does not resolve or authorize the role name, function ownership, grant/revoke SQL, network origin, credential issuance/expiry/revocation, migration execution, connection bootstrap, shell binding, or live proof; those remain approval-gated.
 
 ## Local verification
 
