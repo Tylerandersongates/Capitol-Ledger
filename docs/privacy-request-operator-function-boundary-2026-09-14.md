@@ -1,8 +1,8 @@
 # Privacy-request operator function boundary — September 14, 2026
 
-Status: **source-only function boundary candidate; not a migration and not approved for production execution.** The SQL artifact is [`privacy-request-operator-function-boundary-2026-09-14.sql`](privacy-request-operator-function-boundary-2026-09-14.sql), and the machine-readable contract is [`privacy-request-operator-function-boundary-2026-09-14.json`](privacy-request-operator-function-boundary-2026-09-14.json).
+Status: **deployed source-only function boundary; not a migration and not approved for production execution.** The SQL artifact is [`privacy-request-operator-function-boundary-2026-09-14.sql`](privacy-request-operator-function-boundary-2026-09-14.sql), and the machine-readable contract is [`privacy-request-operator-function-boundary-2026-09-14.json`](privacy-request-operator-function-boundary-2026-09-14.json).
 
-PR #22 deployed the least-privilege database-access decision to `main` at merge `3977ce79e3d27d3c7f1f464af712a8454f9f730d`. All three GitHub checks passed; exact-source Vercel production deployment `H4pm4yr5x8si8j7udgUpSMxKswPe` reached Ready, and the canonical-domain gate-off smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`.
+PR #23 deployed this source-only boundary to `main` at merge `e4b82381de44ea2830d1b61e5b498d2a7f438a79`. All three GitHub checks passed; exact-source Vercel production deployment `BsLBiAcwSfnmhnLyTi9tJsaAjwjS` reached Ready, and the canonical-domain gate-off smoke returned the expected apex `308`, canonical `/privacy` `200`, and disabled API `503` with `no-store`.
 
 ## Decision
 
@@ -14,7 +14,7 @@ The operator value and action clock are not caller-controlled. Lifecycle writes 
 
 The SQL file lives under `docs/`, not `prisma/migrations/`. Its first statement requires the session-local validation marker `capitolwonk.operator_function_boundary_validation=ephemeral-only` and fails before creating a function when the marker is absent. It contains no `CREATE ROLE`, credential, `GRANT`, `REVOKE`, schema creation, default privilege, database connection, service-adapter conversion, stdin-shell binding, application route, scheduler, provider capability, configuration change, or gate activation. The currently deployed services continue to use their existing injected direct-query client and do not import this packet.
 
-A deployable migration must later assign a separately reviewed no-login function owner, revoke default `PUBLIC` execution, and grant only the exact seven function signatures to a dedicated non-owner operator principal. Those statements and their execution remain separate approval-gated work. The production operations migration is still unapplied, and every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off.
+The next source-only [migration-review packet](privacy-request-operator-function-migration-review-2026-09-14.md) pins this artifact by digest and reviews the exact ownership and ACL segment required for a future atomic migration. Its statements and any execution remain approval-gated. The production operations migration is still unapplied, and every privacy, deletion, retention, operations, monitor, and App Store processing gate remains off.
 
 ## Local verification
 
