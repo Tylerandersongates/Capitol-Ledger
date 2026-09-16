@@ -1,6 +1,6 @@
 # Neon Owner Credential Containment — September 15, 2026
 
-Status: **containment in progress; Tyler must complete the password reset in Neon before this incident is closed.**
+Status: **containment complete. Tyler reset the protected production `neondb_owner` password in Neon on September 15, 2026. The replacement value was not disclosed to Codex or recorded here.**
 
 ## What happened
 
@@ -16,11 +16,11 @@ The catalog inventory did **not** run. The attempted passwordless connection rea
 - Inspected three Vercel project surfaces read-only: project Environment Variables, linked Shared Environment Variables, and connected Storage/database resources. Those surfaces showed no configured `DATABASE_URL`, linked shared variable, or connected Vercel database resource. This does not prove that no external or unlisted client uses the old credential.
 - Retired the principal-ACL inventory from the launch-critical path. Do not retry it from this checkpoint.
 
-## Required user action
+## Credential reset completed
 
-Tyler must reset the `neondb_owner` password for the protected production branch in Neon. This is an intentional credential change and must be completed directly by Tyler. Do not display, copy, paste, log, or record the replacement value in Codex. After the reset, clear any clipboard copy and report only that the reset completed, never the value.
+Tyler directly completed the `neondb_owner` password reset for the protected production branch in Neon. Neon displayed a success confirmation with the replacement masked. The replacement was not read, copied, pasted, logged, downloaded, or recorded by Codex.
 
-Expected effect: new connections using the exposed credential will fail. Known Vercel project surfaces did not show a runtime dependency on that credential, but any unknown external client using it would also need an independently approved update.
+New connections using the exposed credential will fail. Known Vercel project surfaces did not show a runtime dependency on that credential, but any unknown external client that used it would need an independently approved update.
 
 ## Launch-scope decision
 
