@@ -1,6 +1,6 @@
 # CapitolWonk App
 
-Use the latest dated EOD handoff in `docs/` for current verification and release gates, and [Current Timeline and Task Ledger](../docs/project-timeline.md) for ordered carryovers, availability and schedule changes. Update both at every EOD. Older generated backend recommendations and tester PDFs/DOCX files are historical snapshots; their branding and billing guidance may be obsolete. Do not distribute them as current launch material without review and regeneration.
+Start with [project instructions](../AGENTS.md), [context](../docs/PROJECT-CONTEXT.md), [decisions](../docs/DECISIONS.md), and the concise [live handoff](../docs/HANDOFF.md). Use the latest dated EOD in `docs/` for the full standing rules and archived evidence, and the [Current Timeline and Task Ledger](../docs/project-timeline.md) for ordered carryovers, availability and schedule changes. Update both the live handoff and ledger at every EOD. Older generated backend recommendations and tester PDFs/DOCX files are historical snapshots; their branding and billing guidance may be obsolete. Do not distribute them as current launch material without review and regeneration.
 
 CapitolWonk is the mobile-first civic intelligence MVP we are building around a premium dark navy, gold, and glassmorphism design system.
 

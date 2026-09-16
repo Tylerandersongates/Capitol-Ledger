@@ -2,7 +2,9 @@
 
 Status: **local preparation only; no replacement asset is approved, uploaded, distributed, or device-verified.** The Apple certificate/profile/Keychain/signing/device freeze remains in force. Use this manifest after an exact release candidate, sanitized capture state, subscription configuration, and signed/device path are approved.
 
-> September 15 launch-scope update: `main` at PR #29 merge `f959bff` is the current planning baseline. The dedicated privacy mailbox is the launch intake channel, and database-backed privacy operation is conditional post-launch. Start with a four-screen local rehearsal—dashboard, bill search/results, bill detail, and member detail—using honest blank/public or explicitly assigned sanitized state. Do not include account-specific alerts, a Daily Brief player, upgrade claims, or a privacy database-queue claim until each exact launch state is evidenced. This does not authorize final capture or upload.
+The [September 16 source-only listing and route-state draft](capitolwonk-listing-draft-2026-09-16.md) specifies provisional metadata and the first honest public rehearsal. It adds no final screenshot or remote approval.
+
+> September 15 launch-scope update: `main` at PR #29 merge `f959bff` was the planning baseline then. The September 16 draft above is the newer source-only planning record. The dedicated privacy mailbox is the launch intake channel, and database-backed privacy operation is conditional post-launch. Start with a four-screen local rehearsal—dashboard, bill search/results, bill detail, and member detail—using honest blank/public or explicitly assigned sanitized state. Do not include account-specific alerts, a Daily Brief player, upgrade claims, or a privacy database-queue claim until each exact launch state is evidenced. This does not authorize final capture or upload.
 
 ## Existing assets — quarantine from final reuse
 

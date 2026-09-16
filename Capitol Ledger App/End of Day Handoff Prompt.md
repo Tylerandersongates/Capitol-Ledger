@@ -1,73 +1,29 @@
 # End Of Day Handoff Prompt
 
-Use this at the end of a work session to keep thread history small and prevent long-chat instability.
+Run this at the end of a work session to preserve project continuity without extending a long chat indefinitely. Tyler is the product owner and creative lead; Codex is the senior software engineer and technical collaborator. Do not begin tomorrow's feature work during EOD.
 
-## Prompt To Run In Current Thread
+## Prompt to run in the current chat
 
-Copy/paste this into Codex:
+Run our EOD handoff and prepare CapitolWonk for a fresh Codex chat. First inspect AGENTS.md, docs/PROJECT-CONTEXT.md, docs/DECISIONS.md, docs/HANDOFF.md if present, the immediately preceding dated EOD, the newest superseding section and T01–T11 rows of docs/project-timeline.md, July 29 safeguards where relevant, and the current worktree. Search older records only to resolve a question or conflict. Reuse established files and conventions; do not create parallel sources of truth.
 
-```text
-Create an end-of-day handoff for this project.
+If an equivalent continuity record does not exist, establish AGENTS.md for concise standing collaboration/startup/EOD rules, docs/PROJECT-CONTEXT.md for product/architecture/preferences, docs/DECISIONS.md for dated stable-ID accepted decisions and supersession, and docs/HANDOFF.md for a concise live checkpoint. Keep permanent guidance separate from daily status. Record accepted decisions when they occur, not only at EOD. Preserve reasons and links when one decision supersedes another; label suggestions, assumptions, experiments, and unanswered questions separately.
 
-Start from `docs/eod-handoff-template.md`. Copy its full marked Standing Rules block verbatim into the new dated EOD; a link alone is not enough. Reconcile the immediately preceding EOD, July 29 safeguards, current timeline/task ledger, and newer verified evidence. Do not restart a completed or superseded task.
+Start the dated archive from docs/eod-handoff-template.md. Copy its full marked Standing Rules block verbatim into every new dated EOD; a link alone is insufficient. This requirement remains even though docs/HANDOFF.md should be roughly 500–900 words. Run node scripts/check-eod-standing-rules.mjs before closing. If local Node is unavailable after cache cleanup, use the bundled Node path from load_workspace_dependencies; do not reinstall caches solely for this check.
 
-Output in this exact structure:
+Reconcile the full ledger at every EOD: actual completions; every unfinished T01–T11/deferred track; owners, dependencies, remaining effort, prior/revised dates, and evidence-based forecast confidence. Keep October 30, 2026 as Tyler's target, not release approval. Preserve the October 2–6 owner-availability buffer and review/rework contingency. When ahead, pull forward only scoped dependency-ready work without dropping QA or gates. Keep TestFlight/App Store preparation as the launch north star until the native billing path and final text tone pass, but do not upload, distribute, submit, or release without exact approval.
 
-1) Completed Today
-- Flat bullet list of concrete changes completed.
+Capture the actual state: project identity, timestamp/timezone, objective and milestone; repository path, worktree, branch, HEAD, verified merge/push/deployment status; uncommitted/untracked files and whether a new worktree can access them; completed and checked work, implemented-but-unverified work, partial work, blockers and deferred work separately; validation commands/outcomes with exact code state and tests not run; relevant environment limitations without protected values; failed approaches with their hypothesis/result and evidence needed to retry; remaining commitments; one to three next actions with the first command and completion condition.
 
-2) Current State
-- What works now
-- What is partially done
-- What is blocked
-- Reconcile docs/project-timeline.md: carry every unfinished task ID, owner/dependency and next checkpoint forward. Record actual completion dates, remaining effort, prior/revised forecast dates and why they changed. State ahead/on track/behind only against an established baseline; otherwise say not yet measurable.
-- Carry forward the owner-availability buffer and adjust dependent approvals, device sessions, uploads and reviews. Keep the personal reason out of tracked notes.
-- Keep the October 30, 2026 user-set launch target and backward-plan checkpoints visible. Record forecast confidence and review/rework contingency; surface any risk to the target and do not move it without Tyler's decision.
+The latest explicit Tyler direction governs product intent within applicable instructions. Repository and deployment evidence establish implementation state; a handoff claim is not proof. If records conflict, identify the contradiction and verify it. Do not call a dated no-go current after later verified completion; do not treat old QA as proof for a changed native candidate. Before future implementation, search code, decisions and ledger to see whether work already exists, was rejected, or is deferred. Revalidate only after relevant changes, a concrete regression, or a required gate. If repeating an action without new evidence, stop, record the hypothesis/result, and choose a different safe diagnostic step.
 
-3) Environment And Config Changes
-- Any new/updated environment variables (names only unless I explicitly ask for values)
-- Deployment targets touched (local, Vercel, Neon, etc.)
+Routine in-scope technical decisions are Codex's to make without a confirmation loop. Only major exact actions in the copied Standing Rules need Tyler's action-time approval; one approval does not cover later gates. Never include credentials, protected identifiers, customer data, or private support-case details in the handoff. Keep sensitive personal reasons out of tracked scheduling notes.
 
-4) Verification Run
-- Commands run
-- Pass/fail status for each
-- Key errors still open
+Do not assume a fresh chat shares this filesystem, branch, or commit. Preserve local changes using the authorized workflow; do not discard, switch branches, merge, push, or publish merely to make the handoff look complete. State any transfer/access step still needed. Leave useful browser QA evidence open. Run only targeted checks needed for material uncertainty or the handoff guard, not broad tests for the sake of a fresh report.
 
-5) Next Task (Single Safest Step)
-- One recommended next action for the next thread
-- Exact command(s) to run first
-- Identify tomorrow's first task explicitly; link the complete carry-forward ledger so other tasks are not lost.
+Finish with a ready-to-paste next-chat starter containing the actual project identity, required document paths, expected worktree/branch/commit or checkpoint, and next authorized action. It must tell the incoming agent to verify workspace against the checkpoint, summarize goal/settled decisions/completed work/blockers/next action, recover missing records through targeted accessible history, and proceed without reconfirming settled routine decisions. If no fresh chat was opened, say so; never claim one was opened without confirmation.
 
-6) Resume Prompt For New Thread
-- Provide one copy/paste prompt I can use to start the next thread with all critical context.
+Return only: (1) short EOD status and any preservation/access issue, (2) continuity files updated, and (3) the ready-to-paste starter. Stop feature development after preserving the checkpoint.
 
-Rules:
-- Keep it concise and factual.
-- Codex decides and executes routine in-scope work without repeated confirmation; only the major actions defined in the copied Standing Rules need Tyler's exact approval. Do not treat a prior action-specific approval as permission for a later gate.
-- Always include next best steps after each handoff or completed work block so work can keep moving.
-- Keep TestFlight/App Store upload as the default north star until the native billing path and final text-tone pass are complete.
-- Include absolute dates when referencing "today/yesterday".
-- Do not invent anything that was not done.
-- If something could not be verified, say so explicitly.
-- Update the timeline and task ledger every EOD, even when ahead. If time is gained, pull forward only the next scoped, dependency-ready task and retain QA/availability contingency; do not add scope or bypass approvals.
-- Keep the dated handoff, current timeline, Current Status.md and Next Steps.md consistent. Never carry forward "not deployed" or "migration pending" after a verified release, and never promote old QA evidence to a newly changed native candidate.
-- Mark superseded dated instructions historical, keep unresolved blockers explicit, and carry every standing safety/naming/availability rule forward even when yesterday's narrative omitted it.
-- Run `node scripts/check-eod-standing-rules.mjs` before closing the dated EOD; it needs no dependency reinstall. Fix a missing or drifted Standing Rules block; do not silently waive the check.
-- If local `node` is unavailable after cache cleanup, use the bundled Node path from `load_workspace_dependencies`; do not restore caches just to run this check.
-```
+## Starter framing for a fresh chat
 
-## Prompt To Start The Next Thread
-
-After you get the handoff output, start a fresh thread and paste:
-
-```text
-Use this handoff as the source of truth and continue execution from "Next Task (Single Safest Step)".
-
-[PASTE HANDOFF HERE]
-
-Constraints:
-- Do not repeat completed work.
-- Make routine decisions and keep moving without a confirmation loop. Ask Tyler only for a major exact action or a genuinely missing choice that would materially change scope.
-- Carry the dated handoff's full Standing Rules block and all unfinished ledger tasks; never treat a historical resume prompt as newer than verified evidence.
-- Execute the first command listed in the handoff verification plan, then continue until the next checkpoint.
-```
+Continue CapitolWonk from the verified EOD checkpoint. Read AGENTS.md, docs/PROJECT-CONTEXT.md, active docs/DECISIONS.md, docs/HANDOFF.md, the latest dated EOD, and the newest section/relevant rows of docs/project-timeline.md. Compare pwd, branch, HEAD, git status and file availability with the checkpoint before editing. Briefly state the current goal, settled decisions, completed work to preserve, blockers and exact next authorized action. Proceed with that action if unblocked; do not ask Tyler to repeat history or reconfirm routine decisions. If essential records are absent, attempt targeted recovery from accessible project history, then ask only for what remains necessary.

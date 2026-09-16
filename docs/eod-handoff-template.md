@@ -25,6 +25,8 @@ Copy this entire marked block into every dated EOD handoff. Run `node scripts/ch
 
 If `node` is not on the local PATH after cache cleanup, use the bundled Node path returned by `load_workspace_dependencies`; do not reinstall the project dependency graph merely for this EOD check.
 
+For every future EOD, also reconcile the concise live `docs/HANDOFF.md`, the full `docs/project-timeline.md` ledger, and any new accepted decision in `docs/DECISIONS.md`. Keep standing collaboration guidance in `AGENTS.md` and `docs/PROJECT-CONTEXT.md`; dated EODs are the archive. This existing full Standing Rules block remains mandatory in each dated EOD even though the live handoff should be roughly 500–900 words. Record exact worktree/branch/HEAD, local dirty files and cross-worktree access, verification tied to a code state, unresolved blockers and failed approaches, and one next safe action. Do not begin tomorrow's feature work during EOD or move/push/merge solely for a tidy handoff. The live handoff must link this dated archive and distinguish implementation evidence from old claims.
+
 ## Baseline
 - Repo:
 - Branch:

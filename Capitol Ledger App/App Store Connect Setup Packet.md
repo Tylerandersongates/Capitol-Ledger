@@ -1,6 +1,6 @@
 # App Store Connect Setup Packet
 
-Status: pricing-aligned TestFlight prep, reconciled September 11, 2026. The App Privacy correction is prepared locally but has not been applied or published remotely.
+Status: pricing-aligned TestFlight prep, with a source-only listing-metadata/route-state draft added September 16, 2026. The App Privacy correction is prepared locally but has not been applied or published remotely. The [current draft](../docs/app-store-assets/capitolwonk-listing-draft-2026-09-16.md) supersedes the historical URLs and screenshot IDs below for planning; all remote changes require separate approval.
 
 ## Scope
 
@@ -15,8 +15,8 @@ Use these final Apple identity values before creating App Store Connect records.
 - Suggested SKU: `capitolwonk-ce-ios-v1`
 - Primary category recommendation: Reference
 - Secondary category recommendation: News
-- Support URL after deploy: `https://project-qosv1.vercel.app/support`
-- Privacy Policy URL after deploy: `https://project-qosv1.vercel.app/privacy`
+- Support URL candidate: `https://www.capitolwonk.com/support` (verify the live response before remote publication)
+- Privacy Policy URL candidate: `https://www.capitolwonk.com/privacy` (verify the live response and current policy before remote publication)
 - Marketing URL: optional for v1
 - Copyright: confirm final legal owner before submission
 
@@ -83,7 +83,7 @@ Purchases and restores are handled through Apple in-app purchase.
 
 ## App Review Notes
 
-Use this as the starting note for App Review:
+Historical starting note for App Review. Reconcile it against the exact signed candidate, default-off privacy/deletion state, offer configuration, and device QA before any remote use; the current [listing draft](../docs/app-store-assets/capitolwonk-listing-draft-2026-09-16.md) does not approve these claims:
 
 ```text
 CapitolWonk helps users follow federal bills, votes, officials, alerts, and saved legislative updates. Paid upgrades use Apple in-app purchase only.
@@ -120,15 +120,7 @@ BILLING_REQUIRE_APP_STORE=true pnpm billing:check
 
 ## Screenshot Candidates
 
-Capture final screenshots only after purchase QA and final text-tone QA are stable.
-
-- `/dashboard`
-- `/search?type=bills&focus=results`
-- `/bills/demo-hr-22`
-- `/members/F000483`
-- `/alerts`
-- `/brief`
-- `/upgrade`
+The [source-only route-state draft](../docs/app-store-assets/capitolwonk-listing-draft-2026-09-16.md) and [capture manifest](../docs/app-store-assets/capitolwonk-capture-manifest-2026-09-13.md) define the first four public rehearsal slots. Select real bill and member IDs only after source/runtime verification. Defer alerts, Daily Brief video, and upgrade captures until their exact launch states are evidenced. Final screenshots remain blocked on the approved release candidate and signed/device path.
 
 ## Privacy And Support
 
