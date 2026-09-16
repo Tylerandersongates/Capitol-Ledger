@@ -5,7 +5,7 @@ import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBi
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
-import { memberServiceFallbacks } from "@/lib/member-service-history";
+import { memberServiceFallbacks, withMemberServiceFallback } from "@/lib/member-service-history";
 import { getBillStatus as resolveBillStatus } from "@/lib/bill-status";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
@@ -1211,8 +1211,9 @@ async function getLiveMemberProfile(bioguideId: string) {
   const response = await fetchMember(bioguideId, {
     timeoutMs: memberLegislationFetchTimeoutMs
   }).catch(() => null);
-  const member = response?.member ? normalizeCongressMemberDetail(response.member) : null;
-  if (!member) return null;
+  const normalizedMember = response?.member ? normalizeCongressMemberDetail(response.member) : null;
+  if (!normalizedMember) return null;
+  const member = withMemberServiceFallback(normalizedMember);
 
   memberProfileCache.set(bioguideId, {
     cachedAt: Date.now(),

@@ -20,6 +20,10 @@ const mergeProfileStart = data.indexOf("function mergeMemberLiveProfile");
 const mergeProfileEnd = data.indexOf("async function hydrateMemberDetailWithLiveProfile");
 const mergeProfileBlock = data.slice(mergeProfileStart, mergeProfileEnd);
 
+const liveProfileStart = data.indexOf("async function getLiveMemberProfile");
+const liveProfileEnd = data.indexOf("function mergeMemberLiveProfile");
+const liveProfileBlock = data.slice(liveProfileStart, liveProfileEnd);
+
 const hydrateProfileStart = data.indexOf("async function hydrateMemberDetailWithLiveProfile");
 const hydrateProfileEnd = data.indexOf("function orderMemberLegislationBills");
 const hydrateProfileBlock = data.slice(hydrateProfileStart, hydrateProfileEnd);
@@ -42,6 +46,10 @@ assert.ok(
   "Database member mapping should document why service years cannot become election dates."
 );
 assert.ok(!deriveElectionDatesBlock.includes("federalElectionDateIso"), "Congress service years must not be converted into invented election dates.");
+assert.ok(
+  liveProfileBlock.includes("const member = withMemberServiceFallback(normalizedMember);"),
+  "Verified member service-history fallbacks should be applied before a live Congress.gov profile is cached or rendered."
+);
 
 assert.ok(hydrateProfileBlock.includes("const liveMember = await getLiveMemberProfile(detail.member.bioguideId);"), "Member detail should request live Congress.gov profile data.");
 assert.ok(!hydrateProfileBlock.includes("if (!needsLiveProfile) return detail;"), "Live member profile hydration should not be skipped just because thin local fields are present.");
