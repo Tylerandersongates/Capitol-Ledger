@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: EOD standing rules carry-forward
+        run: node scripts/check-eod-standing-rules.mjs
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
         with:

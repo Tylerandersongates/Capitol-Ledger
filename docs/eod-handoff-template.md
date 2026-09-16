@@ -3,17 +3,27 @@
 Use this template for every end-of-day handoff going forward.
 
 ## Standing Rules
-- Speak directly. Keep updates concise, useful, and low-fluff.
-- Always include next best steps after each handoff or completed work block so work can keep moving.
-- Keep the in-app browser open and visible during app testing so the user can watch progress.
-- Routine fixes, commits, and pushes are pre-approved. Check with the user before major build, architecture, dependency, schema, destructive, or secret-related changes.
-- A diagnostic means checking the whole app for stale code, duplicate code, unreachable code, disconnected routes/APIs, and obvious performance drag. Tighten safe issues; do not leave useless code around.
-- Do not mark live app reports resolved until the issue is actually fixed and verified.
-- Use narrow sandbox escalations only when needed. Do not commit secrets.
-- At every EOD update `docs/project-timeline.md` with actual completions, every unfinished task, owners/dependencies, remaining effort and working targets. Preserve prior estimates and explain changes, including time gained when ahead; never silently discard carryovers or skip approval/QA gates.
-- Keep the user-set **October 30, 2026 launch target** visible. Compare the evidence-based forecast with it, preserve review/rework contingency and surface risks early. Do not change the target without Tyler's decision; the date is not release authorization.
-- Respect the timeline's owner-availability buffer (currently October 2–6, 2026, subject to confirmation/extension). Do not schedule required owner approvals, uploads, review submissions or device sessions during it.
-- Keep sensitive personal reasons out of tracked scheduling notes; record availability and capacity only.
+
+<!-- BEGIN EOD STANDING RULES -->
+- Codex makes routine, in-scope decisions and keeps moving without asking Tyler at each step: source-only preparation, safe read-only checks that do not expose protected values, small reversible fixes, ordinary local validation/builds, commits, non-destructive pushes, PR preparation and low-risk documentation/default-off PR merges after exact-head checks, and visible app QA. Pick the next dependency-ready step; do not stop for a routine “confirm.”
+- Only major actions need Tyler's exact, action-time approval. Major means material architecture/dependency/security changes; production capability activation or materially behavior-changing deployment; production schema, migration, ACL, role, or data writes; destructive or real-provider operations; protected configuration, credential/secret handling or disclosure; billing/subscription/product or paid-plan changes; Apple signing/account/security changes; signed build upload, tester invitation/distribution, public link, App Review/TestFlight submission, or release. State the exact target, effect, stop rule, and recovery path. One approval covers only its stated action, not later gates.
+- Do not re-ask for a completed, verified approval or repeat completed work. Mark dated no-go/pending instructions historical when later evidence supersedes them. A source-only deploy, green check, or passing read does not activate a gated runtime path.
+- Speak directly and concisely. Give next best steps after each completed work block and in every EOD; distinguish the single next safe action from the full carryover ledger.
+- Keep the in-app browser open and visible during app testing/QA so Tyler can follow progress, and leave useful evidence open at handoff. Do not close user tabs merely to tidy the day.
+- A whole-app diagnostic checks stale/duplicate/unreachable code, disconnected routes/APIs, failing safeguards, serialized calls, build errors, and obvious performance drag. Tighten proven safe issues, but do not delete compatibility surfaces or assets without evidence. Mark live reports resolved only after the fix is verified.
+- Use **CapitolWonk** as the public app name and **Daily Brief** as the public feature name. Keep internal `Weekly Brief` compatibility names and stable bundle, SKU/product, account-token, telemetry, and storage identities until an explicitly approved migration or product decision.
+- Never expose or commit credentials, protected values, private keys, tokens, Apple account/team or bundle identifiers, tester credentials, transaction/device identifiers, private support-case IDs, or customer data. Use narrow sandbox escalations; keep sensitive personal reasons out of tracked scheduling notes.
+- The Mac login/iCloud Keychain incident is closed. Do not sign out of iCloud, reset encrypted iCloud data, delete keychains, remove trusted devices, alter FileVault, or modify the preserved old keychain/recovery copy. Do not repurchase a subscription to establish state; verify the entitlement first and use Restore Purchases once only if the baseline is inconsistent.
+- Preserve the T04 certificate/CSR/private-key/Keychain/profile/signing/device freeze until substantive Apple Support guidance is documented and one supported action is reviewed. Keep T03 App Store verifier processing off while its security/acceptance gates remain open. Never treat an unsigned build or old QA as signed-device proof.
+- Keep privacy intake, deletion, retention, operations, monitoring, App Store server verification, and Notifications V2 off until their separate production evidence and activation approvals. Do not infer a role, migration, ACL, credential, provider capability, scheduler, shell binding, or production operator from source-only packets.
+- Continue App Store/TestFlight preparation without submission. Do not upload or distribute a build, create a public TestFlight link, invite external testers, submit for review, or release without Tyler's approval for that exact build/action/scope. Do not clear sandbox purchase history or delete a tester without exact approval.
+- At every EOD reconcile `docs/project-timeline.md`: actual completions, all unfinished T01–T11/deferred tracks, owners/dependencies, remaining effort, prior/revised dates, and evidence-based forecast confidence. If ahead, pull forward only scoped dependency-ready work; never discard QA, approval, availability, or review/rework contingency.
+- Keep Tyler's **October 30, 2026 launch target** visible without treating it as release authorization. Surface risk and preserve the October 2–6 owner-availability buffer (subject to confirmation); schedule no required approvals, device sessions, uploads, or submissions during it. Do not move the target without Tyler's decision.
+<!-- END EOD STANDING RULES -->
+
+Copy this entire marked block into every dated EOD handoff. Run `node scripts/check-eod-standing-rules.mjs` before closing it; the check needs no project dependencies and fails if a dated handoff from September 13 onward drops or changes a standing rule. CI runs the same check before installing project dependencies.
+
+If `node` is not on the local PATH after cache cleanup, use the bundled Node path returned by `load_workspace_dependencies`; do not reinstall the project dependency graph merely for this EOD check.
 
 ## Baseline
 - Repo:

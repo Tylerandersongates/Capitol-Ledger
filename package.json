@@ -33,6 +33,7 @@
     "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs",
     "launch-copy:check": "node scripts/check-launch-copy-tone.mjs",
     "brand:check": "tsx scripts/check-public-brand.ts",
+    "eod:check": "node scripts/check-eod-standing-rules.mjs",
     "testflight:check": "node scripts/check-testflight-readiness.mjs",
     "audit:prod": "pnpm audit --prod --audit-level high",
     "audit:full": "pnpm audit --audit-level high",
