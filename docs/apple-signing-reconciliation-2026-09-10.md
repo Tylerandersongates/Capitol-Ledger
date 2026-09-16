@@ -1,5 +1,15 @@
 # CapitolWonk Apple Signing Reconciliation — September 10, 2026
 
+## September 16 Apple Support call — interim guidance relayed by Tyler
+
+Tyler reports that Apple Support said a revoked certificate cannot be made trusted again: a new certificate must be created in the developer account and the application package signed with the replacement. Support also sent Apple's general Keychain Access certificate-request guide. This is a Tyler-relayed summary, not a copied case transcript or evidence that a new certificate has been issued.
+
+The guidance establishes a replacement principle for a genuinely revoked certificate. It does not yet identify the exact certificate type and owner, the revocation date or cause, whether a matching private key remains in the preserved prior Keychain, or whether the current cloud-managed Distribution certificate and App Store profile are affected. It does not distinguish local Development signing for device QA from cloud-managed Distribution signing through Xcode Organizer. Ask Apple to put the certificate-specific sequence and effect on existing assets in the same case before choosing one action. Do not infer that the July Keychain incident itself revoked a certificate.
+
+Tyler also reports that Keychain Access labels certificates as “not trusted.” The exact certificate entries and evaluation reasons have not been provided, so this local display is not independent proof of revocation in the Apple Developer account. Do not override the trust settings; first identify each certificate type and the detailed Code Signing evaluation result through read-only inspection with Apple.
+
+No CSR, certificate, private key, Keychain, profile, Xcode signing setting, signed package, upload, or distribution change was reported to or performed by Codex in this continuation. T04 remains blocked on a reviewed exact path and Tyler's action-time approval. The September 12 status and investigation below are historical where they say Apple has not replied.
+
 ## Decision
 
 **T04 remains active and blocked pending Apple Developer Support guidance as of September 12.** The current read-only signing evidence still records zero usable code-signing identities. One current Xcode-managed App Store provisioning profile exists and matches the project, but a profile alone cannot sign without a usable matching certificate/private-key identity.
