@@ -1,6 +1,6 @@
 # CapitolWonk App Privacy Correction Packet — September 10, 2026
 
-Status: **provisional correction draft and immediate account-deletion implementation with transactional cleanup jobs are prepared locally; neither is deployed, applied, or published.** Release/runtime, provider, logging, retention, migration, cleanup-task, live-deletion, and backup/PITR gates remain open. This packet does not authorize or evidence a production migration/deploy, task-secret or scheduler change, destructive production test, remote questionnaire change, build upload, tester distribution, or review submission.
+Status: **September 15 launch-scope clarification:** the fourteen-type matrix remains the provisional questionnaire baseline, but the October 30 launch uses the configured dedicated privacy mailbox while first-party intake, operator, monitoring, retention, and deletion gates remain off. Production Batch A and the default-off source are complete; historical statements below that call them local or undeployed are dated evidence. Exact Release archive, native/WKWebView/runtime/provider/logging evidence and the manual mailbox procedure remain open. This packet does not authorize a remote questionnaire change, asset upload, signing action, tester distribution, submission, or release.
 
 ## Correction Summary
 

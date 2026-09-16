@@ -66,6 +66,8 @@ assert.ok(page.includes('dynamic = "force-dynamic"'), "the privacy page must not
 assert.ok(page.includes("does not send the request to Sentry"), "the first-party/Sentry boundary must be explicit");
 assert.ok(page.includes("verified fallback privacy mailbox has not been published"), "an unconfigured fallback must be stated truthfully");
 assert.ok(support.includes('href: "/privacy/request"'), "Support must route privacy rights to the dedicated page");
+assert.ok(support.includes("dedicated privacy page and verified mailbox"), "Support must describe the launch mailbox path truthfully");
+assert.ok(!support.includes("dedicated first-party path"), "Support must not imply the disabled database queue is the launch intake channel");
 assert.ok(!support.includes("feedback?source=privacy-request"), "Support must not route privacy rights through Sentry");
 assert.ok(!feedback.includes('"privacy-request": "Privacy request"'), "feedback must not present a privacy-request source");
 assert.ok(privacy.includes('href="/privacy/request"'), "the policy must link the dedicated privacy-request page");

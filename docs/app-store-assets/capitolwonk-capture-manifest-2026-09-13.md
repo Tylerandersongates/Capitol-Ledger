@@ -2,6 +2,8 @@
 
 Status: **local preparation only; no replacement asset is approved, uploaded, distributed, or device-verified.** The Apple certificate/profile/Keychain/signing/device freeze remains in force. Use this manifest after an exact release candidate, sanitized capture state, subscription configuration, and signed/device path are approved.
 
+> September 15 launch-scope update: `main` at PR #29 merge `f959bff` is the current planning baseline. The dedicated privacy mailbox is the launch intake channel, and database-backed privacy operation is conditional post-launch. Start with a four-screen local rehearsal—dashboard, bill search/results, bill detail, and member detail—using honest blank/public or explicitly assigned sanitized state. Do not include account-specific alerts, a Daily Brief player, upgrade claims, or a privacy database-queue claim until each exact launch state is evidenced. This does not authorize final capture or upload.
+
 ## Existing assets — quarantine from final reuse
 
 | File | Technical record | Reason it is stale |
@@ -16,9 +18,9 @@ Preserve these historical files. Do not delete, overwrite, upload, or present th
 
 | Field | Required value |
 | --- | --- |
-| Exact source SHA | Eventual separately approved release SHA; source candidate `92b61b9` and verified predecessor checkpoint `0c09abc` are non-production evidence only |
-| Production/base SHA | `7ec68bcf142d6defe865c12959b0f9a84fce72d5`; it is not the candidate source for new captures |
-| Branch verification | Verified predecessor PR checkpoint `0c09abc0523e2f4de16f55f4d6d2465d27f4abfa`; exact-head CI #321 succeeded and matching Vercel Preview deployment `7d1i8rinVS8iUhUTPUyba4DMwUfy` is Ready. Verify the documentation-only packet descendant at its own live SHA before capture. |
+| Exact source SHA | Eventual separately approved release SHA; `f959bff` is the current planning baseline only |
+| Production/base SHA | PR #29 merge `f959bff`; confirm the then-current production SHA again before final capture |
+| Branch verification | PR #29 passed all three checks before merge. Every later capture branch must pass its own exact-head CI and matching Preview before any image is treated as current. |
 | Build/archive identity | Exact build/archive reference; omit protected identifiers from tracked evidence |
 | Capture surface | Simulator, physical device, or local browser; never imply physical-device proof when unavailable |
 | Route and UI state | Exact route plus a short reproducible state description |
@@ -34,15 +36,17 @@ Preserve these historical files. Do not delete, overwrite, upload, or present th
 
 Prepare the smallest truthful narrative first; add a surface only when its exact launch behavior is ready.
 
+Recommended local rehearsal order: slots 1–4 only. This order exercises the public product story without requiring a signed purchase state, account-specific fixture, live video, or deferred privacy database operation.
+
 | Slot | Route/state | iPhone 6.5-inch | iPad 13-inch | Current readiness |
 | ---: | --- | --- | --- | --- |
-| 1 | Dashboard — honest blank or assigned sanitized populated state | 1284 × 2778 | 2064 × 2752 | Blocked on approved state and exact candidate capture |
-| 2 | Bill search/results | 1284 × 2778 | 2064 × 2752 | Local route preparation possible; final capture blocked |
-| 3 | Bill detail | 1284 × 2778 | 2064 × 2752 | Local route preparation possible; final capture blocked |
-| 4 | Member detail/accountability | 1284 × 2778 | 2064 × 2752 | Local route preparation possible; final capture blocked |
-| 5 | Alerts/saved activity | 1284 × 2778 | 2064 × 2752 | Requires sanitized assigned account state |
-| 6 | Daily Brief | 1284 × 2778 | 2064 × 2752 | Channel-only/no-player launch scope must remain truthful |
-| 7 | Upgrade/subscription | 1284 × 2778 | 2064 × 2752 | Blocked on final product/offer configuration and signed sandbox evidence |
+| 1 | Dashboard — honest blank/public or assigned sanitized populated state | 1284 × 2778 | 2064 × 2752 | Rehearse locally; final capture blocked on exact candidate/state |
+| 2 | Bill search/results — public state | 1284 × 2778 | 2064 × 2752 | Rehearse locally; final capture blocked on exact candidate |
+| 3 | Bill detail — public state | 1284 × 2778 | 2064 × 2752 | Rehearse locally; final capture blocked on exact candidate |
+| 4 | Member detail/accountability — public state | 1284 × 2778 | 2064 × 2752 | Rehearse locally; final capture blocked on exact candidate |
+| 5 | Alerts/saved activity | 1284 × 2778 | 2064 × 2752 | Deferred; requires sanitized assigned account state |
+| 6 | Daily Brief | 1284 × 2778 | 2064 × 2752 | Deferred pending launch-scope decision; no player may be implied while absent |
+| 7 | Upgrade/subscription | 1284 × 2778 | 2064 × 2752 | Deferred pending final product/offer configuration and signed sandbox evidence |
 
 The listing narrative does not require all seven slots. Remove any slot whose state cannot be reproduced honestly without demo fallback data.
 
