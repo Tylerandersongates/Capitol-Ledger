@@ -1,5 +1,14 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 15 superseding reconciliation
+
+This is the active T09 and workday boundary. The September 14 reconciliation and older task rows below remain dated evidence, not instructions to repeat completed steps.
+
+- **Completed:** Production Batch A and PRs #8 and #12–#26 are complete for their reviewed scopes. Documentation/CI-only PR #27 merged at `451dc20` with three passing checks, carrying the standing EOD rules and September 14 handoff; it did not activate runtime behavior. OS 27 is installed, and deliberately removed project caches remain regenerable.
+- **T09 failed baseline:** The separately approved production ambient-privilege preflight ran once on literal `Capitol%20Ledger` and failed closed: one of two privacy tables existed, and `PUBLIC` database `CONNECT`/`TEMPORARY` were present. Neon protected-branch UI separately confirmed `PrivacyRequestOperation` absent and its source migration name unrecorded. No migration, role, ACL, credential, binding, or gate change followed. See the [evidence](privacy-request-operator-read-only-evidence-2026-09-15.md) and [remediation review](privacy-request-operator-ambient-privilege-remediation-review-2026-09-15.md).
+- **T09 next dependency:** The guarded [principal-ACL inventory](privacy-request-operator-principal-acl-inventory-2026-09-15.sql) is source-only. Neon SQL Editor double-decodes the literal database label, so an exact direct-client/credential-handling approval is required before that catalog read. A private Vercel runtime-role inspection, operations-table migration, shared `PUBLIC` ACL repair, and any post-remediation preflight each require their own distinct exact approvals. Do not bootstrap a role or advance the operator sequence on the failed row.
+- **Other carryovers:** T03's Apple OCSP/resource acceptance and residual `jsrsasign` decision remain high/open; T04 signing/device stays frozen pending substantive Apple Support guidance. T05–T07 remain dependent on a valid signed candidate; T08 Daily Brief content/launch scope and T09 privacy/runtime/provider/assets evidence remain open; T10–T11 upload, distribution, App Review, and launch remain unapproved. Privacy intake, deletion, retention, operations, monitoring, App Store server verification, and Notifications V2 stay off. Preserve the October 2–6 owner buffer and October 20–29 review/rework contingency; the user-set October 30 target remains low-confidence/materially at risk, with no date change.
+
 ## September 14 superseding reconciliation
 
 This section supersedes pre-merge status statements in the September 13 narrative and task rows below; retain those older statements only as historical evidence until the next full ledger rewrite.
