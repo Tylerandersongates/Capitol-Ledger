@@ -127,7 +127,7 @@ function main() {
     "Public privacy copy and first-party rights routing include current disclosure sections"
   );
   record(
-    ["Provisional Answer Matrix", "Emails or Text Messages", "Device ID", "Crash Data", "Performance Data", "Other Diagnostic Data", "App Functionality", "neither is deployed, applied, or published", "does not authorize"].every((phrase) =>
+    ["Provisional Answer Matrix", "Emails or Text Messages", "Device ID", "Crash Data", "Performance Data", "Other Diagnostic Data", "App Functionality", "October 30 launch uses the configured dedicated privacy mailbox", "does not authorize"].every((phrase) =>
       privacyCorrection.includes(phrase)
     ),
     "Prepared App Store privacy packet includes proposed additions and approval boundary"

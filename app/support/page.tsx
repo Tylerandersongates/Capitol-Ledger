@@ -31,7 +31,7 @@ const supportOptions = [
   },
   {
     title: "Privacy requests",
-    body: "Use the dedicated first-party path for access, export, correction, deletion assistance, consent withdrawal, or saved-data questions.",
+    body: "Use the dedicated privacy page and verified mailbox for access, export, correction, deletion assistance, consent withdrawal, or saved-data questions.",
     href: "/privacy/request",
     cta: "Start request"
   }
