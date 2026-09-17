@@ -252,6 +252,7 @@ try {
   assert.equal(unavailableResponse.headers.get("retry-after"), "30");
 
   const prismaDouble = (globalThis as Record<string, unknown>).__capitolLedgerPrisma as {
+    $executeRawUnsafe: (...args: unknown[]) => Promise<unknown>;
     $queryRaw: (...args: unknown[]) => Promise<unknown[]>;
   };
   prismaDouble.$queryRaw = async () => [];
@@ -268,6 +269,38 @@ try {
     false,
     "Missing-user checks must remain read-only."
   );
+
+  const authDatabase = await import("../lib/auth-database");
+  await assert.rejects(
+    authDatabase.ensureProductionAuthSchema(),
+    /simulated database outage/,
+    "An initial auth-schema connection failure must surface to the caller."
+  );
+  const { NextRequest } = await import("next/server");
+  const signInRoute = await import("../app/api/auth/sign-in/route");
+  const signInResponse = await signInRoute.POST(new NextRequest("http://localhost/api/auth/sign-in", {
+    body: JSON.stringify({ email: "person@example.com", password: "synthetic-password" }),
+    headers: { "content-type": "application/json", origin: "http://localhost" },
+    method: "POST"
+  }));
+  const signInBody = await signInResponse.json();
+  assert.equal(signInResponse.status, 503, "A database outage must be reported as temporary unavailability.");
+  assert.equal(signInResponse.headers.get("cache-control"), "no-store");
+  assert.equal(signInResponse.headers.get("retry-after"), "30");
+  assert.equal(signInBody.error, safety.accountPersistenceUnavailableMessage);
+  assert.doesNotMatch(JSON.stringify(signInBody), /simulated database outage/, "Sign-in must not disclose database errors.");
+
+  let retriedAuthSchemaStatements = 0;
+  prismaDouble.$executeRawUnsafe = async () => {
+    retriedAuthSchemaStatements += 1;
+    return 0;
+  };
+  assert.equal(
+    await authDatabase.ensureProductionAuthSchema(),
+    true,
+    "Auth-schema initialization must retry after a transient connection failure."
+  );
+  assert.ok(retriedAuthSchemaStatements > 1, "The retry must execute schema checks against the recovered database.");
 
   delete process.env.DATABASE_URL;
   assert.equal(profile.getAccountProfile("user-1").displayName, "Stored Person", "Local/demo mode must retain memory persistence behavior.");
