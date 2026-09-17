@@ -1,9 +1,9 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
-## September 17 T06 — House election-date repair in source review
+## September 17 T06 — House election-date repair live; phone retest pending
 
 - Tyler reported that the previous first-elected/next-election repair appears to work for Senators but not U.S. Representatives. The live browser `/members/B001323` shows both fields as `Not listed` for Rep. Nicholas J. Begich. This is a browser-confirmed defect; physical-iPhone confirmation of this particular field is not separately recorded.
-- [Source and official-record research](member-election-history-research-2026-09-17.md) found PR #31 only applied an existing 14-ID fallback. [Source PR #35](https://github.com/Tylerandersongates/Capitol-Ledger/pull/35), head `eaae982`, adds a Clerk-based 433-member House snapshot, reviewed special/returning/runoff exceptions, and a regular-election calendar only for active voting House seats. Local member-history guards/fixtures and diff checks passed. GitHub CI passed TypeScript, the new member-history check, lint, safeguards and build; Vercel preview passed and rendered Begich's November 5, 2024 and November 3, 2026 values. Production and phone behavior are unchanged until an exact approved merge/deployment and retest. The [remaining T06 device matrix](t06-physical-iphone-qa-2026-09-17.md) is still open.
+- [Source and official-record research](member-election-history-research-2026-09-17.md) found PR #31 only applied an existing 14-ID fallback. Tyler approved merging [PR #35](https://github.com/Tylerandersongates/Capitol-Ledger/pull/35) at head `eaae982`; its Clerk-based 433-member House snapshot and limited next-regular-election rule merged as `3c01b1d`. PR and merged-main CI passed, Vercel marked the exact production deployment Ready/Latest, and the public browser `/members/B001323` rendered **Nov 5, 2024** and **Nov 3, 2026**. The phone result is pending; the [remaining T06 device matrix](t06-physical-iphone-qa-2026-09-17.md) remains open.
 - T03, T05, T07, T09 and T10–T11 retain their separate gates. October 30 is still a target, not release authorization. The September 16 final EOD below remains the authoritative prior checkpoint where not updated here.
 
 ## September 16 final EOD — live Bill Basics repair; physical-device and release gates remain
