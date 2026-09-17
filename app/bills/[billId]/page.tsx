@@ -752,7 +752,7 @@ function AiPolicyLensCard({ analysis, bill, summary }: { analysis: AiBillAnalysi
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Plain-language view</div>
           <h2 className="mt-2 text-[24px] font-medium leading-tight">What it could mean for you</h2>
-          <p className="mt-2 text-[13px] leading-5 text-white/54">{sourceLabel}. Possible effects depend on the bill's final text and status.</p>
+          <p className="mt-2 text-[13px] leading-5 text-white/54">{sourceLabel}. Possible effects depend on the bill&apos;s final text and status.</p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
           <LensIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
