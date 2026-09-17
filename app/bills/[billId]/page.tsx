@@ -1147,7 +1147,7 @@ function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) 
           <ShieldCheck className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <MobileGlassScrollFrame heightClassName="h-[248px]" className="flex snap-y snap-mandatory flex-col gap-3">
+      <MobileGlassScrollFrame heightClassName="h-[248px]" className="flex flex-col gap-3">
         {sourceMatches.map((match) => (
           <SourceMatchRow key={match.id} match={match} />
         ))}
@@ -1234,7 +1234,7 @@ function SourceMatchRow({ match }: { match: BillSourceMatch }) {
       href={match.url}
       event="open-official-source"
       targetId={match.id}
-      className="block h-[248px] shrink-0 snap-start rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.24)_0%,rgba(7,23,50,0.7)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(2,10,28,0.26)] transition hover:brightness-110"
+      className="block min-h-[248px] shrink-0 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.24)_0%,rgba(7,23,50,0.7)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(2,10,28,0.26)] transition hover:brightness-110"
     >
       <div className="flex items-start gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.14)]">
