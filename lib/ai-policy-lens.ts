@@ -5,6 +5,9 @@ export type AiBillAnalysis = {
   cons: string[];
   context: string;
   pros: string[];
+  origin?: "generated" | "source-based";
+  sourceLinks?: Array<{ label: string; url: string }>;
+  sourceNote?: string;
 };
 
 export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAnalysis {
@@ -86,6 +89,46 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
     "help america vote act",
     "election administration"
   ]);
+
+  // This House-passed text adds a voter-ID section that the earlier CRS summary
+  // displayed on the detail page does not yet describe. Keep the version explicit.
+  if (bill.congress === 119 && bill.billType.toLowerCase() === "hr" && bill.billNumber === "7008") {
+    return {
+      context: `The House-passed July 22, 2026 text of H.R. 7008 has two main parts: restrictions on stock purchases and advance sale notices for Members of Congress and their families, plus photo ID rules for voting in federal elections. Later versions may differ. ${statusLine}`,
+      pros: [
+        "Public advance notice of covered stock sales could make lawmakers' financial transactions easier for voters to scrutinize.",
+        "Restrictions on new covered stock purchases could reduce some opportunities for conflicts of interest involving Members of Congress and their families.",
+        "Supporters of the photo ID section may see more consistent identity checks in federal elections if states can implement the rules accessibly."
+      ],
+      cons: [
+        "The stock rules leave exceptions and do not require all existing covered investments to be sold, so some conflict-of-interest concerns may remain.",
+        "Voters without readily available photo ID or copies could face extra steps or deadlines before their ballots are counted.",
+        "The photo ID section reaches a different issue than congressional trading, making it harder to judge the proposal on a single policy question."
+      ],
+      origin: "source-based",
+      sourceLinks: [{
+        label: "House-passed text, July 22, 2026",
+        url: "https://www.govinfo.gov/content/pkg/BILLS-119hr7008eh/html/BILLS-119hr7008eh.htm"
+      }],
+      sourceNote: "This view follows the House-passed July 22 text. Check the current version for later amendments."
+    };
+  }
+
+  if (matchesAny(text, ["congressional stock trading", "stock trading by members", "stocks for members of congress", "covered investments", "insider trading act"])) {
+    return {
+      context: `${billName} addresses financial trades by Members of Congress or their families. The practical effect depends on which transactions are restricted, which holdings are exempt, and how violations are enforced. ${statusLine}`,
+      pros: [
+        "Limits on covered trades could reduce opportunities for conflicts of interest while lawmakers make decisions that affect companies and markets.",
+        "Public transaction notices or disclosures could help voters and watchdogs review trades tied to elected officials.",
+        "Clearer ethics rules could make it easier to identify and challenge transactions that violate the law."
+      ],
+      cons: [
+        "Exceptions for particular holdings or family transactions could leave gaps in the restrictions.",
+        "Rules may have little effect if disclosures are late, hard to search, or enforcement is weak.",
+        "Compliance requirements can be complex for spouses and dependents whose jobs or compensation involve investments."
+      ]
+    };
+  }
 
   if (matchesAny(text, ["public waters", "waterway", "waterways", "fishing restriction", "fishing restrictions", "public access", "outdoor recreation", "recreation", "outdoor recreational access", "recreational access", "recreation access", "geospatial data"])) {
     return {

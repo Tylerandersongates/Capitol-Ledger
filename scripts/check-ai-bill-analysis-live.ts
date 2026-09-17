@@ -11,7 +11,7 @@ loadLocalEnv();
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const billIds = args.filter((arg) => arg !== "--dry-run" && arg !== "--");
-const targetBillIds = billIds.length ? billIds : defaultBillIds;
+const targetBillIds = billIds.length ? billIds : dryRun ? defaultBillIds : [];
 
 function loadLocalEnv() {
   if (!existsSync(".env.local")) return;
@@ -66,12 +66,18 @@ async function checkBill(billId: string) {
     return null;
   }
 
+  assert.equal(summary.source, "official", `${detail.bill.displayNumber} needs an official summary for live analysis.`);
+  assert.ok(summary.publishedAt && detail.bill.latestActionDate, `${detail.bill.displayNumber} needs dated summary and action records.`);
+  assert.ok(summary.publishedAt.slice(0, 10) >= detail.bill.latestActionDate.slice(0, 10), `${detail.bill.displayNumber} summary predates its latest action.`);
+
   const fallback = buildAiBillAnalysis(detail.bill, summary.text);
   const live = await resolveAiBillAnalysis(detail.bill, {
     billActions: detail.billActions,
     billVotes: detail.billVotes,
     enableLive: true,
     sourceMatches: detail.sourceMatches,
+    summaryPublishedAt: summary.publishedAt,
+    summarySource: summary.source,
     summaryText: summary.text
   });
 
@@ -91,6 +97,7 @@ async function main() {
   console.log(dryRun ? "Checking AI bill-analysis source packets" : "Checking live OpenAI bill analysis");
 
   if (!dryRun) assertLiveEnvironment();
+  if (!dryRun) assert.ok(targetBillIds.length, "Pass one or more current live bill IDs after reviewing their official summary and action dates.");
 
   const liveTexts = (await Promise.all(targetBillIds.map((billId) => checkBill(billId)))).filter(Boolean) as string[];
   if (!dryRun) {
