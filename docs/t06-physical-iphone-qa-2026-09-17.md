@@ -6,7 +6,7 @@ Status: **device walkthrough in progress; remaining screens have no observed res
 
 Tyler signed out and back in, force-quit and reopened to Dashboard without credentials, opened an Official after PR #33, found one saved item after a full close/reopen, and verified the H.R. 9956 Basics repair on the installed iPhone after production merge `df0dbcc`. These focused passes do not close the rest of T06.
 
-On September 17 Tyler reported blank First elected and Next election fields for U.S. Representatives. The live browser `/members/B001323` reproduced both as `Not listed`; the [source and official-record research](member-election-history-research-2026-09-17.md) identified a limited fallback table. Tyler approved [PR #35](https://github.com/Tylerandersongates/Capitol-Ledger/pull/35); production merge `3c01b1d` is Ready/Latest and the public browser now shows Begich's **Nov 5, 2024** and **Nov 3, 2026** values. Tyler's physical-iPhone retest of these fields is pending.
+On September 17 Tyler reported blank First elected and Next election fields for U.S. Representatives. The live browser `/members/B001323` reproduced both as `Not listed`; the [source and official-record research](member-election-history-research-2026-09-17.md) identified a limited fallback table. Tyler approved [PR #35](https://github.com/Tylerandersongates/Capitol-Ledger/pull/35); production merge `3c01b1d` is Ready/Latest and the public browser now shows Begich's **Nov 5, 2024** and **Nov 3, 2026** values. Tyler answered yes to the focused phone prompt asking whether both dates appeared after refreshing Begich's profile. This is Tyler's reported device pass, not independently captured device evidence; the rest of this matrix remains open.
 
 ## Remaining pass, in order
 
