@@ -11,10 +11,6 @@ export function hasDatabaseUrl() {
 
 export function getPrisma() {
   const client = globalThis.__capitolLedgerPrisma ?? new PrismaClient();
-
-  if (process.env.NODE_ENV !== "production") {
-    globalThis.__capitolLedgerPrisma = client;
-  }
-
+  globalThis.__capitolLedgerPrisma = client;
   return client;
 }
