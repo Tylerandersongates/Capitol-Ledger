@@ -429,7 +429,7 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
     sponsorBioguideId,
     policyArea: raw.policyArea?.name ?? "Legislation",
     introducedDate: normalizeDate(raw.introducedDate),
-    committeeName: raw.committees?.count ? `${raw.committees.count} committee record${raw.committees.count === 1 ? "" : "s"}` : undefined,
+    committeeName: committeeNameFromAction(raw.latestAction?.text) ?? (raw.committees?.count ? `${raw.committees.count} committee record${raw.committees.count === 1 ? "" : "s"}` : undefined),
     latestActionText: raw.latestAction?.text ?? "Latest action pending from Congress.gov.",
     latestActionDate,
     summary: raw.latestAction?.text ?? `Live Congress.gov bill record normalized for ${publicBrandName}.`,
@@ -437,9 +437,48 @@ export function normalizeCongressBill(raw: CongressBillListItem): Bill | null {
   };
 }
 
-function committeeNameFromAction(text?: string) {
-  const match = text?.match(/(?:referred to|reported by|from)\s+(?:the\s+)?(Committee(?:s)? on [^.]+)/i);
+export function committeeNameFromAction(text?: string) {
+  const match = text?.match(/(?:referred to|reported by|from)\s+(?:the\s+)?(?:(?:House|Senate)\s+)?(Committee(?:s)? on [^.;]+)/i);
   return match?.[1]?.replace(/\s+/g, " ").trim();
+}
+
+export function mergeOfficialBillBasics(bill: Bill, raw?: CongressBillListItem | null, actionTexts: string[] = []): Bill {
+  const officialBill = raw ? normalizeCongressBill(raw) : null;
+  const namedCommittee = [bill.latestActionText, raw?.latestAction?.text, ...actionTexts]
+    .map((text) => committeeNameFromAction(text))
+    .find(Boolean);
+
+  return {
+    ...bill,
+    sponsorBioguideId: bill.sponsorBioguideId ?? officialBill?.sponsorBioguideId,
+    introducedDate: bill.introducedDate ?? officialBill?.introducedDate,
+    committeeName: namedCommittee ?? bill.committeeName ?? officialBill?.committeeName
+  };
+}
+
+export function normalizeCongressBillSponsor(raw?: CongressBillListItem | null): Member | undefined {
+  const sponsor = raw?.sponsors?.find((record) => record.bioguideId);
+  if (!sponsor || !raw?.type) return undefined;
+
+  const name = sponsor.fullName || [sponsor.firstName, sponsor.lastName].filter(Boolean).join(" ");
+  if (!name) return undefined;
+  const member = normalizeCongressMember({
+    bioguideId: sponsor.bioguideId,
+    district: sponsor.district,
+    name,
+    partyName: sponsor.party,
+    state: sponsor.state
+  });
+  if (!member) return undefined;
+
+  const chamber = chamberFromBillType(raw.type);
+  const prefix = chamber === "House" ? "Rep." : "Sen.";
+  return {
+    ...member,
+    chamber,
+    description: `${chamber} sponsor from ${member.state} listed on the Congress.gov bill record.`,
+    fullName: member.fullName.replace(/^(?:Rep\.|Sen\.)/, prefix)
+  };
 }
 
 export function normalizeCongressMemberLegislation(raw: CongressMemberLegislationItem, sponsorBioguideId?: string): Bill | null {

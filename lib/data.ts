@@ -1,7 +1,8 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
-import { normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import type { CongressBillListItem } from "@/lib/congress/client";
+import { mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -751,7 +752,7 @@ function mapDatabaseMember(member: PrismaMember): Member {
 }
 
 function mapDatabaseBill(bill: PrismaBill): Bill {
-  return {
+  const mappedBill: Bill = {
     billNumber: bill.billNumber,
     billType: bill.billType,
     committeeName: undefined,
@@ -768,6 +769,11 @@ function mapDatabaseBill(bill: PrismaBill): Bill {
     summary: bill.summary ?? `Live Congress.gov bill record imported into ${publicBrandName}.`,
     title: bill.title
   };
+
+  const rawBill = bill.rawJson && typeof bill.rawJson === "object" && !Array.isArray(bill.rawJson)
+    ? bill.rawJson as CongressBillListItem
+    : null;
+  return mergeOfficialBillBasics(mappedBill, rawBill);
 }
 
 function mapDatabaseVote(vote: PrismaVote & { memberVotes?: Pick<PrismaMemberVote, "memberBioguideId" | "position">[] }): Vote {
@@ -1743,9 +1749,9 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
 
     if (!billRow) return null;
 
-    const bill = mapDatabaseBill(billRow);
+    const databaseBill = mapDatabaseBill(billRow);
     const billVotes = billRow.votes.map(mapDatabaseVote);
-    const sourceTargetIds = uniqueStrings([billRow.id, bill.id, stableLiveBillId(bill)]);
+    const sourceTargetIds = uniqueStrings([billRow.id, databaseBill.id, stableLiveBillId(databaseBill)]);
     const sourceLinks = await prisma.$queryRaw<DatabaseSourceLinkRow[]>`
         SELECT "id", "targetType", "targetId", "label", "url", "source", "sourceKind", "verifiedAt"
         FROM "OfficialSourceLink"
@@ -1757,15 +1763,26 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
       .catch(() => []);
     const fallbackSponsor = billRow.sponsor ? mapDatabaseMember(billRow.sponsor) : undefined;
     const fallbackCosponsors = billRow.cosponsors.map((cosponsor) => mapDatabaseMember(cosponsor.member));
-    const billVideos = getBillVideos(bill.id);
-    const [officialActions, livePeople] = await Promise.all([
-      fetchOfficialBillActionsForBill(bill),
-      fetchLiveBillPeople(bill, {
+    const billVideos = getBillVideos(databaseBill.id);
+    const needsOfficialBasics = !databaseBill.introducedDate || !databaseBill.sponsorBioguideId;
+    const [officialActions, officialDetail, livePeople] = await Promise.all([
+      fetchOfficialBillActionsForBill(databaseBill),
+      needsOfficialBasics
+        ? fetchBill(databaseBill.congress, databaseBill.billType, databaseBill.billNumber, {
+            timeoutMs: memberLegislationFetchTimeoutMs
+          }).catch(() => null)
+        : Promise.resolve(null),
+      fetchLiveBillPeople(databaseBill, {
         cosponsors: fallbackCosponsors,
         sponsor: fallbackSponsor
       })
     ]);
-    const { cosponsors, sponsor } = livePeople;
+    const bill = mergeOfficialBillBasics(databaseBill, officialDetail?.bill, officialActions.map((action) => action.action));
+    const cosponsors = livePeople.cosponsors;
+    const storedRawBill = billRow.rawJson && typeof billRow.rawJson === "object" && !Array.isArray(billRow.rawJson)
+      ? billRow.rawJson as CongressBillListItem
+      : null;
+    const sponsor = livePeople.sponsor ?? normalizeCongressBillSponsor(officialDetail?.bill ?? storedRawBill);
     const deterministicSourceMatches = matchBillSources({
       bill,
       sponsor,
@@ -1812,19 +1829,21 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
     const response = await fetchBill(parsedLiveId.congress, parsedLiveId.billType, parsedLiveId.billNumber, {
       timeoutMs: memberLegislationFetchTimeoutMs
     });
-    const bill = response.bill ? normalizeCongressBill(response.bill) : null;
-    if (!bill) return null;
+    const initialBill = response.bill ? normalizeCongressBill(response.bill) : null;
+    if (!initialBill) return null;
 
-    const billVotes = getBillVotes(bill.id);
-    const billVideos = getBillVideos(bill.id);
+    const billVotes = getBillVotes(initialBill.id);
+    const billVideos = getBillVideos(initialBill.id);
     const [officialActions, livePeople] = await Promise.all([
-      fetchOfficialBillActionsForBill(bill),
-      fetchLiveBillPeople(bill, {
+      fetchOfficialBillActionsForBill(initialBill),
+      fetchLiveBillPeople(initialBill, {
         cosponsors: [],
         sponsor: undefined
       })
     ]);
-    const { cosponsors, sponsor } = livePeople;
+    const bill = mergeOfficialBillBasics(initialBill, response.bill, officialActions.map((action) => action.action));
+    const cosponsors = livePeople.cosponsors;
+    const sponsor = livePeople.sponsor ?? normalizeCongressBillSponsor(response.bill);
 
     return {
       bill,
