@@ -38,7 +38,7 @@ assert.ok(billPage.includes('ariaLabel="Bill timeline updates"'), "Timeline shou
 assert.ok(billPage.includes("<BillActionRow key={action.id} action={action} />"), "Timeline should use official action rows");
 assert.ok(billPage.includes('const detailLabel = action.linkedVoteId ? "Vote" : "Source"'), "Action rows should link roll-call actions to vote detail");
 assert.ok(billPage.includes("Date only"), "Action rows should disclose date-only source precision");
-assert.ok(billPage.includes('const billSummary = activeTab === "details" ? await getBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");
-assert.ok(!billPage.includes("const billSummary = await getBillSummary(bill);"), "Bill summary should not be fetched before tab routing");
+assert.ok(billPage.includes('const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");
+assert.ok(!billPage.includes("await getBillSummary(bill)"), "Bill details should not wait for a remote summary request");
 
 console.log("Bill action log check passed.");

@@ -105,7 +105,7 @@ type DatabaseSourceLinkRow = {
 };
 
 const pendingOfficialSummaryText =
-  `Official CRS summary not yet published by Congress.gov. ${publicBrandName} will display the official summary first when it becomes available.`;
+  "A detailed summary is not stored for this bill yet. Check the official bill record for its current text and actions.";
 const optionalDatabaseReadTimeoutMs = resolveOptionalDatabaseReadTimeoutMs();
 const dashboardDatabaseReadTimeoutMs = resolveDashboardDatabaseReadTimeoutMs();
 const memberLegislationFetchTimeoutMs = resolveMemberLegislationFetchTimeoutMs();
@@ -987,6 +987,25 @@ export function getBill(id: string) {
   return bills.find((bill) => bill.id === id);
 }
 
+export function getStoredBillSummary(bill: Bill): BillSummaryResolution {
+  const summary = bill.summary?.trim();
+  const isActionOnly = summary === bill.latestActionText.trim();
+  const isImportPlaceholder = Boolean(summary && /^Live Congress\.gov bill record (?:imported|normalized)\b/.test(summary));
+  if (summary && !isActionOnly && !isImportPlaceholder) {
+    return {
+      label: summary.toLowerCase().startsWith("generated") ? "AI Brief From Bill Record" : "Stored Bill Summary",
+      source: "stored",
+      text: summary
+    };
+  }
+
+  return {
+    label: "Summary Unavailable",
+    source: "pending",
+    text: pendingOfficialSummaryText
+  };
+}
+
 export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution> {
   try {
     const data = await fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs: resolveBillSummaryFetchTimeoutMs() });
@@ -1006,19 +1025,7 @@ export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution>
     // Official summaries are an enhancement; fall back to stored text when Congress.gov is slow or unavailable.
   }
 
-  if (bill.summary) {
-    return {
-      label: bill.summary.toLowerCase().startsWith("generated") ? "AI Brief From Bill Record" : "Stored Bill Summary",
-      source: "stored",
-      text: bill.summary
-    };
-  }
-
-  return {
-    label: "Official Summary Pending",
-    source: "pending",
-    text: pendingOfficialSummaryText
-  };
+  return getStoredBillSummary(bill);
 }
 
 export function getVote(id: string) {

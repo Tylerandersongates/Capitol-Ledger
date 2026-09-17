@@ -7,7 +7,7 @@ CapitolWonk's bill detail policy lens uses a hybrid pipeline:
 3. Model output must validate against a strict JSON schema and cite source IDs from the official source packet. Validated source links are shown in the policy card.
 4. Invalid, slow, missing, disabled, stored-summary, or stale-summary model output falls back to the deterministic lens. The card labels its source basis.
 
-The current live path still runs during the bill Details request and can wait up to 4.5 seconds on a cache miss. Keep the provider in fallback mode until the persistent, ahead-of-page generation design in [the September 17 pilot plan](../docs/ai-bill-analysis-pilot-2026-09-17.md) is implemented and tested.
+The current source candidate renders the bill Details summary and policy lens from synced bill data. Opening that tab no longer waits for a fresh Congress.gov summary request or an OpenAI response. The explicit live-check script still exercises the remote summary and generator for controlled evaluation. Keep the provider in fallback mode until the persistent, ahead-of-page generation design in [the September 17 pilot plan](../docs/ai-bill-analysis-pilot-2026-09-17.md) is implemented and tested.
 
 ## Environment
 
@@ -32,7 +32,7 @@ Do not commit `OPENAI_API_KEY`. Add it only through the deployment environment o
 
 ## Source Packet
 
-The agent receives a compact packet built from:
+The controlled live-check agent currently receives a compact packet built from:
 
 - official bill metadata
 - official or stored summary text
@@ -42,7 +42,7 @@ The agent receives a compact packet built from:
 
 The prompt tells the model to use only this packet, avoid unsupported claims, and treat thin records as procedural/uncertain.
 
-The packet does not yet contain the current bill text. If the official summary predates the latest action, the Details page withholds live generation. H.R. 7008 illustrates why this source-freshness gate matters.
+The packet does not yet contain the current bill text. The live-check path withholds generation when the official summary predates the latest action. The bill Details page uses the synced summary and source-based policy lens; it labels the summary as potentially older than the current bill text. H.R. 7008 illustrates why this source-freshness gate matters.
 
 ## Validation
 
@@ -60,7 +60,7 @@ The Responses request sets `store: false`; T09 still needs a provider retention 
 
 ## Caching
 
-Validated live output is cached in-process by source packet, model, and provider. This avoids repeated calls while keeping the first implementation schema-free. Persistent database caching should be a separate migration when upload-critical work is stable.
+The controlled live-check path caches validated output in-process by source packet, model, and provider. The page does not use this cache or call the model. Persistent, version-keyed storage and ahead-of-page generation are required before an AI-assisted page pilot.
 
 ## Checks
 

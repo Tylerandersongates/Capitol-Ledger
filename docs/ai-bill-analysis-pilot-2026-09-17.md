@@ -4,6 +4,8 @@
 
 The production H.R. 7008 Details page shows a CRS summary updated July 17 and a generic policy lens. The [House-passed July 22 text](https://www.govinfo.gov/content/pkg/BILLS-119hr7008eh/html/BILLS-119hr7008eh.htm) has both congressional stock-trading restrictions and federal-election photo ID rules. The older summary describes the trading provisions but omits the voting section. The current live-agent packet contains the summary and actions, not the current bill text; turning on model generation would not reliably recover an omitted section. The source candidate adds a version-labeled, linked fallback for this bill and blocks generation when an official summary predates the latest recorded action.
 
+The next source candidate removes remote summary and model generation from the bill Details request. It renders the synced summary and source-based lens immediately, with an explicit notice that the summary may lag the current text. The controlled live-check script still fetches a fresh summary for evaluation. This removes one request-time delay; it does not yet add an official-text packet or persistent AI cache.
+
 ## Evaluation set and review
 
 Use 25–50 recent bills selected before looking at model output: a mix of House and Senate bills, recent amendments, lengthy and sparse texts, enacted and pending status, and major policy areas. Include H.R. 7008 as a required source-freshness case. Keep each bill's official text version, summary date, latest action date, and source URLs with its evaluation record.
