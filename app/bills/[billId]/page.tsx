@@ -11,7 +11,7 @@ import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactElement, ReactNode } from "react";
+import { Suspense, type ReactElement, type ReactNode } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { isBillLawActionText } from "@/lib/bill-status";
-import { getBillDetailWithLiveData, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
+import { getBillDetailWithLiveData, getBillSummary, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
@@ -560,7 +560,25 @@ export default async function BillPage(props: BillPageProps) {
 
         {activeTab === "details" && billSummary ? (
           <>
-            <BillSummaryCard bill={bill} status={status} summary={billSummary} />
+            {billSummary.source === "pending" ? (
+              <Suspense
+                fallback={
+                  <BillSummaryCard
+                    bill={bill}
+                    status={status}
+                    summary={{
+                      ...billSummary,
+                      label: "Checking official summary",
+                      text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
+                    }}
+                  />
+                }
+              >
+                <OfficialBillSummaryCard bill={bill} status={status} />
+              </Suspense>
+            ) : (
+              <BillSummaryCard bill={bill} status={status} summary={billSummary} />
+            )}
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
               {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} bill={bill} summary={billSummary} /> : null}
             </PlanFeatureGate>
@@ -724,6 +742,11 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
       ) : null}
     </MobileCard>
   );
+}
+
+async function OfficialBillSummaryCard({ bill, status }: { bill: Bill; status: string }) {
+  const summary = await getBillSummary(bill);
+  return <BillSummaryCard bill={bill} status={status} summary={summary} />;
 }
 
 function AiPolicyLensCard({ analysis, bill, summary }: { analysis: AiBillAnalysis; bill: Bill; summary: BillSummaryResolution }) {

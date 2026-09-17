@@ -39,6 +39,7 @@ assert.ok(billPage.includes("<BillActionRow key={action.id} action={action} />")
 assert.ok(billPage.includes('const detailLabel = action.linkedVoteId ? "Vote" : "Source"'), "Action rows should link roll-call actions to vote detail");
 assert.ok(billPage.includes("Date only"), "Action rows should disclose date-only source precision");
 assert.ok(billPage.includes('const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null'), "Timeline should not block on details-only summary fetching");
-assert.ok(!billPage.includes("await getBillSummary(bill)"), "Bill details should not wait for a remote summary request");
+assert.ok(billPage.includes("<Suspense fallback="), "Missing stored summaries should render without waiting for Congress.gov");
+assert.ok(billPage.includes("async function OfficialBillSummaryCard"), "Missing stored summaries should still resolve to an official summary after the page opens");
 
 console.log("Bill action log check passed.");

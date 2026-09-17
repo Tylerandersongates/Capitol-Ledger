@@ -7,7 +7,7 @@ CapitolWonk's bill detail policy lens uses a hybrid pipeline:
 3. Model output must validate against a strict JSON schema and cite source IDs from the official source packet. Validated source links are shown in the policy card.
 4. Invalid, slow, missing, disabled, stored-summary, or stale-summary model output falls back to the deterministic lens. The card labels its source basis.
 
-The current source candidate renders the bill Details summary and policy lens from synced bill data. Opening that tab no longer waits for a fresh Congress.gov summary request or an OpenAI response. The explicit live-check script still exercises the remote summary and generator for controlled evaluation. Keep the provider in fallback mode until the persistent, ahead-of-page generation design in [the September 17 pilot plan](../docs/ai-bill-analysis-pilot-2026-09-17.md) is implemented and tested.
+The current source candidate renders the bill Details policy lens from synced bill data. Opening that tab no longer waits for a Congress.gov summary request or an OpenAI response. If the stored summary is absent or is only an action placeholder, a streamed summary section checks Congress.gov after the page opens, preserving the visible CRS text. The explicit live-check script still exercises the remote summary and generator for controlled evaluation. Keep the provider in fallback mode until the persistent, ahead-of-page generation design in [the September 17 pilot plan](../docs/ai-bill-analysis-pilot-2026-09-17.md) is implemented and tested.
 
 ## Environment
 
