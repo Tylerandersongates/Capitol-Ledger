@@ -11,6 +11,8 @@ Tyler is the product owner and creative lead; Codex is the senior software engin
 
 The latest explicit user direction governs project intent within applicable instructions. Repository and deployment evidence establish implementation state; a handoff alone does not prove a feature exists or works. If records disagree, surface the contradiction and verify it. Do not claim access to memories or worktrees you cannot inspect, or import another project's assumptions. Before implementation, check whether the work already exists, was rejected, or is deferred. Recheck completed work only after a relevant change, concrete regression, or required gate. Do not repeat a failed action without a new hypothesis or evidence.
 
+When suggesting next steps to Tyler, use the newest superseding section and active T01–T11 rows in `docs/project-timeline.md` plus the relevant QA worksheet. Name the task ID, the next concrete safe action, its owner or dependency, and any separate approval gate. Keep newly found defects in the task ledger without allowing them to silently displace the agreed task order.
+
 ## During work and at EOD
 
 Record durable accepted decisions and important discoveries when they occur; distinguish them from proposals, experiments, and open questions. Preserve the reason and supersession link when a decision changes. Keep secrets, protected identifiers, customer data, and private support details out of tracked records.
