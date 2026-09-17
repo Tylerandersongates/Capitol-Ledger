@@ -1,5 +1,10 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 16 night — T06 retest still blocked at account data
+
+- **T06 retest result:** Tyler's build `2` sign-in displayed the new generic account-data-unavailable message. Exact-deployment Vercel logs confirm three sign-in HTTP 503s after merge; a separate account-persistence route failed too. The Production/Preview project secret `DATABASE_URL` is currently visible by name in Vercel, with May 28 add metadata; Tyler reset the Neon production owner password September 15. A stale credential is the leading hypothesis if the secret uses that role, but its masked value was not read and the root cause remains unproven. This contradicts the September 15 read-only record that reported no such project variable. Neon compute is present and active; it scales to zero after five idle minutes. No SQL, secret reveal, credential/configuration edit, or redeploy occurred in this diagnosis.
+- **Single next T06 gate:** Tyler personally replaces the Vercel `DATABASE_URL` value with the current Neon connection string for the production application database without sharing it with Codex. After it is saved, obtain exact approval to redeploy current source `9f058fd` so Vercel picks up the changed value, then inspect runtime status and conduct a private sign-in retest. If still 503, diagnose the specific connection failure before another change. The QA password exposed in the earlier screenshot must be changed by Tyler when the account path permits.
+
 ## September 16 evening — approved auth repair deployed, T06 retest pending
 
 - Tyler approved the exact [PR #32](https://github.com/Tylerandersongates/Capitol-Ledger/pull/32) production merge after its reviewed head `91e49c6` passed CI and Preview checks. GitHub merged it as `9f058fd`; Vercel's matching Production deployment reached **Ready**, was marked Latest, and listed the canonical domain. The public `/sign-in` page loaded. No credentials, account action, protected query or provider setting were used for this smoke.
