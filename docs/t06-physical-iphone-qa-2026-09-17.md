@@ -16,6 +16,8 @@ Tyler then reported slow navigation on the physical iPhone over Wi-Fi: an offici
 
 **Post-PR #37 phone retest:** Tyler reports **3.49 seconds** from fully closing and reopening the iPhone app to Dashboard, down **9.25 seconds (about 73%)** from the 12.74-second baseline. This is Tyler's reported single timing; the network condition and precise start/stop method were not independently reconfirmed. Cold-launch latency is improved for this attempt. First/repeat official-open timing, Dashboard-return timing, saved-state confirmation and the remaining Dashboard content checks are still open.
 
+**Official navigation observation:** Tyler's September 17 iPhone screenshot shows the branded **“Loading official profile”** shell and three placeholder panels. This matches `app/members/[bioguideId]/loading.tsx` in the deployed navigation release and confirms that the loading state appears; it does not measure when the profile becomes usable. For the next timing, start at the tap and stop when the official's name, dates and controls are visible and usable. Record first open, repeat open and the return to Dashboard separately.
+
 ## Remaining pass, in order
 
 | Order | Screen and safe action | Expected observation | Device result |
