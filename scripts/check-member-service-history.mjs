@@ -42,6 +42,10 @@ assert.ok(
   "Database member mapping should only derive terms from real raw term history."
 );
 assert.ok(
+  mapDatabaseMemberBlock.includes("return withMemberServiceFallback({"),
+  "Database member mapping should apply the reviewed House election snapshot as well as the existing service fallbacks."
+);
+assert.ok(
   deriveElectionDatesBlock.includes("Congress.gov term years describe congressional service intervals"),
   "Database member mapping should document why service years cannot become election dates."
 );

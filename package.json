@@ -52,7 +52,7 @@
     "blank-account:check": "node scripts/check-blank-account-demo-isolation.mjs",
     "bill-actions:check": "node scripts/check-bill-action-log.mjs",
     "bill-details:check": "node scripts/check-bill-details-summary.mjs && node --import tsx scripts/check-bill-basics-fixtures.ts",
-    "member-service:check": "node scripts/check-member-service-history.mjs",
+    "member-service:check": "node scripts/check-member-service-history.mjs && node --import tsx scripts/check-house-election-history.ts",
     "member-votes:check": "node scripts/check-member-vote-records.mjs",
     "member-roles:check": "node scripts/check-member-roles.mjs",
     "member-profile:check": "node scripts/check-member-profile-actions.mjs",

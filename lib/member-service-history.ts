@@ -1,6 +1,25 @@
 import type { Member } from "@/types/capitol";
+import houseElectionHistory from "@/data/house-first-elected-119.json";
 
 type MemberServiceFallback = Pick<Member, "firstElectedDate" | "nextElectionDate" | "termsInOffice">;
+
+const votingHouseStates = new Set(
+  "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" ")
+);
+const houseFirstElectionDates = houseElectionHistory.members as Record<string, { firstElectedDate: string }>;
+
+export function nextRegularHouseElectionDate(asOf: Date = new Date()): string {
+  const year = asOf.getUTCFullYear();
+  const electionYear = year % 2 === 0 ? year : year + 1;
+  const firstNovemberDay = new Date(Date.UTC(electionYear, 10, 1)).getUTCDay();
+  const firstMonday = 1 + (8 - firstNovemberDay) % 7;
+  const electionDate = new Date(Date.UTC(electionYear, 10, firstMonday + 1)).toISOString().slice(0, 10);
+  // Keep election day current through midnight in Hawaii, the last voting state to finish the day.
+  const endOfElectionDay = Date.UTC(electionYear, 10, firstMonday + 2, 10);
+  return asOf.getTime() < endOfElectionDay
+    ? electionDate
+    : nextRegularHouseElectionDate(new Date(Date.UTC(electionYear + 1, 0, 1)));
+}
 
 export const memberServiceFallbacks: Record<string, MemberServiceFallback> = {
   C001056: {
@@ -77,12 +96,15 @@ export const memberServiceFallbacks: Record<string, MemberServiceFallback> = {
 
 export function withMemberServiceFallback(member: Member): Member {
   const fallback = memberServiceFallbacks[member.bioguideId];
-  if (!fallback) return member;
+  const votingHouseMember = member.chamber === "House" && votingHouseStates.has(member.state);
+  const houseFirstElectedDate = votingHouseMember ? houseFirstElectionDates[member.bioguideId]?.firstElectedDate : undefined;
+  if (!fallback && !votingHouseMember) return member;
 
   return {
     ...member,
-    firstElectedDate: member.firstElectedDate ?? fallback.firstElectedDate,
-    nextElectionDate: member.nextElectionDate ?? fallback.nextElectionDate,
-    termsInOffice: member.termsInOffice ?? fallback.termsInOffice
+    firstElectedDate: houseFirstElectedDate ?? member.firstElectedDate ?? fallback?.firstElectedDate,
+    // A House seat's next regular election is a calendar date, not a claim that its incumbent will run.
+    nextElectionDate: votingHouseMember ? (member.active ? nextRegularHouseElectionDate() : undefined) : member.nextElectionDate ?? fallback?.nextElectionDate,
+    termsInOffice: member.termsInOffice ?? fallback?.termsInOffice
   };
 }
