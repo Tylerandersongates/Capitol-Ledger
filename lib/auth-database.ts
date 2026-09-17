@@ -298,7 +298,9 @@ export async function signInWithPassword({ email, password }: { email: string; p
 }
 
 export async function readProductionSession(sessionToken: string): Promise<{ user: AuthUser } | null> {
-  if (!sessionToken || !(await ensureProductionAuthSchema())) return null;
+  // Auth tables are installed by migrations. Session reads should not run
+  // schema DDL on every fresh serverless instance before rendering a page.
+  if (!sessionToken || !canUseProductionAuth()) return null;
 
   const prisma = getPrisma();
   const users = await prisma.$queryRaw<DbAuthUser[]>`

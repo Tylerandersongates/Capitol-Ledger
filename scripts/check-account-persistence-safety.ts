@@ -276,6 +276,21 @@ try {
     /simulated database outage/,
     "An initial auth-schema connection failure must surface to the caller."
   );
+  assert.equal(
+    await authDatabase.readProductionSession("synthetic-session-token"),
+    null,
+    "A session read must avoid schema DDL and reject an unknown token."
+  );
+  assert.equal(
+    await accountDatabase.readSubscriptionFromDatabase("synthetic-user"),
+    null,
+    "A subscription read must avoid schema DDL when the migrated row is absent."
+  );
+  assert.equal(
+    await teamWorkspace.readTeamWorkspaceForMember({ email: "synthetic@example.com", userId: "synthetic-user" }),
+    null,
+    "A Team membership read must avoid schema DDL when no membership exists."
+  );
   const { NextRequest } = await import("next/server");
   const signInRoute = await import("../app/api/auth/sign-in/route");
   const signInResponse = await signInRoute.POST(new NextRequest("http://localhost/api/auth/sign-in", {

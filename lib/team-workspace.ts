@@ -1798,8 +1798,7 @@ async function readDatabaseTeamWorkspaceForMember({
   email: string;
   userId: string;
 }): Promise<TeamWorkspaceMemberAccessResult | null> {
-  await ensureTeamWorkspaceSchema();
-
+  // Team tables are migrated; a Dashboard read must not run schema DDL.
   const prisma = getPrisma();
   const memberEmail = normalizeTeamInviteEmail(email);
 

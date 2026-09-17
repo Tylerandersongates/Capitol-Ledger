@@ -242,7 +242,7 @@ export function DashboardClient({
     setUnreadAlertCount(countAccountUnreadAlertIds(initialLedger));
     setFavoriteRecords(uniqueFavoriteRecords(initialLedger.follows));
     setIssueInterests(uniqueStrings(initialLedger.issueInterests));
-    writeDashboardFavoriteRecords(initialLedger.follows, false);
+    writeDashboardFavoriteRecords(initialLedger.follows, false, false);
   }, [initialLedger]);
 
   useEffect(() => {
@@ -277,7 +277,7 @@ export function DashboardClient({
     const next = mergeDistrictDelegationFavoriteRecords(favoriteRecords, data.favoriteTargets, accountProfile);
     if (favoriteRecordsMatch(favoriteRecords, next)) return;
 
-    setFavoriteRecords(writeDashboardFavoriteRecords(next, false));
+    setFavoriteRecords(writeDashboardFavoriteRecords(next, false, false));
   }, [accountProfile, data.favoriteTargets, favoriteRecords]);
 
   useEffect(() => {
@@ -1177,14 +1177,14 @@ function dispatchDashboardFavoritesChanged() {
   window.dispatchEvent(new Event(followsChangedEvent));
 }
 
-function writeDashboardFavoriteRecords(records: SavedFollowRecord[], syncAccount = true) {
+function writeDashboardFavoriteRecords(records: SavedFollowRecord[], syncAccount = true, broadcast = true) {
   if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return records;
 
   const next = uniqueFavoriteRecords(records);
 
   try {
     window.localStorage?.setItem(followsKey, JSON.stringify(next));
-    dispatchDashboardFavoritesChanged();
+    if (broadcast) dispatchDashboardFavoritesChanged();
     if (syncAccount) void syncDashboardFavoriteRecordsToAccount(next);
   } catch {
     // Favorites remain optional when browser persistence is unavailable.
@@ -1357,7 +1357,7 @@ async function hydrateDashboardFavoriteRecords() {
   if (!ledger) return local;
 
   const accountFavorites = uniqueFavoriteRecords(ledger.follows);
-  if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false);
+  if (!favoriteRecordsMatch(local, accountFavorites)) writeDashboardFavoriteRecords(accountFavorites, false, false);
   return accountFavorites;
 }
 

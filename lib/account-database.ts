@@ -502,8 +502,7 @@ export async function readSubscriptionFromDatabase(userId: string): Promise<Acco
   if (!canUseDatabasePersistence()) return null;
 
   return withDatabasePersistence("readSubscriptionFromDatabase", async () => {
-    if (!(await ensureAccountSubscriptionSchema())) return null;
-
+    // The seatCount column is migrated; keep schema setup on write paths only.
     const prisma = getPrisma();
     const records = await prisma.$queryRaw<DbSubscription[]>`
       SELECT "plan", "cycle", "provider", "providerCustomerId", "providerEntitlementId", "providerSubscriptionId", "seatCount", "status", "updatedAt"
