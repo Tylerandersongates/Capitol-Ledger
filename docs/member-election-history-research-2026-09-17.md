@@ -1,0 +1,21 @@
+# Member election dates — September 17 research
+
+Status: **T06 defect reproduced on the live browser; no production or source change made in this research pass.** Tyler reported that the previous election-date repair works for Senators but leaves U.S. Representatives blank. The live `/members/B001323` profile for Rep. Nicholas J. Begich shows one term but `First elected: Not listed` and `Next election: Not listed`. This is browser evidence; the phone result is not independently recorded here.
+
+## Cause
+
+[PR #31](https://github.com/Tylerandersongates/Capitol-Ledger/pull/31), source commit `93795c7`, applies `withMemberServiceFallback()` before caching and rendering a live Congress.gov member profile. That helper only has the 14 Bioguide IDs in `lib/member-service-history.ts`; `B001323` is absent. The list includes some House members, so the defect is limited coverage rather than a Senate-only code branch. The Congress.gov member normalizer derives a term count from term years but supplies no exact election dates. The database mapper also deliberately keeps both dates absent when its raw record contains only service years, because those years do not establish special-election or runoff dates. The profile renders absent values as `Not listed`. The existing member-service-history guard confirms the fallback is called but does not test representative coverage. Thus PR #31 repaired the listed profiles, not the House roster generally.
+
+## Verified example and source boundary
+
+- The [Alaska Division of Elections 2024 official results](https://www.elections.alaska.gov/results/24GENR/RCV-USRep.pdf) state that Nick Begich was elected in the November 5, 2024 U.S. Representative election. The [House Clerk 2024 election statistics](https://clerk.house.gov/member_info/electionInfo/2024/statistics2024.pdf) independently list his Alaska at-large result. An exact `firstElectedDate` for `B001323` can therefore be `2024-11-05`.
+- The [Alaska Division of Elections calendar](https://www.elections.alaska.gov/election-information/) schedules the next general election for November 3, 2026, and its [candidate list](https://www.elections.alaska.gov/election-candidates/) includes the U.S. Representative contest. The regular next election for this seat is `2026-11-03`.
+- The [House Clerk member-data dictionary](https://clerk.house.gov/member_info/MemberData_UserGuide.pdf) defines an XML `elected-date`, including a runoff date when applicable, **for the current Congress**. It explicitly says the XML has very little historical information. That field alone cannot establish the first House election for a long-serving member. The [Clerk's terms-of-service list](https://clerk.house.gov/member_info/Terms_of_Service.pdf) marks special-election winners, demonstrating why converting the first service year to a November date is unsafe.
+
+## Repair direction
+
+1. Apply an immediate source-only correction for `B001323` using the verified dates above only if a narrow stopgap is needed; it would not close House-wide coverage.
+2. For roster-wide accuracy, prepare a source-backed election-history dataset keyed by Bioguide ID from official House Clerk/state results. Record the earliest verified House election (including special elections and runoffs) and provenance. Keep a date absent where the record is unresolved. Use the current state election calendar for the next **regular** election of a voting U.S. Representative; exclude delegates and the Puerto Rico Resident Commissioner from a blanket House rule and handle vacancies/exceptional contests separately.
+3. Enrich the database and live-profile paths from the same verified data, then test a regular first-term Representative, a long-serving Representative, a special-election winner, a nonconsecutive-service member, a Senator, and nonvoting House members. Check browser and physical-iPhone rendering on the exact candidate before any production proposal.
+
+The existing source checkout is `codex/t06-bill-basics-sept16` at `5d7e16c`; this investigation made no source, provider, database, or production change. `node scripts/check-member-service-history.mjs` could not run here because `node` is not on the current shell PATH; static source inspection and live browser reproduction establish the cause.

@@ -6,6 +6,8 @@ Status: **device walkthrough in progress; remaining screens have no observed res
 
 Tyler signed out and back in, force-quit and reopened to Dashboard without credentials, opened an Official after PR #33, found one saved item after a full close/reopen, and verified the H.R. 9956 Basics repair on the installed iPhone after production merge `df0dbcc`. These focused passes do not close the rest of T06.
 
+On September 17 Tyler reported blank First elected and Next election fields for U.S. Representatives. The live browser `/members/B001323` reproduces both as `Not listed`; the [source and official-record research](member-election-history-research-2026-09-17.md) identifies a limited fallback table. This records a browser-confirmed member-detail defect, not a new physical-iPhone pass or independently observed phone failure.
+
 ## Remaining pass, in order
 
 | Order | Screen and safe action | Expected observation | Device result |
