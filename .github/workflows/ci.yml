@@ -48,6 +48,9 @@ jobs:
       - name: TypeScript
         run: node_modules/.bin/tsc --noEmit --noUnusedLocals --noUnusedParameters
 
+      - name: Member election history
+        run: pnpm run member-service:check
+
       - name: Public brand consistency
         run: pnpm run brand:check
 

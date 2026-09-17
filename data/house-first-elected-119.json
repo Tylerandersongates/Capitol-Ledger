@@ -1,0 +1,1754 @@
+{
+  "congress": 119,
+  "memberDataPublished": "September 2, 2026",
+  "sources": {
+    "memberData": "https://clerk.house.gov/xml/lists/MemberData.xml",
+    "termsOfService": "https://clerk.house.gov/member_info/Terms_of_Service.pdf",
+    "federalGeneralElectionRule": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title2-section7&num=0&edition=prelim",
+    "exceptions": {
+      "F000454": "https://history.house.gov/People/Listing/F/FOSTER,-Bill-(F000454)/",
+      "C001055": "https://history.house.gov/People/Detail/11776",
+      "S001188": "https://history.house.gov/People/Detail/22629",
+      "H001077": "https://clerk.house.gov/member_info/electionInfo/2016/statistics2016.pdf",
+      "J000299": "https://clerk.house.gov/member_info/electionInfo/2016/statistics2016.pdf"
+    }
+  },
+  "sourceSha256": {
+    "memberData": "07aec65948e99fd80b5e7c31722f1208d9f5e0717ba00f4b02122f4724cb0c18",
+    "termsOfService": "394377afa46f879051181c8117726fff7505f636fa505681d7b20b56c6f94571"
+  },
+  "members": {
+    "A000055": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000148": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000369": {
+      "firstElectedDate": "2011-09-13",
+      "basis": "clerk_terms_special"
+    },
+    "A000370": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_special"
+    },
+    "A000371": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000372": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000375": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000379": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "A000380": {
+      "firstElectedDate": "2023-11-07",
+      "basis": "clerk_terms_special"
+    },
+    "A000381": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B000490": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B000668": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B000740": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B000825": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001257": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001260": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001278": {
+      "firstElectedDate": "2012-01-31",
+      "basis": "clerk_terms_special"
+    },
+    "B001281": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001282": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001285": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001287": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001291": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001292": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001295": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001296": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001298": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001300": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001301": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001302": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001306": {
+      "firstElectedDate": "2018-08-07",
+      "basis": "clerk_terms_special"
+    },
+    "B001307": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001309": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001313": {
+      "firstElectedDate": "2021-11-02",
+      "basis": "clerk_terms_special"
+    },
+    "B001314": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001315": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001316": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001317": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001318": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "B001321": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001322": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001323": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001324": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001325": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001326": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001327": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "B001328": {
+      "firstElectedDate": "2026-08-25",
+      "basis": "clerk_member_data_first_term"
+    },
+    "C000059": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C000537": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001039": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001051": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001053": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001055": {
+      "firstElectedDate": "2002-11-30",
+      "basis": "verified_exception"
+    },
+    "C001059": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001061": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001063": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001066": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001067": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001068": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001069": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001072": {
+      "firstElectedDate": "2008-03-11",
+      "basis": "clerk_terms_special"
+    },
+    "C001080": {
+      "firstElectedDate": "2009-07-14",
+      "basis": "clerk_terms_special"
+    },
+    "C001087": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001091": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001101": {
+      "firstElectedDate": "2013-12-10",
+      "basis": "clerk_terms_special"
+    },
+    "C001103": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001108": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_special"
+    },
+    "C001110": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001112": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001115": {
+      "firstElectedDate": "2018-06-30",
+      "basis": "clerk_terms_special"
+    },
+    "C001116": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001117": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001118": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001119": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001120": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001121": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001123": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001125": {
+      "firstElectedDate": "2021-04-24",
+      "basis": "clerk_terms_special"
+    },
+    "C001126": {
+      "firstElectedDate": "2021-11-02",
+      "basis": "clerk_terms_special"
+    },
+    "C001129": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001130": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001131": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001132": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001133": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "C001136": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "C001137": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "D000032": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000096": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000197": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000216": {
+      "firstElectedDate": "1990-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000230": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000399": {
+      "firstElectedDate": "1994-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000530": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000594": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000600": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000616": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000617": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_special"
+    },
+    "D000623": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000624": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000626": {
+      "firstElectedDate": "2016-06-07",
+      "basis": "clerk_terms_special"
+    },
+    "D000628": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000629": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000631": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "D000634": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "D000635": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "E000071": {
+      "firstElectedDate": "2021-07-27",
+      "basis": "clerk_terms_special"
+    },
+    "E000235": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "E000246": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "E000294": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "E000296": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_special"
+    },
+    "E000297": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "E000298": {
+      "firstElectedDate": "2017-04-11",
+      "basis": "clerk_terms_special"
+    },
+    "E000299": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "E000300": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "E000301": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "F000110": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000246": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000446": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000450": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000454": {
+      "firstElectedDate": "2008-03-08",
+      "basis": "verified_exception"
+    },
+    "F000459": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000462": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000466": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000468": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000469": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000470": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000471": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000472": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000474": {
+      "firstElectedDate": "2022-06-28",
+      "basis": "clerk_terms_special"
+    },
+    "F000475": {
+      "firstElectedDate": "2022-08-09",
+      "basis": "clerk_terms_special"
+    },
+    "F000476": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000477": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000478": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "F000480": {
+      "firstElectedDate": "2024-05-21",
+      "basis": "clerk_terms_special"
+    },
+    "F000481": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "F000482": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "F000483": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "F000484": {
+      "firstElectedDate": "2025-04-01",
+      "basis": "clerk_member_data_first_term"
+    },
+    "F000485": {
+      "firstElectedDate": "2026-04-07",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000546": {
+      "firstElectedDate": "2000-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000553": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000558": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000559": {
+      "firstElectedDate": "2009-11-03",
+      "basis": "clerk_terms_special"
+    },
+    "G000565": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000568": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000576": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000581": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000583": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000585": {
+      "firstElectedDate": "2017-06-06",
+      "basis": "clerk_terms_special"
+    },
+    "G000586": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000587": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000589": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000591": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000592": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000593": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000597": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000598": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000599": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000600": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "G000601": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000602": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000603": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000604": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000605": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000606": {
+      "firstElectedDate": "2025-09-23",
+      "basis": "clerk_member_data_first_term"
+    },
+    "G000607": {
+      "firstElectedDate": "2026-06-02",
+      "basis": "clerk_member_data_first_term"
+    },
+    "H000874": {
+      "firstElectedDate": "1981-05-19",
+      "basis": "clerk_terms_special"
+    },
+    "H001047": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001052": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001058": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001066": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001067": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001068": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001072": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001077": {
+      "firstElectedDate": "2016-12-10",
+      "basis": "verified_exception"
+    },
+    "H001081": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001082": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_special"
+    },
+    "H001085": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001086": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001090": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001091": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001093": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001094": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001095": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001096": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "H001098": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "H001099": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "H001100": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "H001101": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "H001102": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "I000056": {
+      "firstElectedDate": "2000-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "I000058": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000288": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000289": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000294": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000295": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000298": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000299": {
+      "firstElectedDate": "2016-12-10",
+      "basis": "verified_exception"
+    },
+    "J000301": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000302": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000304": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000305": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000307": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000309": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "J000310": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "J000311": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "K000009": {
+      "firstElectedDate": "1982-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000375": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000376": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000385": {
+      "firstElectedDate": "2013-04-09",
+      "basis": "clerk_terms_special"
+    },
+    "K000388": {
+      "firstElectedDate": "2015-06-02",
+      "basis": "clerk_terms_special"
+    },
+    "K000389": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000391": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000392": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000397": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000398": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000399": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000400": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000401": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "K000402": {
+      "firstElectedDate": "2024-04-30",
+      "basis": "clerk_terms_special"
+    },
+    "K000403": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "K000405": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "L000273": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000397": {
+      "firstElectedDate": "1994-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000491": {
+      "firstElectedDate": "1994-05-10",
+      "basis": "clerk_terms_special"
+    },
+    "L000557": {
+      "firstElectedDate": "1998-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000560": {
+      "firstElectedDate": "2000-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000562": {
+      "firstElectedDate": "2001-10-16",
+      "basis": "clerk_terms_special"
+    },
+    "L000566": {
+      "firstElectedDate": "2007-12-11",
+      "basis": "clerk_terms_special"
+    },
+    "L000582": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000583": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000585": {
+      "firstElectedDate": "2015-09-10",
+      "basis": "clerk_terms_special"
+    },
+    "L000590": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000593": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000595": {
+      "firstElectedDate": "2021-03-20",
+      "basis": "clerk_terms_special"
+    },
+    "L000596": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000597": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000598": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000599": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000600": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000601": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000602": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000603": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "L000606": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "L000607": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M000194": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M000312": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M000317": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M000687": {
+      "firstElectedDate": "1986-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M000871": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001136": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001137": {
+      "firstElectedDate": "1998-02-03",
+      "basis": "clerk_terms_special"
+    },
+    "M001143": {
+      "firstElectedDate": "2000-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001157": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001160": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001163": {
+      "firstElectedDate": "2005-03-08",
+      "basis": "clerk_terms_special"
+    },
+    "M001177": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001184": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_special"
+    },
+    "M001188": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001194": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001196": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001199": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001204": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001205": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001206": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_special"
+    },
+    "M001208": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001210": {
+      "firstElectedDate": "2019-09-10",
+      "basis": "clerk_terms_special"
+    },
+    "M001211": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001212": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001213": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001214": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001215": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001216": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001217": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001218": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001220": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001222": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001223": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001224": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001225": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001226": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "M001227": {
+      "firstElectedDate": "2023-02-21",
+      "basis": "clerk_terms_special"
+    },
+    "M001228": {
+      "firstElectedDate": "2023-11-21",
+      "basis": "clerk_terms_special"
+    },
+    "M001229": {
+      "firstElectedDate": "2024-09-18",
+      "basis": "clerk_terms_special"
+    },
+    "M001230": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001231": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001232": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001233": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001234": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001235": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001236": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001237": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001238": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001239": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001240": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001241": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001245": {
+      "firstElectedDate": "2026-01-31",
+      "basis": "clerk_member_data_first_term"
+    },
+    "M001246": {
+      "firstElectedDate": "2026-04-16",
+      "basis": "clerk_member_data_first_term"
+    },
+    "N000002": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_special"
+    },
+    "N000015": {
+      "firstElectedDate": "1988-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "N000026": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "N000188": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_special"
+    },
+    "N000189": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "N000190": {
+      "firstElectedDate": "2017-06-20",
+      "basis": "clerk_terms_special"
+    },
+    "N000191": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "N000193": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000019": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000086": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000172": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000173": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000175": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "O000176": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "O000177": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "P000034": {
+      "firstElectedDate": "1988-11-08",
+      "basis": "clerk_terms_special"
+    },
+    "P000048": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000197": {
+      "firstElectedDate": "1987-06-02",
+      "basis": "clerk_terms_special"
+    },
+    "P000597": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000605": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000607": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000608": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000609": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000613": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000614": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000617": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000620": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "P000621": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "P000622": {
+      "firstElectedDate": "2025-04-01",
+      "basis": "clerk_member_data_first_term"
+    },
+    "Q000023": {
+      "firstElectedDate": "2009-04-07",
+      "basis": "clerk_terms_special"
+    },
+    "R000305": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000395": {
+      "firstElectedDate": "1980-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000575": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000579": {
+      "firstElectedDate": "2022-08-23",
+      "basis": "clerk_terms_special"
+    },
+    "R000599": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000603": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000606": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000609": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000610": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000612": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000614": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000617": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "R000619": {
+      "firstElectedDate": "2024-06-11",
+      "basis": "clerk_terms_special"
+    },
+    "R000620": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "R000621": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "R000622": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "S000168": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000185": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000250": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000344": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000510": {
+      "firstElectedDate": "1996-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000522": {
+      "firstElectedDate": "1980-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S000929": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001145": {
+      "firstElectedDate": "1998-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001148": {
+      "firstElectedDate": "1998-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001156": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001159": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001172": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001176": {
+      "firstElectedDate": "2008-05-03",
+      "basis": "clerk_terms_special"
+    },
+    "S001183": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001185": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001188": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "verified_exception"
+    },
+    "S001189": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001190": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001195": {
+      "firstElectedDate": "2013-06-04",
+      "basis": "clerk_terms_special"
+    },
+    "S001196": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001199": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001200": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001201": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001205": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_special"
+    },
+    "S001211": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001212": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001213": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001214": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001215": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001216": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001218": {
+      "firstElectedDate": "2021-06-01",
+      "basis": "clerk_terms_special"
+    },
+    "S001220": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001221": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001223": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001224": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001225": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001226": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "S001228": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "S001229": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "S001230": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "S001231": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "T000165": {
+      "firstElectedDate": "2020-05-12",
+      "basis": "clerk_terms_special"
+    },
+    "T000193": {
+      "firstElectedDate": "1993-04-13",
+      "basis": "clerk_terms_special"
+    },
+    "T000460": {
+      "firstElectedDate": "1998-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000463": {
+      "firstElectedDate": "2002-11-05",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000467": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000468": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000469": {
+      "firstElectedDate": "2008-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000472": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000474": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000478": {
+      "firstElectedDate": "2016-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000480": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000481": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000482": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000486": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000487": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000488": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "T000490": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "T000491": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "U000040": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000081": {
+      "firstElectedDate": "1992-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000129": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000130": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000131": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000133": {
+      "firstElectedDate": "2018-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000134": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000135": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000136": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "V000138": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "V000139": {
+      "firstElectedDate": "2025-12-02",
+      "basis": "clerk_member_data_first_term"
+    },
+    "W000187": {
+      "firstElectedDate": "1990-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000788": {
+      "firstElectedDate": "2020-11-03",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000795": {
+      "firstElectedDate": "2001-12-18",
+      "basis": "clerk_terms_special"
+    },
+    "W000797": {
+      "firstElectedDate": "2004-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000798": {
+      "firstElectedDate": "2006-11-07",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000804": {
+      "firstElectedDate": "2007-12-11",
+      "basis": "clerk_terms_special"
+    },
+    "W000806": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000808": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000809": {
+      "firstElectedDate": "2010-11-02",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000812": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000814": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000816": {
+      "firstElectedDate": "2012-11-06",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000821": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000822": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    },
+    "W000829": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_terms_special"
+    },
+    "W000830": {
+      "firstElectedDate": "2024-11-05",
+      "basis": "clerk_member_data_first_term"
+    },
+    "W000831": {
+      "firstElectedDate": "2025-09-09",
+      "basis": "clerk_member_data_first_term"
+    },
+    "W000832": {
+      "firstElectedDate": "2026-08-18",
+      "basis": "clerk_member_data_first_term"
+    },
+    "Y000067": {
+      "firstElectedDate": "2022-11-08",
+      "basis": "clerk_terms_special"
+    },
+    "Z000018": {
+      "firstElectedDate": "2014-11-04",
+      "basis": "clerk_terms_regular_inferred"
+    }
+  }
+}

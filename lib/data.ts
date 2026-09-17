@@ -730,7 +730,7 @@ function mapDatabaseMember(member: PrismaMember): Member {
   const firstElectedDate = serviceFallback?.firstElectedDate ?? rawService.firstElectedDate ?? derivedElectionDates.firstElectedDate;
   const nextElectionDate = serviceFallback?.nextElectionDate ?? rawService.nextElectionDate ?? derivedElectionDates.nextElectionDate;
 
-  return {
+  return withMemberServiceFallback({
     active: member.active,
     bioguideId: member.bioguideId,
     chamber,
@@ -748,7 +748,7 @@ function mapDatabaseMember(member: PrismaMember): Member {
     state: member.state,
     term: termLabel,
     termsInOffice
-  };
+  });
 }
 
 function mapDatabaseBill(bill: PrismaBill): Bill {
