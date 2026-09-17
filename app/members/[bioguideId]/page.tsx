@@ -430,13 +430,15 @@ async function getViewerScoreContext() {
 export default async function MemberPage(props: MemberPageProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const detail = await getMemberDetailWithLiveData(params.bioguideId);
+  const [detail, viewerScoreContext] = await Promise.all([
+    getMemberDetailWithLiveData(params.bioguideId),
+    getViewerScoreContext()
+  ]);
   if (!detail) notFound();
 
   const { caucusMemberships, chamberMembers, cosponsoredBills, member, memberVotes, sponsoredBills } = detail;
   const activeTab = normalizeTab(searchParams?.tab);
   const chamberRank = calculateChamberRank(member, chamberMembers);
-  const viewerScoreContext = await getViewerScoreContext();
   const scoreModel = calculateMemberScore({
     caucusMemberships,
     context: viewerScoreContext,

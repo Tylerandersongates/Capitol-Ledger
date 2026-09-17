@@ -2,6 +2,7 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
+import { unstable_cache } from "next/cache";
 import { mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
@@ -112,6 +113,7 @@ const houseVotesFetchTimeoutMs = resolveHouseVotesFetchTimeoutMs();
 const senateVotesFetchTimeoutMs = resolveSenateVotesFetchTimeoutMs();
 const dashboardLiveRecordsCacheMaxAgeMs = 10 * 60 * 1000;
 const memberLegislationCacheMaxAgeMs = 10 * 60 * 1000;
+const memberLiveEnrichmentBudgetMs = 2_500;
 
 type DashboardRecords = {
   bills: Bill[];
@@ -952,6 +954,21 @@ async function withOptionalDatabaseReadTimeout<T>(read: () => Promise<T | null>,
   }
 }
 
+async function withLiveEnrichmentBudget<T>(read: Promise<T>, fallback: T): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      read.catch(() => fallback),
+      new Promise<T>((resolve) => {
+        timeoutId = setTimeout(() => resolve(fallback), memberLiveEnrichmentBudgetMs);
+      })
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function shouldUseOptionalDatabaseReads() {
   if (!hasDatabaseUrl()) return false;
   if (process.env.CAPITOL_LEDGER_DISABLE_DATABASE_READS === "true") return false;
@@ -1386,9 +1403,9 @@ export async function getMemberDetailWithLiveData(bioguideId: string): Promise<M
   if (!detail) return null;
 
   const [profile, legislation, votes] = await Promise.all([
-    hydrateMemberDetailWithLiveProfile(detail),
-    hydrateMemberDetailWithLiveLegislation(detail),
-    hydrateMemberDetailWithLiveVotes(detail)
+    withLiveEnrichmentBudget(hydrateMemberDetailWithLiveProfile(detail), detail),
+    withLiveEnrichmentBudget(hydrateMemberDetailWithLiveLegislation(detail), detail),
+    withLiveEnrichmentBudget(hydrateMemberDetailWithLiveVotes(detail), detail)
   ]);
 
   return {
@@ -2098,8 +2115,18 @@ async function getDatabaseDashboardRecords() {
   }
 }
 
+const getCachedDatabaseDashboardRecords = unstable_cache(
+  async () => {
+    const records = await getDatabaseDashboardRecords();
+    if (!records) throw new Error("Dashboard records are unavailable");
+    return records;
+  },
+  ["public-dashboard-records-v1"],
+  { revalidate: 60 }
+);
+
 export async function getDashboardDataWithLiveData() {
-  const liveRecords = await withOptionalDatabaseReadTimeout(getDatabaseDashboardRecords, dashboardDatabaseReadTimeoutMs);
+  const liveRecords = await withOptionalDatabaseReadTimeout(getCachedDatabaseDashboardRecords, dashboardDatabaseReadTimeoutMs);
 
   if (liveRecords) {
     dashboardLiveRecordsCache = {
