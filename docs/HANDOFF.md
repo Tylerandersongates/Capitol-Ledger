@@ -15,6 +15,8 @@ Checkpoint: **September 16, 2026, end of day PDT; September 17 T06 production up
 
 - **Official navigation timings:** Tyler reports **4.25 seconds** for a new official first open and **1.71 seconds** for return to Dashboard on the iPhone after PR #37. The return meets the under-2-second target; first open is just over the provisional 4-second investigation mark. The official was not identified, and repeat-open timing is pending. T06 navigation performance remains open until that result and the remaining screen checks are recorded.
 
+- **Ami Bera phone sequence:** Tyler reports first open **4.65 seconds**, Dashboard return **1.68**, repeat opens **0.2**, **2.87**, **1.45**, and **2.07 seconds** after two minutes idle; 0.2 was confirmed as a separate reopen. Return navigation meets the under-2-second target, but official detail is still variable and the first open exceeds the provisional 4-second investigation mark. Source review found member detail followed by an optional 2.5-second live-enrichment budget, with process-local caches; the dominating stage is unmeasured. Codex profiles the route before another repair while Tyler continues the [ordered T06 screen matrix](t06-physical-iphone-qa-2026-09-17.md). These timings do not close T06 or authorize another production change.
+
 ## Remaining launch gates
 
 - **T03 high/open:** Apple's OCSP issue #447, independent verifier acceptance and residual `jsrsasign` decision remain. App Store server verification and Notifications V2 stay off. Its disabled subscription-sync 503 response is expected and was not shown to sign out the user. Use the September 25 official-fix decision checkpoint. Do not enable processing as a sign-in workaround.
