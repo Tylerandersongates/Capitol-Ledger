@@ -421,10 +421,9 @@ async function getViewerScoreContext() {
   const user = session.user;
   const accountUserId = await getAccountPersistenceUserId(user).catch(() => user.id);
   const databaseLedger = await readLedgerFromDatabase(accountUserId).catch(() => null);
-  const fallbackLedger = getAccountLedger(accountUserId);
 
   return {
-    viewerIssueInterests: (databaseLedger ?? fallbackLedger).issueInterests
+    viewerIssueInterests: (databaseLedger ?? getAccountLedger(accountUserId)).issueInterests
   };
 }
 
