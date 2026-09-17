@@ -152,7 +152,10 @@ export async function ensureProductionAuthSchema() {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "PasswordResetToken_expiresAt_idx" ON "PasswordResetToken" ("expiresAt")`);
 
     return true;
-  })();
+  })().catch((error: unknown) => {
+    authSchemaReady = null;
+    throw error;
+  });
 
   return authSchemaReady;
 }

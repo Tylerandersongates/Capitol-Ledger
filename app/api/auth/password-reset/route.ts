@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requestPasswordReset } from "@/lib/auth-database";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
+import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -15,17 +16,23 @@ export async function POST(request: NextRequest) {
   const guard = guardMutationRequest(request, "auth-password-reset", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
-  const result = await requestPasswordReset(body.email).catch((error: unknown) => ({
+  const result = await requestPasswordReset(body.email).catch(() => ({
     configured: true as const,
-    error: error instanceof Error ? error.message : "Password reset failed."
+    error: accountPersistenceUnavailableMessage
   }));
 
   if (!result.configured) {
-    return NextResponse.json(result, { status: 503 });
+    return NextResponse.json(
+      { configured: false, error: accountPersistenceUnavailableMessage },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } }
+    );
   }
 
   if ("error" in result) {
-    return NextResponse.json({ configured: true, error: result.error }, { status: 500 });
+    return NextResponse.json(
+      { configured: true, error: result.error },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } }
+    );
   }
 
   const emailDelivery =
@@ -37,9 +44,9 @@ export async function POST(request: NextRequest) {
           user: {
             email: body.email
           }
-        }).catch((error: unknown) => ({
+        }).catch(() => ({
           delivered: false as const,
-          error: error instanceof Error ? error.message : "Password reset email delivery failed.",
+          error: "Password reset email delivery failed.",
           mode: "manual_demo" as const
         }))
       : { delivered: false as const, mode: result.deliveryMode };

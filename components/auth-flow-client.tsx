@@ -866,7 +866,7 @@ export function AuthFlowClient({
           ) : null}
 
           {status ? (
-            <div className={`rounded-xl border px-3 py-2 text-[13px] font-medium ${status.includes("Enter") || status.includes("Password") || status.includes("match") || status.includes("Confirm") ? "border-rust/35 bg-rust/10 text-[#ffb12b]" : "border-[#43ed74]/25 bg-[#43ed74]/10 text-[#43ed74]"}`}>
+            <div className={`rounded-xl border px-3 py-2 text-[13px] font-medium ${/^(Enter|Password|Confirm|Use at least)|\b(unavailable|incorrect|failed|invalid|could not|expired|missing|already exists|need to match)\b/i.test(status) ? "border-rust/35 bg-rust/10 text-[#ffb12b]" : "border-[#43ed74]/25 bg-[#43ed74]/10 text-[#43ed74]"}`}>
               {status}
             </div>
           ) : null}

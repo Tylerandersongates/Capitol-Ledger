@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createCredentialAccount } from "@/lib/auth-database";
 import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
+import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -31,18 +32,26 @@ export async function POST(request: NextRequest) {
     lastName,
     name,
     password: body.password
-  }).catch((error: unknown) => ({
+  }).catch(() => ({
     configured: true as const,
-    error: error instanceof Error ? error.message : "Account creation failed.",
-    status: 500
+    error: accountPersistenceUnavailableMessage,
+    status: 503
   }));
 
   if (!result.configured) {
-    return NextResponse.json(result, { status: 503 });
+    return NextResponse.json(
+      { configured: false, error: accountPersistenceUnavailableMessage },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } }
+    );
   }
 
   if ("error" in result) {
-    return NextResponse.json({ configured: true, error: result.error }, { status: result.status });
+    const response = NextResponse.json({ configured: true, error: result.error }, { status: result.status });
+    if (result.status === 503) {
+      response.headers.set("Cache-Control", "no-store");
+      response.headers.set("Retry-After", "30");
+    }
+    return response;
   }
 
   const emailDelivery = await deliverAuthEmail({
@@ -51,9 +60,9 @@ export async function POST(request: NextRequest) {
     returnTo: safeAuthReturnPath(body.returnTo),
     token: result.verificationToken,
     user: result.user
-  }).catch((error: unknown) => ({
+  }).catch(() => ({
     delivered: false as const,
-    error: error instanceof Error ? error.message : "Verification email delivery failed.",
+    error: "Verification email delivery failed.",
     mode: "manual_demo" as const
   }));
   const response = NextResponse.json({
