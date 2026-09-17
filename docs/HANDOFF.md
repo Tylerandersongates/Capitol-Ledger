@@ -13,6 +13,8 @@ Checkpoint: **September 16, 2026, end of day PDT; September 17 T06 production up
 
 - **Post-PR #37 phone result:** Tyler reports **3.49 seconds** from fully closing and reopening the iPhone app to Dashboard, down from **12.74 seconds** before the repair (one reported attempt; network and timing method not independently reconfirmed). **Next T06 action:** Tyler times first/repeat official opens and Dashboard return on the phone, confirms saved items, and continues the Dashboard/Home row of the [ordered QA worksheet](t06-physical-iphone-qa-2026-09-17.md). The rest of T06 and the other launch gates remain open.
 
+- **New official first open:** Tyler reports **4.25 seconds** on the iPhone after PR #37, just over the provisional 4-second investigation mark. The official was not identified and repeat-open/Dashboard-return timings are pending. T06 navigation performance remains open; use those measurements to locate the remaining delay before another source change.
+
 ## Remaining launch gates
 
 - **T03 high/open:** Apple's OCSP issue #447, independent verifier acceptance and residual `jsrsasign` decision remain. App Store server verification and Notifications V2 stay off. Its disabled subscription-sync 503 response is expected and was not shown to sign out the user. Use the September 25 official-fix decision checkpoint. Do not enable processing as a sign-in workaround.
