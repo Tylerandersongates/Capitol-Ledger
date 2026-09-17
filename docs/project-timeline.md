@@ -1,5 +1,11 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 16 evening — approved auth repair deployed, T06 retest pending
+
+- Tyler approved the exact [PR #32](https://github.com/Tylerandersongates/Capitol-Ledger/pull/32) production merge after its reviewed head `91e49c6` passed CI and Preview checks. GitHub merged it as `9f058fd`; Vercel's matching Production deployment reached **Ready**, was marked Latest, and listed the canonical domain. The public `/sign-in` page loaded. No credentials, account action, protected query or provider setting were used for this smoke.
+- The deployed code now masks auth persistence errors, returns retryable HTTP 503, and clears a rejected schema-initialization cache so a later request can retry. Deployment readiness and a signed-out page load do **not** prove application database connectivity or successful sign-in. The earlier database failure's cause remains unknown.
+- **Single next T06 action:** Tyler personally changes the exposed QA password when the account path permits, then privately retries sign-in on the installed build `2` without sharing credentials. Codex checks the resulting status and continues relaunch/persistence and core app QA if sign-in succeeds; if a generic 503 appears, diagnose database connectivity without treating it as a wrong password. T05 monitoring and T07 sandbox follow in the existing order. The October 30 target, September 25 T03 checkpoint and release buffers are unchanged.
+
 ## September 16 late afternoon — T06 sign-in blocker and focused repair
 
 - Tyler's physical-device sign-in attempt displayed a database reachability error before the app could establish whether the credentials were valid. A matching production sign-in request returned HTTP 500. The deployed handler exposed the raw database error to the screen, and a rejected auth-schema initialization promise could remain cached in a warm function. Neon's project console later showed the production compute active after an earlier idle state; that does not establish successful application connectivity or a root cause. No production database query, credential, provider setting, or account record was changed during this diagnosis.
