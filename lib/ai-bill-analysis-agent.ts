@@ -27,6 +27,8 @@ type ResolveAiBillAnalysisOptions = {
   billVotes?: Vote[];
   enableLive?: boolean;
   sourceMatches?: BillSourceMatch[];
+  summaryPublishedAt?: string;
+  summarySource?: "official" | "stored" | "pending";
   summaryText?: string;
 };
 
@@ -211,7 +213,8 @@ function sourcePacketCacheKey(packet: BillAnalysisSourcePacket) {
     model: resolveAiBillAnalysisModel(),
     provider: resolveAiBillAnalysisProvider(),
     sourceIds: packet.sources.map((source) => source.id),
-    sourceText: packet.sources.map((source) => source.text)
+    sourceText: packet.sources.map((source) => source.text),
+    sourceUrls: packet.sources.map((source) => source.url)
   });
 }
 
@@ -267,11 +270,17 @@ export function validateGeneratedBillAnalysis(value: unknown, sourcePacket: Bill
   if (!parsed.data.sourceIds.every((sourceId) => allowedSourceIds.has(sourceId))) return null;
 
   const context = parsed.data.uncertainty ? `${parsed.data.context} ${parsed.data.uncertainty}` : parsed.data.context;
+  const sourceLinks = parsed.data.sourceIds
+    .map((id) => sourcePacket.sources.find((source) => source.id === id))
+    .flatMap((source) => source?.url?.startsWith("https://") ? [{ label: source.label, url: source.url }] : []);
+  if (!sourceLinks.length) return null;
 
   return {
     cons: parsed.data.cons,
     context,
-    pros: parsed.data.pros
+    origin: "generated",
+    pros: parsed.data.pros,
+    sourceLinks
   };
 }
 
@@ -319,6 +328,7 @@ async function generateOpenAiBillAnalysis(sourcePacket: BillAnalysisSourcePacket
         ],
         max_output_tokens: 950,
         model: resolveAiBillAnalysisModel(),
+        store: false,
         text: {
           format: {
             name: "capitol_ledger_bill_analysis",
@@ -353,10 +363,13 @@ async function generateOpenAiBillAnalysis(sourcePacket: BillAnalysisSourcePacket
 
 export async function resolveAiBillAnalysis(bill: Bill, options: ResolveAiBillAnalysisOptions = {}): Promise<AiBillAnalysis> {
   const fallback = buildAiBillAnalysis(bill, options.summaryText);
-  const sourcePacket = buildBillAnalysisSourcePacket({ ...options, bill });
 
   if (!shouldUseLiveAiBillAnalysis(options.enableLive)) return fallback;
+  if (options.summarySource && options.summarySource !== "official") return fallback;
+  if (options.summarySource === "official" && (!options.summaryPublishedAt || !bill.latestActionDate)) return fallback;
+  if (options.summaryPublishedAt && bill.latestActionDate && options.summaryPublishedAt.slice(0, 10) < bill.latestActionDate.slice(0, 10)) return fallback;
 
+  const sourcePacket = buildBillAnalysisSourcePacket({ ...options, bill });
   const cacheKey = sourcePacketCacheKey(sourcePacket);
   const cachedAnalysis = getCachedAnalysis(cacheKey);
   if (cachedAnalysis) return cachedAnalysis;

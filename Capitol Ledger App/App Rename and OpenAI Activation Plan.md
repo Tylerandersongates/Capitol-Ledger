@@ -39,6 +39,8 @@ Local preparation checks are not signed-device, purchase, or upload approval. St
 
 ## OpenAI Activation
 
+September 17 update: this section is reference configuration only. The bill page still waits for live generation on an uncached request, and its source packet does not include current bill text. Complete the [bill analysis pilot gates](../docs/ai-bill-analysis-pilot-2026-09-17.md) before enabling a provider in Preview or Production.
+
 Live AI bill analysis must be enabled only through local or deployment secrets:
 
 ```bash
@@ -61,10 +63,10 @@ OPENAI_API_KEY=
 Once credentials are configured, run:
 
 ```bash
-pnpm ai-bill-analysis:live-check
+pnpm ai-bill-analysis:live-check -- live-119-hr-<reviewed-bill-number>
 ```
 
-The check covers multiple bill types, requires the OpenAI provider and hidden API key, and fails if live results fall back to the deterministic policy lens. Use dry-run mode before credentials exist:
+Pass reviewed live bill IDs with current official summaries. The check requires the OpenAI provider and hidden API key, and fails if the summary is stale or output falls back to the deterministic policy lens. Use dry-run mode before credentials exist:
 
 ```bash
 pnpm ai-bill-analysis:live-check -- --dry-run

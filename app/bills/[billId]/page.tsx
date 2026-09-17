@@ -496,6 +496,8 @@ export default async function BillPage(props: BillPageProps) {
           billVotes,
           enableLive: canUseAiPolicyLens,
           sourceMatches,
+          summaryPublishedAt: billSummary.publishedAt,
+          summarySource: billSummary.source,
           summaryText: billSummary.text
         })
       : null;
@@ -574,7 +576,7 @@ export default async function BillPage(props: BillPageProps) {
           <>
             <BillSummaryCard bill={bill} status={status} summary={billSummary} />
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
-              {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} /> : null}
+              {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} bill={bill} summary={billSummary} /> : null}
             </PlanFeatureGate>
             <PlanFeatureGate feature="sourceMap" initialSubscription={initialSubscription}>
               <SourceMapCard sourceMatches={sourceMatches} />
@@ -730,17 +732,30 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
   );
 }
 
-function AiPolicyLensCard({ analysis }: { analysis: AiBillAnalysis }) {
+function AiPolicyLensCard({ analysis, bill, summary }: { analysis: AiBillAnalysis; bill: Bill; summary: BillSummaryResolution }) {
+  const sourceLinks = analysis.sourceLinks?.length
+    ? analysis.sourceLinks
+    : bill.sourceUrl?.startsWith("https://")
+      ? [{ label: "Official bill record", url: bill.sourceUrl }]
+      : [];
+  const sourceLabel = analysis.origin === "generated"
+    ? "AI-assisted analysis"
+    : analysis.origin === "source-based"
+      ? "Source-based analysis"
+      : "Topic-based overview";
+  const summaryPredatesAction = Boolean(summary.publishedAt && bill.latestActionDate && summary.publishedAt.slice(0, 10) < bill.latestActionDate.slice(0, 10));
+  const LensIcon = analysis.origin === "generated" ? Sparkles : FileText;
+
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Plain-language view</div>
           <h2 className="mt-2 text-[24px] font-medium leading-tight">What it could mean for you</h2>
-          <p className="mt-2 text-[13px] leading-5 text-white/54">A quick read on how this bill could affect your household, community, wallet, or rights.</p>
+          <p className="mt-2 text-[13px] leading-5 text-white/54">{sourceLabel}. Possible effects depend on the bill's final text and status.</p>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
-          <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+          <LensIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
       <ScrollableTextBox className="text-[15px] text-white/68">
@@ -749,6 +764,19 @@ function AiPolicyLensCard({ analysis }: { analysis: AiBillAnalysis }) {
       <div className="mt-5 grid gap-4">
         <AiPointGroup title="Possible benefits" tone="pro" points={analysis.pros} />
         <AiPointGroup title="Possible drawbacks" tone="con" points={analysis.cons} />
+      </div>
+      <div className="mt-5 border-t border-white/10 pt-4 text-[12px] leading-5 text-white/60">
+        {analysis.sourceNote ? <p>{analysis.sourceNote}</p> : null}
+        {summaryPredatesAction ? <p className="mt-1">The summary above predates the latest recorded action. Check the current bill text for changes.</p> : null}
+        {sourceLinks.length ? (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+            {sourceLinks.map((source) => (
+              <a key={`${source.label}:${source.url}`} href={source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#ffbd59] underline underline-offset-2">
+                {source.label}<ExternalLink className="h-3 w-3" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        ) : null}
       </div>
     </MobileCard>
   );

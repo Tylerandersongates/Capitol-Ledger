@@ -31,6 +31,31 @@ const baseBill: Bill = {
 
 const fixtures: LensFixture[] = [
   {
+    name: "House-passed H.R. 7008 includes both trading and voting provisions despite the older CRS summary",
+    bill: {
+      billNumber: "7008",
+      displayNumber: "H.R. 7008",
+      shortTitle: "Stop Insider Trading Act",
+      title: "Stop Insider Trading Act",
+      latestActionDate: "2026-07-22",
+      latestActionText: "Passed House.",
+      summary: "Prohibits Members of Congress and their families from purchasing covered investments and requires public notice before covered sales."
+    },
+    expected: ["House-passed July 22, 2026", "stock purchases", "photo ID rules", "voters without readily available photo ID"],
+    forbidden: ["limited official record", "without a detailed summary"]
+  },
+  {
+    name: "other congressional trading bills receive stock-specific copy",
+    bill: {
+      billNumber: "9000",
+      displayNumber: "H.R. 9000",
+      shortTitle: "Congressional Stock Trading Reform Act",
+      summary: "Restricts stock trading by Members of Congress and their spouses."
+    },
+    expected: ["financial trades", "conflicts of interest", "transactions"],
+    forbidden: ["photo ID rules", "limited official record"]
+  },
+  {
     name: "public waters access is not routed to wildfire copy",
     bill: {
       policyArea: "Public Lands and Natural Resources",
@@ -214,6 +239,10 @@ for (const fixture of fixtures) {
   }
 }
 
+const hr7008Analysis = buildAiBillAnalysis(makeBill({ congress: 119, billType: "hr", billNumber: "7008" }));
+assert.equal(hr7008Analysis.sourceLinks?.[0]?.url, "https://www.govinfo.gov/content/pkg/BILLS-119hr7008eh/html/BILLS-119hr7008eh.htm");
+assert.match(hr7008Analysis.sourceNote ?? "", /House-passed July 22 text/i);
+
 const generatedFixtureBill = makeBill({
   policyArea: "International Affairs",
   shortTitle: "Foreign Military Sale Review Act",
@@ -245,6 +274,8 @@ const validGeneratedAnalysis = validateGeneratedBillAnalysis(
 );
 
 assert.ok(validGeneratedAnalysis, "generated agent analysis should validate when it cites known sources");
+assert.equal(validGeneratedAnalysis?.origin, "generated");
+assert.ok(validGeneratedAnalysis?.sourceLinks?.some((source) => source.url === generatedFixtureBill.sourceUrl));
 assert.ok(
   !validateGeneratedBillAnalysis(
     {
@@ -313,8 +344,10 @@ async function checkAgentResilience() {
 
   try {
     let fetchCalls = 0;
-    globalThis.fetch = async () => {
+    globalThis.fetch = async (_input, init) => {
       fetchCalls += 1;
+      const request = JSON.parse(String(init?.body)) as { store?: boolean };
+      assert.equal(request.store, false, "analysis requests must not retain response application state by default");
       return successfulOpenAiResponse();
     };
 
@@ -348,6 +381,30 @@ async function checkAgentResilience() {
     const cachedLive = await resolveAiBillAnalysis(cacheBill, { enableLive: true, summaryText: cacheBill.summary });
     assert.deepEqual(cachedLive, firstLive, "cached live analysis should match the validated first response");
     assert.equal(fetchCalls, 1, "cached live analysis should not call OpenAI again");
+
+    const staleBill = makeBill({ billNumber: "7008", displayNumber: "H.R. 7008", id: "fixture-stale-summary", latestActionDate: "2026-07-22" });
+    assert.deepEqual(
+      await resolveAiBillAnalysis(staleBill, { enableLive: true, summarySource: "official", summaryPublishedAt: "2026-07-17", summaryText: "Earlier CRS summary." }),
+      buildAiBillAnalysis(staleBill, "Earlier CRS summary."),
+      "an official summary older than the latest action should not trigger generation"
+    );
+    assert.equal(fetchCalls, 1, "stale official summaries should not call OpenAI");
+
+    const undatedBill = makeBill({ billNumber: "26", displayNumber: "H.R. 26", id: "fixture-undated-summary" });
+    assert.deepEqual(
+      await resolveAiBillAnalysis(undatedBill, { enableLive: true, summarySource: "official", summaryText: undatedBill.summary }),
+      buildAiBillAnalysis(undatedBill, undatedBill.summary),
+      "undated official summaries should not trigger live generation"
+    );
+    assert.equal(fetchCalls, 1, "undated official summaries should not call OpenAI");
+
+    const storedBill = makeBill({ billNumber: "25", displayNumber: "H.R. 25", id: "fixture-stored-summary" });
+    assert.deepEqual(
+      await resolveAiBillAnalysis(storedBill, { enableLive: true, summarySource: "stored", summaryText: storedBill.summary }),
+      buildAiBillAnalysis(storedBill, storedBill.summary),
+      "stored summaries should not trigger live generation"
+    );
+    assert.equal(fetchCalls, 1, "stored summaries should not call OpenAI");
 
     globalThis.fetch = async () => {
       fetchCalls += 1;
