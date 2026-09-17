@@ -389,7 +389,7 @@ function SearchResultBlocks({
             >
               {results.members.length ? (
                 results.members.map((member) => (
-                  <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} className={`flex items-center gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
+                  <Link key={member.bioguideId} href={`/members/${member.bioguideId}`} prefetch={false} className={`flex items-center gap-4 p-4 transition hover:brightness-110 ${premiumPanelClass}`}>
                     {member.photoUrl ? (
                       <Image src={member.photoUrl} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl border border-white/14 object-cover shadow-[0_10px_18px_rgba(0,0,0,0.24)]" />
                     ) : null}
