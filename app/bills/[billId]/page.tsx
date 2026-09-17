@@ -11,7 +11,7 @@ import { VoteSpreadPanel } from "@/components/vote-spread-panel";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactElement, ReactNode } from "react";
+import { Suspense, type ReactElement, type ReactNode } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -38,12 +38,10 @@ import {
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
-import { resolveAiBillAnalysis } from "@/lib/ai-bill-analysis-agent";
-import type { AiBillAnalysis } from "@/lib/ai-policy-lens";
+import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { isBillLawActionText } from "@/lib/bill-status";
-import { getBillDetailWithLiveData, getBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
+import { getBillDetailWithLiveData, getBillSummary, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
-import { isPlanFeatureEnabled } from "@/lib/subscription-plans";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
@@ -487,20 +485,8 @@ export default async function BillPage(props: BillPageProps) {
   const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const activeTab = normalizeTab(searchParams?.tab);
-  const billSummary = activeTab === "details" ? await getBillSummary(bill) : null;
-  const canUseAiPolicyLens = isPlanFeatureEnabled(initialSubscription?.plan ?? "free", "aiPolicyLens");
-  const aiPolicyLensAnalysis =
-    billSummary
-      ? await resolveAiBillAnalysis(bill, {
-          billActions,
-          billVotes,
-          enableLive: canUseAiPolicyLens,
-          sourceMatches,
-          summaryPublishedAt: billSummary.publishedAt,
-          summarySource: billSummary.source,
-          summaryText: billSummary.text
-        })
-      : null;
+  const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null;
+  const aiPolicyLensAnalysis = billSummary ? buildAiBillAnalysis(bill, billSummary.text) : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
@@ -574,7 +560,25 @@ export default async function BillPage(props: BillPageProps) {
 
         {activeTab === "details" && billSummary ? (
           <>
-            <BillSummaryCard bill={bill} status={status} summary={billSummary} />
+            {billSummary.source === "pending" ? (
+              <Suspense
+                fallback={
+                  <BillSummaryCard
+                    bill={bill}
+                    status={status}
+                    summary={{
+                      ...billSummary,
+                      label: "Checking official summary",
+                      text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
+                    }}
+                  />
+                }
+              >
+                <OfficialBillSummaryCard bill={bill} status={status} />
+              </Suspense>
+            ) : (
+              <BillSummaryCard bill={bill} status={status} summary={billSummary} />
+            )}
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
               {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} bill={bill} summary={billSummary} /> : null}
             </PlanFeatureGate>
@@ -712,6 +716,11 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
       <ScrollableTextBox className="text-[16px] text-white/70">
         {summary.text}
       </ScrollableTextBox>
+      {summary.source === "pending" && bill.sourceUrl.startsWith("https://") ? (
+        <a href={bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#ffbd59] underline underline-offset-2">
+          Official bill record<ExternalLink className="h-3 w-3" aria-hidden="true" />
+        </a>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="rounded-full border border-[#ffb12b]/30 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
           {bill.policyArea}
@@ -728,8 +737,16 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
           </span>
         ) : null}
       </div>
+      {summary.source === "stored" ? (
+        <p className="mt-3 text-[12px] leading-5 text-white/50">This synced summary may be older than the current bill text. Check the official record for updates.</p>
+      ) : null}
     </MobileCard>
   );
+}
+
+async function OfficialBillSummaryCard({ bill, status }: { bill: Bill; status: string }) {
+  const summary = await getBillSummary(bill);
+  return <BillSummaryCard bill={bill} status={status} summary={summary} />;
 }
 
 function AiPolicyLensCard({ analysis, bill, summary }: { analysis: AiBillAnalysis; bill: Bill; summary: BillSummaryResolution }) {
