@@ -66,6 +66,18 @@ const newerAction = mergeLatestOfficialBillAction({
 }]);
 assert.equal(newerAction.latestActionDate, "2026-08-06");
 assert.match(newerAction.latestActionText, /Senate Legislative Calendar/);
+const actionOnlySummary = mergeLatestOfficialBillAction({
+  ...catalogBill,
+  latestActionDate: "2026-07-23",
+  latestActionText: "Received in the Senate.",
+  summary: "Received in the Senate."
+}, [{
+  action: "Read the second time. Placed on Senate Legislative Calendar under General Orders.",
+  date: "2026-08-06",
+  occurredAt: "2026-08-06"
+}]);
+assert.equal(actionOnlySummary.summary, actionOnlySummary.latestActionText, "An action-only placeholder must remain identifiable after action refresh.");
+assert.equal(newerAction.summary, catalogBill.summary, "A real stored summary must survive action refresh.");
 assert.equal(mergeLatestOfficialBillAction(newerAction, [{
   action: "Passed/agreed to in House.",
   date: "2026-07-22",
