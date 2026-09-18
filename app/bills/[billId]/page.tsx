@@ -489,7 +489,6 @@ export default async function BillPage(props: BillPageProps) {
   const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null;
-  const isHr7008 = bill.congress === 119 && bill.billType.toLowerCase() === "hr" && bill.billNumber === "7008";
   const aiPolicyLensAnalysis = billSummary ? buildAiBillAnalysis(bill, billSummary.text) : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
@@ -564,25 +563,21 @@ export default async function BillPage(props: BillPageProps) {
 
         {activeTab === "details" && billSummary ? (
           <>
-            {billSummary.source === "pending" || isHr7008 ? (
-              <Suspense
-                fallback={
-                  <BillSummaryCard
-                    bill={bill}
-                    status={status}
-                    summary={billSummary.source === "pending" ? {
-                      ...billSummary,
-                      label: "Checking official summary",
-                      text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
-                    } : billSummary}
-                  />
-                }
-              >
-                <OfficialBillSummaryCard bill={bill} status={status} />
-              </Suspense>
-            ) : (
-              <BillSummaryCard bill={bill} status={status} summary={billSummary} />
-            )}
+            <Suspense
+              fallback={
+                <BillSummaryCard
+                  bill={bill}
+                  status={status}
+                  summary={billSummary.source === "pending" ? {
+                    ...billSummary,
+                    label: "Checking official summary",
+                    text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
+                  } : billSummary}
+                />
+              }
+            >
+              <OfficialBillSummaryCard bill={bill} status={status} />
+            </Suspense>
             <PlanFeatureGate feature="aiPolicyLens" initialSubscription={initialSubscription}>
               {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} bill={bill} summary={billSummary} /> : null}
             </PlanFeatureGate>
@@ -733,11 +728,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
         </div>
       ) : summaryPredatesAction ? (
         <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This official summary predates the latest recorded action and may not describe the current bill text.{" "}
-          <a href={bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#ffbd59] underline underline-offset-2">
-            Check the official record
-          </a>
-          .
+          This official summary predates the latest recorded action and may not describe the current bill text. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
         </div>
       ) : null}
       <ScrollableTextBox className="text-[16px] text-white/70">
@@ -765,7 +756,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
         ) : null}
       </div>
       {summary.source === "stored" ? (
-        <p className="mt-3 text-[12px] leading-5 text-white/50">This synced summary may be older than the current bill text. Check the official record for updates.</p>
+        <p className="mt-3 text-[12px] leading-5 text-white/50">This synced summary may be older than the current bill text. We check Congress.gov for an official CRS summary when you open Details.</p>
       ) : null}
     </MobileCard>
   );
