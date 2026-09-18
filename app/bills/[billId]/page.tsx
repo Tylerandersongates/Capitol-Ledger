@@ -113,18 +113,35 @@ function lowerIncludes(value: string, phrase: string) {
 function isOriginPassageVote(vote: Vote, originChamber: "House" | "Senate") {
   const result = vote.result.toLowerCase();
   const question = vote.question.toLowerCase();
-  return vote.chamber === originChamber && (result.includes("passed") || question.includes("passage"));
+  const passageQuestion = question.includes("passage") || question.includes("on the bill");
+  return vote.chamber === originChamber && passageQuestion && (result.includes("passed") || result.includes("agreed"));
+}
+
+function isChamberPassageAction(action: BillAction, chamber: "House" | "Senate") {
+  if (action.chamber !== chamber) return false;
+  const text = action.action.toLowerCase();
+  return text.includes(`passed/agreed to in ${chamber.toLowerCase()}`) ||
+    (text.includes("on passage") && text.includes("passed")) ||
+    text.includes(`passed the ${chamber.toLowerCase()}`) ||
+    text.includes(`passed ${chamber.toLowerCase()}`);
+}
+
+function isReceivingAction(action: BillAction, chamber: "House" | "Senate") {
+  const text = action.action.toLowerCase();
+  return text.includes(`received in the ${chamber.toLowerCase()}`) || text.includes(`received in ${chamber.toLowerCase()}`);
 }
 
 function hasCrossChamberAction({
   actionText,
   originChamber,
-  originPassageVote,
+  originPassage,
+  receivingAction,
   receivingChamber
 }: {
   actionText: string;
   originChamber: "House" | "Senate";
-  originPassageVote?: Vote;
+  originPassage: boolean;
+  receivingAction?: BillAction;
   receivingChamber: "House" | "Senate";
 }) {
   const action = actionText.toLowerCase();
@@ -137,17 +154,28 @@ function hasCrossChamberAction({
   const receivingSignal =
     action.includes(receivingName) || receivedByOtherChamber || referredInOtherChamber;
   const originPassageSignal =
-    Boolean(originPassageVote) ||
+    originPassage ||
     action.includes(`passed the ${originChamber.toLowerCase()}`) ||
     action.includes(`${originChamber.toLowerCase()} passage`);
 
-  return receivingSignal && (originPassageSignal || receivedByOtherChamber || referredInOtherChamber);
+  return (Boolean(receivingAction) && originPassageSignal) ||
+    (receivingSignal && (originPassageSignal || receivedByOtherChamber || referredInOtherChamber));
 }
 
 function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "Senate") {
+  if (lowerIncludes(actionText, "calendar") || lowerIncludes(actionText, "read the second time")) return `On ${receivingChamber} calendar`;
   if (lowerIncludes(actionText, "referred") || lowerIncludes(actionText, "committee")) return `Referred to ${receivingChamber} committee`;
   if (lowerIncludes(actionText, `received in the ${receivingChamber}`)) return `Received in ${receivingChamber}`;
   return `${receivingChamber} action`;
+}
+
+function isFinalPassageAction(action: BillAction, originChamber: "House" | "Senate", receivingChamber: "House" | "Senate") {
+  const text = action.action.toLowerCase();
+  if (text.includes("presented to the president") || text.includes("presented to president") || text.includes("enrolled bill signed")) return true;
+  if (action.chamber === receivingChamber && isChamberPassageAction(action, receivingChamber) && text.includes("without amendment")) return true;
+  return action.chamber === originChamber &&
+    (text.includes(`agreed to ${receivingChamber.toLowerCase()} amendment`) ||
+      text.includes(`agreed to the ${receivingChamber.toLowerCase()} amendment`));
 }
 
 function resolveProgressStepIndex(actionText: string, status: string, stepCount: number) {
@@ -183,26 +211,35 @@ function progressStepState(index: number, currentIndex: number): ProgressStep["s
   return "pending";
 }
 
-function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): ProgressStep[] {
-  const introducedDate = bill.introducedDate;
+function buildBillProgressSteps(bill: Bill, billVotes: Vote[], billActions: BillAction[], status: string): ProgressStep[] {
+  const introducedDate = bill.introducedDate ?? billActions.find((action) => action.kind === "Introduced")?.date;
   const originChamber = billOriginChamber(bill.billType);
 
   if (originChamber) {
     const receivingChamber = receivingChamberFor(originChamber);
-    const originPassageVote = billVotes.find((vote) => isOriginPassageVote(vote, originChamber));
+    const originPassageVote = billVotes.filter((vote) => isOriginPassageVote(vote, originChamber))
+      .sort((left, right) => left.voteDate.localeCompare(right.voteDate))[0];
+    const originPassageAction = billActions.filter((action) => isChamberPassageAction(action, originChamber))
+      .sort((left, right) => left.date.localeCompare(right.date))[0];
+    const receivingAction = billActions.filter((action) => isReceivingAction(action, receivingChamber))
+      .sort((left, right) => left.date.localeCompare(right.date))[0];
     const crossChamberAction = hasCrossChamberAction({
       actionText: bill.latestActionText,
       originChamber,
-      originPassageVote,
+      originPassage: Boolean(originPassageVote || originPassageAction),
+      receivingAction,
       receivingChamber
     });
 
     if (crossChamberAction) {
-      const receivingLabel = crossChamberStepLabel(bill.latestActionText, receivingChamber);
-      const originPassageDetail = originPassageVote
+      const finalPassageAction = billActions.find((action) => isFinalPassageAction(action, originChamber, receivingChamber));
+      const currentIndex = status === "Enacted" ? 6 : finalPassageAction ? 5 : 4;
+      const latestReceivingAction = billActions.find((action) => action.chamber === receivingChamber && !isReceivingAction(action, receivingChamber));
+      const receivingStageText = currentIndex > 4 ? latestReceivingAction?.action ?? bill.latestActionText : bill.latestActionText;
+      const receivingLabel = crossChamberStepLabel(receivingStageText, receivingChamber);
+      const originPassageDetail = originPassageVote || originPassageAction
         ? `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`
         : `${bill.displayNumber} could not move to the ${receivingChamber} without clearing the ${originChamber}; a linked roll-call for that step is not available yet.`;
-      const currentIndex = 4;
 
       return [
         { label: `Introduced in ${originChamber}`, date: introducedDate ? formatDate(introducedDate) : "", icon: FileCheck2, state: progressStepState(0, currentIndex) },
@@ -215,28 +252,28 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
         },
         {
           label: `Passed ${originChamber}`,
-          date: originPassageVote ? formatDate(originPassageVote.voteDate) : "",
+          date: originPassageVote || originPassageAction ? formatDate(originPassageVote?.voteDate ?? originPassageAction!.date) : "",
           icon: FileCheck2,
           detail: originPassageDetail,
           state: progressStepState(2, currentIndex)
         },
         {
           label: `Sent to ${receivingChamber}`,
-          date: formatDate(bill.latestActionDate),
+          date: receivingAction ? formatDate(receivingAction.date) : "",
           icon: FileClock,
           detail: `After ${originChamber} passage, ${bill.displayNumber} moved to the ${receivingChamber} for the next stage.`,
           state: progressStepState(3, currentIndex)
         },
         {
           label: receivingLabel,
-          date: formatDate(bill.latestActionDate),
+          date: latestReceivingAction ? formatDate(latestReceivingAction.date) : currentIndex === 4 ? formatDate(bill.latestActionDate) : "",
           icon: FileClock,
           detail: bill.committeeName
             ? `${originChamber} passage is complete; current activity is now tied to ${bill.committeeName}.`
             : `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`,
           state: progressStepState(4, currentIndex)
         },
-        { label: "Final passage", date: "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
+        { label: "Final passage", date: finalPassageAction ? formatDate(finalPassageAction.date) : "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
         { label: "Enacted", date: status === "Enacted" ? formatDate(bill.latestActionDate) : "", icon: FileCheck2, state: progressStepState(6, currentIndex) }
       ];
     }
@@ -495,8 +532,8 @@ export default async function BillPage(props: BillPageProps) {
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
   if (headerTitle.length > 90) headerTitleSizeClass = "text-[24px] leading-[1.12]";
   else if (headerTitle.length > 54) headerTitleSizeClass = "text-[27px] leading-[1.1]";
-  const introducedDate = bill.introducedDate;
-  const progressSteps = buildBillProgressSteps(bill, billVotes, status);
+  const introducedDate = bill.introducedDate ?? billActions.find((action) => action.kind === "Introduced")?.date;
+  const progressSteps = buildBillProgressSteps(bill, billVotes, billActions, status);
 
   return (
     <MobileShell
@@ -678,6 +715,7 @@ function compactProgressLabel(label: string) {
   if (label === "Passed Chamber") return "Passed";
   if (label.startsWith("Passed ")) return "Passed";
   if (label.startsWith("Sent to ")) return "Sent";
+  if (label.startsWith("On ") && label.endsWith(" calendar")) return "Calendar";
   if (label === "Received in House") return "House";
   if (label === "Received in Senate") return "Senate";
   if (label === "House action" || label === "Senate action") return "Action";
