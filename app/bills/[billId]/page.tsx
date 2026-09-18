@@ -479,7 +479,7 @@ export default async function BillPage(props: BillPageProps) {
   const params = await props.params;
   const activeTab = normalizeTab(searchParams?.tab);
   const [detail, initialSubscription] = await Promise.all([
-    getBillDetailWithLiveData(params.billId, { includeOfficialEnrichment: activeTab === "timeline" || activeTab === "votes" }),
+    getBillDetailWithLiveData(params.billId, { includeSecondaryOfficialData: activeTab === "timeline" || activeTab === "votes" }),
     activeTab === "details" ? getCurrentEffectiveAccountSubscription() : Promise.resolve(null)
   ]);
   if (!detail) notFound();
