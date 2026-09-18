@@ -6,7 +6,7 @@ These are **daily working targets**, not proof of completion or permission for a
 
 | Date (PDT) | Minimum evidence by end of day | If blocked or already done, pull forward |
 | --- | --- | --- |
-| **Fri Sep 18** | Codex: draft a reviewed source candidate for version-aware in-app bill text, with H.R. 7008 July 22 overview and later-version guard; add focused fixture and mobile Preview evidence. Establish this daily board. | Audit another live bill whose CRS/text dates differ; log exact source dates. |
+| **Fri Sep 18** | Codex: draft a reviewed source candidate for version-aware in-app bill text, with H.R. 7008's verified House/Senate-calendar overview and later-version guard; add focused fixture and mobile Preview evidence. Establish this daily board. | Audit another live bill whose CRS/text dates differ; log exact source dates. |
 | Sat Sep 19 | Codex: close candidate CI/Preview defects and record H.R. 7008 390–402 px Summary inspection. Tyler: installed-iPhone search-result→Overview time versus 6.49 s and Details/source-layout result **after an approved release**. | If Production approval or phone time is unavailable, finish Preview/device worksheet prep and Dashboard/Home read-only baseline. |
 | Sun Sep 20 | Codex: triage the first reproducible T06 failure or record a clean H.R. 7008 read-only browser pass; update the phone worksheet. | Profile the slowest measured official/Dashboard path without speculative source changes. |
 | Mon Sep 21 | Tyler/Codex: Dashboard/Home installed-iPhone row, including saved state, first and return timing; log exact result. | If phone is unavailable, prepare the Account/Settings and Search walkthrough steps. |
