@@ -1,0 +1,57 @@
+# CapitolWonk daily benchmarks — September 18 to October 30, 2026
+
+These are **daily working targets**, not proof of completion or permission for a protected action. Each day, record the result, evidence link, owner, blocker, and next action in the [task ledger](project-timeline.md). A benchmark passes only with inspectable evidence. If a dependency blocks the listed task, finish the day's safe substitute in the same row and record the slip. Pull the next dependency-ready task forward when work finishes early; preserve the October 2–6 owner-availability buffer and October 20–29 Apple review/rework buffer. Do not trade away device QA, security acceptance, privacy proof, or exact release approvals to claim a date.
+
+**Daily operating rule:** Codex checks this board and the ledger each morning, completes or advances one concrete dependency-ready item, and posts an end-of-day evidence/status update. Tyler supplies installed-device observations and exact approval only at the established gates. Any missed critical-path benchmark gets a named owner, recovery action and revised confidence the next day. Weekly Friday checkpoints judge whether the next seven days' gates are ready, not just how many rows were touched. The existing daily T09 scheduled work remains limited to its approved scope.
+
+| Date (PDT) | Minimum evidence by end of day | If blocked or already done, pull forward |
+| --- | --- | --- |
+| **Fri Sep 18** | Codex: draft a reviewed source candidate for version-aware in-app bill text, with H.R. 7008 July 22 overview and later-version guard; add focused fixture and mobile Preview evidence. Establish this daily board. | Audit another live bill whose CRS/text dates differ; log exact source dates. |
+| Sat Sep 19 | Codex: close candidate CI/Preview defects and record H.R. 7008 390–402 px Summary inspection. Tyler: installed-iPhone search-result→Overview time versus 6.49 s and Details/source-layout result **after an approved release**. | If Production approval or phone time is unavailable, finish Preview/device worksheet prep and Dashboard/Home read-only baseline. |
+| Sun Sep 20 | Codex: triage the first reproducible T06 failure or record a clean H.R. 7008 read-only browser pass; update the phone worksheet. | Profile the slowest measured official/Dashboard path without speculative source changes. |
+| Mon Sep 21 | Tyler/Codex: Dashboard/Home installed-iPhone row, including saved state, first and return timing; log exact result. | If phone is unavailable, prepare the Account/Settings and Search walkthrough steps. |
+| Tue Sep 22 | Tyler/Codex: Account/Settings and sign-in persistence rows completed or concrete defects filed. | Prepare T05 native event/delivery proof packet from existing archive and Sentry settings. |
+| Wed Sep 23 | Tyler/Codex: Search/results/bill navigation row completed, with one first-open and return timing. | Triage any H.R. 7008 current-text discrepancy found in another bill. |
+| Thu Sep 24 | Tyler/Codex: civic, alerts, Daily Brief placeholder, Privacy/Support rows recorded; T06 remaining failures ranked. | Prepare corrected T09 inactive-intake copy and listing-field delta in a draft source packet. |
+| **Fri Sep 25** | **T03 decision checkpoint:** Codex records official Apple library release/issue evidence, verifier acceptance scenarios and an exact fix/fallback recommendation; Tyler decides only if a protected path is ready for approval. T06 phone matrix has a documented pass/fail list. | If no official fix, keep processing off and prepare the reviewed alternative/deferral decision packet. |
+| Sat Sep 26 | Codex: T05 native diagnostic event/privacy evidence matrix reconciled to signed build 2; identify the one remaining device action. | Advance T09 App Privacy answer delta without submitting it. |
+| Sun Sep 27 | Codex: App Store Connect existing answers/fields inventoried read-only, with provisional proposed delta and evidence gaps. | Prepare corrected-wordmark capture plan for the four required screens. |
+| Mon Sep 28 | Tyler/Codex: run T05 protected device delivery check only under exact approved scope; record event receipt or a concrete blocker. | If approval/device unavailable, finish source-only T05 instrumentation review and T09 privacy mapping. |
+| Tue Sep 29 | Tyler/Codex: T07 sandbox purchase and restore evidence under exact account/action approval; record IDs/status transitions. | Prepare sandbox scenarios and non-destructive fixture results. |
+| Wed Sep 30 | Tyler/Codex: T07 renewal/refund/notifications/Team scenario evidence or precise blockers. | Complete T08 first-video access/content requirements packet and T09 capture list. |
+| **Thu Oct 1** | **Stable-candidate checkpoint:** reconcile T03/T05–T09 gate status, T06 defects, T08 video scope and T09 privacy/listing handoff; name every item needed before Oct 16. | If ahead, complete source-only release metadata and TestFlight evidence packet. |
+| Fri Oct 2 | Codex only: review CI/source candidate and prepare T09 field-by-field App Privacy wording; no required owner action. | Draft corrected screenshot captions/capture sequence. |
+| Sat Oct 3 | Codex only: source-only regression checks and accessibility/readability review of the current bill Summary and listing copy. | Prepare defect fixes in draft PRs. |
+| Sun Oct 4 | Codex only: reconcile source, build 2, and provider versions in release packet; flag drift. | Prepare T10 upload checklist without upload. |
+| Mon Oct 5 | Codex only: verify source test matrix and T09 privacy evidence links; close missing local documentation. | Stage reviewed source changes for post-buffer decision. |
+| Tue Oct 6 | Codex only: produce post-buffer gate list with exact next Tyler actions and alternate path if any gate is red. | Finish independent verifier review packet. |
+| Wed Oct 7 | Tyler/Codex: resume available owner decisions; settle T08 first-video launch scope and the next exact T03/T05/T07 action. | Close any dependency-ready T06 phone defect. |
+| Thu Oct 8 | Codex: corrected-wordmark App Store screenshot set captured from a verified build, with screen/build manifest. | Reconcile App Privacy answers with selected archive and native delivery evidence. |
+| Fri Oct 9 | **Weekly checkpoint:** T09 listing and App Privacy packet reviewable field-by-field; red gates have owners and recovery dates. | Prepare T10 TestFlight build/audience/action proposal. |
+| Sat Oct 10 | Codex: release regression on bill data/current-text freshness, account persistence and privacy copy, with exact build/source IDs. | Fix one scoped candidate defect and rerun its targeted check. |
+| Sun Oct 11 | Codex: T10 upload packet reconciles native archive, web source, signing and App Privacy; no upload implied. | Prepare tester instructions and feedback intake. |
+| Mon Oct 12 | Tyler/Codex: close any remaining T06 installed-phone failures or identify candidate-blocking defects. | Run a focused source fix/Preview verification for the highest blocker. |
+| Tue Oct 13 | Tyler/Codex: T05/T07 evidence accepted or explicitly red; T03 path/deferral documented. | Reconcile the App Privacy delta against actual final native/provider behavior. |
+| Wed Oct 14 | Codex: T09 corrected listing/capture and privacy packet complete for exact owner review; identify any missing Apple field. | Complete T10 build metadata and tester scope proposal. |
+| Thu Oct 15 | Codex: candidate CI, Preview/device evidence and release notes assembled at an exact head; unresolved defects ranked. | Prepare a smaller reviewed candidate if the current head fails. |
+| **Fri Oct 16** | **Candidate checkpoint:** Tyler/Codex decide whether T03/T05–T09 evidence supports a TestFlight/App Review path; record go/red and exact next approval, with October 30 confidence. | If green and separately approved, execute only the exact TestFlight action; if red, work the highest blocker. |
+| Sat Oct 17 | Codex: TestFlight feedback triaged if distribution occurred; otherwise finish candidate defects and review packet. | Draft App Review notes and privacy/support evidence. |
+| Sun Oct 18 | Codex: final pre-submission regression and exact build/metadata diff ready for Tyler's action-time decision. | Continue highest remaining blocker and revise forecast. |
+| **Mon Oct 19** | **Working App Review submission target:** only if all gates are green and Tyler approves that exact build/action. Record submission ID/status or the red gate and recovery plan. | If approved earlier, use the day for review monitoring and rework readiness. |
+| Tue Oct 20 | Codex: inspect App Review/TestFlight status, respond to actionable feedback through an exact reviewed change; log Apple wait separately. | If unchanged, run one focused release regression or issue-prevention check. |
+| Wed Oct 21 | Codex: clear or document any review issue; keep candidate and listing versions aligned. | Prepare a tested patch branch for the highest plausible rejection path. |
+| Thu Oct 22 | Codex: verify support/privacy/public links and release notes against submitted build; record status. | Close non-protected release documentation gaps. |
+| **Fri Oct 23** | **Weekly checkpoint:** record Apple state, unresolved blockers, remaining review/rework days, and realistic October 30 confidence. | If approved, prepare final release go/no-go packet without releasing. |
+| Sat Oct 24 | Codex: targeted smoke on canonical site and submitted candidate behavior; log regressions. | Prepare rollback/recovery notes from verified state. |
+| Sun Oct 25 | Codex: reconcile any Apple feedback or unchanged review status; refresh the exact release packet. | Fix one safe local documentation/source defect. |
+| Mon Oct 26 | Codex: final T03/T05–T09 gates and candidate drift audit; no inferred approval. | Prepare a reviewed resubmission only if rejection requires it. |
+| Tue Oct 27 | Codex: check Apple review state and regression of approved candidate or latest reviewed patch. | Finish launch-day monitoring checklist. |
+| Wed Oct 28 | Codex: publish internal go/no-go evidence summary and identify any remaining protected action. | If green, prepare the exact release action for Tyler's decision. |
+| Thu Oct 29 | Codex: final status/rollback/support readiness check; state launch forecast with reasons. | Keep review/rework buffer intact for actual Apple response. |
+| **Fri Oct 30** | **Tyler's launch target:** release only after Apple approval, green gates and Tyler's exact go/no-go authorization. Record outcome and next date if red. | If blocked, preserve evidence and issue a revised, dependency-based forecast. |
+
+## Evidence and escalation thresholds
+
+- A “done” row links a passing check, Preview/device observation, reviewed decision, or Apple record. A drafted packet is not a device pass, provider activation, submission, or release.
+- **Escalate the same day** when a newly found issue blocks the next checkpoint; when T03/T05/T07/T09 evidence cannot be ready for October 16; when the candidate is not ready by October 16; or when Apple review leaves October 30 unsupported. Keep the target visible until Tyler changes it.
+- Protect the October 2–6 buffer from required Tyler actions and the October 20–29 buffer for real Apple review/rework. Work ahead on source-only, read-only and reviewable packets whenever a row closes early.

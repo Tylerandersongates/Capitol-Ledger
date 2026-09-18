@@ -2,6 +2,8 @@
 
 Checkpoint: **September 18, 2026, end of day PDT, with same-date T09 evidence and T06 CRS Production continuations.** Start with [AGENTS.md](../AGENTS.md), [project context](PROJECT-CONTEXT.md), [active decisions](DECISIONS.md), the newest [T01–T11 ledger](project-timeline.md), the [September 18 EOD archive](eod-handoff-2026-09-18.md) with its verbatim Standing Rules, and the [ordered iPhone worksheet](t06-physical-iphone-qa-2026-09-17.md). Older dated statements that say Apple Support or local signing is pending are historical.
 
+**Same-date follow-up:** Tyler set [daily evidence benchmarks through October 30](daily-benchmarks-2026-09-18-to-10-30.md) and chose a current-text lead for bill Details. [Draft PR #46](https://github.com/Tylerandersongates/Capitol-Ledger/pull/46) at `00f5d2b` is a source candidate for version-aware in-app text across bills; it is not Production. CI, Preview and phone-width QA are pending before any exact merge/deploy approval. PR #45 remains the current Production version. The latest direction is recorded as [CW-011](DECISIONS.md), superseding the large dated CRS notice choice.
+
 ## Verified state
 
 - **T04 local signing is complete.** The September 16 approved WWDR G3 repair restored both existing Development identities. A matching Development profile and signed version 1.0 build 2 archive passed strict signature checks; build 2 was installed and launched on Tyler's iPhone. Existing certificates, private keys, App Store profile and automatic signing settings were preserved. No IPA export, TestFlight upload or distribution occurred. Use the [signing record](apple-signing-reconciliation-2026-09-10.md); do not repeat the resolved Apple Support work.
