@@ -118,10 +118,10 @@ function isOriginPassageVote(vote: Vote, originChamber: "House" | "Senate") {
 }
 
 function isChamberPassageAction(action: BillAction, chamber: "House" | "Senate") {
-  if (action.chamber !== chamber) return false;
   const text = action.action.toLowerCase();
-  return text.includes(`passed/agreed to in ${chamber.toLowerCase()}`) ||
-    (text.includes("on passage") && text.includes("passed")) ||
+  if (text.includes(`passed/agreed to in ${chamber.toLowerCase()}`) || text.includes(`passed/agreed to in the ${chamber.toLowerCase()}`)) return true;
+  if (action.chamber !== chamber && !text.includes(chamber.toLowerCase())) return false;
+  return (text.includes("on passage") && text.includes("passed")) ||
     text.includes(`passed the ${chamber.toLowerCase()}`) ||
     text.includes(`passed ${chamber.toLowerCase()}`);
 }
@@ -172,8 +172,8 @@ function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "
 function isFinalPassageAction(action: BillAction, originChamber: "House" | "Senate", receivingChamber: "House" | "Senate") {
   const text = action.action.toLowerCase();
   if (text.includes("presented to the president") || text.includes("presented to president") || text.includes("enrolled bill signed")) return true;
-  if (action.chamber === receivingChamber && isChamberPassageAction(action, receivingChamber) && text.includes("without amendment")) return true;
-  return action.chamber === originChamber && !/with (?:an? |a further )?amendment/.test(text) &&
+  if (isChamberPassageAction(action, receivingChamber) && text.includes("without amendment")) return true;
+  return (action.chamber === originChamber || text.startsWith(`${originChamber.toLowerCase()} agreed`)) && !/with (?:an? |a further )?amendment/.test(text) &&
     (text.includes(`agreed to ${receivingChamber.toLowerCase()} amendment`) ||
       text.includes(`agreed to the ${receivingChamber.toLowerCase()} amendment`));
 }
