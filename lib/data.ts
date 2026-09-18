@@ -1704,6 +1704,14 @@ export function getOfficialBillCosponsors(bill: Bill) {
   return fetchLiveBillCosponsors(bill, []);
 }
 
+export async function getOfficialBillSponsor(bill: Bill): Promise<Member | undefined> {
+  const response = await fetchBill(bill.congress, bill.billType, bill.billNumber, {
+    timeoutMs: memberLegislationFetchTimeoutMs
+  }).catch(() => null);
+
+  return normalizeCongressBillSponsor(response?.bill) ?? fetchLiveBillSponsor(bill);
+}
+
 async function fetchLiveBillPeople(
   bill: Bill,
   {
