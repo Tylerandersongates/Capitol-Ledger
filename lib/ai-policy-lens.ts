@@ -1,6 +1,8 @@
 import { isBillLawActionText } from "./bill-status";
 import type { Bill } from "../types/capitol";
 
+export const hr7008HousePassedTextUrl = "https://www.govinfo.gov/content/pkg/BILLS-119hr7008eh/html/BILLS-119hr7008eh.htm";
+
 export type AiBillAnalysis = {
   cons: string[];
   context: string;
@@ -108,7 +110,7 @@ export function buildAiBillAnalysis(bill: Bill, summaryText?: string): AiBillAna
       origin: "source-based",
       sourceLinks: [{
         label: "House-passed text, July 22, 2026",
-        url: "https://www.govinfo.gov/content/pkg/BILLS-119hr7008eh/html/BILLS-119hr7008eh.htm"
+        url: hr7008HousePassedTextUrl
       }],
       sourceNote: "This view follows the House-passed July 22 text. Check the current version for later amendments."
     };
