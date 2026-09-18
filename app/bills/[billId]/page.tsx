@@ -38,7 +38,7 @@ import {
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
-import { buildAiBillAnalysis, hr7008HousePassedTextUrl, type AiBillAnalysis } from "@/lib/ai-policy-lens";
+import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { getBillStatusFromActions, isBillLawActionText } from "@/lib/bill-status";
 import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getStoredBillSummary, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
@@ -489,6 +489,7 @@ export default async function BillPage(props: BillPageProps) {
   const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null;
+  const isHr7008 = bill.congress === 119 && bill.billType.toLowerCase() === "hr" && bill.billNumber === "7008";
   const aiPolicyLensAnalysis = billSummary ? buildAiBillAnalysis(bill, billSummary.text) : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
   const headerTitle = bill.shortTitle || bill.title;
@@ -563,17 +564,17 @@ export default async function BillPage(props: BillPageProps) {
 
         {activeTab === "details" && billSummary ? (
           <>
-            {billSummary.source === "pending" ? (
+            {billSummary.source === "pending" || isHr7008 ? (
               <Suspense
                 fallback={
                   <BillSummaryCard
                     bill={bill}
                     status={status}
-                    summary={{
+                    summary={billSummary.source === "pending" ? {
                       ...billSummary,
                       label: "Checking official summary",
                       text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
-                    }}
+                    } : billSummary}
                   />
                 }
               >
@@ -696,6 +697,7 @@ function compactProgressDate(date: string) {
 }
 
 function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string; summary: BillSummaryResolution }) {
+  const summaryActionDate = summary.actionDate ?? summary.publishedAt;
   const sourceTone =
     summary.source === "official"
       ? "border-emerald-400/26 bg-emerald-400/10 text-[#59ee83]"
@@ -707,10 +709,10 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
     bill.congress === 119 &&
     bill.billType.toLowerCase() === "hr" &&
     bill.billNumber === "7008" &&
-    Boolean(summary.publishedAt && summary.publishedAt.slice(0, 10) < "2026-07-22");
+    Boolean(summaryActionDate && summaryActionDate.slice(0, 10) < "2026-07-22");
   const summaryPredatesAction =
     summary.source === "official" &&
-    Boolean(summary.publishedAt && bill.latestActionDate && summary.publishedAt.slice(0, 10) < bill.latestActionDate.slice(0, 10));
+    Boolean(summaryActionDate && bill.latestActionDate && summaryActionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10));
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -727,11 +729,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
       </div>
       {isEarlierHr7008Summary ? (
         <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This CRS summary was updated before the House-passed July 22 text. It does not describe that version&apos;s photo ID rules for federal elections.{" "}
-          <a href={hr7008HousePassedTextUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#ffbd59] underline underline-offset-2">
-            Read the House-passed text
-          </a>
-          .
+          This CRS summary covers an earlier version of the bill. The House-passed July 22 version also includes photo ID rules for federal elections. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
         </div>
       ) : summaryPredatesAction ? (
         <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
@@ -789,7 +787,8 @@ function AiPolicyLensCard({ analysis, bill, summary }: { analysis: AiBillAnalysi
     : analysis.origin === "source-based"
       ? "Source-based analysis"
       : "Topic-based overview";
-  const summaryPredatesAction = Boolean(summary.publishedAt && bill.latestActionDate && summary.publishedAt.slice(0, 10) < bill.latestActionDate.slice(0, 10));
+  const summaryActionDate = summary.actionDate ?? summary.publishedAt;
+  const summaryPredatesAction = Boolean(summaryActionDate && bill.latestActionDate && summaryActionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10));
   const LensIcon = analysis.origin === "generated" ? Sparkles : FileText;
 
   return (

@@ -546,10 +546,18 @@ export type NormalizedCongressBillSummary = {
   versionCode?: string;
 };
 
-export function resolveCongressBillSummary(summaries: CongressBillSummaryItem[]): NormalizedCongressBillSummary | null {
-  const officialSummary = summaries
+export function selectLatestCongressBillSummary(summaries: CongressBillSummaryItem[]) {
+  return summaries
     .filter((summary) => summary.text?.trim())
-    .sort((a, b) => Date.parse(b.updateDate ?? b.actionDate ?? "0") - Date.parse(a.updateDate ?? a.actionDate ?? "0"))[0];
+    // A revised publication date does not mean the summary covers a newer bill version.
+    .sort((a, b) =>
+      (Date.parse(b.actionDate ?? "") || 0) - (Date.parse(a.actionDate ?? "") || 0) ||
+      (Date.parse(b.updateDate ?? "") || 0) - (Date.parse(a.updateDate ?? "") || 0)
+    )[0];
+}
+
+export function resolveCongressBillSummary(summaries: CongressBillSummaryItem[]): NormalizedCongressBillSummary | null {
+  const officialSummary = selectLatestCongressBillSummary(summaries);
 
   if (!officialSummary?.text) return null;
 
