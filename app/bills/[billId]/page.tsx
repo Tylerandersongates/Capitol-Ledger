@@ -568,11 +568,11 @@ export default async function BillPage(props: BillPageProps) {
                 <BillSummaryCard
                   bill={bill}
                   status={status}
-                  summary={billSummary.source === "pending" ? {
-                    ...billSummary,
-                    label: "Checking official summary",
-                    text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
-                  } : billSummary}
+                  summary={{
+                    label: "Checking latest bill text",
+                    source: "pending",
+                    text: "Checking Congress.gov for the latest text version and CRS summary."
+                  }}
                 />
               }
             >
@@ -692,51 +692,46 @@ function compactProgressDate(date: string) {
 }
 
 function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string; summary: BillSummaryResolution }) {
-  const summaryActionDate = summary.actionDate ?? summary.publishedAt;
   const sourceTone =
     summary.source === "official"
       ? "border-emerald-400/26 bg-emerald-400/10 text-[#59ee83]"
-      : summary.source === "stored"
+      : summary.source === "bill-text" || summary.source === "stored"
         ? "border-[#ffb12b]/32 bg-[#ffb12b]/10 text-[#ffb12b]"
         : "border-white/10 bg-white/5 text-white/56";
-  const isEarlierHr7008Summary =
+  const olderOfficialSummaryDate =
     summary.source === "official" &&
-    bill.congress === 119 &&
-    bill.billType.toLowerCase() === "hr" &&
-    bill.billNumber === "7008" &&
-    Boolean(summaryActionDate && summaryActionDate.slice(0, 10) < "2026-07-22");
-  const summaryPredatesAction =
-    summary.source === "official" &&
-    Boolean(summaryActionDate && bill.latestActionDate && summaryActionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10));
+    summary.actionDate &&
+    bill.latestActionDate &&
+    summary.actionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10)
+      ? summary.actionDate
+      : null;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Summary</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">
+            {summary.label === "Latest official bill text" ? "Bill text" : "Summary"}
+          </div>
           <div className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold leading-none ${sourceTone}`}>
             {summary.label}
           </div>
+          {summary.versionType && summary.actionDate ? (
+            <p className="mt-2 text-[12px] leading-5 text-white/54">{summary.versionType} · {formatDate(summary.actionDate)}{summary.excerpt ? " · Excerpt" : ""}</p>
+          ) : olderOfficialSummaryDate ? (
+            <p className="mt-2 text-[12px] leading-5 text-white/54">Covers the {formatDate(olderOfficialSummaryDate)} bill version.</p>
+          ) : null}
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
           <FileText className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      {isEarlierHr7008Summary ? (
-        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This CRS summary covers an earlier version of the bill. The House-passed July 22 version also includes photo ID rules for federal elections. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
-        </div>
-      ) : summaryPredatesAction ? (
-        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This official summary predates the latest recorded action and may not describe the current bill text. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
-        </div>
-      ) : null}
-      <ScrollableTextBox className="text-[16px] text-white/70">
+      <ScrollableTextBox className="text-[16px] text-white/70" heightClassName={summary.source === "bill-text" && summary.label === "Latest official bill text" ? "max-h-64" : undefined}>
         {summary.text}
       </ScrollableTextBox>
-      {summary.source === "pending" && bill.sourceUrl.startsWith("https://") ? (
-        <a href={bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#ffbd59] underline underline-offset-2">
-          Official bill record<ExternalLink className="h-3 w-3" aria-hidden="true" />
+      {(summary.sourceUrl ?? (summary.source === "pending" ? bill.sourceUrl : "")).startsWith("https://") ? (
+        <a href={summary.sourceUrl ?? bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#ffbd59] underline underline-offset-2">
+          {summary.sourceUrl ? "Official bill text" : "Official bill record"}<ExternalLink className="h-3 w-3" aria-hidden="true" />
         </a>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
@@ -749,7 +744,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
         <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold text-white/56">
           {bill.congress}th Congress
         </span>
-        {summary.publishedAt ? (
+        {summary.publishedAt && !olderOfficialSummaryDate && summary.source === "official" ? (
           <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold text-white/56">
             Updated {formatDate(summary.publishedAt)}
           </span>
@@ -839,9 +834,9 @@ function AiPointGroup({ points, title, tone }: { points: string[]; title: string
   );
 }
 
-function ScrollableTextBox({ children, className = "" }: { children: ReactNode; className?: string }) {
+function ScrollableTextBox({ children, className = "", heightClassName = "max-h-32" }: { children: ReactNode; className?: string; heightClassName?: string }) {
   return (
-    <MobileGlassScrollFrame heightClassName="max-h-32" className={`px-4 py-4 leading-6 ${className}`}>
+    <MobileGlassScrollFrame heightClassName={heightClassName} className={`px-4 py-4 leading-6 ${className}`}>
       <p className="whitespace-pre-line">{children}</p>
     </MobileGlassScrollFrame>
   );

@@ -1,7 +1,8 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
-import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
+import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchBillTextVersions, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
+import { fetchOfficialBillText, isHr7008HousePassedVersion, selectLatestBillTextVersion, textVersionIsNewer } from "@/lib/congress/bill-text";
 import { unstable_cache } from "next/cache";
 import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation, selectLatestCongressBillSummary } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
@@ -31,10 +32,13 @@ export type SearchFilters = {
 
 export type BillSummaryResolution = {
   actionDate?: string;
+  excerpt?: boolean;
   label: string;
   publishedAt?: string;
-  source: "official" | "stored" | "pending";
+  source: "official" | "bill-text" | "stored" | "pending";
+  sourceUrl?: string;
   text: string;
+  versionType?: string;
 };
 
 export type SearchRecordsResult = ReturnType<typeof searchRecords>;
@@ -1008,21 +1012,64 @@ export function getStoredBillSummary(bill: Bill): BillSummaryResolution {
 }
 
 export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution> {
-  try {
-    const data = await fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs: resolveBillSummaryFetchTimeoutMs() });
-    const officialSummary = selectLatestCongressBillSummary(data.summaries ?? []);
+  const timeoutMs = resolveBillSummaryFetchTimeoutMs();
+  const [summaryResult, textResult] = await Promise.allSettled([
+    fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs }),
+    fetchBillTextVersions(bill.congress, bill.billType, bill.billNumber, { limit: 50, timeoutMs })
+  ]);
+  const officialSummary = summaryResult.status === "fulfilled"
+    ? selectLatestCongressBillSummary(summaryResult.value.summaries ?? [])
+    : null;
+  const latestText = textResult.status === "fulfilled"
+    ? selectLatestBillTextVersion(textResult.value.textVersions, bill)
+    : null;
+  const knownNewerHr7008Text = bill.congress === 119 && bill.billType.toLowerCase() === "hr" && bill.billNumber === "7008" &&
+    (!latestText || latestText.date < "2026-07-22") &&
+    (!officialSummary?.actionDate || officialSummary.actionDate.slice(0, 10) < "2026-07-22");
+  const newerActionWithoutVerifiedText = textResult.status === "rejected" &&
+    officialSummary?.actionDate && bill.latestActionDate && officialSummary.actionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10);
+  if (knownNewerHr7008Text || newerActionWithoutVerifiedText) {
+    return {
+      label: "Latest bill text unavailable",
+      source: "pending",
+      text: "We could not verify the latest official text version right now. Please try Details again shortly."
+    };
+  }
 
-    if (officialSummary?.text) {
+  if (latestText && textVersionIsNewer(latestText.date, officialSummary?.actionDate)) {
+    if (isHr7008HousePassedVersion(latestText, bill)) {
       return {
-        actionDate: officialSummary.actionDate,
-        label: "Official CRS Summary",
-        publishedAt: officialSummary.updateDate ?? officialSummary.actionDate,
-        source: "official",
-        text: stripSummaryMarkup(officialSummary.text)
+        actionDate: latestText.date,
+        label: "House-passed bill overview",
+        publishedAt: latestText.date,
+        source: "bill-text",
+        sourceUrl: latestText.govInfoUrl ?? latestText.sourceUrl,
+        text: "In the House-passed July 22 version, H.R. 7008 would generally bar Members of Congress, their spouses, and dependent children from buying covered investments. Covered sales would require public notice 7 to 14 days in advance, and violations could lead to fees. The bill also would add photo ID rules for federal elections, including provisions for provisional ballots and voting other than in person.",
+        versionType: latestText.type
       };
     }
-  } catch {
-    // Official summaries are an enhancement; fall back to stored text when Congress.gov is slow or unavailable.
+
+    const currentText = await fetchOfficialBillText(latestText);
+    return {
+      actionDate: latestText.date,
+      excerpt: currentText?.excerpt,
+      label: currentText ? "Latest official bill text" : "Latest bill text unavailable",
+      publishedAt: latestText.date,
+      source: currentText ? "bill-text" : "pending",
+      sourceUrl: latestText.govInfoUrl ?? latestText.sourceUrl,
+      text: currentText?.text ?? "Congress.gov lists a newer bill-text version. Its text is temporarily unavailable in the app. Please try Details again shortly.",
+      versionType: latestText.type
+    };
+  }
+
+  if (officialSummary?.text) {
+    return {
+      actionDate: officialSummary.actionDate,
+      label: "Official CRS Summary",
+      publishedAt: officialSummary.updateDate ?? officialSummary.actionDate,
+      source: "official",
+      text: stripSummaryMarkup(officialSummary.text)
+    };
   }
 
   return getStoredBillSummary(bill);
