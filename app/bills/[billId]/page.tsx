@@ -113,18 +113,35 @@ function lowerIncludes(value: string, phrase: string) {
 function isOriginPassageVote(vote: Vote, originChamber: "House" | "Senate") {
   const result = vote.result.toLowerCase();
   const question = vote.question.toLowerCase();
-  return vote.chamber === originChamber && (result.includes("passed") || question.includes("passage"));
+  const passageQuestion = question.includes("passage") || question.includes("on the bill");
+  return vote.chamber === originChamber && passageQuestion && (result.includes("passed") || result.includes("agreed"));
+}
+
+function isChamberPassageAction(action: BillAction, chamber: "House" | "Senate") {
+  const text = action.action.toLowerCase();
+  if (text.includes(`passed/agreed to in ${chamber.toLowerCase()}`) || text.includes(`passed/agreed to in the ${chamber.toLowerCase()}`)) return true;
+  if (action.chamber !== chamber && !text.includes(chamber.toLowerCase())) return false;
+  return (text.includes("on passage") && text.includes("passed")) ||
+    text.includes(`passed the ${chamber.toLowerCase()}`) ||
+    text.includes(`passed ${chamber.toLowerCase()}`);
+}
+
+function isReceivingAction(action: BillAction, chamber: "House" | "Senate") {
+  const text = action.action.toLowerCase();
+  return text.includes(`received in the ${chamber.toLowerCase()}`) || text.includes(`received in ${chamber.toLowerCase()}`);
 }
 
 function hasCrossChamberAction({
   actionText,
   originChamber,
-  originPassageVote,
+  originPassage,
+  receivingAction,
   receivingChamber
 }: {
   actionText: string;
   originChamber: "House" | "Senate";
-  originPassageVote?: Vote;
+  originPassage: boolean;
+  receivingAction?: BillAction;
   receivingChamber: "House" | "Senate";
 }) {
   const action = actionText.toLowerCase();
@@ -137,17 +154,28 @@ function hasCrossChamberAction({
   const receivingSignal =
     action.includes(receivingName) || receivedByOtherChamber || referredInOtherChamber;
   const originPassageSignal =
-    Boolean(originPassageVote) ||
+    originPassage ||
     action.includes(`passed the ${originChamber.toLowerCase()}`) ||
     action.includes(`${originChamber.toLowerCase()} passage`);
 
-  return receivingSignal && (originPassageSignal || receivedByOtherChamber || referredInOtherChamber);
+  return (Boolean(receivingAction) && originPassageSignal) ||
+    (receivingSignal && (originPassageSignal || receivedByOtherChamber || referredInOtherChamber));
 }
 
 function crossChamberStepLabel(actionText: string, receivingChamber: "House" | "Senate") {
+  if (lowerIncludes(actionText, "calendar") || lowerIncludes(actionText, "read the second time")) return `On ${receivingChamber} calendar`;
   if (lowerIncludes(actionText, "referred") || lowerIncludes(actionText, "committee")) return `Referred to ${receivingChamber} committee`;
   if (lowerIncludes(actionText, `received in the ${receivingChamber}`)) return `Received in ${receivingChamber}`;
   return `${receivingChamber} action`;
+}
+
+function isFinalPassageAction(action: BillAction, originChamber: "House" | "Senate", receivingChamber: "House" | "Senate") {
+  const text = action.action.toLowerCase();
+  if (text.includes("presented to the president") || text.includes("presented to president") || text.includes("enrolled bill signed")) return true;
+  if (isChamberPassageAction(action, receivingChamber) && text.includes("without amendment")) return true;
+  return (action.chamber === originChamber || text.startsWith(`${originChamber.toLowerCase()} agreed`)) && !/with (?:an? |a further )?amendment/.test(text) &&
+    (text.includes(`agreed to ${receivingChamber.toLowerCase()} amendment`) ||
+      text.includes(`agreed to the ${receivingChamber.toLowerCase()} amendment`));
 }
 
 function resolveProgressStepIndex(actionText: string, status: string, stepCount: number) {
@@ -183,26 +211,35 @@ function progressStepState(index: number, currentIndex: number): ProgressStep["s
   return "pending";
 }
 
-function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): ProgressStep[] {
-  const introducedDate = bill.introducedDate;
+function buildBillProgressSteps(bill: Bill, billVotes: Vote[], billActions: BillAction[], status: string): ProgressStep[] {
+  const introducedDate = bill.introducedDate ?? billActions.find((action) => action.kind === "Introduced")?.date;
   const originChamber = billOriginChamber(bill.billType);
 
   if (originChamber) {
     const receivingChamber = receivingChamberFor(originChamber);
-    const originPassageVote = billVotes.find((vote) => isOriginPassageVote(vote, originChamber));
+    const originPassageVote = billVotes.filter((vote) => isOriginPassageVote(vote, originChamber))
+      .sort((left, right) => left.voteDate.localeCompare(right.voteDate))[0];
+    const originPassageAction = billActions.filter((action) => isChamberPassageAction(action, originChamber))
+      .sort((left, right) => left.date.localeCompare(right.date))[0];
+    const receivingAction = billActions.filter((action) => isReceivingAction(action, receivingChamber))
+      .sort((left, right) => left.date.localeCompare(right.date))[0];
     const crossChamberAction = hasCrossChamberAction({
       actionText: bill.latestActionText,
       originChamber,
-      originPassageVote,
+      originPassage: Boolean(originPassageVote || originPassageAction),
+      receivingAction,
       receivingChamber
     });
 
     if (crossChamberAction) {
-      const receivingLabel = crossChamberStepLabel(bill.latestActionText, receivingChamber);
-      const originPassageDetail = originPassageVote
+      const finalPassageAction = billActions.find((action) => isFinalPassageAction(action, originChamber, receivingChamber));
+      const currentIndex = status === "Enacted" ? 6 : finalPassageAction ? 5 : 4;
+      const latestReceivingAction = billActions.find((action) => action.chamber === receivingChamber && !isReceivingAction(action, receivingChamber));
+      const receivingStageText = currentIndex > 4 ? latestReceivingAction?.action ?? bill.latestActionText : bill.latestActionText;
+      const receivingLabel = crossChamberStepLabel(receivingStageText, receivingChamber);
+      const originPassageDetail = originPassageVote || originPassageAction
         ? `${bill.displayNumber} cleared the ${originChamber} before moving to the ${receivingChamber}.`
         : `${bill.displayNumber} could not move to the ${receivingChamber} without clearing the ${originChamber}; a linked roll-call for that step is not available yet.`;
-      const currentIndex = 4;
 
       return [
         { label: `Introduced in ${originChamber}`, date: introducedDate ? formatDate(introducedDate) : "", icon: FileCheck2, state: progressStepState(0, currentIndex) },
@@ -215,28 +252,28 @@ function buildBillProgressSteps(bill: Bill, billVotes: Vote[], status: string): 
         },
         {
           label: `Passed ${originChamber}`,
-          date: originPassageVote ? formatDate(originPassageVote.voteDate) : "",
+          date: originPassageVote || originPassageAction ? formatDate(originPassageVote?.voteDate ?? originPassageAction!.date) : "",
           icon: FileCheck2,
           detail: originPassageDetail,
           state: progressStepState(2, currentIndex)
         },
         {
           label: `Sent to ${receivingChamber}`,
-          date: formatDate(bill.latestActionDate),
+          date: receivingAction ? formatDate(receivingAction.date) : "",
           icon: FileClock,
           detail: `After ${originChamber} passage, ${bill.displayNumber} moved to the ${receivingChamber} for the next stage.`,
           state: progressStepState(3, currentIndex)
         },
         {
           label: receivingLabel,
-          date: formatDate(bill.latestActionDate),
+          date: latestReceivingAction ? formatDate(latestReceivingAction.date) : currentIndex === 4 ? formatDate(bill.latestActionDate) : "",
           icon: FileClock,
           detail: bill.committeeName
             ? `${originChamber} passage is complete; current activity is now tied to ${bill.committeeName}.`
             : `${originChamber} passage is complete; current activity is now in the ${receivingChamber}.`,
           state: progressStepState(4, currentIndex)
         },
-        { label: "Final passage", date: "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
+        { label: "Final passage", date: finalPassageAction ? formatDate(finalPassageAction.date) : "", icon: FilePenLine, state: progressStepState(5, currentIndex) },
         { label: "Enacted", date: status === "Enacted" ? formatDate(bill.latestActionDate) : "", icon: FileCheck2, state: progressStepState(6, currentIndex) }
       ];
     }
@@ -495,8 +532,8 @@ export default async function BillPage(props: BillPageProps) {
   let headerTitleSizeClass = "text-[32px] leading-[1.06]";
   if (headerTitle.length > 90) headerTitleSizeClass = "text-[24px] leading-[1.12]";
   else if (headerTitle.length > 54) headerTitleSizeClass = "text-[27px] leading-[1.1]";
-  const introducedDate = bill.introducedDate;
-  const progressSteps = buildBillProgressSteps(bill, billVotes, status);
+  const introducedDate = bill.introducedDate ?? billActions.find((action) => action.kind === "Introduced")?.date;
+  const progressSteps = buildBillProgressSteps(bill, billVotes, billActions, status);
 
   return (
     <MobileShell
@@ -568,11 +605,11 @@ export default async function BillPage(props: BillPageProps) {
                 <BillSummaryCard
                   bill={bill}
                   status={status}
-                  summary={billSummary.source === "pending" ? {
-                    ...billSummary,
-                    label: "Checking official summary",
-                    text: "Checking Congress.gov for a summary. The current bill text and actions are available in the official record."
-                  } : billSummary}
+                  summary={{
+                    label: "Checking latest bill text",
+                    source: "pending",
+                    text: "Checking Congress.gov for the latest text version and CRS summary."
+                  }}
                 />
               }
             >
@@ -678,6 +715,7 @@ function compactProgressLabel(label: string) {
   if (label === "Passed Chamber") return "Passed";
   if (label.startsWith("Passed ")) return "Passed";
   if (label.startsWith("Sent to ")) return "Sent";
+  if (label.startsWith("On ") && label.endsWith(" calendar")) return "Calendar";
   if (label === "Received in House") return "House";
   if (label === "Received in Senate") return "Senate";
   if (label === "House action" || label === "Senate action") return "Action";
@@ -692,51 +730,46 @@ function compactProgressDate(date: string) {
 }
 
 function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string; summary: BillSummaryResolution }) {
-  const summaryActionDate = summary.actionDate ?? summary.publishedAt;
   const sourceTone =
     summary.source === "official"
       ? "border-emerald-400/26 bg-emerald-400/10 text-[#59ee83]"
-      : summary.source === "stored"
+      : summary.source === "bill-text" || summary.source === "stored"
         ? "border-[#ffb12b]/32 bg-[#ffb12b]/10 text-[#ffb12b]"
         : "border-white/10 bg-white/5 text-white/56";
-  const isEarlierHr7008Summary =
+  const olderOfficialSummaryDate =
     summary.source === "official" &&
-    bill.congress === 119 &&
-    bill.billType.toLowerCase() === "hr" &&
-    bill.billNumber === "7008" &&
-    Boolean(summaryActionDate && summaryActionDate.slice(0, 10) < "2026-07-22");
-  const summaryPredatesAction =
-    summary.source === "official" &&
-    Boolean(summaryActionDate && bill.latestActionDate && summaryActionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10));
+    summary.actionDate &&
+    bill.latestActionDate &&
+    summary.actionDate.slice(0, 10) < bill.latestActionDate.slice(0, 10)
+      ? summary.actionDate
+      : null;
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Summary</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">
+            {summary.label === "Latest official bill text" ? "Bill text" : "Summary"}
+          </div>
           <div className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold leading-none ${sourceTone}`}>
             {summary.label}
           </div>
+          {summary.versionType && summary.actionDate ? (
+            <p className="mt-2 text-[12px] leading-5 text-white/54">{summary.versionType} · {formatDate(summary.actionDate)}{summary.excerpt ? " · Excerpt" : ""}</p>
+          ) : olderOfficialSummaryDate ? (
+            <p className="mt-2 text-[12px] leading-5 text-white/54">Covers the {formatDate(olderOfficialSummaryDate)} bill version.</p>
+          ) : null}
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
           <FileText className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      {isEarlierHr7008Summary ? (
-        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This CRS summary covers an earlier version of the bill. The House-passed July 22 version also includes photo ID rules for federal elections. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
-        </div>
-      ) : summaryPredatesAction ? (
-        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
-          This official summary predates the latest recorded action and may not describe the current bill text. We check for a newer CRS summary when you open Details and will show it here when Congress.gov publishes one.
-        </div>
-      ) : null}
-      <ScrollableTextBox className="text-[16px] text-white/70">
+      <ScrollableTextBox className="text-[16px] text-white/70" heightClassName={summary.source === "bill-text" && summary.label === "Latest official bill text" ? "max-h-64" : undefined}>
         {summary.text}
       </ScrollableTextBox>
-      {summary.source === "pending" && bill.sourceUrl.startsWith("https://") ? (
-        <a href={bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#ffbd59] underline underline-offset-2">
-          Official bill record<ExternalLink className="h-3 w-3" aria-hidden="true" />
+      {(summary.sourceUrl ?? (summary.source === "pending" ? bill.sourceUrl : "")).startsWith("https://") ? (
+        <a href={summary.sourceUrl ?? bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#ffbd59] underline underline-offset-2">
+          {summary.sourceUrl ? "Official bill text" : "Official bill record"}<ExternalLink className="h-3 w-3" aria-hidden="true" />
         </a>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
@@ -749,7 +782,7 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
         <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold text-white/56">
           {bill.congress}th Congress
         </span>
-        {summary.publishedAt ? (
+        {summary.publishedAt && !olderOfficialSummaryDate && summary.source === "official" ? (
           <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-[12px] font-semibold text-white/56">
             Updated {formatDate(summary.publishedAt)}
           </span>
@@ -839,9 +872,9 @@ function AiPointGroup({ points, title, tone }: { points: string[]; title: string
   );
 }
 
-function ScrollableTextBox({ children, className = "" }: { children: ReactNode; className?: string }) {
+function ScrollableTextBox({ children, className = "", heightClassName = "max-h-32" }: { children: ReactNode; className?: string; heightClassName?: string }) {
   return (
-    <MobileGlassScrollFrame heightClassName="max-h-32" className={`px-4 py-4 leading-6 ${className}`}>
+    <MobileGlassScrollFrame heightClassName={heightClassName} className={`px-4 py-4 leading-6 ${className}`}>
       <p className="whitespace-pre-line">{children}</p>
     </MobileGlassScrollFrame>
   );

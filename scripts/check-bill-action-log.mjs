@@ -31,7 +31,9 @@ assert.ok(data.includes("}).catch(() => null)"), "Live bill action fetching shou
 assert.ok(data.includes("hydrateBillActionVoteLinks"), "Bill actions should link to vote detail records when possible");
 assert.ok(data.includes("getDemoBillActionsForBill"), "Live beta records should be able to reuse matching demo action rows");
 assert.ok(data.includes("resolveBillSummaryFetchTimeoutMs"), "Bill details should bound official summary fetching");
-assert.ok(data.includes("timeoutMs: resolveBillSummaryFetchTimeoutMs()"), "Bill summary fetch should use the bounded Congress.gov request");
+assert.ok(data.includes("const timeoutMs = resolveBillSummaryFetchTimeoutMs()") &&
+  data.includes("fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs })"),
+"Bill summary fetch should use the bounded Congress.gov request");
 
 assert.ok(!billPage.includes("OfficialActionLogCard"), "Timeline tab should not render a duplicate action log card");
 assert.ok(billPage.includes('ariaLabel="Bill timeline updates"'), "Timeline should render official action rows in its scroll box");
