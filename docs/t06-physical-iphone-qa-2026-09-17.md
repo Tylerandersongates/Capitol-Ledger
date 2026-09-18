@@ -1,5 +1,11 @@
 # T06 physical iPhone QA — September 17, 2026
 
+## September 18 H.R. 7008 checkpoint
+
+Tyler reported **6.49 seconds** from tapping an H.R. 7008 bill-search result to usable Overview before [PR #41](https://github.com/Tylerandersongates/Capitol-Ledger/pull/41). The July 17 official CRS summary omits the photo ID provisions added in the July 22 House-passed text. Approved Production [PRs #41–#44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44) added a dated source notice, deferred secondary reads, restored official actions/status and preserved the official CRS summary after an action refresh. PR #44's matching Production deployment reached Ready/Current at `617a474`. Live browser Overview/Details show **On Floor**, Timeline starts with the August 6 Senate calendar action, and Details displays the official CRS summary plus the photo ID version notice and official-text link. This is not an installed-iPhone timing or layout pass.
+
+**Next phone action:** over Wi-Fi, start the timer at the bill-search-result tap and stop when H.R. 7008 Overview is usable. Compare with 6.49 seconds and record first/repeat timing if practical. In Details, check **On Floor**, the official CRS summary, photo ID version notice/source link, and the Congressional Record/committee/sponsor/vote cards under Official sources for overflow. Record the first reproducible failure. Then resume the ordered Dashboard/Home row below. No new approval is needed for this read-only QA; a new production change retains its separate gate.
+
 Status: **device walkthrough in progress; cold-launch retest reported, ordered screen checks remain open.** This worksheet follows the [September 16 handoff](HANDOFF.md) and the [public tester scenarios](public-testflight-tester-guide.md). Test the installed version `1.0` build `2` against the current production site. Record only screen/action, expected and observed behavior, time, and sanitized evidence; omit account, device, transaction, and protected identifiers.
 
 ## Already observed on build 2
