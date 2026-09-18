@@ -38,9 +38,9 @@ import {
   Vote as VoteIcon,
   type LucideIcon
 } from "lucide-react";
-import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
+import { buildAiBillAnalysis, hr7008HousePassedTextUrl, type AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { isBillLawActionText } from "@/lib/bill-status";
-import { getBillDetailWithLiveData, getBillSummary, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
+import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
@@ -477,14 +477,17 @@ function hasRecordedVoteTotals(event: BillVoteEvent) {
 export default async function BillPage(props: BillPageProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const [detail, initialSubscription] = await Promise.all([getBillDetailWithLiveData(params.billId), getCurrentEffectiveAccountSubscription()]);
+  const activeTab = normalizeTab(searchParams?.tab);
+  const [detail, initialSubscription] = await Promise.all([
+    getBillDetailWithLiveData(params.billId, { includeOfficialEnrichment: activeTab === "timeline" || activeTab === "votes" }),
+    activeTab === "details" ? getCurrentEffectiveAccountSubscription() : Promise.resolve(null)
+  ]);
   if (!detail) notFound();
 
   const { bill, billActions, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
   const status = getBillStatus(bill);
   const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
-  const activeTab = normalizeTab(searchParams?.tab);
   const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null;
   const aiPolicyLensAnalysis = billSummary ? buildAiBillAnalysis(bill, billSummary.text) : null;
   const displayNumber = bill.displayNumber.replace(". ", ".");
@@ -699,6 +702,15 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
       : summary.source === "stored"
         ? "border-[#ffb12b]/32 bg-[#ffb12b]/10 text-[#ffb12b]"
         : "border-white/10 bg-white/5 text-white/56";
+  const isEarlierHr7008Summary =
+    summary.source === "official" &&
+    bill.congress === 119 &&
+    bill.billType.toLowerCase() === "hr" &&
+    bill.billNumber === "7008" &&
+    Boolean(summary.publishedAt && summary.publishedAt.slice(0, 10) < "2026-07-22");
+  const summaryPredatesAction =
+    summary.source === "official" &&
+    Boolean(summary.publishedAt && bill.latestActionDate && summary.publishedAt.slice(0, 10) < bill.latestActionDate.slice(0, 10));
 
   return (
     <MobileCard variant="rust" className="overflow-hidden px-5 py-5">
@@ -713,6 +725,23 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
           <FileText className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
+      {isEarlierHr7008Summary ? (
+        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
+          This CRS summary was updated before the House-passed July 22 text. It does not describe that version&apos;s photo ID rules for federal elections.{" "}
+          <a href={hr7008HousePassedTextUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#ffbd59] underline underline-offset-2">
+            Read the House-passed text
+          </a>
+          .
+        </div>
+      ) : summaryPredatesAction ? (
+        <div className="mt-4 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 py-3 text-[13px] leading-5 text-white/80">
+          This official summary predates the latest recorded action and may not describe the current bill text.{" "}
+          <a href={bill.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#ffbd59] underline underline-offset-2">
+            Check the official record
+          </a>
+          .
+        </div>
+      ) : null}
       <ScrollableTextBox className="text-[16px] text-white/70">
         {summary.text}
       </ScrollableTextBox>
@@ -1134,7 +1163,13 @@ function KeyDetailsCard({
           value={sponsor?.fullName ?? (bill.sponsorBioguideId ? "Sponsor profile pending" : "No sponsor listed")}
           href={sponsor ? `/members/${sponsor.bioguideId}` : undefined}
         />
-        <CosponsorsRow cosponsors={cosponsors} />
+        {cosponsors.length ? (
+          <CosponsorsRow cosponsors={cosponsors} />
+        ) : (
+          <Suspense fallback={<CosponsorsRow cosponsors={[]} loading />}>
+            <OfficialCosponsorsRow bill={bill} />
+          </Suspense>
+        )}
         <DetailRow icon={<CalendarDays />} label="Introduced" value={introducedDate ? formatDate(introducedDate) : "Date pending"} />
         <DetailRow icon={<BriefcaseBusiness />} label={committeeDetail.label} value={committeeDetail.value} href={committeeDetail.href} />
       </div>
@@ -1149,7 +1184,12 @@ function resolveCommitteeDetail(bill: Bill, status: string) {
   return { href: "/search?type=bills", label: "Committee", value: "Committee not listed yet" };
 }
 
-function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {
+async function OfficialCosponsorsRow({ bill }: { bill: Bill }) {
+  const cosponsors = await getOfficialBillCosponsors(bill);
+  return <CosponsorsRow cosponsors={cosponsors} />;
+}
+
+function CosponsorsRow({ cosponsors, loading = false }: { cosponsors: Member[]; loading?: boolean }) {
   return (
     <div className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-3 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_24px_rgba(2,10,28,0.22)]">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.035] text-[#ffb12b]">
@@ -1172,7 +1212,9 @@ function CosponsorsRow({ cosponsors }: { cosponsors: Member[] }) {
             ))}
           </MobileGlassScrollFrame>
         ) : (
-          <div className="mt-1 truncate text-[16px] font-semibold leading-tight text-white">No cosponsors listed</div>
+          <div className="mt-1 truncate text-[16px] font-semibold leading-tight text-white">
+            {loading ? "Checking official cosponsors" : "No cosponsors listed"}
+          </div>
         )}
       </div>
     </div>

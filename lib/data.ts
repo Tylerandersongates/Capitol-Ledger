@@ -1653,6 +1653,10 @@ async function fetchLiveBillCosponsors(bill: Bill, fallback: Member[]) {
   return liveCosponsors.length ? liveCosponsors : fallback;
 }
 
+export function getOfficialBillCosponsors(bill: Bill) {
+  return fetchLiveBillCosponsors(bill, []);
+}
+
 async function fetchLiveBillPeople(
   bill: Bill,
   {
@@ -1720,7 +1724,7 @@ function mapSourceLinkToBillSourceMatch(
   };
 }
 
-async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData | null> {
+async function getDatabaseBillDetailData(billId: string, includeOfficialEnrichment = true): Promise<BillDetailData | null> {
   if (!hasDatabaseUrl()) return null;
 
   try {
@@ -1790,16 +1794,18 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
     const billVideos = getBillVideos(databaseBill.id);
     const needsOfficialBasics = !databaseBill.introducedDate || !databaseBill.sponsorBioguideId;
     const [officialActions, officialDetail, livePeople] = await Promise.all([
-      fetchOfficialBillActionsForBill(databaseBill),
-      needsOfficialBasics
+      includeOfficialEnrichment ? fetchOfficialBillActionsForBill(databaseBill) : Promise.resolve([]),
+      includeOfficialEnrichment && needsOfficialBasics
         ? fetchBill(databaseBill.congress, databaseBill.billType, databaseBill.billNumber, {
             timeoutMs: memberLegislationFetchTimeoutMs
           }).catch(() => null)
         : Promise.resolve(null),
-      fetchLiveBillPeople(databaseBill, {
-        cosponsors: fallbackCosponsors,
-        sponsor: fallbackSponsor
-      })
+      includeOfficialEnrichment
+        ? fetchLiveBillPeople(databaseBill, {
+            cosponsors: fallbackCosponsors,
+            sponsor: fallbackSponsor
+          })
+        : Promise.resolve({ cosponsors: fallbackCosponsors, sponsor: fallbackSponsor })
     ]);
     const bill = mergeOfficialBillBasics(databaseBill, officialDetail?.bill, officialActions.map((action) => action.action));
     const cosponsors = livePeople.cosponsors;
@@ -1845,7 +1851,7 @@ async function getDatabaseBillDetailData(billId: string): Promise<BillDetailData
   }
 }
 
-async function getLiveBillDetailData(billId: string): Promise<BillDetailData | null> {
+async function getLiveBillDetailData(billId: string, includeOfficialEnrichment = true): Promise<BillDetailData | null> {
   const parsedLiveId = parseStableLiveBillId(billId);
   if (!parsedLiveId) return null;
 
@@ -1859,11 +1865,13 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
     const billVotes = getBillVotes(initialBill.id);
     const billVideos = getBillVideos(initialBill.id);
     const [officialActions, livePeople] = await Promise.all([
-      fetchOfficialBillActionsForBill(initialBill),
-      fetchLiveBillPeople(initialBill, {
-        cosponsors: [],
-        sponsor: undefined
-      })
+      includeOfficialEnrichment ? fetchOfficialBillActionsForBill(initialBill) : Promise.resolve([]),
+      includeOfficialEnrichment
+        ? fetchLiveBillPeople(initialBill, {
+            cosponsors: [],
+            sponsor: undefined
+          })
+        : Promise.resolve({ cosponsors: [], sponsor: undefined })
     ]);
     const bill = mergeOfficialBillBasics(initialBill, response.bill, officialActions.map((action) => action.action));
     const cosponsors = livePeople.cosponsors;
@@ -1889,10 +1897,14 @@ async function getLiveBillDetailData(billId: string): Promise<BillDetailData | n
   }
 }
 
-export async function getBillDetailWithLiveData(billId: string): Promise<BillDetailData | null> {
+export async function getBillDetailWithLiveData(
+  billId: string,
+  { includeOfficialEnrichment = true }: { includeOfficialEnrichment?: boolean } = {}
+): Promise<BillDetailData | null> {
   if (billId.startsWith("demo-")) return null;
 
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId))) ?? (await getLiveBillDetailData(billId));
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId, includeOfficialEnrichment))) ??
+    (await getLiveBillDetailData(billId, includeOfficialEnrichment));
 }
 
 export function getBillStatus(bill: Bill) {
