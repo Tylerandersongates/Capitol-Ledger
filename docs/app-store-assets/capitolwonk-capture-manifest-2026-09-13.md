@@ -1,6 +1,8 @@
 # CapitolWonk App Store Capture Manifest — September 13, 2026
 
-Status: **local preparation only; no replacement asset is approved, uploaded, distributed, or device-verified.** The Apple certificate/profile/Keychain/signing/device freeze remains in force. Use this manifest after an exact release candidate, sanitized capture state, subscription configuration, and signed/device path are approved.
+**September 18 supersession:** T04's local signed version 1.0 build `2` archive and iPhone install/launch are complete; the earlier signing/device freeze language below describes the September 13 state. The archive is local and predates later live web changes through [PR #44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44), Production merge `617a474`. The four-slot [listing draft update](capitolwonk-listing-draft-2026-09-16.md) identifies present rehearsal candidates and remaining T06 checks. Do not label build `2` plus current Production as one approved release candidate without recording both exact source states and their test evidence. The three historical assets remain quarantined. No final screenshot, subscription review image, remote replacement or upload is approved.
+
+Historical September 13 status: **local preparation only; no replacement asset was approved, uploaded, distributed, or device-verified.** The Apple certificate/profile/Keychain/signing/device freeze was in force at that checkpoint. Use this manifest after an exact release candidate, sanitized capture state, subscription configuration, and signed/device path are approved.
 
 The [September 16 source-only listing and route-state draft](capitolwonk-listing-draft-2026-09-16.md) specifies provisional metadata and the first honest public rehearsal. It adds no final screenshot or remote approval.
 
@@ -20,8 +22,8 @@ Preserve these historical files. Do not delete, overwrite, upload, or present th
 
 | Field | Required value |
 | --- | --- |
-| Exact source SHA | Eventual separately approved release SHA; `f959bff` is the current planning baseline only |
-| Production/base SHA | PR #29 merge `f959bff`; confirm the then-current production SHA again before final capture |
+| Exact source SHA | Eventual separately approved release SHA; `f959bff` was the September 13 planning baseline only |
+| Production/base SHA | PR #29 merge `f959bff` was the September 13 baseline; confirm the then-current production SHA again before final capture |
 | Branch verification | PR #29 passed all three checks before merge. Every later capture branch must pass its own exact-head CI and matching Preview before any image is treated as current. |
 | Build/archive identity | Exact build/archive reference; omit protected identifiers from tracked evidence |
 | Capture surface | Simulator, physical device, or local browser; never imply physical-device proof when unavailable |

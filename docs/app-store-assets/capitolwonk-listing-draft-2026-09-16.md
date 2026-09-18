@@ -1,6 +1,21 @@
 # CapitolWonk listing metadata and capture-state draft — September 16, 2026
 
-Status: **source-only draft for review.** No App Store Connect metadata, questionnaire, or image has been changed. The checked local source is `93795c7` (the PR #31 feature commit); the handoff records PR #31 merged separately as `90f8b85`, which this checkout has not fetched. Neither SHA is an approved signed release candidate. The [capture manifest](capitolwonk-capture-manifest-2026-09-13.md) remains the technical and approval checklist.
+## September 18 candidate-state update
+
+The source `93795c7` and PR #31 references in the original status below are historical. T04 now has a locally signed version 1.0 build `2` archive installed/launched on Tyler's iPhone, while later web changes through [PR #44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44) are live at Production merge `617a474`. No exact combined native/web release candidate or final screenshot set has been selected. The signed archive does not validate later web content or App Store listing copy by itself. T03 verifier processing remains off; T05–T07 device/provider/sandbox evidence and T09 privacy evidence remain open.
+
+The four public routes below remain a **rehearsal specification**, not approved App Store assets. For the bill-detail slot, H.R. 7008 is a verified live public route, but its Overview/Details changed in PRs #39–#44 and its installed-iPhone content, layout and post-fix timing retest remain open. Do not select it as the final marketing record solely from browser checks. For member detail, Begich's `/members/B001323` election dates appeared on Tyler's phone after PR #35, but capture still needs a pinned release state, a privacy-safe image and reproducible source provenance. A neutral, stable public record may be preferable; choose the actual bill and member only during exact-candidate rehearsal.
+
+| Slot | Current proof | Capture decision still needed |
+| ---: | --- | --- |
+| 1 Dashboard | Signed build `2` opens Dashboard; cold launch was reported at 3.49 seconds after PR #37. | Confirm the exact public/blank or assigned sanitized state and complete the ordered T06 phone walkthrough. |
+| 2 Bill search/results | Public Bills search is the route for candidate discovery. | Verify real result provenance, no personal query/account data and exact native/web candidate state. |
+| 3 Bill detail | H.R. 7008 live browser content was checked after PR #44. | Complete T06 installed-iPhone content/layout/timing retest; then choose a stable, suitable public bill. |
+| 4 Member detail | Begich House election dates were reported on the phone after PR #35. | Confirm exact-candidate visual state and choose a suitable public official with corroborated fields. |
+
+Keep the provisional copy below pending exact-candidate claim review. The [App Privacy packet](../app-privacy-release-assets-prep-2026-09-12.md) now separates completed local signing from missing privacy report, runtime/provider and questionnaire evidence. October 1 is the internal T09 handoff checkpoint; remote copy or asset changes still require a separate exact decision.
+
+Historical September 16 status: **source-only draft for review.** No App Store Connect metadata, questionnaire, or image was changed. The checked local source was `93795c7` (the PR #31 feature commit); the handoff recorded PR #31 merged separately as `90f8b85`, which that checkout had not fetched. Neither SHA was an approved signed release candidate. The [capture manifest](capitolwonk-capture-manifest-2026-09-13.md) remains the technical and approval checklist.
 
 ## What PR #30 already settled
 
@@ -38,4 +53,4 @@ The route templates are supported by the current source (`/bills` redirects to t
 
 ## Gate to final assets
 
-Before a final capture or any App Store Connect edit, reconcile the exact release source, signed archive, native/device behavior, privacy/provider evidence, mailbox operating procedure, product configuration, and Tyler's separate approval for that exact remote action. T03 App Store server processing and T04 signing/device changes remain frozen. This draft closes the local metadata/route-state specification gap only; it does not represent a completed screenshot set.
+Before a final capture or any App Store Connect edit, reconcile the exact release source, signed archive, native/device behavior, privacy/provider evidence, mailbox operating procedure, product configuration, and Tyler's separate approval for that exact remote action. T03 App Store server processing remains off; T04 signing/device changes were frozen at the original September 16 draft checkpoint, and the completed local T04 work is described above. This draft closes the local metadata/route-state specification gap only; it does not represent a completed screenshot set.
