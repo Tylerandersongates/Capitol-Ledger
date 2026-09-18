@@ -3,7 +3,7 @@ import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
 import { unstable_cache } from "next/cache";
-import { mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -1808,7 +1808,10 @@ async function getDatabaseBillDetailData(billId: string, includeSecondaryOfficia
           })
         : Promise.resolve({ cosponsors: fallbackCosponsors, sponsor: fallbackSponsor })
     ]);
-    const bill = mergeOfficialBillBasics(databaseBill, officialDetail?.bill, officialActions.map((action) => action.action));
+    const bill = mergeLatestOfficialBillAction(
+      mergeOfficialBillBasics(databaseBill, officialDetail?.bill, officialActions.map((action) => action.action)),
+      officialActions
+    );
     const cosponsors = livePeople.cosponsors;
     const storedRawBill = billRow.rawJson && typeof billRow.rawJson === "object" && !Array.isArray(billRow.rawJson)
       ? billRow.rawJson as CongressBillListItem
@@ -1874,7 +1877,10 @@ async function getLiveBillDetailData(billId: string, includeSecondaryOfficialDat
           })
         : Promise.resolve({ cosponsors: [], sponsor: undefined })
     ]);
-    const bill = mergeOfficialBillBasics(initialBill, response.bill, officialActions.map((action) => action.action));
+    const bill = mergeLatestOfficialBillAction(
+      mergeOfficialBillBasics(initialBill, response.bill, officialActions.map((action) => action.action)),
+      officialActions
+    );
     const cosponsors = livePeople.cosponsors;
     const sponsor = livePeople.sponsor ?? normalizeCongressBillSponsor(response.bill);
 

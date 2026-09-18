@@ -39,8 +39,8 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { buildAiBillAnalysis, hr7008HousePassedTextUrl, type AiBillAnalysis } from "@/lib/ai-policy-lens";
-import { isBillLawActionText } from "@/lib/bill-status";
-import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getStoredBillSummary, getBillStatus, getVoteTotals } from "@/lib/data";
+import { getBillStatusFromActions, isBillLawActionText } from "@/lib/bill-status";
+import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getStoredBillSummary, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
@@ -485,7 +485,7 @@ export default async function BillPage(props: BillPageProps) {
   if (!detail) notFound();
 
   const { bill, billActions, billVideos, billVotes, cosponsors, sourceMatches, sponsor, voteMemberPositionsByVoteId } = detail;
-  const status = getBillStatus(bill);
+  const status = getBillStatusFromActions(bill, billActions);
   const voteEvents = buildBillVoteEvents(bill, billVotes, billActions, voteMemberPositionsByVoteId);
   const overviewVoteEvent = selectOverviewVoteEvent(bill, voteEvents, status);
   const billSummary = activeTab === "details" ? getStoredBillSummary(bill) : null;
