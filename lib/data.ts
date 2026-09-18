@@ -2,7 +2,7 @@ import { billActions, bills, billVideos, cosponsors, members, memberVotes, updat
 import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchBillTextVersions, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
-import { fetchOfficialBillText, isHr7008HousePassedVersion, selectLatestBillTextVersion, textVersionIsNewer } from "@/lib/congress/bill-text";
+import { fetchOfficialBillText, isReviewedHr7008TextVersion, selectLatestBillTextVersion, textVersionIsNewer } from "@/lib/congress/bill-text";
 import { unstable_cache } from "next/cache";
 import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation, selectLatestCongressBillSummary } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
@@ -1037,14 +1037,14 @@ export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution>
   }
 
   if (latestText && textVersionIsNewer(latestText.date, officialSummary?.actionDate)) {
-    if (isHr7008HousePassedVersion(latestText, bill)) {
+    if (isReviewedHr7008TextVersion(latestText, bill)) {
       return {
         actionDate: latestText.date,
-        label: "House-passed bill overview",
+        label: "Current bill overview",
         publishedAt: latestText.date,
         source: "bill-text",
         sourceUrl: latestText.govInfoUrl ?? latestText.sourceUrl,
-        text: "In the House-passed July 22 version, H.R. 7008 would generally bar Members of Congress, their spouses, and dependent children from buying covered investments. Covered sales would require public notice 7 to 14 days in advance, and violations could lead to fees. The bill also would add photo ID rules for federal elections, including provisions for provisional ballots and voting other than in person.",
+        text: "H.R. 7008 would generally bar Members of Congress, their spouses, and dependent children from buying covered investments. Covered sales would require public notice 7 to 14 days in advance, and violations could lead to fees. The current text also contains photo ID rules for federal elections, including provisions for provisional ballots and voting other than in person.",
         versionType: latestText.type
       };
     }

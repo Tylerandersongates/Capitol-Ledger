@@ -11,9 +11,12 @@ export function textVersionIsNewer(versionDate: string, summaryActionDate?: stri
   return !summaryActionDate || versionDate > summaryActionDate.slice(0, 10);
 }
 
-export function isHr7008HousePassedVersion(version: OfficialBillTextVersion, bill: { congress: number; billType: string; billNumber: string }) {
-  return bill.congress === 119 && bill.billType.toLowerCase() === "hr" && bill.billNumber === "7008" &&
-    version.date === "2026-07-22" && version.type.toLowerCase().includes("engrossed in house");
+export function isReviewedHr7008TextVersion(version: OfficialBillTextVersion, bill: { congress: number; billType: string; billNumber: string }) {
+  if (bill.congress !== 119 || bill.billType.toLowerCase() !== "hr" || bill.billNumber !== "7008") return false;
+  // GovInfo's EH and PCS printings have identical substantive text from enactment clause through House passage (checked September 18, 2026).
+  const stem = version.govInfoUrl?.split("/").at(-1);
+  return (version.date === "2026-07-22" && version.type.toLowerCase().includes("engrossed in house") && stem === "BILLS-119hr7008eh.htm") ||
+    (version.date === "2026-08-06" && version.type.toLowerCase().includes("placed on calendar senate") && stem === "BILLS-119hr7008pcs.htm");
 }
 
 export function selectLatestBillTextVersion(
