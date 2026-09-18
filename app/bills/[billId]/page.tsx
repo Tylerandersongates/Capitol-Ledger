@@ -40,8 +40,9 @@ import {
 } from "lucide-react";
 import { buildAiBillAnalysis, type AiBillAnalysis } from "@/lib/ai-policy-lens";
 import { getBillStatusFromActions, isBillLawActionText } from "@/lib/bill-status";
-import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getStoredBillSummary, getVoteTotals } from "@/lib/data";
+import { getBillDetailWithLiveData, getBillSummary, getOfficialBillCosponsors, getOfficialBillSponsor, getStoredBillSummary, getVoteTotals } from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
+import { matchBillSources } from "@/lib/source-matching";
 import { formatDate } from "@/lib/utils";
 import type { BillSummaryResolution, VoteMemberPositionRecord } from "@/lib/data";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Member, Vote } from "@/types/capitol";
@@ -619,7 +620,13 @@ export default async function BillPage(props: BillPageProps) {
               {aiPolicyLensAnalysis ? <AiPolicyLensCard analysis={aiPolicyLensAnalysis} bill={bill} summary={billSummary} /> : null}
             </PlanFeatureGate>
             <PlanFeatureGate feature="sourceMap" initialSubscription={initialSubscription}>
-              <SourceMapCard sourceMatches={sourceMatches} />
+              {sourceMatches.some((match) => match.matchKind === "Sponsor Profile") ? (
+                <SourceMapCard sourceMatches={sourceMatches} />
+              ) : (
+                <Suspense fallback={<SourceMapCard sourceMatches={sourceMatches} />}>
+                  <OfficialSourceMapCard bill={bill} sourceMatches={sourceMatches} sponsor={sponsor} />
+                </Suspense>
+              )}
             </PlanFeatureGate>
             <PlanFeatureGate feature="speechVideo" initialSubscription={initialSubscription}>
               <VideoCard billVideos={billVideos} />
@@ -1180,12 +1187,13 @@ function KeyDetailsCard({
         </span>
       </div>
       <div className="mt-5 grid gap-3">
-        <DetailRow
-          image={sponsor?.photoUrl}
-          label="Sponsor"
-          value={sponsor?.fullName ?? (bill.sponsorBioguideId ? "Sponsor profile pending" : "No sponsor listed")}
-          href={sponsor ? `/members/${sponsor.bioguideId}` : undefined}
-        />
+        {sponsor ? (
+          <SponsorRow sponsor={sponsor} />
+        ) : (
+          <Suspense fallback={<SponsorRow loading />}>
+            <OfficialSponsorRow bill={bill} />
+          </Suspense>
+        )}
         {cosponsors.length ? (
           <CosponsorsRow cosponsors={cosponsors} />
         ) : (
@@ -1210,6 +1218,23 @@ function resolveCommitteeDetail(bill: Bill, status: string) {
 async function OfficialCosponsorsRow({ bill }: { bill: Bill }) {
   const cosponsors = await getOfficialBillCosponsors(bill);
   return <CosponsorsRow cosponsors={cosponsors} />;
+}
+
+async function OfficialSponsorRow({ bill }: { bill: Bill }) {
+  const sponsor = await getOfficialBillSponsor(bill);
+  return <SponsorRow sponsor={sponsor} />;
+}
+
+function SponsorRow({ sponsor, loading = false }: { sponsor?: Member; loading?: boolean }) {
+  return (
+    <DetailRow
+      icon={<UsersRound />}
+      image={sponsor?.photoUrl}
+      label="Sponsor"
+      value={sponsor?.fullName ?? (loading ? "Checking official sponsor" : "Sponsor unavailable")}
+      href={sponsor ? `/members/${sponsor.bioguideId}` : undefined}
+    />
+  );
 }
 
 function CosponsorsRow({ cosponsors, loading = false }: { cosponsors: Member[]; loading?: boolean }) {
@@ -1242,6 +1267,18 @@ function CosponsorsRow({ cosponsors, loading = false }: { cosponsors: Member[]; 
       </div>
     </div>
   );
+}
+
+async function OfficialSourceMapCard({ bill, sourceMatches, sponsor }: { bill: Bill; sourceMatches: BillSourceMatch[]; sponsor?: Member }) {
+  const officialSponsor = sponsor ?? await getOfficialBillSponsor(bill);
+  const sponsorSource = officialSponsor
+    ? matchBillSources({ bill, sponsor: officialSponsor, videos: [], votes: [] }).find((match) => match.matchKind === "Sponsor Profile")
+    : undefined;
+  const matches = sponsorSource && !sourceMatches.some((match) => match.targetType === "member" && match.targetId === officialSponsor?.bioguideId)
+    ? [...sourceMatches, sponsorSource]
+    : sourceMatches;
+
+  return <SourceMapCard sourceMatches={matches} />;
 }
 
 function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) {
