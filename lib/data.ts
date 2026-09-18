@@ -3,7 +3,7 @@ import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
 import { unstable_cache } from "next/cache";
-import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation } from "@/lib/congress/normalizers";
+import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation, selectLatestCongressBillSummary } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
 import { issueSignals } from "@/lib/issue-signals";
@@ -30,6 +30,7 @@ export type SearchFilters = {
 };
 
 export type BillSummaryResolution = {
+  actionDate?: string;
   label: string;
   publishedAt?: string;
   source: "official" | "stored" | "pending";
@@ -1009,12 +1010,11 @@ export function getStoredBillSummary(bill: Bill): BillSummaryResolution {
 export async function getBillSummary(bill: Bill): Promise<BillSummaryResolution> {
   try {
     const data = await fetchBillSummaries(bill.congress, bill.billType, bill.billNumber, { limit: 5, timeoutMs: resolveBillSummaryFetchTimeoutMs() });
-    const officialSummary = (data.summaries ?? [])
-      .filter((summary) => summary.text)
-      .sort((a, b) => Date.parse(b.updateDate ?? b.actionDate ?? "0") - Date.parse(a.updateDate ?? a.actionDate ?? "0"))[0];
+    const officialSummary = selectLatestCongressBillSummary(data.summaries ?? []);
 
     if (officialSummary?.text) {
       return {
+        actionDate: officialSummary.actionDate,
         label: "Official CRS Summary",
         publishedAt: officialSummary.updateDate ?? officialSummary.actionDate,
         source: "official",
