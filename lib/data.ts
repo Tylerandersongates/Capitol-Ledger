@@ -1724,7 +1724,7 @@ function mapSourceLinkToBillSourceMatch(
   };
 }
 
-async function getDatabaseBillDetailData(billId: string, includeOfficialEnrichment = true): Promise<BillDetailData | null> {
+async function getDatabaseBillDetailData(billId: string, includeSecondaryOfficialData = true): Promise<BillDetailData | null> {
   if (!hasDatabaseUrl()) return null;
 
   try {
@@ -1793,14 +1793,15 @@ async function getDatabaseBillDetailData(billId: string, includeOfficialEnrichme
     const fallbackCosponsors = billRow.cosponsors.map((cosponsor) => mapDatabaseMember(cosponsor.member));
     const billVideos = getBillVideos(databaseBill.id);
     const needsOfficialBasics = !databaseBill.introducedDate || !databaseBill.sponsorBioguideId;
+    // Current actions drive the visible status even when secondary details are deferred.
     const [officialActions, officialDetail, livePeople] = await Promise.all([
-      includeOfficialEnrichment ? fetchOfficialBillActionsForBill(databaseBill) : Promise.resolve([]),
-      includeOfficialEnrichment && needsOfficialBasics
+      fetchOfficialBillActionsForBill(databaseBill),
+      includeSecondaryOfficialData && needsOfficialBasics
         ? fetchBill(databaseBill.congress, databaseBill.billType, databaseBill.billNumber, {
             timeoutMs: memberLegislationFetchTimeoutMs
           }).catch(() => null)
         : Promise.resolve(null),
-      includeOfficialEnrichment
+      includeSecondaryOfficialData
         ? fetchLiveBillPeople(databaseBill, {
             cosponsors: fallbackCosponsors,
             sponsor: fallbackSponsor
@@ -1851,7 +1852,7 @@ async function getDatabaseBillDetailData(billId: string, includeOfficialEnrichme
   }
 }
 
-async function getLiveBillDetailData(billId: string, includeOfficialEnrichment = true): Promise<BillDetailData | null> {
+async function getLiveBillDetailData(billId: string, includeSecondaryOfficialData = true): Promise<BillDetailData | null> {
   const parsedLiveId = parseStableLiveBillId(billId);
   if (!parsedLiveId) return null;
 
@@ -1865,8 +1866,8 @@ async function getLiveBillDetailData(billId: string, includeOfficialEnrichment =
     const billVotes = getBillVotes(initialBill.id);
     const billVideos = getBillVideos(initialBill.id);
     const [officialActions, livePeople] = await Promise.all([
-      includeOfficialEnrichment ? fetchOfficialBillActionsForBill(initialBill) : Promise.resolve([]),
-      includeOfficialEnrichment
+      fetchOfficialBillActionsForBill(initialBill),
+      includeSecondaryOfficialData
         ? fetchLiveBillPeople(initialBill, {
             cosponsors: [],
             sponsor: undefined
@@ -1899,12 +1900,12 @@ async function getLiveBillDetailData(billId: string, includeOfficialEnrichment =
 
 export async function getBillDetailWithLiveData(
   billId: string,
-  { includeOfficialEnrichment = true }: { includeOfficialEnrichment?: boolean } = {}
+  { includeSecondaryOfficialData = true }: { includeSecondaryOfficialData?: boolean } = {}
 ): Promise<BillDetailData | null> {
   if (billId.startsWith("demo-")) return null;
 
-  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId, includeOfficialEnrichment))) ??
-    (await getLiveBillDetailData(billId, includeOfficialEnrichment));
+  return (await withOptionalDatabaseReadTimeout(() => getDatabaseBillDetailData(billId, includeSecondaryOfficialData))) ??
+    (await getLiveBillDetailData(billId, includeSecondaryOfficialData));
 }
 
 export function getBillStatus(bill: Bill) {
