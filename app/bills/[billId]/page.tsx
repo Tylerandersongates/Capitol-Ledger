@@ -173,7 +173,7 @@ function isFinalPassageAction(action: BillAction, originChamber: "House" | "Sena
   const text = action.action.toLowerCase();
   if (text.includes("presented to the president") || text.includes("presented to president") || text.includes("enrolled bill signed")) return true;
   if (action.chamber === receivingChamber && isChamberPassageAction(action, receivingChamber) && text.includes("without amendment")) return true;
-  return action.chamber === originChamber &&
+  return action.chamber === originChamber && !/with (?:an? |a further )?amendment/.test(text) &&
     (text.includes(`agreed to ${receivingChamber.toLowerCase()} amendment`) ||
       text.includes(`agreed to the ${receivingChamber.toLowerCase()} amendment`));
 }
