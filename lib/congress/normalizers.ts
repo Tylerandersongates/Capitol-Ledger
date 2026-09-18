@@ -456,6 +456,19 @@ export function mergeOfficialBillBasics(bill: Bill, raw?: CongressBillListItem |
   };
 }
 
+export function mergeLatestOfficialBillAction(
+  bill: Bill,
+  actions: Array<Pick<BillAction, "action" | "date" | "occurredAt">>
+): Bill {
+  const latest = actions.reduce<(typeof actions)[number] | null>((current, action) => {
+    if (!current || action.occurredAt > current.occurredAt) return action;
+    return current;
+  }, null);
+
+  if (!latest || latest.date <= bill.latestActionDate.slice(0, 10)) return bill;
+  return { ...bill, latestActionDate: latest.date, latestActionText: latest.action };
+}
+
 export function normalizeCongressBillSponsor(raw?: CongressBillListItem | null): Member | undefined {
   const sponsor = raw?.sponsors?.find((record) => record.bioguideId);
   if (!sponsor || !raw?.type) return undefined;

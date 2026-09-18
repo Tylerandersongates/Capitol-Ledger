@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { CongressBillListItem } from "@/lib/congress/client";
-import { mergeOfficialBillBasics, normalizeCongressBillSponsor } from "@/lib/congress/normalizers";
+import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBillSponsor } from "@/lib/congress/normalizers";
 import type { Bill } from "@/types/capitol";
 
 const catalogBill: Bill = {
@@ -54,5 +54,22 @@ const actionHydrated = mergeOfficialBillBasics(
 );
 assert.equal(actionHydrated.committeeName, "Committee on Health, Education, Labor, and Pensions");
 assert.equal(actionHydrated.introducedDate, undefined, "A timeline action cannot establish the introduction date.");
+
+const newerAction = mergeLatestOfficialBillAction({
+  ...catalogBill,
+  latestActionDate: "2026-07-23",
+  latestActionText: "Received in the Senate."
+}, [{
+  action: "Read the second time. Placed on Senate Legislative Calendar under General Orders.",
+  date: "2026-08-06",
+  occurredAt: "2026-08-06"
+}]);
+assert.equal(newerAction.latestActionDate, "2026-08-06");
+assert.match(newerAction.latestActionText, /Senate Legislative Calendar/);
+assert.equal(mergeLatestOfficialBillAction(newerAction, [{
+  action: "Passed/agreed to in House.",
+  date: "2026-07-22",
+  occurredAt: "2026-07-22T16:52:00Z"
+}]).latestActionText, newerAction.latestActionText, "Older actions must not replace the current official update.");
 
 console.log("Bill Basics fixtures passed.");
