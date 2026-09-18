@@ -466,7 +466,13 @@ export function mergeLatestOfficialBillAction(
   }, null);
 
   if (!latest || latest.date <= bill.latestActionDate.slice(0, 10)) return bill;
-  return { ...bill, latestActionDate: latest.date, latestActionText: latest.action };
+  const summaryIsActionPlaceholder = bill.summary.trim() === bill.latestActionText.trim();
+  return {
+    ...bill,
+    latestActionDate: latest.date,
+    latestActionText: latest.action,
+    summary: summaryIsActionPlaceholder ? latest.action : bill.summary
+  };
 }
 
 export function normalizeCongressBillSponsor(raw?: CongressBillListItem | null): Member | undefined {
