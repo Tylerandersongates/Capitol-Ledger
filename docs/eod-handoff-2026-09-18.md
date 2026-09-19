@@ -19,6 +19,74 @@
 - Keep Tyler's **October 30, 2026 launch target** visible without treating it as release authorization. Surface risk and preserve the October 2–6 owner-availability buffer (subject to confirmation); schedule no required approvals, device sessions, uploads, or submissions during it. Do not move the target without Tyler's decision.
 <!-- END EOD STANDING RULES -->
 
+## Superseding late EOD closeout
+
+This section supersedes the earlier September 18 state, next-task, and resume sections below. Those sections remain as dated evidence of the state before PRs #45–#48, the phone retests, and the full-app audit.
+
+### Baseline
+
+- **Documentation worktree:** `/Users/tylergates/Documents/Capitol Ledger/.worktrees/sept16-t09`, branch `codex/sept16-t09`, clean at pre-closeout commit `a0defcdf9429fc31a75c521234223125c22bab68` (`Record full app launch-readiness audit`). This EOD update is a later local documentation commit on the same branch.
+- **Source worktree:** `/Users/tylergates/Documents/Capitol Ledger/.worktrees/auth-signin-recovery-sept16`, branch `codex/t06-member-back-navigation-sept18`, clean at `aea0c827829a8b4c0fda974a40b84d125455958e`.
+- **Verified Production source:** PR #48 merged as `3cb37b43f74ff96108048a0148dd84d5c276affb`; matching Vercel deployment `HaDLyFG9x64VT7fYUG3vjjLCHeMJ` was Ready/Latest on `www.capitolwonk.com` earlier today. The user's browser has four tabs and is currently on a Vercel deployment page; no tab was closed or altered for EOD.
+- **Native candidate:** signed CapitolWonk 1.0 build 2 remains installed on Tyler's iPhone. No export, TestFlight upload, distribution, App Review submission, or release occurred.
+
+### Completed today
+
+- PR #45 moved newer official-text guidance fully in-app and kept CRS refresh behavior across bill Details pages. It merged as `3098b16`; the exact-commit Production deployment became Ready/Latest.
+- PR #46 made the current official bill-text overview the Details lead and rebuilt H.R. 7008 progress from official actions. It merged as `a2d77d1`; Production showed House passage July 22, Senate receipt July 23, Senate calendar August 6, and final passage pending.
+- PR #47 restored sponsor resolution on bill Overview and Details. It merged as `baa0fbd`; Production and the installed phone showed Rep. Bryan Steil on H.R. 7008.
+- Tyler measured H.R. 7008 openings of 2.60, 1.75, and 1.66 seconds against the earlier 6.49-second baseline. The last two average 1.71 seconds. These are useful device observations, not a complete controlled latency benchmark.
+- PR #48 replaced the member profile's fixed Dashboard back link with the shared history-aware control. It merged as `3cb37b4`; live browser and installed-phone H.R. 7008 → Bryan Steil → Go back returned to the bill. Tyler confirmed bill Details and back taps work correctly.
+- Completed and locally committed three focused trust audits: [Live Bill Tracker](live-bill-tracker-audit-2026-09-18.md) at `eaaebd5`, [Dashboard Civic Activity](dashboard-civic-activity-gamification-audit-2026-09-18.md) at `075d04c`, and [Official Public Record Accountability](official-accountability-snapshot-audit-2026-09-18.md) at `e33122a`.
+- Completed the [full-app launch-readiness audit](full-app-audit-2026-09-18.md) and reconciled the live handoff, ledger, and [daily benchmark board](daily-benchmarks-2026-09-18-to-10-30.md) in local commit `a0defcd`. No Production, provider, Apple, account, privacy, database, migration, scheduler, or deployment state changed during the audit.
+
+### Full-audit result and unresolved defects
+
+- **Current launch result:** CapitolWonk is not ready for TestFlight, App Review, or a public launch candidate.
+- **P0 Alerts truth defect:** Production combines the newest unlinked Senate nomination vote with unrelated H.R. 9954, calls it a current vote reminder, labels it “Today,” and directs the user to contact a Senator. Source review confirmed the repeated `recentVote.bill ?? trackedBill` fallback. Remove it everywhere and suppress unverified reminders before the tracker work.
+- **P0 App Review gate:** in-app account deletion remains disabled. The existing implementation still needs its production migration/task/provider, monitoring, restore, and disposable-account device runbook before activation and App Review.
+- **P1 data truth:** Live Docket is a bounded stale database snapshot labeled with render time; 50 displayed actions were July 27 and four July 23; H.R. 7008's August 6 action was absent; no Congress sync cron exists. All 54 inspected docket rows omitted sponsors because the row resolves against bundled fixture members rather than the live member set.
+- **P1 engagement truth:** the 440-point gamification total reconciles, but monthly totals have no month boundary, streaks do not require consecutive days, Level 3 progress is 59% instead of roughly 11%, ten point-bearing actions are omitted from Civic Activity, nine badges have no earning path, and device-local dedupe plus whole-snapshot writes create replay/stale-write risk.
+- **P1 Officials truth:** numeric scores remain safely disabled. The advertised model is unreachable because only voting has a numeric value; evidence is capped, unlabeled, request-time dependent, and cannot distinguish verified zero from partial/unavailable data.
+- **P1 workflow/security/accessibility:** Search can emit roughly 1.96 MB uncompressed HTML and render hundreds of controls; preparing and abandoning an official-contact draft can start the three-day cooldown; native programmatic external navigation may be canceled; browser hardening headers are absent; rate limits are instance-local; personalized cache policy is not explicit; public Congress/search proxies lack shared throttling; Feedback and Search controls lack complete accessible labels/combobox semantics.
+- **Release gates:** T03 Apple verifier/OCSP acceptance, T05 native monitoring, T07 Apple sandbox transitions, T08 first-video scope, T09 App Privacy/assets/provider evidence, T10 TestFlight, and T11 App Review/release remain open under their existing approval boundaries.
+
+### Verification and limitations
+
+- Thirty-four focused repository checks passed across deletion readiness, bills, votes, billing transition, blank accounts, dashboard empty state, election copy, feedback, gamification, iOS bridge, launch copy, Live Docket, member surfaces, policy feeds, privacy, Search, TestFlight UI, videos, and Daily Brief behavior. These are largely source/fixture guards.
+- Read-only Production inspection established the false Alerts relationship, stale docket dates, 54 missing docket sponsors, live gamification values, Officials coverage behavior, route timings, response headers/cache policy, and truthful disabled privacy/deletion states.
+- `git diff --check` passed for the full-audit documentation commit. The EOD standing-rules check and final diff check are rerun after this closeout edit.
+- A fresh complete type/lint/build result is not claimed. The available local environment did not match the pinned Node/pnpm toolchain; a strict TypeScript run under bundled Node 24 produced no output for more than five minutes and was stopped. Prior exact-head CI passed for each deployed PR, but the audit's current source head still needs its normal pinned-toolchain gates when implementation starts.
+- No destructive QA, real purchase, account deletion, provider mutation, production database query/write, cron activation, upload, submission, or release was performed during the audit.
+
+### T01–T11 and deferred ledger
+
+- **T01–T02:** complete for their recorded web/monitoring scopes. Older listing screenshots remain under T09.
+- **T03:** high/open. Codex owns official fix/acceptance evidence; Tyler owns the exact residual-risk/remediation decision. September 25 remains the decision checkpoint. App Store server verification and Notifications V2 stay off.
+- **T04:** local signing/archive/install complete; do not repeat. Export/upload remains a later T10 gate.
+- **T05:** native Sentry delivery/privacy proof open; Codex prepares evidence and Tyler owns any exact protected device event. Historical estimate 1–2 working days.
+- **T06:** bill text, sponsor, performance observations, and history-aware return passed for H.R. 7008. The full audit created the ordered trust-repair queue, and the remaining Dashboard, Search, Account, civic, Privacy, Support, and Alerts device matrix is open. Codex owns source repair and Preview; Tyler supplies the short installed-phone observations.
+- **T07:** Apple sandbox purchase/restore/renewal/refund/notification/Team proof open. Codex owns the matrix; Tyler owns every exact account/purchase action. Historical estimate 1–2 working days plus propagation.
+- **T08:** first Daily Brief/video scope remains Tyler's product decision; the app truthfully shows the placeholder. Conditional integration remains 1–2 days plus platform wait.
+- **T09:** App Privacy, corrected listing captures, exact provider/retention evidence, native-origin decision, and upload packet remain high/open. Codex prepares source/read-only evidence; Tyler owns remote questionnaire/assets/provider actions. First-party privacy operator paths stay off.
+- **T10–T11:** no TestFlight upload/distribution, App Review submission, or release. Codex prepares exact packets; Tyler owns each exact action. Apple processing time remains external.
+- **Deferred:** first-party privacy operator runtime, outbound Daily Brief delivery, Supreme Court sister app, and state-legislation pilot remain outside the launch path.
+
+### Schedule and daily effort
+
+- **Saturday, September 19 — 8–10 Codex hours:** Alerts P0 removal and fixtures (1.5–2h); tracker labels/timestamps/sponsors (2–3h); protected bounded sync candidate and failure behavior (3–4h); gamification contract/formula checks (1–1.5h). Exit evidence: false alert cannot reproduce, sampled sponsors resolve or say unavailable, freshness comes from sync state, and the gamification contract is reviewable.
+- **Sunday, September 20 — 8–10 Codex hours plus 30–60 minutes of Tyler phone testing:** gamification implementation/account behavior (4.5–6h); official-contact/native path (1–1.5h); headers/cache/accessibility (1.5–2h); matching Preview/device regression (about 1h).
+- **Monday, September 21 — 5–7 Codex hours if recovery is needed:** highest weekend regression (1–2h); persisted Officials evidence and truthful labels (2–3h); member Search pagination/performance measurement (about 2h).
+- The prior three-to-four-day lead claim is withdrawn until Alerts and both Dashboard trust candidates pass. September 25, October 1, October 2–6, October 16, October 19, October 20–29, and Tyler's October 30 target remain unchanged. October 30 is possible only at low confidence and material risk; it is not release authorization.
+
+### Tomorrow's single next safe task
+
+In the source worktree, verify branch/HEAD/status, read the full audit and current handoff, then remove the false Alerts bill/vote fallback from Inbox, detail, summary, and default-unread logic. A system reminder may exist only when the vote has a verified linked bill and a current, user-relevant action rule; otherwise render the honest empty state. Add linked-bill, unlinked-nomination, stale-vote, chamber-contact, and no-alert fixtures, run focused checks, and prepare a phone-width Preview. Continue to tracker truth/sponsors only after this candidate is stable. No new approval is needed for source-only repair, local checks, draft PR preparation, or Preview; any Production merge/deployment remains its separate exact gate.
+
+### Resume prompt
+
+> Continue CapitolWonk's September 19 trust-repair work from `/Users/tylergates/Documents/Capitol Ledger/.worktrees/sept16-t09`. First verify the documentation and source worktrees, then read `AGENTS.md`, `docs/PROJECT-CONTEXT.md`, active `docs/DECISIONS.md`, `docs/HANDOFF.md`, `docs/eod-handoff-2026-09-18.md`, `docs/full-app-audit-2026-09-18.md`, `docs/daily-benchmarks-2026-09-18-to-10-30.md`, and the newest `docs/project-timeline.md` section. Production is currently not launch-ready. The first source task is the false Alerts relationship: remove every unrelated `trackedBill` fallback, suppress unverified reminders, add linked/unlinked/stale/chamber/no-alert fixtures, run focused checks, and prepare phone-width Preview evidence. Then continue the truthful Live Docket freshness/sponsor/protected-sync candidate and the gamification contract in that order. Preserve numeric-score disablement, October 2–6 and October 20–29 buffers, the September 25 verifier checkpoint, and Tyler's October 30 target. Keep deletion/privacy/App Store processing/Notifications V2 off and retain separate approval gates for Production, provider, Apple, purchase, upload, distribution, App Review, and release. Do not repeat the resolved signing, H.R. 7008 sponsor, or back-navigation work.
+
 ## 1) Completed Today
 
 - [PR #41](https://github.com/Tylerandersongates/Capitol-Ledger/pull/41) targeted the 6.49-second iPhone baseline from bill search to H.R. 7008 Overview: it removed Overview's unnecessary subscription read, deferred secondary official people data, and added a dated CRS notice linking the July 22 House-passed text with the photo ID provision. Tyler approved the Production merge. No post-release iPhone timing was recorded.
