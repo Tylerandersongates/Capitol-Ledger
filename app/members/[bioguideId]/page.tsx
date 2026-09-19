@@ -1,6 +1,7 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
+import { HistoryBackButton } from "@/components/history-back-button";
 import { MemberEmailAction } from "@/components/member-email-action";
 import { SaveTargetButton } from "@/components/saved-ledger-controls";
 import Image from "next/image";
@@ -471,9 +472,9 @@ export default async function MemberPage(props: MemberPageProps) {
       statusBarClassName="flex items-center justify-between text-[17px] font-semibold"
     >
             <header className="mt-8 flex items-center justify-between">
-              <Link href="/dashboard" className={mobileIconButtonClass} aria-label="Back to dashboard">
+              <HistoryBackButton className={mobileIconButtonClass}>
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
-              </Link>
+              </HistoryBackButton>
               <div className="flex items-center gap-4">
                 <SaveTargetButton
                   targetType="member"
