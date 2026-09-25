@@ -21,6 +21,9 @@ assert.match(searchForm, /<nav aria-label="Search suggestions">/, "Suggestion li
 assert.doesNotMatch(searchForm, /role="listbox"/, "Suggestion links must not claim unsupported listbox keyboard behavior.");
 assert.match(searchForm, /Type at least two characters for suggestion links, then use Tab/, "Search must explain its keyboard interaction.");
 assert.match(searchForm, /focus-visible:outline/, "Search controls must retain visible keyboard focus.");
+assert.match(searchForm, /onBlurCapture=\{\(event\) => \{/, "Search must manage focus across the complete suggestion region.");
+assert.match(searchForm, /event\.currentTarget\.contains\(event\.relatedTarget\)/, "Search must keep suggestions open while keyboard focus stays inside the search region.");
+assert.doesNotMatch(searchForm, /<input[\s\S]*?onBlur=/, "The query input must not close suggestions before keyboard users can reach them.");
 assert.match(searchPage, /className=\{`h-11 rounded-xl/, "Primary search tabs must retain a 44px target.");
 
 for (const [id, label] of [

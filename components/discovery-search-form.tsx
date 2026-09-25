@@ -108,7 +108,17 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
   );
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onBlurCapture={(event) => {
+        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+        blurTimeoutRef.current = window.setTimeout(() => setIsFocused(false), 120);
+      }}
+      onFocusCapture={() => {
+        if (blurTimeoutRef.current) window.clearTimeout(blurTimeoutRef.current);
+        setIsFocused(true);
+      }}
+    >
       <form action="/search" className="flex items-center gap-3 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.76)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_24px_rgba(2,10,28,0.24)]">
         <Search className="h-6 w-6 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
         <label htmlFor={searchInputId} className="sr-only">Search bills, officials, and votes</label>
@@ -117,14 +127,7 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
           type="search"
           name="q"
           value={inputValue}
-          onBlur={() => {
-            blurTimeoutRef.current = window.setTimeout(() => setIsFocused(false), 120);
-          }}
           onChange={(event) => setInputValue(event.target.value)}
-          onFocus={() => {
-            if (blurTimeoutRef.current) window.clearTimeout(blurTimeoutRef.current);
-            setIsFocused(true);
-          }}
           placeholder="Search bills, officials, votes..."
           aria-controls={showDropdown ? searchSuggestionsId : undefined}
           aria-describedby={searchHintId}
