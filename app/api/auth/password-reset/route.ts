@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { requestPasswordReset } from "@/lib/auth-database";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
 import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
@@ -35,24 +35,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const emailDelivery =
-    result.resetToken && body.email
-      ? await deliverAuthEmail({
-          kind: "password_reset",
-          requestBaseUrl: authEmailRequestBaseUrl(request),
-          token: result.resetToken,
-          user: {
-            email: body.email
-          }
-        }).catch(() => ({
-          delivered: false as const,
-          error: "Password reset email delivery failed.",
-          mode: "manual_demo" as const
-        }))
-      : { delivered: false as const, mode: result.deliveryMode };
-
-  return NextResponse.json({
-    deliveryMode: emailDelivery.mode,
-    message: "If an account exists, a password reset path has been prepared."
+  const requestBaseUrl = authEmailRequestBaseUrl(request);
+  after(async () => {
+    if (!result.resetToken || !body.email) return;
+    await deliverAuthEmail({
+      kind: "password_reset",
+      requestBaseUrl,
+      token: result.resetToken,
+      user: {
+        email: body.email
+      }
+    }).catch(() => undefined);
   });
+
+  return NextResponse.json(
+    { message: "If an account exists, password reset instructions are on the way." },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
 }

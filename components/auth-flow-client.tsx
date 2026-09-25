@@ -331,6 +331,30 @@ export function AuthFlowClient({
     setStatus("");
   }
 
+  async function resendVerificationEmail() {
+    setPending(true);
+    const result = await postJson<AuthApiResponse & { message?: string }>("/api/auth/verification-email", {}).catch(
+      (error: unknown) => ({
+        data: { error: error instanceof Error ? error.message : "Verification email could not be sent." },
+        ok: false
+      })
+    );
+    setPending(false);
+
+    if (!result.ok) {
+      setStatus(result.data.error ?? "Verification email could not be sent. Please try again shortly.");
+      return;
+    }
+
+    setStatus(
+      result.data.emailDelivery === "resend" || result.data.emailDelivery === "webhook"
+        ? "Verification email sent. Open the newest link in your inbox."
+        : result.data.verificationLink
+          ? `Verification prepared. Open this link: ${result.data.verificationLink}`
+          : result.data.message ?? "Verification link prepared."
+    );
+  }
+
   const postAuthReturnTo = setupComplete && returnTo === "/onboarding" && !userRequestedAccountCreation ? "/dashboard" : returnTo;
 
   const syncLocalAccountData = useCallback(async () => {
@@ -586,6 +610,8 @@ export function AuthFlowClient({
           ? "Verification email sent. Open the link in your inbox to continue."
           : authData.emailDelivery === "webhook"
             ? "Verification link sent."
+            : authData.emailDelivery === "failed"
+              ? "Your account was created, but the verification email could not be sent. Use Resend verification email to try again."
             : authData.verificationLink
               ? `Verification prepared. Open this link: ${authData.verificationLink}`
               : "Verification prepared. Open the verification link to continue."
@@ -886,6 +912,16 @@ export function AuthFlowClient({
                 {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
                 <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
               </button>
+              {mode === "verify" ? (
+                <button
+                  type="button"
+                  onClick={() => void resendVerificationEmail()}
+                  disabled={pending}
+                  className="flex h-11 w-full items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
+                >
+                  Resend verification email
+                </button>
+              ) : null}
             </div>
           )}
 

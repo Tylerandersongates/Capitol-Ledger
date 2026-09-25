@@ -11,7 +11,8 @@ CapitolWonk can create real account sessions, verification tokens, and password-
 3. `POST /api/auth/password-reset` prepares a password-reset email.
 4. Verification links route to `/sign-in?verifyToken=<token>`.
 5. Password reset links route to `/sign-in?resetToken=<token>`.
-6. `AUTH_EMAIL_DELIVERY=webhook` sends a provider-agnostic payload to an outside email bridge.
+6. `POST /api/auth/verification-email` lets the signed-in, unverified account request a new link up to three times per hour.
+7. `AUTH_EMAIL_DELIVERY=resend` sends directly through Resend; `AUTH_EMAIL_DELIVERY=webhook` sends a provider-agnostic payload to an outside email bridge.
 
 ## Required Environment
 
@@ -20,8 +21,20 @@ DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_APP_URL="https://your-app.example.com"
 AUTH_SECRET="long-random-secret"
 AUTH_COOKIE_SECURE="true"
-AUTH_EMAIL_DELIVERY="webhook"
 AUTH_EMAIL_FROM="CapitolWonk <accounts@example.com>"
+```
+
+Choose one delivery path:
+
+```bash
+AUTH_EMAIL_DELIVERY="resend"
+RESEND_API_KEY="re_..."
+```
+
+or:
+
+```bash
+AUTH_EMAIL_DELIVERY="webhook"
 AUTH_EMAIL_WEBHOOK_URL="https://provider-bridge.example.com/auth-email"
 AUTH_EMAIL_WEBHOOK_SECRET="long-random-secret"
 ```
@@ -62,18 +75,29 @@ For password reset, `kind` is `password_reset` and `actionUrl` contains `resetTo
 
 The request includes `X-Capitol-Ledger-Secret` when `AUTH_EMAIL_WEBHOOK_SECRET` is configured.
 
+## Trust Guarantees
+
+- Password-reset requests always return the same public response whether or not an account exists; provider mode and account existence are not returned.
+- Password-reset provider delivery runs after the public response so provider latency does not become an account-existence timing signal.
+- Password-reset links expire after 60 minutes. Verification links expire after 24 hours.
+- Tokens are stored only as hashes, are claimed atomically, and can be used once.
+- Issuing a new verification or reset token invalidates older unused tokens for that account. Completing a password reset also invalidates every existing account session.
+- Production action links require the configured credential-free HTTPS `NEXT_PUBLIC_APP_URL`; request `Host` values cannot replace it.
+- Provider calls time out after 10 seconds and do not follow redirects with the email payload.
+- Operational delivery logs include only message kind, provider mode, outcome, and a coarse error code. They exclude recipients, names, tokens, action URLs, provider URLs, and message bodies.
+- Manual links are never returned when `NODE_ENV=production`.
+
 ## Recommended Provider Setup
 
-Use Resend for the first production pass unless deliverability requirements push the project toward Postmark.
+Use direct Resend delivery for the first production pass unless deliverability requirements justify a separate provider bridge.
 
 Recommended first setup:
 
 1. Verify the sending domain.
 2. Create the sender identity used by `AUTH_EMAIL_FROM`.
-3. Create a small webhook bridge or serverless function that accepts CapitolWonk payloads.
-4. Validate `X-Capitol-Ledger-Secret`.
-5. Send the payload as a plain-text transactional email first.
-6. Add branded HTML after the plain-text path is reliable.
+3. Configure `AUTH_EMAIL_DELIVERY=resend` and `RESEND_API_KEY`. If a bridge is used instead, validate `X-Capitol-Ledger-Secret` before accepting a payload.
+4. Send the payload as a plain-text transactional email first.
+5. Add branded HTML after the plain-text path is reliable.
 
 ## QA Order
 
@@ -85,15 +109,18 @@ Recommended first setup:
 6. Confirm the verification email arrives and opens `/sign-in?verifyToken=...`.
 7. Use forgot password and confirm the reset email arrives.
 8. Complete the reset flow and sign in with the new password.
-9. Test expired, reused, and invalid token states.
+9. Confirm reset requests for existing and nonexistent accounts return the same status and response shape.
+10. Request two verification links and two reset links; confirm only the newest link of each type works.
+11. Test expired, reused, invalid, and concurrent token submissions.
+12. Simulate a provider timeout/failure; confirm registration preserves the account and exposes the resend recovery path, while password reset keeps the generic public response.
+13. Confirm delivery logs contain no recipient, name, token, action URL, provider URL, or message body.
 
 ## Demo Safety
 
-When auth email delivery is disabled or in `manual_demo`, the app can still prepare tokens for local testing. Production users need webhook delivery before launch.
+When auth email delivery is disabled or in `manual_demo`, the app can still prepare and expose tokens during local development. Deployed production-mode builds never return manual action links. A real provider remains required before launch.
 
 ## Open Decisions
 
-- Final email provider: Resend first, Postmark if transactional deliverability becomes more important than simplicity.
 - Whether verification should be required before a user can use the full account dashboard.
 - Whether auth emails should use plain text only for launch or include branded HTML.
 - Whether support/contact links should be included in auth email footers.

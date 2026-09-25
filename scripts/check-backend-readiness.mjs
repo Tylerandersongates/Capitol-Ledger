@@ -37,7 +37,9 @@ function isValidUrl(value) {
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || (!productionMode && url.protocol === "http:");
+    if (url.username || url.password) return false;
+    if (shouldFailRequired()) return url.protocol === "https:";
+    return url.protocol === "https:" || url.protocol === "http:";
   } catch {
     return false;
   }
@@ -79,7 +81,7 @@ function checkCore() {
   required("DATABASE_URL", process.env.DATABASE_URL, "Needed for real accounts, saved ledger, subscriptions, gamification, alerts, and Weekly Brief history.");
 
   if (isValidUrl(process.env.NEXT_PUBLIC_APP_URL)) {
-    pass("NEXT_PUBLIC_APP_URL is configured", process.env.NEXT_PUBLIC_APP_URL);
+    pass("NEXT_PUBLIC_APP_URL is configured");
   } else if (shouldFailRequired()) {
     fail("NEXT_PUBLIC_APP_URL is configured", "Set the deployed HTTPS app URL.");
   } else {
@@ -121,7 +123,7 @@ function checkAuthEmail() {
     }
   } else if (mode === "webhook" || shouldFailRequired()) {
     if (isValidUrl(process.env.AUTH_EMAIL_WEBHOOK_URL)) {
-      pass("AUTH_EMAIL_WEBHOOK_URL is configured", process.env.AUTH_EMAIL_WEBHOOK_URL);
+      pass("AUTH_EMAIL_WEBHOOK_URL is configured");
     } else {
       (mode === "webhook" || requireProduction ? fail : warn)(
         "AUTH_EMAIL_WEBHOOK_URL is configured",

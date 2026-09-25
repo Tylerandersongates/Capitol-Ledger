@@ -62,17 +62,19 @@ export async function POST(request: NextRequest) {
     user: result.user
   }).catch(() => ({
     delivered: false as const,
-    error: "Verification email delivery failed.",
-    mode: "manual_demo" as const
+    mode: "failed" as const
   }));
-  const response = NextResponse.json({
-    authenticated: true,
-    emailDelivery: emailDelivery.mode,
-    mode: "production",
-    user: result.user,
-    verificationLink: "actionUrl" in emailDelivery ? emailDelivery.actionUrl : undefined,
-    verificationPrepared: true
-  });
+  const response = NextResponse.json(
+    {
+      authenticated: true,
+      emailDelivery: emailDelivery.mode,
+      mode: "production",
+      user: result.user,
+      verificationLink: "actionUrl" in emailDelivery ? emailDelivery.actionUrl : undefined,
+      verificationPrepared: true
+    },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
   clearAuthCookies(response);
   setAuthSessionCookie(response, result.sessionToken);
   setPendingEmailVerificationCookie(response);
