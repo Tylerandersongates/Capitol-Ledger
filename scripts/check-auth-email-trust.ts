@@ -108,6 +108,15 @@ async function main() {
   assert.match(JSON.stringify(logs), /connection_timeout/);
   assert.doesNotMatch(JSON.stringify(logs), /private details/i);
   logs.length = 0;
+  const signalOnlyError = Object.assign(
+    new Error("Unknown datasource failure for private-person@example.com at private-host.example.com"),
+    { name: "PrismaClientInitializationError" }
+  );
+  logAccountPersistenceFailure("auth-register", signalOnlyError);
+  assert.match(JSON.stringify(logs), /database/);
+  assert.match(JSON.stringify(logs), /unsupported/);
+  assert.doesNotMatch(JSON.stringify(logs), /private-person|private-host|example\.com|datasource failure/i);
+  logs.length = 0;
   const unsafeNameError = Object.assign(new Error("provider failure"), { name: "private-person@example.com" });
   logAccountPersistenceFailure("auth-register", unsafeNameError);
   assert.match(JSON.stringify(logs), /UnknownError/);
