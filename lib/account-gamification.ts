@@ -186,7 +186,7 @@ export function getAccountGamification(userId: string) {
 export function recordAccountGamificationEvent(
   userId: string,
   event: GamificationEventType,
-  creditKey = event,
+  creditKey: string = event,
   activityDate = new Date().toISOString().slice(0, 10)
 ) {
   const current = getAccountGamification(userId);

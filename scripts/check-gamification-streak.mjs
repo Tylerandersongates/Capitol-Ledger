@@ -158,6 +158,7 @@ const alertDetailSource = fs.readFileSync("app/alerts/detail/page.tsx", "utf8");
 const gamificationRouteSource = fs.readFileSync("app/api/account/gamification/route.ts", "utf8");
 const browserGamificationSource = fs.readFileSync("lib/browser-gamification.ts", "utf8");
 const accountDatabaseSource = fs.readFileSync("lib/account-database.ts", "utf8");
+const accountGamificationSource = fs.readFileSync("lib/account-gamification.ts", "utf8");
 const authFlowSource = fs.readFileSync("components/auth-flow-client.tsx", "utf8");
 const demoAuthSource = fs.readFileSync("components/demo-auth-controls.tsx", "utf8");
 const gamificationMigrationSource = fs.readFileSync("prisma/migrations/20260919110000_gamification_credit_evidence/migration.sql", "utf8");
@@ -183,6 +184,7 @@ assert.doesNotMatch(
 );
 assert.ok(gamificationRouteSource.includes('body.operation !== "record-event"'), "The account API must reject aggregate snapshot writes");
 assert.ok(gamificationRouteSource.includes("const event: GamificationEventType = rule.event"), "The validated event rule must provide the typed server event command");
+assert.ok(accountGamificationSource.includes("creditKey: string = event"), "Account-memory credits must accept durable string idempotency keys");
 assert.ok(gamificationRouteSource.includes("recordGamificationEventToDatabase"), "Authenticated awards must use the server credit ledger");
 assert.ok(gamificationRouteSource.includes("authenticated: true"), "Gamification responses must select account-scoped browser storage");
 assert.ok(browserGamificationSource.includes('operation: "record-event"'), "Browser actions must submit one event command");
