@@ -23,7 +23,8 @@ import {
   type BillStance
 } from "@/lib/browser-bill-stances";
 import { isBillLawActionText } from "@/lib/bill-status";
-import { getImpactActions, type ImpactActionId } from "@/lib/gamification";
+import type { CongressDocketFreshness } from "@/lib/congress-docket";
+import { getBadgeCollections, getImpactActions, type ImpactActionId } from "@/lib/gamification";
 import { memberResultMeta, memberStateCode } from "@/lib/member-display";
 import { countPriorityFeedBills, getPolicyEdgeBillKey } from "@/lib/policy-edge-ranking";
 import { formatDate } from "@/lib/utils";
@@ -54,7 +55,9 @@ import type {
   SavedFollowRecord
 } from "@/types/capitol";
 
-type DashboardData = ReturnType<typeof getDashboardData>;
+type DashboardData = ReturnType<typeof getDashboardData> & {
+  docketFreshness?: CongressDocketFreshness;
+};
 type DashboardVoteFeedCandidate = DashboardData["voteFeed"][number] & { sourceLabel?: string };
 type DashboardVoteFreshnessTone = "empty" | "fresh" | "quiet";
 type DashboardFavoriteItem = {
@@ -82,9 +85,9 @@ const billTrackerStages = [
 ] as const;
 const gamificationCategories = [
   { href: "/impact", label: "Civic Score" },
-  { href: "/impact", label: "Day Streak" },
+  { href: "/impact", label: "Activity Days" },
   { href: "/badges", label: "Badges" },
-  { href: "/impact", label: "Civic Activity" }
+  { href: "/impact", label: "Recorded Actions" }
 ] as const;
 const impactCategoryHrefs: Record<ImpactActionId, string> = {
   "bills-tracked": "/search?type=bills",
@@ -155,6 +158,16 @@ export function DashboardClient({
   }, [data.favoriteTargets.bills, favoriteRecords]);
   const hasTrackedBill = Boolean(trackedBill);
   const hasLiveBillData = data.billsInAction > 0;
+  const docketFreshness = data.docketFreshness ?? {
+    badge: "Stored" as const,
+    kind: "unavailable" as const,
+    label: "Stored activity · sync evidence unavailable"
+  };
+  const docketFreshnessTone = docketFreshness.kind === "fresh"
+    ? "border-[#2be68d]/30 bg-[#2be68d]/10 text-[#2be68d]"
+    : docketFreshness.kind === "failed"
+      ? "border-[#ff6f61]/30 bg-[#ff6f61]/10 text-[#ff8b80]"
+      : "border-white/10 bg-white/[0.045] text-white/58";
   const trackerStage = resolveBillTrackerStage(trackedBill?.latestActionText);
   const trackerStageIndex = Math.max(0, billTrackerStages.findIndex((stage) => stage.label === trackerStage));
   const trackerFillPercent = (trackerStageIndex / (billTrackerStages.length - 1)) * 100;
@@ -176,6 +189,7 @@ export function DashboardClient({
   const committeePercent = data.billsInAction ? (data.statusCounts.inCommittee / data.billsInAction) * 100 : 0;
   const inProgressPercent = data.billsInAction ? (inProgressCount / data.billsInAction) * 100 : 0;
   const impactCategories = useMemo(() => getImpactActions(gamificationSnapshot.eventCounts), [gamificationSnapshot.eventCounts]);
+  const badgeCollections = useMemo(() => getBadgeCollections(gamificationSnapshot.earnedBadgeIds), [gamificationSnapshot.earnedBadgeIds]);
   const resolvedFavoriteItems = useMemo(
     () => resolveDashboardFavorites(favoriteRecords, data.favoriteTargets, accountProfile),
     [accountProfile, data.favoriteTargets, favoriteRecords]
@@ -411,22 +425,26 @@ export function DashboardClient({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">
                       <FileText className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-                      Live bill tracker
+                      Bill activity
                     </div>
                     <h2 className="mt-2 max-w-[19rem] text-[26px] font-semibold leading-tight">
-                      {hasLiveBillData ? "Today’s bills" : "Live bill data is unavailable"}
+                      {hasLiveBillData ? "Recent stored activity" : "Stored bill data is unavailable"}
                     </h2>
                     <p className="mt-2 text-[17px] text-white/62">
                       {hasLiveBillData
-                        ? `${data.billsInAction} active ${data.billsInAction === 1 ? "bill" : "bills"} in Congress`
-                        : "Current congressional bill activity will appear when live records are available."}
+                        ? `${data.billsInAction} recent ${data.billsInAction === 1 ? "bill record" : "bill records"} in Congress`
+                        : "Stored congressional activity will appear when records are available."}
                     </p>
+                    <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-white/44">
+                      <CalendarClock className="h-3.5 w-3.5 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+                      <span>{docketFreshness.label}</span>
+                    </div>
                   </div>
                   {hasLiveBillData ? (
                     <Link
                       href="/live-docket"
                       className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-[16px] font-medium leading-none text-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/10"
-                      aria-label={`Open ${data.billsInAction} active bill results`}
+                      aria-label={`Open ${data.billsInAction} recent bill records`}
                     >
                       <span>{data.billsInAction}</span>
                       <ChevronRight className="h-5 w-5 text-white/46" aria-hidden="true" />
@@ -580,7 +598,9 @@ export function DashboardClient({
                         <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[0_0_22px_rgba(255,177,43,0.16)]">
                           <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
                         </span>
-                        <span className="rounded-full border border-[#2be68d]/30 bg-[#2be68d]/10 px-2 py-1 text-[11px] font-medium text-[#2be68d]">Live</span>
+                        <span className={`rounded-full border px-2 py-1 text-[11px] font-medium ${docketFreshnessTone}`}>
+                          {docketFreshness.badge}
+                        </span>
                       </div>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -785,7 +805,7 @@ export function DashboardClient({
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                   <div className="min-w-0">
                     <h3 className="max-w-[19rem] text-[23px] font-semibold leading-tight">Your activity</h3>
-                    <p className="mt-1 text-[14px] leading-snug text-white/58">Track your score, streak, badges, and civic actions from here.</p>
+                    <p className="mt-1 text-[14px] leading-snug text-white/58">Track your all-time score, activity days, badges, and recorded actions from here.</p>
                   </div>
                   <div className="shrink-0 rounded-full border border-[#ffbd39]/35 bg-[#ffbd39]/10 px-2.5 py-1 text-right text-[13px] font-medium leading-none text-[#ffbd39]">
                     Level {gamificationSnapshot.level}
@@ -802,20 +822,20 @@ export function DashboardClient({
                     <GamificationStatPill
                       href={gamificationCategories[1].href}
                       label={gamificationCategories[1].label}
-                      value={`${gamificationSnapshot.dayStreak}d`}
-                      subtitle="Current streak"
+                      value={`${gamificationSnapshot.dayStreak}`}
+                      subtitle="Credited dates"
                     />
                     <GamificationStatPill
                       href={gamificationCategories[2].href}
                       label={gamificationCategories[2].label}
-                      value={`${gamificationSnapshot.earnedBadgeIds.length}/${gamificationSnapshot.totalBadges}`}
+                      value={`${badgeCollections.earnedBadges.length}/${badgeCollections.totalBadges}`}
                       subtitle="Earned progress"
                     />
                     <GamificationStatPill
                       href={gamificationCategories[3].href}
                       label={gamificationCategories[3].label}
                       value={`${gamificationSnapshot.totalActions}`}
-                      subtitle={`+${gamificationSnapshot.monthlyGain} this month`}
+                      subtitle="All time"
                     />
                   </div>
                   <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-white/46">Top activity</div>

@@ -11,7 +11,6 @@ import {
   markBrowserAccountCreated,
   setBrowserSessionAuthenticated
 } from "@/lib/browser-auth-state";
-import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import type { AccountLedgerSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
 const followsKey = "capitol-ledger:follows";
@@ -80,13 +79,6 @@ export function DemoAccountButton({
         },
         body: JSON.stringify(readLocalAccountProfile())
       }),
-      fetch("/api/account/gamification", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(readLocalGamificationSnapshot())
-      })
     ]);
   }
 

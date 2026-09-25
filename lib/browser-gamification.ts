@@ -1,6 +1,5 @@
 import {
   getGamificationEventRule,
-  getGamificationEventRules,
   type GamificationEventType
 } from "@/lib/gamification";
 import {
@@ -18,6 +17,11 @@ const gamificationDedupeKey = "capitol-ledger:gamification-dedupe";
 const gamificationStreakKey = "capitol-ledger:gamification-streak-date";
 const anonymousGamificationScope = "anonymous";
 let gamificationHydrationPromise: Promise<AccountGamificationSnapshot> | null = null;
+let gamificationMutationQueue: Promise<unknown> = Promise.resolve();
+let lastAuthoritativeAccountGamificationSnapshot: {
+  scope: string;
+  snapshot: AccountGamificationSnapshot;
+} | null = null;
 
 type AuthSessionResponse = {
   authenticated?: boolean;
@@ -36,9 +40,6 @@ type GamificationStorageKeys = {
   snapshotKey: string;
   streakKey: string;
 };
-type RecordGamificationEventOptions = {
-  creditStreakOnDedupe?: boolean;
-};
 
 function scopedStorageKey(baseKey: string, scope: string) {
   return `${baseKey}:${scope}`;
@@ -53,8 +54,10 @@ function buildGamificationStorageKeys(scope = anonymousGamificationScope): Gamif
 }
 
 let activeGamificationStorageKeys = buildGamificationStorageKeys();
+let activeGamificationStorageScope = anonymousGamificationScope;
 
 function setActiveGamificationStorageScope(scope = anonymousGamificationScope) {
+  activeGamificationStorageScope = scope;
   activeGamificationStorageKeys = buildGamificationStorageKeys(scope);
   return activeGamificationStorageKeys;
 }
@@ -160,30 +163,6 @@ function gamificationSnapshotsMatch(left: AccountGamificationSnapshot, right: Ac
   return gamificationSignature(left) === gamificationSignature(right);
 }
 
-function deriveEarnedBadgeIdsForCounts(snapshot: AccountGamificationSnapshot, counts: Map<GamificationEventType, number>) {
-  const earnedBadgeIds = new Set(snapshot.earnedBadgeIds);
-  const ruleBadgeIds = new Set<string>();
-  const qualifiedBadgeIds = new Set<string>();
-
-  getGamificationEventRules().forEach((rule) => {
-    const count = counts.get(rule.event) ?? 0;
-    rule.badgeProgress.forEach((progress) => {
-      ruleBadgeIds.add(progress.badgeId);
-      if (count >= progress.threshold) qualifiedBadgeIds.add(progress.badgeId);
-    });
-  });
-
-  ruleBadgeIds.forEach((badgeId) => {
-    if (qualifiedBadgeIds.has(badgeId)) {
-      earnedBadgeIds.add(badgeId);
-    } else {
-      earnedBadgeIds.delete(badgeId);
-    }
-  });
-
-  return Array.from(earnedBadgeIds);
-}
-
 export function readLocalGamificationSnapshot() {
   const snapshot = normalizeAccountGamification(readJson<Partial<AccountGamificationSnapshot>>(activeGamificationStorageKeys.snapshotKey, getDefaultAccountGamification()));
   const legacyStreakCreditDate = readLocalStreakCreditDate();
@@ -205,30 +184,55 @@ export function writeLocalGamificationSnapshot(snapshot: Partial<AccountGamifica
   window.dispatchEvent(new Event(gamificationChangedEvent));
 }
 
-export async function syncGamificationToAccount(snapshot = readLocalGamificationSnapshot()) {
+function restoreLastAuthoritativeAccountGamificationSnapshot() {
+  if (
+    !lastAuthoritativeAccountGamificationSnapshot ||
+    lastAuthoritativeAccountGamificationSnapshot.scope !== activeGamificationStorageScope ||
+    isBrowserAccountDeletionFenced()
+  ) return;
+  writeLocalGamificationSnapshot(lastAuthoritativeAccountGamificationSnapshot.snapshot);
+}
+
+async function postGamificationEventToAccount(event: GamificationEventType, targetId?: string) {
   if (!(await hasActiveBrowserSession())) return null;
 
   const response = await fetch("/api/account/gamification", {
-    body: JSON.stringify(snapshot),
+    body: JSON.stringify({ event, operation: "record-event", targetId }),
     headers: {
       "Content-Type": "application/json"
     },
     method: "POST"
   }).catch(() => null);
 
-  if (!response?.ok) return null;
+  if (!response?.ok) {
+    restoreLastAuthoritativeAccountGamificationSnapshot();
+    return null;
+  }
 
   const data = (await response.json().catch(() => null)) as AccountGamificationResponse | null;
-  if (!data?.gamification || isBrowserAccountDeletionFenced()) return null;
+  if (!data?.gamification || isBrowserAccountDeletionFenced()) {
+    restoreLastAuthoritativeAccountGamificationSnapshot();
+    return null;
+  }
 
   setActiveGamificationStorageScopeFromSession(data);
   const accountSnapshot = normalizeAccountGamification(data.gamification);
+  lastAuthoritativeAccountGamificationSnapshot = {
+    scope: activeGamificationStorageScope,
+    snapshot: accountSnapshot
+  };
   if (accountSnapshot.lastStreakCreditDate) writeLocalStreakCreditDate(accountSnapshot.lastStreakCreditDate);
   gamificationHydrationPromise = null;
   if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), accountSnapshot)) {
     writeLocalGamificationSnapshot(accountSnapshot);
   }
   return accountSnapshot;
+}
+
+function syncGamificationEventToAccount(event: GamificationEventType, targetId?: string) {
+  const mutation = gamificationMutationQueue.then(() => postGamificationEventToAccount(event, targetId));
+  gamificationMutationQueue = mutation.then(() => undefined, () => undefined);
+  return mutation;
 }
 
 export async function hydrateGamificationFromAccount() {
@@ -258,6 +262,10 @@ async function hydrateGamificationFromApi() {
 
   setActiveGamificationStorageScopeFromSession(data);
   const accountSnapshot = normalizeAccountGamification(data.gamification);
+  lastAuthoritativeAccountGamificationSnapshot = {
+    scope: activeGamificationStorageScope,
+    snapshot: accountSnapshot
+  };
   if (accountSnapshot.lastStreakCreditDate) writeLocalStreakCreditDate(accountSnapshot.lastStreakCreditDate);
   if (!gamificationSnapshotsMatch(readLocalGamificationSnapshot(), accountSnapshot)) {
     writeLocalGamificationSnapshot(accountSnapshot);
@@ -266,7 +274,7 @@ async function hydrateGamificationFromApi() {
   return accountSnapshot;
 }
 
-export function recordGamificationEvent(event: GamificationEventType, targetId?: string, amount = 1, options: RecordGamificationEventOptions = {}) {
+export function recordGamificationEvent(event: GamificationEventType, targetId?: string) {
   if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
 
   const rule = getGamificationEventRule(event);
@@ -281,26 +289,8 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
   const lastStreakCredit = current.lastStreakCreditDate ?? readLocalStreakCreditDate();
 
   if (key && dedupeKeys.includes(key) && !(rule.dedupe === "once" && existingCount === 0)) {
-    const shouldCreditDedupedAction =
-      options.creditStreakOnDedupe !== false &&
-      rule.streakCredit &&
-      rule.dedupe === "once-per-target" &&
-      current.totalActions > 0 &&
-      lastStreakCredit !== currentDay;
-
-    if (!shouldCreditDedupedAction) return false;
-
-    const next = normalizeAccountGamification({
-      ...current,
-      dayStreak: current.dayStreak + 1,
-      lastStreakCreditDate: currentDay
-    });
-
-    writeLocalStreakCreditDate(currentDay);
-    writeLocalGamificationSnapshot(next);
-    gamificationHydrationPromise = null;
-    void syncGamificationToAccount(next);
-    return true;
+    void syncGamificationEventToAccount(event, targetId);
+    return false;
   }
 
   if (rule.dedupe === "once" && existingCount > 0) {
@@ -315,7 +305,10 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
     });
 
     if (key && !dedupeKeys.includes(key)) writeJson(activeGamificationStorageKeys.dedupeKey, [...dedupeKeys, key]);
-    if (!badgesChanged) return false;
+    if (!badgesChanged) {
+      void syncGamificationEventToAccount(event, targetId);
+      return false;
+    }
 
     const next = normalizeAccountGamification({
       ...current,
@@ -324,11 +317,11 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
 
     writeLocalGamificationSnapshot(next);
     gamificationHydrationPromise = null;
-    void syncGamificationToAccount(next);
+    void syncGamificationEventToAccount(event, targetId);
     return true;
   }
 
-  const nextCount = (counts.get(event) ?? 0) + Math.max(1, Math.floor(amount));
+  const nextCount = (counts.get(event) ?? 0) + 1;
   counts.set(event, nextCount);
 
   const earnedBadgeIds = new Set(current.earnedBadgeIds);
@@ -353,49 +346,7 @@ export function recordGamificationEvent(event: GamificationEventType, targetId?:
 
   writeLocalGamificationSnapshot(next);
   gamificationHydrationPromise = null;
-  void syncGamificationToAccount(next);
-  return true;
-}
-
-export function setGamificationEventCount(event: GamificationEventType, count: number) {
-  if (typeof window === "undefined" || isBrowserAccountDeletionFenced()) return false;
-
-  const rule = getGamificationEventRule(event);
-  if (!rule) return false;
-
-  const current = readLocalGamificationSnapshot();
-  const nextCount = Math.max(0, Math.floor(count));
-  const counts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
-  const previousCount = counts.get(event) ?? 0;
-  const didIncrease = nextCount > previousCount;
-
-  if (nextCount > 0) {
-    counts.set(event, nextCount);
-  } else {
-    counts.delete(event);
-  }
-
-  const currentDay = todayKey();
-  const lastStreakCredit = current.lastStreakCreditDate ?? readLocalStreakCreditDate();
-  const streakCredit = rule.streakCredit && didIncrease && lastStreakCredit !== currentDay;
-  if (streakCredit) {
-    writeLocalStreakCreditDate(currentDay);
-  }
-
-  const next = normalizeAccountGamification({
-    ...current,
-    dayStreak: streakCredit ? current.dayStreak + 1 : current.dayStreak,
-    earnedBadgeIds: deriveEarnedBadgeIdsForCounts(current, counts),
-    eventCounts: Array.from(counts.entries()).map(([recordEvent, recordCount]) => ({ event: recordEvent, count: recordCount })),
-    lastStreakCreditDate: streakCredit ? currentDay : current.lastStreakCreditDate,
-    monthlyGain: Math.max(0, current.monthlyGain + (nextCount - previousCount) * rule.points)
-  });
-
-  if (gamificationSnapshotsMatch(current, next)) return false;
-
-  writeLocalGamificationSnapshot(next);
-  gamificationHydrationPromise = null;
-  void syncGamificationToAccount(next);
+  void syncGamificationEventToAccount(event, targetId);
   return true;
 }
 
@@ -403,5 +354,5 @@ export function recordCompletedDistrictSetupIfReady() {
   const district = readLocalDistrictProfile();
   if (!district.districtCode) return false;
 
-  return recordGamificationEvent("complete-onboarding", district.districtCode, 1, { creditStreakOnDedupe: false });
+  return recordGamificationEvent("complete-onboarding", district.districtCode);
 }

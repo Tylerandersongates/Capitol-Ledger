@@ -1,5 +1,5 @@
 import { billActions, bills, billVideos, cosponsors, members, memberVotes, updateEvents, votes } from "@/lib/demo-data";
-import { isDefaultUnreadAlertDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
+import { isDefaultUnreadAlertDate } from "@/lib/alert-rules";
 import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, fetchBillTextVersions, fetchMember, fetchMemberCosponsoredLegislation, fetchMemberSponsoredLegislation } from "@/lib/congress/client";
 import type { CongressBillListItem } from "@/lib/congress/client";
 import { fetchOfficialBillText, isReviewedHr7008TextVersion, selectLatestBillTextVersion, textVersionIsNewer } from "@/lib/congress/bill-text";
@@ -15,6 +15,16 @@ import { matchBillSources } from "@/lib/source-matching";
 import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
 import { fetchSenateMemberVotes } from "@/lib/senate-votes";
 import { currentCongressLabel } from "@/lib/utils";
+import {
+  chunkFollowedBillIds,
+  currentFollowedVoteWindowStart,
+  maximumCurrentFollowedVoteCandidates,
+  normalizeCurrentFollowedVoteLimit,
+  selectCurrentFollowedVoteCandidates,
+  uniqueFollowedBillIds,
+  withFollowedBillAlias,
+  type CurrentFollowedVoteCandidate
+} from "@/lib/current-followed-votes";
 import type { Bill as PrismaBill, Member as PrismaMember, MemberVote as PrismaMemberVote, Vote as PrismaVote } from "@prisma/client";
 import { Chamber as PrismaChamber, Party as PrismaParty, Prisma } from "@prisma/client";
 import type { Bill, BillAction, BillSourceMatch, BillVideo, Chamber, Member, Party, SourceLinkTargetType, Vote, VotePosition } from "@/types/capitol";
@@ -1832,7 +1842,13 @@ async function getDatabaseBillDetailData(billId: string, includeSecondaryOfficia
 
     if (!billRow) return null;
 
-    const databaseBill = mapDatabaseBill(billRow);
+    const mappedDatabaseBill = mapDatabaseBill(billRow);
+    const databaseBill = parsedLiveId &&
+      parsedLiveId.congress === mappedDatabaseBill.congress &&
+      parsedLiveId.billType === mappedDatabaseBill.billType.toUpperCase() &&
+      parsedLiveId.billNumber === mappedDatabaseBill.billNumber
+      ? { ...mappedDatabaseBill, id: billId }
+      : mappedDatabaseBill;
     const billVotes = billRow.votes.map(mapDatabaseVote);
     const sourceTargetIds = uniqueStrings([billRow.id, databaseBill.id, stableLiveBillId(databaseBill)]);
     const sourceLinks = await prisma.$queryRaw<DatabaseSourceLinkRow[]>`
@@ -2062,15 +2078,21 @@ function buildDashboardData(
   sourceBills: Bill[],
   sourceVotes: Vote[],
   {
+    maximumBillResults,
     sourceMembers = members,
     sourceUpdates = updateEvents
   }: {
+    maximumBillResults?: number;
     sourceMembers?: Member[];
     sourceUpdates?: typeof updateEvents;
   } = {}
 ) {
-  const dashboardBills = dedupeDashboardBills(sourceBills);
-  const sortedBills = [...dashboardBills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
+  const sortedDocketBills = dedupeDashboardBills(sourceBills)
+    .sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
+  const dashboardBills = maximumBillResults === undefined
+    ? sortedDocketBills
+    : sortedDocketBills.slice(0, maximumBillResults);
+  const sortedBills = dashboardBills;
   const sortedVotes = [...sourceVotes].sort((a, b) => Date.parse(b.voteDate) - Date.parse(a.voteDate));
   const billsById = new Map(sourceBills.map((bill) => [bill.id, bill]));
   const recentVote = sortedVotes[0];
@@ -2097,12 +2119,9 @@ function buildDashboardData(
   return {
     billsInAction: dashboardBills.length,
     generatedAt: new Date().toISOString(),
-    defaultUnreadAlertIds: [
-      recentVoteBill || trackedBill ? systemVoteReminderAlertId : "",
-      ...sourceUpdates
-        .filter((event) => isDefaultUnreadAlertDate(event.occurredAt))
-        .map((event) => event.id)
-    ].filter(Boolean),
+    defaultUnreadAlertIds: sourceUpdates
+      .filter((event) => isDefaultUnreadAlertDate(event.occurredAt))
+      .map((event) => event.id),
     updateCount: sourceUpdates.length,
     statusCounts,
     recentVote: recentVote
@@ -2148,15 +2167,19 @@ export function getDashboardData() {
 
 const maximumDashboardBillResults = 50;
 
-async function getDatabaseDashboardRecords() {
+async function getDatabaseDashboardRecords(congress?: number) {
   if (!hasDatabaseUrl()) return null;
 
   try {
     const prisma = getPrisma();
+    const scopedCongress = Number.isInteger(congress) && (congress as number) > 0
+      ? congress
+      : undefined;
     const [billRows, voteRows, memberRows] = await Promise.all([
       prisma.bill.findMany({
         orderBy: [{ latestActionDate: "desc" }, { updatedAt: "desc" }],
-        take: maximumDashboardBillResults
+        take: maximumDashboardBillResults,
+        where: scopedCongress ? { congress: scopedCongress } : undefined
       }),
       prisma.vote.findMany({
         include: {
@@ -2171,7 +2194,8 @@ async function getDatabaseDashboardRecords() {
         orderBy: {
           voteDate: "desc"
         },
-        take: 12
+        take: 12,
+        where: scopedCongress ? { congress: scopedCongress } : undefined
       }),
       prisma.member.findMany({
         orderBy: [{ state: "asc" }, { lastName: "asc" }],
@@ -2206,21 +2230,37 @@ const getCachedDatabaseDashboardRecords = unstable_cache(
   { revalidate: 60 }
 );
 
-export async function getDashboardDataWithLiveData() {
-  const liveRecords = await withOptionalDatabaseReadTimeout(getCachedDatabaseDashboardRecords, dashboardDatabaseReadTimeoutMs);
+export async function getDashboardDataWithLiveData({
+  bypassCache = false,
+  congress
+}: {
+  bypassCache?: boolean;
+  congress?: number;
+} = {}) {
+  const readRecords = bypassCache
+    ? () => getDatabaseDashboardRecords(congress)
+    : () => getCachedDatabaseDashboardRecords();
+  const liveRecords = await withOptionalDatabaseReadTimeout(readRecords, dashboardDatabaseReadTimeoutMs);
 
   if (liveRecords) {
-    dashboardLiveRecordsCache = {
-      cachedAt: Date.now(),
-      records: liveRecords
-    };
+    if (!bypassCache) {
+      dashboardLiveRecordsCache = {
+        cachedAt: Date.now(),
+        records: liveRecords
+      };
+    }
     return buildDashboardData(liveRecords.bills, liveRecords.votes, {
+      maximumBillResults: bypassCache ? maximumDashboardBillResults : undefined,
       sourceMembers: liveRecords.members,
       sourceUpdates: []
     });
   }
 
-  if (dashboardLiveRecordsCache && Date.now() - dashboardLiveRecordsCache.cachedAt <= dashboardLiveRecordsCacheMaxAgeMs) {
+  if (
+    !bypassCache &&
+    dashboardLiveRecordsCache &&
+    Date.now() - dashboardLiveRecordsCache.cachedAt <= dashboardLiveRecordsCacheMaxAgeMs
+  ) {
     return buildDashboardData(dashboardLiveRecordsCache.records.bills, dashboardLiveRecordsCache.records.votes, {
       sourceMembers: dashboardLiveRecordsCache.records.members,
       sourceUpdates: []
@@ -2228,6 +2268,112 @@ export async function getDashboardDataWithLiveData() {
   }
 
   return buildDashboardData([], [], { sourceMembers: [], sourceUpdates: [] });
+}
+
+export { selectCurrentFollowedVoteCandidates };
+export type { CurrentFollowedVoteCandidate };
+
+const maximumConcurrentFollowedVoteQueryChunks = 4;
+
+export async function getCurrentVoteCandidatesForFollowedBills({
+  followedBillIds,
+  limit,
+  now = new Date(),
+  voteId
+}: {
+  followedBillIds: Iterable<string>;
+  limit?: number;
+  now?: Date;
+  voteId?: string;
+}): Promise<CurrentFollowedVoteCandidate[]> {
+  // Resolve account follows in fixed-size chunks with fixed concurrency. This
+  // keeps each database predicate bounded without dropping later follows or
+  // letting unrelated national votes displace an eligible account vote.
+  if (!hasDatabaseUrl()) return [];
+
+  const targetIds = new Set(uniqueFollowedBillIds(followedBillIds));
+  if (!targetIds.size) return [];
+  const boundedLimit = limit === undefined ? undefined : normalizeCurrentFollowedVoteLimit(limit);
+
+  try {
+    const prisma = getPrisma();
+    const voteWindow = {
+      gte: currentFollowedVoteWindowStart(now),
+      lte: now
+    };
+    let candidates: CurrentFollowedVoteCandidate[];
+
+    if (voteId) {
+      const voteRows = await prisma.vote.findMany({
+        include: { bill: true },
+        orderBy: [{ voteDate: "desc" }, { id: "asc" }],
+        take: 1,
+        where: {
+          billId: { not: null },
+          id: voteId,
+          voteDate: voteWindow
+        }
+      });
+      candidates = voteRows.flatMap((vote) => vote.bill
+        ? [withFollowedBillAlias({ bill: mapDatabaseBill(vote.bill), vote: mapDatabaseVote(vote) }, targetIds)]
+        : [])
+        .filter(({ bill }) => targetIds.has(bill.id) || targetIds.has(stableLiveBillId(bill)));
+    } else {
+      const targetChunks = chunkFollowedBillIds(targetIds);
+      const chunkCandidates: CurrentFollowedVoteCandidate[] = [];
+
+      for (let offset = 0; offset < targetChunks.length; offset += maximumConcurrentFollowedVoteQueryChunks) {
+        const batch = targetChunks.slice(offset, offset + maximumConcurrentFollowedVoteQueryChunks);
+        const batchCandidates = await Promise.all(batch.map(async (targetChunk) => {
+          const stableTargets = targetChunk
+            .map(parseStableLiveBillId)
+            .filter((target): target is NonNullable<ReturnType<typeof parseStableLiveBillId>> => Boolean(target));
+          const followedBillRows = await prisma.bill.findMany({
+            select: { id: true },
+            where: {
+              OR: [
+                { id: { in: targetChunk } },
+                ...stableTargets.map((target) => ({
+                  billNumber: target.billNumber,
+                  billType: target.billType,
+                  congress: target.congress
+                }))
+              ]
+            }
+          });
+          const resolvedBillIds = followedBillRows.map((bill) => bill.id);
+          if (!resolvedBillIds.length) return [];
+
+          const voteRows = await prisma.vote.findMany({
+            include: { bill: true },
+            orderBy: [{ voteDate: "desc" }, { id: "asc" }],
+            take: maximumCurrentFollowedVoteCandidates,
+            where: {
+              billId: { in: resolvedBillIds },
+              voteDate: voteWindow
+            }
+          });
+          return voteRows.flatMap((vote) => vote.bill
+            ? [withFollowedBillAlias({ bill: mapDatabaseBill(vote.bill), vote: mapDatabaseVote(vote) }, targetChunk)]
+            : []);
+        }));
+        chunkCandidates.push(...batchCandidates.flat());
+      }
+
+      candidates = Array.from(
+        new Map(chunkCandidates.map((candidate) => [candidate.vote.id, candidate])).values()
+      );
+    }
+    return selectCurrentFollowedVoteCandidates({
+      candidates,
+      followedBillIds: targetIds,
+      limit: boundedLimit,
+      now,
+      voteId
+    });
+  } catch {
+    return [];
+  }
 }
 
 export function getRecentUpdates() {

@@ -54,6 +54,7 @@ model User {
   savedAlerts                  SavedAlert[]
   issueInterests               IssueInterest[]
   gamification                 AccountGamification?
+  gamificationCredits          AccountGamificationCredit[]
   subscription                 AccountSubscription?
   ownedTeamWorkspace           TeamWorkspace?                @relation("OwnedTeamWorkspace")
   teamMemberships              TeamMember[]                  @relation("TeamMemberships")
@@ -236,6 +237,33 @@ model OfficialSourceLink {
   @@index([source])
 }
 
+/// Observable evidence for the bounded Congress.gov docket task. Source-only
+/// preparation does not schedule or enable this task; each authorized attempt
+/// records its own idempotency key, outcome, bounds, and public-safe counts.
+model CongressDocketSyncRun {
+  id                    String    @id
+  idempotencyKey        String    @unique
+  status                String
+  congress              Int
+  requestedLimit        Int
+  attemptCount          Int       @default(1)
+  fetchedBillCount      Int       @default(0)
+  normalizedBillCount   Int       @default(0)
+  upsertedBillCount     Int       @default(0)
+  upsertedMemberCount   Int       @default(0)
+  missingSponsorCount   Int       @default(0)
+  sourceMaxActionAt     DateTime?
+  startedAt             DateTime
+  completedAt           DateTime?
+  failedAt              DateTime?
+  errorCode             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([congress, status, completedAt])
+  @@index([congress, status, failedAt])
+}
+
 model Follow {
   id         String           @id @default(cuid())
   userId     String
@@ -414,6 +442,22 @@ model AccountGamification {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Server-issued, idempotent evidence for a credited Civic Activity event.
+/// Only a hash of the durable event identity is retained; raw target IDs are
+/// not stored in this ledger.
+model AccountGamificationCredit {
+  id           String   @id @default(cuid())
+  userId       String
+  dedupeHash   String
+  event        String
+  activityDate String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeHash])
+  @@index([userId, activityDate])
 }
 
 model WeeklyBriefDelivery {

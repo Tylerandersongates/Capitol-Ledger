@@ -1,8 +1,13 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { throwAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, FollowTargetType } from "../types/capitol";
-import { mergeAccountGamificationForWrite, normalizeAccountGamification, type AccountGamificationSnapshot } from "./account-gamification";
+import {
+  applyAccountGamificationEvent,
+  normalizeAccountGamification,
+  type AccountGamificationSnapshot
+} from "./account-gamification";
+import type { GamificationEventType } from "./gamification";
 import { normalizeAccountLedger } from "./account-ledger";
 import { normalizeAccountProfile } from "./account-profile";
 import { normalizeAccountSubscription } from "./account-subscription";
@@ -640,62 +645,120 @@ export async function readGamificationFromDatabase(userId: string): Promise<Acco
   });
 }
 
-export async function writeGamificationToDatabase(userId: string, value: Partial<AccountGamificationSnapshot>): Promise<AccountGamificationSnapshot | null> {
+export async function recordGamificationEventToDatabase({
+  activityDate,
+  creditKey,
+  event,
+  userId
+}: {
+  activityDate: string;
+  creditKey: string;
+  event: GamificationEventType;
+  userId: string;
+}): Promise<{ credited: boolean; gamification: AccountGamificationSnapshot } | null> {
   if (!(await ensureAccountGamificationSchema())) return null;
 
-  return withDatabasePersistence("writeGamificationToDatabase", async () => {
+  return withDatabasePersistence("recordGamificationEventToDatabase", async () => {
     const prisma = getPrisma();
-    const currentGamification = await readGamificationFromDatabase(userId);
-    const gamification = mergeAccountGamificationForWrite(currentGamification, value);
-    const eventCountsJson = JSON.stringify(gamification.eventCounts);
-    const earnedBadgeIdsJson = JSON.stringify(gamification.earnedBadgeIds);
+    const dedupeHash = createHash("sha256").update(creditKey).digest("hex");
 
-    await prisma.$executeRaw`
-      INSERT INTO "AccountGamification" (
-        "id",
-        "userId",
-        "civicScore",
-        "dayStreak",
-        "lastStreakCreditDate",
-        "monthlyGain",
-        "level",
-        "levelTitle",
-        "nextLevelScore",
-        "eventCounts",
-        "earnedBadgeIds",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${randomUUID()},
-        ${userId},
-        ${gamification.civicScore},
-        ${gamification.dayStreak},
-        ${gamification.lastStreakCreditDate},
-        ${gamification.monthlyGain},
-        ${gamification.level},
-        ${gamification.levelTitle},
-        ${gamification.nextLevelScore},
-        ${eventCountsJson}::jsonb,
-        ${earnedBadgeIdsJson}::jsonb,
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT ("userId") DO UPDATE
-      SET
-        "civicScore" = EXCLUDED."civicScore",
-        "dayStreak" = EXCLUDED."dayStreak",
-        "lastStreakCreditDate" = EXCLUDED."lastStreakCreditDate",
-        "monthlyGain" = EXCLUDED."monthlyGain",
-        "level" = EXCLUDED."level",
-        "levelTitle" = EXCLUDED."levelTitle",
-        "nextLevelScore" = EXCLUDED."nextLevelScore",
-        "eventCounts" = EXCLUDED."eventCounts",
-        "earnedBadgeIds" = EXCLUDED."earnedBadgeIds",
-        "updatedAt" = NOW()
-    `;
+    return prisma.$transaction(async (transaction) => {
+      const users = await transaction.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "User"
+        WHERE "id" = ${userId}
+        LIMIT 1
+        FOR UPDATE
+      `;
+      if (!users[0]) throw new Error("Gamification account was not found.");
 
-    return readGamificationFromDatabase(userId);
+      const activityRows = await transaction.$queryRaw<Array<{ found: number }>>`
+        SELECT 1 AS "found"
+        FROM "AccountGamificationCredit"
+        WHERE "userId" = ${userId} AND "activityDate" = ${activityDate}
+        LIMIT 1
+      `;
+      const currentRows = await transaction.$queryRaw<DbGamification[]>`
+        SELECT
+          "civicScore", "dayStreak", "monthlyGain", "level", "levelTitle",
+          "nextLevelScore", "lastStreakCreditDate", "eventCounts", "earnedBadgeIds", "updatedAt"
+        FROM "AccountGamification"
+        WHERE "userId" = ${userId}
+        LIMIT 1
+        FOR UPDATE
+      `;
+      const currentRecord = currentRows[0];
+      const current = currentRecord
+        ? normalizeAccountGamification({
+            civicScore: currentRecord.civicScore,
+            dayStreak: currentRecord.dayStreak,
+            earnedBadgeIds: currentRecord.earnedBadgeIds as AccountGamificationSnapshot["earnedBadgeIds"],
+            eventCounts: currentRecord.eventCounts as AccountGamificationSnapshot["eventCounts"],
+            lastStreakCreditDate: currentRecord.lastStreakCreditDate,
+            level: currentRecord.level,
+            levelTitle: currentRecord.levelTitle,
+            monthlyGain: currentRecord.monthlyGain,
+            nextLevelScore: currentRecord.nextLevelScore,
+            updatedAt: currentRecord.updatedAt.toISOString()
+          })
+        : normalizeAccountGamification();
+
+      const gamification = applyAccountGamificationEvent(
+        current,
+        event,
+        activityDate,
+        activityRows.length === 0
+      );
+      const currentEventCount = current.eventCounts.find((record) => record.event === event)?.count ?? 0;
+      const nextEventCount = gamification.eventCounts.find((record) => record.event === event)?.count ?? 0;
+      if (nextEventCount <= currentEventCount) return { credited: false, gamification: current };
+
+      const insertedCredits = await transaction.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO "AccountGamificationCredit" (
+          "id", "userId", "dedupeHash", "event", "activityDate", "createdAt"
+        )
+        VALUES (
+          ${randomUUID()}, ${userId}, ${dedupeHash}, ${event}, ${activityDate}, NOW()
+        )
+        ON CONFLICT ("userId", "dedupeHash") DO NOTHING
+        RETURNING "id"
+      `;
+      if (!insertedCredits[0]) return { credited: false, gamification: current };
+
+      const eventCountsJson = JSON.stringify(gamification.eventCounts);
+      const earnedBadgeIdsJson = JSON.stringify(gamification.earnedBadgeIds);
+
+      await transaction.$executeRaw`
+        INSERT INTO "AccountGamification" (
+          "id", "userId", "civicScore", "dayStreak", "lastStreakCreditDate",
+          "monthlyGain", "level", "levelTitle", "nextLevelScore", "eventCounts",
+          "earnedBadgeIds", "createdAt", "updatedAt"
+        )
+        VALUES (
+          ${randomUUID()}, ${userId}, ${gamification.civicScore}, ${gamification.dayStreak},
+          ${gamification.lastStreakCreditDate}, ${gamification.monthlyGain}, ${gamification.level},
+          ${gamification.levelTitle}, ${gamification.nextLevelScore}, ${eventCountsJson}::jsonb,
+          ${earnedBadgeIdsJson}::jsonb, NOW(), NOW()
+        )
+        ON CONFLICT ("userId") DO UPDATE
+        SET
+          "civicScore" = EXCLUDED."civicScore",
+          "dayStreak" = EXCLUDED."dayStreak",
+          "lastStreakCreditDate" = EXCLUDED."lastStreakCreditDate",
+          "monthlyGain" = EXCLUDED."monthlyGain",
+          "level" = EXCLUDED."level",
+          "levelTitle" = EXCLUDED."levelTitle",
+          "nextLevelScore" = EXCLUDED."nextLevelScore",
+          "eventCounts" = EXCLUDED."eventCounts",
+          "earnedBadgeIds" = EXCLUDED."earnedBadgeIds",
+          "updatedAt" = NOW()
+      `;
+
+      return { credited: true, gamification };
+    }, {
+      maxWait: 5_000,
+      timeout: 15_000
+    });
   });
 }
 

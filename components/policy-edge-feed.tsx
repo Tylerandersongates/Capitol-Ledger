@@ -22,6 +22,7 @@ import {
   type BillStance
 } from "@/lib/browser-bill-stances";
 import { getBillStatus } from "@/lib/bill-status";
+import type { CongressDocketFreshness } from "@/lib/congress-docket";
 import {
   filterPriorityFeedBills,
   getPolicyEdgeBillKey,
@@ -30,12 +31,11 @@ import {
   rankPolicyEdgeBills,
   type PolicyEdgeFeedMode
 } from "@/lib/policy-edge-ranking";
-import { formatDate } from "@/lib/utils";
 import type { Bill, SavedFollowRecord } from "@/types/capitol";
 
 type PolicyEdgeFeedProps = {
   bills: Bill[];
-  generatedAt: string;
+  freshness: CongressDocketFreshness;
   locked?: boolean;
   mode: PolicyEdgeFeedMode;
   personalPriorityOnly?: boolean;
@@ -78,7 +78,7 @@ const feedConfig = {
 
 export function PolicyEdgeFeed({
   bills,
-  generatedAt,
+  freshness,
   locked = false,
   mode,
   personalPriorityOnly = false,
@@ -124,6 +124,11 @@ export function PolicyEdgeFeed({
   const isLoadingPersonalFeed = isLoadingPersonalPriority || isLoadingPersonalRisk;
   const recentCount = visibleBills.filter((bill) => isRecentBillAction(bill.latestActionDate)).length;
   const topAreaCount = new Set(visibleBills.map((bill) => bill.policyArea).filter(Boolean)).size;
+  const freshnessTone = freshness.kind === "fresh"
+    ? "border-[#2be68d]/30 bg-[#2be68d]/10 text-[#2be68d]"
+    : freshness.kind === "failed"
+      ? "border-[#ff6f61]/30 bg-[#ff6f61]/10 text-[#ff8b80]"
+      : "border-white/10 bg-white/[0.045] text-white/58";
 
   useEffect(() => {
     if (!needsPersonalSignals || locked) return;
@@ -197,7 +202,9 @@ export function PolicyEdgeFeed({
                 <div className={`text-[13px] font-semibold uppercase tracking-[0.12em] ${config.tone}`}>{config.badge}</div>
                 <h2 className="mt-2 text-[24px] font-semibold leading-tight text-white">{config.deck}</h2>
               </div>
-              <span className="rounded-full border border-[#2be68d]/30 bg-[#2be68d]/10 px-2.5 py-1 text-[11px] font-medium text-[#2be68d]">Live</span>
+              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${freshnessTone}`}>
+                {freshness.badge}
+              </span>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-2">
               <FeedMetric label={config.metricLabel} value={visibleBills.length} />
@@ -206,7 +213,7 @@ export function PolicyEdgeFeed({
             </div>
             <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-white/44">
               <CalendarClock className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-              Updated {formatDate(generatedAt)}
+              {freshness.label}
             </div>
           </div>
         </MobileCard>
@@ -296,7 +303,7 @@ function PolicyEdgeBillRow({ actionLabel, bill, index, mode, sponsorName }: { ac
           <div className={`text-[12px] font-semibold uppercase tracking-[0.08em] ${toneClass}`}>{bill.displayNumber}</div>
           <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
           <div className="mt-2 text-[13px] leading-snug text-white/52">
-            {sponsorName ?? "Congress"} - {bill.policyArea}
+            {sponsorName ?? "Sponsor unavailable"} - {bill.policyArea}
           </div>
         </div>
         <span className={`h-fit rounded-full border px-2.5 py-1 text-[11px] font-semibold ${mode === "priority" ? "border-[#ffb12b]/28 bg-[#ffb12b]/10 text-[#ffb12b]" : "border-[#ff6f61]/28 bg-[#ff6f61]/10 text-[#ff8a7e]"}`}>

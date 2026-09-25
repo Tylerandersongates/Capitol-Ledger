@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { badgeIcon, badgeTones } from "@/components/gamification-ui";
 import { MobileGlassScrollFrame } from "@/components/mobile-glass-scroll-frame";
 import {
@@ -85,12 +85,13 @@ function publishGamificationSnapshot(snapshot: AccountGamificationSnapshot) {
 
 export function AccountGamificationStats({ className = "mt-5 grid grid-cols-3 gap-3" }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
+  const badgeCollections = getBadgeCollections(snapshot.earnedBadgeIds);
 
   return (
     <div className={className}>
       <MiniStat href="/impact" value={snapshot.civicScore.toLocaleString()} label="Civic score" />
-      <MiniStat href="/impact" value={String(snapshot.dayStreak)} label="Day streak" />
-      <MiniStat href="/badges" value={String(snapshot.earnedBadgeIds.length)} label="Badges" />
+      <MiniStat href="/impact" value={String(snapshot.dayStreak)} label="Activity days" />
+      <MiniStat href="/badges" value={String(badgeCollections.earnedBadges.length)} label="Badges" />
     </div>
   );
 }
@@ -100,9 +101,13 @@ export function CivicScoreValue({ className }: { className?: string }) {
   return <span className={className}>{snapshot.civicScore.toLocaleString()}</span>;
 }
 
-export function MonthlyGainValue({ className }: { className?: string }) {
+export function AllTimePointsLabel({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
-  return <span className={className}>{snapshot.monthlyGain} point{snapshot.monthlyGain === 1 ? "" : "s"} this month</span>;
+  return (
+    <span className={className}>
+      All-time total from {snapshot.totalActions} recorded action{snapshot.totalActions === 1 ? "" : "s"}
+    </span>
+  );
 }
 
 export function LevelStatusValue() {
@@ -139,53 +144,9 @@ export function XpProgressValue({ className }: { className?: string }) {
   return <span className={className}>{Math.min(100, snapshot.xpProgress)}% toward next level</span>;
 }
 
-export function DayStreakValue({ className }: { className?: string }) {
+export function ActivityDaysValue({ className }: { className?: string }) {
   const snapshot = useGamificationSnapshot();
   return <span className={className}>{snapshot.dayStreak} {snapshot.dayStreak === 1 ? "day" : "days"}</span>;
-}
-
-const streakWeekDays = [
-  { jsDay: 1, label: "M", name: "Monday" },
-  { jsDay: 2, label: "T", name: "Tuesday" },
-  { jsDay: 3, label: "W", name: "Wednesday" },
-  { jsDay: 4, label: "T", name: "Thursday" },
-  { jsDay: 5, label: "F", name: "Friday" },
-  { jsDay: 6, label: "S", name: "Saturday" },
-  { jsDay: 0, label: "S", name: "Sunday" }
-] as const;
-
-export function StreakWeekIndicator() {
-  const snapshot = useGamificationSnapshot();
-  const [currentDay] = useState(() => new Date().getDay());
-  const currentDayIndex = streakWeekDays.findIndex((day) => day.jsDay === currentDay);
-  const visibleStreakDays = Math.min(Math.max(0, snapshot.dayStreak), streakWeekDays.length);
-  const firstCheckedIndex = Math.max(0, currentDayIndex - visibleStreakDays + 1);
-
-  return (
-    <div className="grid grid-cols-7 gap-1 text-center text-[12px]">
-      {streakWeekDays.map((day, index) => {
-        const checked = currentDayIndex >= 0 && index >= firstCheckedIndex && index <= currentDayIndex;
-        const current = checked && index === currentDayIndex;
-
-        return (
-          <div key={`${day.name}-${index}`} aria-label={`${day.name}${checked ? " streak day complete" : ""}`}>
-            <div className={current ? "font-semibold text-[#ffb12b]" : "text-white/45"}>{day.label}</div>
-            <div
-              className={`mt-3 grid h-6 w-6 place-items-center rounded-full text-[13px] ${
-                current
-                  ? "bg-[#ffb12b] font-semibold text-[#061126]"
-                  : checked
-                    ? "border border-[#73dd6d] text-[#73dd6d]"
-                    : "border border-white/12 text-transparent"
-              }`}
-            >
-              {checked ? "✓" : ""}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 export function ImpactActionsList() {
@@ -244,13 +205,13 @@ export function PremiumImpactBreakdown() {
     <>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-[21px] font-medium leading-none">Activity summary</h2>
+          <h2 className="text-[21px] font-medium leading-none">Selected action breakdown</h2>
           <div className="mt-2 text-[12px] font-medium uppercase tracking-[0.08em] text-white/42">
             {activeActionCount > 0 ? `${activeActionCount} categor${activeActionCount === 1 ? "y" : "ies"} with activity` : "No activity yet"}
           </div>
         </div>
         <div className="rounded-full border border-[#ffb12b]/24 bg-[#ffb12b]/10 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#ffc44d] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          This month
+          All time
         </div>
       </div>
 
@@ -265,7 +226,7 @@ export function PremiumImpactBreakdown() {
           <div className="absolute inset-0 grid place-items-center text-center">
             <div>
               <div className="text-[36px] font-medium leading-none text-[#ffb12b]">{totalActions}</div>
-              <div className="mt-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-white/54">Total</div>
+              <div className="mt-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-white/54">Selected</div>
             </div>
           </div>
         </div>
@@ -449,13 +410,14 @@ function MobileLevelPathShell({
 
 export function BadgeProgressMetrics() {
   const snapshot = useGamificationSnapshot();
-  const progressWidth = `${Math.min(100, Math.round((snapshot.earnedBadgeIds.length / snapshot.totalBadges) * 100))}%`;
+  const badgeCollections = getBadgeCollections(snapshot.earnedBadgeIds);
+  const progressWidth = `${badgeCollections.progressPercent}%`;
 
   return (
     <>
       <div className="mt-6 flex items-end gap-3">
-        <span className="text-[48px] font-medium leading-none text-[#ffb12b]">{snapshot.earnedBadgeIds.length}</span>
-        <span className="pb-1 text-[26px] text-white">/ {snapshot.totalBadges}</span>
+        <span className="text-[48px] font-medium leading-none text-[#ffb12b]">{badgeCollections.earnedBadges.length}</span>
+        <span className="pb-1 text-[26px] text-white">/ {badgeCollections.totalBadges}</span>
       </div>
       <div className="mt-4 text-[18px] text-white/58">Badges earned</div>
       <div className="mt-6 h-2.5 rounded-full bg-white/13">

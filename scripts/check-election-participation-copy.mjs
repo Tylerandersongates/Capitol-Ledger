@@ -5,13 +5,12 @@ import fs from "node:fs";
 
 const component = fs.readFileSync("components/election-participation-card.tsx", "utf8");
 
-assert.ok(component.includes("remainingElections"), "Election participation helper should explain remaining elections");
-assert.ok(component.includes("more unique election"), "Election participation helper should use remaining-count wording");
-assert.ok(/label: "Voter badge"/i.test(component), "Election participation helper should identify Voter as a badge");
-assert.ok(!component.includes("Log ${voterElectionGoal} of ${totalElectionCount}"), "Election participation helper should not use confusing goal-of-total wording");
-assert.ok(component.includes("electionBadgeMilestones"), "Election participation helper should share milestone copy across badge thresholds");
-assert.ok(component.includes("<span className=\"block\">{nextElectionBadgeMessage(electionCount)}</span>"), "Election participation helper should always show the countdown");
-assert.ok(component.includes("{status ? <span className=\"mt-1 block text-white/48\">{status}</span> : null}"), "Election participation helper should keep action status as secondary text");
-assert.ok(!component.includes("status || nextElectionBadgeMessage"), "Election participation helper should not let status replace the countdown");
+assert.ok(component.includes("Election logging is unavailable"), "Election participation must expose the disabled state clearly");
+assert.ok(component.includes("verified, dated election catalog"), "Election participation must state the evidence needed before logging returns");
+assert.ok(component.includes("legacyElectionEntries"), "Existing undated entries should remain visible as legacy data");
+assert.ok(component.includes("not presented as verified participation"), "Legacy entries must not be described as verified participation");
+assert.ok(component.includes("do not unlock election badges"), "Legacy entries must not unlock unsupported election badges");
+assert.ok(!component.includes("setGamificationEventCount"), "The disabled election card must not mutate Civic Activity totals");
+assert.ok(!component.includes("electionLogEntries"), "The UI must not offer undated or future election fixtures for self-reporting");
 
 console.log("Election participation copy check passed.");

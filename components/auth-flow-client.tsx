@@ -28,7 +28,6 @@ import {
   markBrowserAccountCreated,
   setBrowserSessionAuthenticated
 } from "@/lib/browser-auth-state";
-import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import { publicBrand } from "@/lib/brand";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
@@ -359,13 +358,6 @@ export function AuthFlowClient({
       body: JSON.stringify(readLocalAccountProfile())
     }).catch(() => null);
 
-    await fetch("/api/account/gamification", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(readLocalGamificationSnapshot())
-    }).catch(() => null);
   }, []);
 
   const finishProductionAuth = useCallback(
@@ -459,13 +451,6 @@ export function AuthFlowClient({
       body: JSON.stringify(readLocalAccountProfile())
     }).catch(() => null);
 
-    await fetch("/api/account/gamification", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(readLocalGamificationSnapshot())
-    }).catch(() => null);
   }
 
   async function startDemoAccount(href = postAuthReturnTo) {

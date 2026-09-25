@@ -1,14 +1,13 @@
 import { GamificationSync } from "@/components/gamification-sync";
 import {
+  ActivityDaysValue,
+  AllTimePointsLabel,
   CivicScoreValue,
   CivicLevelPathCard,
-  DayStreakValue,
   LevelProgressBar,
   LevelStatusValue,
-  MonthlyGainValue,
   PremiumImpactBreakdown,
   RecentAchievementsList,
-  StreakWeekIndicator,
   XpProgressValue
 } from "@/components/gamification-live-stats";
 import { MobileShell } from "@/components/mobile-shell";
@@ -46,7 +45,7 @@ export default function ImpactPage() {
                 <Info className="h-5 w-5 text-white/48" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <CivicScoreValue className="mt-6 block text-[48px] font-medium leading-none text-[#ffb12b]" />
-              <MonthlyGainValue className="mt-4 block text-[19px] font-medium text-[#43ed74]" />
+              <AllTimePointsLabel className="mt-4 block text-[16px] leading-snug text-white/60" />
             </div>
             <div className="rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.68)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(2,10,28,0.34)]">
               <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full border-2 border-[#d59a31]/80 bg-[radial-gradient(circle,rgba(255,177,43,0.18)_0%,rgba(28,102,180,0.22)_40%,rgba(4,17,39,0.94)_72%)] shadow-[inset_0_1px_0_rgba(255,210,120,0.22),0_0_22px_rgba(255,177,43,0.22),0_0_28px_rgba(35,132,255,0.12)]">
@@ -96,19 +95,18 @@ export default function ImpactPage() {
 
         <MobileCard variant="dashboard" className="px-5 py-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-[21px] font-medium leading-none">Activity streak</h2>
+            <h2 className="text-[21px] font-medium leading-none">Activity days recorded</h2>
             <Info className="h-5 w-5 text-white/48" strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="mt-6 grid grid-cols-[70px_1fr] items-center gap-4">
             <div className="grid h-16 w-16 place-items-center rounded-full bg-[#ffb12b]/12 text-[#ffb12b]">
               <Flame className="h-12 w-12 fill-[#ffb12b] stroke-[#ffdf69]" strokeWidth={1.4} aria-hidden="true" />
             </div>
-            <div className="grid grid-cols-[0.9fr_1.25fr] items-center gap-4">
-              <div>
-                <DayStreakValue className="text-[30px] font-medium leading-none text-[#ffb12b]" />
-                <div className="mt-3 text-[18px] text-white/70">Keep going.</div>
+            <div>
+              <ActivityDaysValue className="text-[30px] font-medium leading-none text-[#ffb12b]" />
+              <div className="mt-3 text-[14px] leading-snug text-white/58">
+                This aggregate records credited activity dates. It is not presented as a consecutive streak.
               </div>
-              <StreakWeekIndicator />
             </div>
           </div>
         </MobileCard>

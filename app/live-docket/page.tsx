@@ -15,7 +15,14 @@ import {
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
-import { getBillSponsor, getBillStatus, getDashboardDataWithLiveData } from "@/lib/data";
+import {
+  buildDocketSponsorNames,
+  getConfiguredCongressDocketCongress,
+  readCongressDocketFreshness,
+  readCurrentSavedDocketBills,
+  withCongressDocketContext
+} from "@/lib/congress-docket";
+import { getBillStatus, getDashboardDataWithLiveData } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 import type { Bill } from "@/types/capitol";
 
@@ -37,17 +44,31 @@ const metricClass =
 
 export default async function LiveDocketPage(props: LiveDocketPageProps) {
   const searchParams = await props.searchParams;
-  const data = await getDashboardDataWithLiveData();
+  const congress = getConfiguredCongressDocketCongress();
+  const sourceFreshness = await readCongressDocketFreshness(new Date(), congress);
+  const [baseData, savedBills] = await Promise.all([
+    getDashboardDataWithLiveData({ bypassCache: true, congress }),
+    readCurrentSavedDocketBills()
+  ]);
+  const data = withCongressDocketContext(baseData, savedBills, sourceFreshness);
+  const freshness = data.docketFreshness;
   const activeStatus = normalizeLiveDocketStatus(searchParams.status);
   const allBills = [...data.favoriteTargets.bills].sort((a, b) => Date.parse(b.latestActionDate) - Date.parse(a.latestActionDate));
-  const hasLiveBillData = allBills.length > 0;
+  const hasStoredBillData = allBills.length > 0;
   const visibleBills = allBills.filter((bill) => matchesLiveDocketStatus(bill, activeStatus));
-  const activeLabel = activeStatus ? liveDocketStatusLabel(activeStatus) : "All Active";
-  const inProgressCount = data.statusCounts.inProgress || Math.max(0, data.billsInAction - data.statusCounts.passed - data.statusCounts.inCommittee);
+  const sponsorNamesByBillId = buildDocketSponsorNames(allBills, data.favoriteTargets.members);
+  const activeLabel = activeStatus ? liveDocketStatusLabel(activeStatus) : "All bills";
+  const statusCounts = getDocketStatusCounts(allBills);
+  const inProgressCount = statusCounts.inProgress;
+  const freshnessTone = freshness.kind === "fresh"
+    ? "border-[#2be68d]/30 bg-[#2be68d]/10 text-[#2be68d]"
+    : freshness.kind === "failed"
+      ? "border-[#ff6f61]/30 bg-[#ff6f61]/10 text-[#ff8b80]"
+      : "border-white/10 bg-white/[0.045] text-white/52";
   const statusTabs = [
-    { count: data.billsInAction, href: "/live-docket", icon: FileText, label: "All", value: undefined },
-    { count: data.statusCounts.passed, href: "/live-docket?status=passed", icon: CheckCircle2, label: "Passed", value: "passed" },
-    { count: data.statusCounts.inCommittee, href: "/live-docket?status=in-committee", icon: Landmark, label: "Committee", value: "in-committee" },
+    { count: allBills.length, href: "/live-docket", icon: FileText, label: "All", value: undefined },
+    { count: statusCounts.passed, href: "/live-docket?status=passed", icon: CheckCircle2, label: "Passed", value: "passed" },
+    { count: statusCounts.inCommittee, href: "/live-docket?status=in-committee", icon: Landmark, label: "Committee", value: "in-committee" },
     { count: inProgressCount, href: "/live-docket?status=in-progress", icon: TimerReset, label: "In Progress", value: "in-progress" }
   ] satisfies Array<{
     count: number;
@@ -71,8 +92,8 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
             <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
           </Link>
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Live Docket</div>
-            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Today in Congress</h1>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/48">Bill activity</div>
+            <h1 className="mt-2 text-[30px] font-medium leading-none text-white">Recent activity</h1>
           </div>
         </div>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#ffb12b]/24 bg-[#ffb12b]/10 text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(255,177,43,0.16)]">
@@ -88,40 +109,39 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
               <div>
                 <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#ffb12b]">{activeLabel}</div>
                 <h2 className="mt-2 text-[24px] font-semibold leading-tight text-white">
-                  {hasLiveBillData ? `${visibleBills.length} bills moving through the ledger` : "Live bill data is unavailable"}
+                  {hasStoredBillData ? `${visibleBills.length} recent and saved bills in the ledger` : "Stored bill data is unavailable"}
                 </h2>
               </div>
-              <span
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                  hasLiveBillData ? "border-[#2be68d]/30 bg-[#2be68d]/10 text-[#2be68d]" : "border-white/10 bg-white/[0.045] text-white/52"
-                }`}
-              >
-                {hasLiveBillData ? "Live" : "Waiting for data"}
+              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${freshnessTone}`}>
+                {freshness.badge}
               </span>
             </div>
 
-            {hasLiveBillData ? (
+            {hasStoredBillData ? (
               <>
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   <DocketMetric label="Bills" value={visibleBills.length} />
-                  <DocketMetric label="Passed" value={data.statusCounts.passed} />
-                  <DocketMetric label="Committee" value={data.statusCounts.inCommittee} />
+                  <DocketMetric label="Passed" value={statusCounts.passed} />
+                  <DocketMetric label="Committee" value={statusCounts.inCommittee} />
                 </div>
 
                 <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-white/44">
                   <CalendarClock className="h-4 w-4 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
-                  Updated {formatDate(data.generatedAt)}
+                  {freshness.label}
                 </div>
+                <p className="mt-2 text-[11px] leading-snug text-white/38">
+                  Recent stored records are capped at 50; signed-in account-saved bills are included outside that window.
+                </p>
               </>
             ) : (
               <p className="mt-4 text-[14px] leading-snug text-white/52">
-                Current congressional bill activity will appear when live records are available.
+                Stored congressional bill activity will appear when records are available.
               </p>
             )}
           </div>
         </MobileCard>
 
-        <nav className="grid grid-cols-2 gap-2" aria-label="Live docket status filters">
+        <nav className="grid grid-cols-2 gap-2" aria-label="Stored bill activity filters">
           {statusTabs.map((tab) => (
             <DocketStatusLink
               key={tab.href}
@@ -136,19 +156,19 @@ export default async function LiveDocketPage(props: LiveDocketPageProps) {
 
         {visibleBills.length ? (
           <div
-            aria-label="Today in Congress live docket bills"
+            aria-label="Recent stored congressional bill activity"
             className="h-[430px] overflow-y-auto overscroll-contain rounded-[1.35rem] border border-white/10 bg-[#03152f]/55 p-1 pr-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_28px_rgba(43,141,255,0.08),0_16px_34px_rgba(1,8,24,0.26)] [scrollbar-color:rgba(255,177,43,0.68)_rgba(255,255,255,0.06)] [scrollbar-width:thin] sm:h-[500px]"
             role="region"
           >
             <div className="space-y-3 pb-1">
               {visibleBills.map((bill) => (
-                <LiveDocketBillRow key={bill.id} bill={bill} />
+                <LiveDocketBillRow key={bill.id} bill={bill} sponsorName={sponsorNamesByBillId[bill.id]} />
               ))}
             </div>
           </div>
         ) : (
           <div className={`${panelClass} p-5 text-[14px] leading-snug text-white/56`}>
-            {hasLiveBillData ? "No bills match this live docket status." : "No live bill records are available yet."}
+            {hasStoredBillData ? "No bills match this stored activity status." : "No stored bill records are available yet."}
           </div>
         )}
       </main>
@@ -206,8 +226,7 @@ function DocketStatusLink({
   );
 }
 
-function LiveDocketBillRow({ bill }: { bill: Bill }) {
-  const sponsor = getBillSponsor(bill);
+function LiveDocketBillRow({ bill, sponsorName }: { bill: Bill; sponsorName?: string }) {
   const status = getBillStatus(bill);
   const tone = getStatusTone(status);
 
@@ -221,7 +240,7 @@ function LiveDocketBillRow({ bill }: { bill: Bill }) {
           </div>
           <div className="mt-1 line-clamp-2 text-[16px] font-medium leading-snug text-white">{bill.shortTitle}</div>
           <div className="mt-2 text-[13px] leading-snug text-white/52">
-            {sponsor?.fullName ?? "Congress"} - {bill.policyArea}
+            {sponsorName ?? "Sponsor unavailable"} - {bill.policyArea}
           </div>
         </div>
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/58">
@@ -251,6 +270,19 @@ function matchesLiveDocketStatus(bill: Bill, filter?: LiveDocketStatusFilter) {
   if (filter === "passed") return status === "Passed" || status === "Enacted";
   if (filter === "in-committee") return status === "In Committee";
   return status === "In Progress" || status === "On Floor";
+}
+
+function getDocketStatusCounts(bills: Bill[]) {
+  return bills.reduce(
+    (counts, bill) => {
+      const status = getBillStatus(bill);
+      if (status === "Passed" || status === "Enacted") counts.passed += 1;
+      else if (status === "In Committee") counts.inCommittee += 1;
+      else counts.inProgress += 1;
+      return counts;
+    },
+    { inCommittee: 0, inProgress: 0, passed: 0 }
+  );
 }
 
 function liveDocketStatusLabel(status: LiveDocketStatusFilter) {

@@ -33,10 +33,14 @@ const accountCreationDayStreak = 0;
 declare global {
   // eslint-disable-next-line no-var
   var __capitolLedgerGamificationStore: Map<string, AccountGamificationSnapshot> | undefined;
+  // eslint-disable-next-line no-var
+  var __capitolLedgerGamificationCreditStore: Set<string> | undefined;
 }
 
 const gamificationStore = globalThis.__capitolLedgerGamificationStore ?? new Map<string, AccountGamificationSnapshot>();
 globalThis.__capitolLedgerGamificationStore = gamificationStore;
+const gamificationCreditStore = globalThis.__capitolLedgerGamificationCreditStore ?? new Set<string>();
+globalThis.__capitolLedgerGamificationCreditStore = gamificationCreditStore;
 
 function isGamificationEvent(event: unknown): event is GamificationEventType {
   return typeof event === "string" && validEvents.has(event as GamificationEventType);
@@ -146,38 +150,29 @@ export function getDefaultAccountGamification() {
   return normalizeAccountGamification();
 }
 
-export function mergeAccountGamificationForWrite(
+export function applyAccountGamificationEvent(
   existing: Partial<AccountGamificationSnapshot> | null,
-  value: Partial<AccountGamificationSnapshot>,
-  fallbackCreditDate = new Date().toISOString().slice(0, 10)
+  event: GamificationEventType,
+  activityDate: string,
+  firstActivityOnDate: boolean
 ) {
-  const incoming = normalizeAccountGamification(value);
-  if (!existing) return incoming;
+  const current = normalizeAccountGamification(existing ?? {});
+  const rule = gamificationEventRules.find((candidate) => candidate.event === event);
+  if (!rule) return current;
 
-  const current = normalizeAccountGamification(existing);
-  const incomingDate = incoming.lastStreakCreditDate;
-  const currentDate = current.lastStreakCreditDate;
-  let dayStreak = incoming.dayStreak;
-  let lastStreakCreditDate = incomingDate ?? currentDate;
+  const counts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
+  const currentCount = counts.get(event) ?? 0;
+  if (rule.dedupe === "once" && currentCount > 0) return current;
 
-  if (incomingDate && incomingDate === currentDate) {
-    dayStreak = Math.max(current.dayStreak, Math.min(incoming.dayStreak, current.dayStreak + 1));
-  } else if (incomingDate && incoming.dayStreak > current.dayStreak + 1) {
-    dayStreak = current.dayStreak + 1;
-  } else if (!incomingDate && incoming.dayStreak > current.dayStreak) {
-    if (currentDate === fallbackCreditDate) {
-      dayStreak = current.dayStreak;
-      lastStreakCreditDate = currentDate;
-    } else {
-      dayStreak = Math.min(incoming.dayStreak, current.dayStreak + 1);
-      lastStreakCreditDate = fallbackCreditDate;
-    }
-  }
+  counts.set(event, currentCount + 1);
 
   return normalizeAccountGamification({
-    ...incoming,
-    dayStreak,
-    lastStreakCreditDate
+    ...current,
+    dayStreak: firstActivityOnDate ? current.dayStreak + 1 : current.dayStreak,
+    earnedBadgeIds: current.earnedBadgeIds,
+    eventCounts: Array.from(counts.entries()).map(([countedEvent, count]) => ({ event: countedEvent, count })),
+    lastStreakCreditDate: firstActivityOnDate ? activityDate : current.lastStreakCreditDate,
+    monthlyGain: current.monthlyGain + rule.points
   });
 }
 
@@ -188,27 +183,33 @@ export function getAccountGamification(userId: string) {
   return gamification;
 }
 
-export function setAccountGamification(userId: string, value: Partial<AccountGamificationSnapshot>) {
+export function recordAccountGamificationEvent(
+  userId: string,
+  event: GamificationEventType,
+  creditKey = event,
+  activityDate = new Date().toISOString().slice(0, 10)
+) {
   const current = getAccountGamification(userId);
-  const next = normalizeAccountGamification({
-    ...current,
-    ...value
-  });
+  const creditStoreKey = `${userId}:${creditKey}`;
+  if (gamificationCreditStore.has(creditStoreKey)) return { credited: false, gamification: current };
 
-  gamificationStore.set(userId, next);
-  return next;
-}
+  const activityPrefix = `${userId}:activity-date:${activityDate}:`;
+  const firstActivityOnDate = !Array.from(gamificationCreditStore).some((key) => key.startsWith(activityPrefix));
+  const gamification = applyAccountGamificationEvent(current, event, activityDate, firstActivityOnDate);
+  const currentEventCount = current.eventCounts.find((record) => record.event === event)?.count ?? 0;
+  const nextEventCount = gamification.eventCounts.find((record) => record.event === event)?.count ?? 0;
+  if (nextEventCount <= currentEventCount) return { credited: false, gamification: current };
 
-export function recordAccountGamificationEvent(userId: string, event: GamificationEventType, amount = 1) {
-  const current = getAccountGamification(userId);
-  const counts = new Map(current.eventCounts.map((record) => [record.event, record.count]));
-  counts.set(event, (counts.get(event) ?? 0) + toPositiveInteger(amount));
-
-  return setAccountGamification(userId, {
-    eventCounts: Array.from(counts.entries()).map(([event, count]) => ({ event, count }))
-  });
+  gamificationCreditStore.add(creditStoreKey);
+  gamificationCreditStore.add(`${activityPrefix}${creditKey}`);
+  gamificationStore.set(userId, gamification);
+  return { credited: true, gamification };
 }
 
 export function clearAccountGamificationMemory(userId: string) {
-  return gamificationStore.delete(userId);
+  const deleted = gamificationStore.delete(userId);
+  Array.from(gamificationCreditStore).forEach((key) => {
+    if (key.startsWith(`${userId}:`)) gamificationCreditStore.delete(key);
+  });
+  return deleted;
 }

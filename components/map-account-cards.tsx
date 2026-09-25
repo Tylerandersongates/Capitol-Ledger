@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CivicScoreValue, LevelProgressBar, MonthlyGainValue } from "@/components/gamification-live-stats";
+import { AllTimePointsLabel, CivicScoreValue, LevelProgressBar } from "@/components/gamification-live-stats";
 import { MobileCard, mobileViewAllClass } from "@/components/mobile-ui";
 import {
   accountProfileChangedEvent,
@@ -162,7 +162,7 @@ export function MapCivicScoreCard() {
     <MobileCard className="px-5 py-5">
       <h2 className="text-[20px] font-medium leading-none">Civic Score</h2>
       <CivicScoreValue className="mt-5 block text-[28px] font-medium leading-none text-[#ffb12b]" />
-      <MonthlyGainValue className="mt-2 block text-[13px] text-[#43ed74]" />
+      <AllTimePointsLabel className="mt-2 block text-[13px] leading-snug text-white/54" />
       <div className="mt-5 h-2 rounded-full bg-white/13">
         <LevelProgressBar />
       </div>
