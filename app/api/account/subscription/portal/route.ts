@@ -17,7 +17,7 @@ function hasStripeCustomerId(value?: string) {
 }
 
 async function openBillingPortal(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-subscription-portal", { limit: 12, windowMs: 60 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "account-subscription-portal", { limit: 12, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
   const session = await getCurrentSession();

@@ -42,7 +42,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   if (!isAccountDeletionEnabled()) return accountDeletionDisabledResponse();
 
-  const originGuard = guardMutationRequest(request, "account-deletion-request");
+  const originGuard = await guardMutationRequest(request, "account-deletion-request");
   if (originGuard) return originGuard;
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Preview accounts do not store a production account to delete." }, { status: 400 });
   }
 
-  const rateLimitGuard = guardMutationRequest(request, "account-deletion-request", {
+  const rateLimitGuard = await guardMutationRequest(request, "account-deletion-request", {
     key: session.user.id,
     limit: 5,
     windowMs: 60 * 60 * 1000
@@ -81,7 +81,11 @@ export async function POST(request: NextRequest) {
       status: result.mode === "already-deleted" ? "already-deleted" : "completed"
     });
 
-    clearRateLimitSubjects(session.user.id, session.user.email);
+    await clearRateLimitSubjects(session.user.id, session.user.email).catch((error) => {
+      console.error("[account-deletion] rate-limit cleanup failed", {
+        name: error instanceof Error ? error.name : "unknown"
+      });
+    });
     clearAuthCookies(response);
     return response;
   } catch (error) {

@@ -117,12 +117,12 @@ Completed for beta:
 3. Returning-user QA confirmed sign-out, protected `/account` redirect, sign-back-in, profile persistence, saved ledger persistence, and district/interests restoration.
 4. `/settings` party affiliation state now stays synced with account profile changes.
 5. Tester reports remain private in Sentry and App Store Connect; the retired shared review route is no longer part of the app.
-6. Auth-sensitive routes have same-origin guards and in-memory rate limiting for beta.
+6. Auth-sensitive routes have same-origin guards plus a shared Upstash counter path. Local and branch Preview keep an isolated fallback; rate-limited Production mutations fail closed without shared-provider configuration.
 
 Remaining before App Store upload:
 
 1. Watch Round 2 reports for account/session confusion, profile resets, verification confusion, or days-logged-in issues.
-2. Decide whether to replace in-memory rate limiting with an edge/provider-backed limiter before public launch.
+2. Configure the implemented Upstash limiter in the intended deployment and capture deployed multi-instance/rate-limit QA before public launch.
 3. Confirm final auth email provider settings for production volume.
 4. Follow the [September 13 promotion packet](../docs/production-five-migration-promotion-packet-2026-09-13.md). Unchanged production `7ec68bc` may still write `workspaceId = 'team-owner-upgrade'` from a legacy Stripe Team checkout-completion event after migration 3 would make that value foreign-key-invalid. First reproduce that failure on the separately approved replacement child with Stripe mocked, then validate one separately reviewed compatible-source-first or complete source/traffic-quiescence and delayed-event reconciliation sequence. Only after that choice and the packet's restore, runner, lock/window, recovery, and fresh-preflight gates pass may a separately approved Batch A apply the exact five-item order—deletion integrity, cleanup outbox, Team-pause workspace integrity, App Store server state, then privacy-request intake—before matching gated source. Verify live tables/foreign keys/ownership constraints; configure the protected cleanup-task secret, authenticated schedule, no-payload monitor, and retry/reclaim path; then run the controlled disposable-account deletion plus Team-member/legacy-Stripe cleanup matrix in the web environment and on the exact TestFlight device candidate. Confirm backup/PITR tombstone handling and external-provider retention/removal before presenting the flow to Apple review. No migration, traffic/provider change, or deployment is currently authorized.
 
@@ -211,7 +211,7 @@ Remaining before App Store upload:
 2. Choose final auth email provider settings and verify production delivery.
 3. Keep Weekly Brief in app for beta/App Store v1. Defer email/push provider bridge, cron activation, and real outbound sends to the Post-Launch Next Build.
 4. Choose push-notification provider and implement device token storage, alert-triggered sends, permission prompts, and unsubscribe/preference controls if push is part of App Store v1.
-5. Add monitoring/error reporting and production rate limiting before public launch.
+5. Complete monitoring/error reporting and configure/verify the implemented production rate limiter before public launch.
 6. Confirm the privacy policy, support URL, data retention, and account-deletion evidence for Apple review. The earlier production preflight found `20260718154000_account_deletion_requests` applied; current Phase 1 evidence records the exact five pending candidate migrations. Follow the [September 13 promotion packet](../docs/production-five-migration-promotion-packet-2026-09-13.md) for the fresh direct-production preflight, future deployment, live schema/FK/Apple-ownership inspection, protected cleanup-task scheduling/monitoring/retries/completed-job erasure, disposable-account plus Team-member/legacy-Stripe cleanup QA, physical-device local/session clearing, backup/PITR tombstone policy, and Apple/Stripe/Sentry/email/official-message retention/removal procedures.
 
 ### Phase 7: App Store And TestFlight - Remaining Path To Upload

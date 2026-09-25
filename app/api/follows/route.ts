@@ -28,7 +28,7 @@ async function getFollows() {
 }
 
 async function updateFollow(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-follows");
+  const guard = await guardMutationRequest(request, "account-follows");
   if (guard) return guard;
 
   const session = await getCurrentSession();

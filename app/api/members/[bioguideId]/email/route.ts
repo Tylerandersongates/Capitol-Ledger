@@ -39,7 +39,7 @@ async function prepareOfficialContact(
 ) {
   const params = await context.params;
   const rawBody = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const guard = guardMutationRequest(request, "member-contact-email", {
+  const guard = await guardMutationRequest(request, "member-contact-email", {
     key: `${params.bioguideId}:${typeof rawBody.fromEmail === "string" ? rawBody.fromEmail : "anonymous"}`,
     limit: 10,
     windowMs: 60 * 60 * 1000

@@ -43,6 +43,16 @@ function isValidUrl(value) {
   }
 }
 
+function isHttpsUrl(value) {
+  if (!value) return false;
+
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function required(name, value, detail) {
   if (isSet(value)) {
     pass(`${name} is configured`);
@@ -279,8 +289,29 @@ function checkWeeklyBrief() {
 function checkHardening() {
   console.log("\nHardening and observability");
   const aiBillAnalysisProvider = (process.env.CAPITOL_LEDGER_AI_BILL_ANALYSIS_PROVIDER ?? "fallback").toLowerCase();
-  optional("UPSTASH_REDIS_REST_URL", process.env.UPSTASH_REDIS_REST_URL, "Recommended for persistent rate limiting across deployed instances.");
-  optional("UPSTASH_REDIS_REST_TOKEN", process.env.UPSTASH_REDIS_REST_TOKEN, "Recommended with UPSTASH_REDIS_REST_URL.");
+  const upstashUrlConfigured = isHttpsUrl(process.env.UPSTASH_REDIS_REST_URL);
+  const upstashTokenConfigured = isLongSecret(process.env.UPSTASH_REDIS_REST_TOKEN);
+  if (upstashUrlConfigured && upstashTokenConfigured) {
+    pass("Distributed rate limiting is configured");
+  } else if (shouldFailRequired()) {
+    fail(
+      "Distributed rate limiting is configured",
+      "Set an HTTPS UPSTASH_REDIS_REST_URL and its protected UPSTASH_REDIS_REST_TOKEN."
+    );
+  } else {
+    warn(
+      "Distributed rate limiting is configured",
+      "Required before Production; local and branch Preview use an isolated in-memory fallback."
+    );
+  }
+  const rateLimitHashSecret = process.env.RATE_LIMIT_HASH_SECRET || process.env.AUTH_SECRET;
+  if (isLongSecret(rateLimitHashSecret)) {
+    pass("Rate-limit HMAC secret is configured", process.env.RATE_LIMIT_HASH_SECRET ? "dedicated secret" : "AUTH_SECRET fallback");
+  } else if (shouldFailRequired()) {
+    fail("Rate-limit HMAC secret is configured", "Set a long AUTH_SECRET or dedicated RATE_LIMIT_HASH_SECRET.");
+  } else {
+    warn("Rate-limit HMAC secret is configured", "Set a long AUTH_SECRET or dedicated RATE_LIMIT_HASH_SECRET before deployment.");
+  }
   if (aiBillAnalysisProvider === "openai") {
     if (isLongSecret(process.env.OPENAI_API_KEY)) {
       pass("OPENAI_API_KEY is configured");

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     token?: string;
   };
 
-  const guard = guardMutationRequest(request, "auth-verify-email", { key: body.token ?? body.code, limit: 10, windowMs: 15 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "auth-verify-email", { key: body.token ?? body.code, limit: 10, windowMs: 15 * 60 * 1000 });
   if (guard) return guard;
 
   const result = await verifyEmailToken({

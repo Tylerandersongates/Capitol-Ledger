@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Reset token and new password are required." }, { status: 400 });
   }
 
-  const guard = guardMutationRequest(request, "auth-password-reset-confirm", { key: body.token, limit: 8, windowMs: 15 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "auth-password-reset-confirm", { key: body.token, limit: 8, windowMs: 15 * 60 * 1000 });
   if (guard) return guard;
 
   const result = await resetPasswordWithToken({

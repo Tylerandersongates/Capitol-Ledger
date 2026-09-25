@@ -22,7 +22,7 @@
 - Weekly Brief generation uses the account session to combine profile, saved ledger, subscription, and unread alert state for `/brief` and `/api/account/weekly-brief`, and now records delivery history for prepared/queued/sent/failed/paused brief states.
 - Scheduled Weekly Brief delivery is exposed through `/api/tasks/weekly-brief` and requires `WEEKLY_BRIEF_CRON_SECRET`, `CAPITOL_LEDGER_TASK_SECRET`, or `CRON_SECRET` in production.
 - Auth and account-changing API routes now reject cross-origin mutation requests.
-- Auth-sensitive routes now include in-memory rate limits for sign-in, account creation, password reset, email verification, demo session start, App Store subscription account sync, and weekly brief preparation.
+- Auth-sensitive routes use atomic Upstash REST counters when both provider values are configured. Local development and branch Preview retain an isolated in-memory fallback; Production fails closed for rate-limited mutations when shared protection is missing or unavailable. Counter identifiers are HMAC-only, and Vercel deployments use `x-vercel-forwarded-for` rather than caller-selected forwarding values.
 
 ## New Auth Routes
 
@@ -156,7 +156,7 @@ Use `?dryRun=true` or `{ "dryRun": true }` to preview eligible users without wri
 3. Connect the Weekly Brief webhook to an email/push provider, configure the host scheduler to call `/api/tasks/weekly-brief`, and test sent/failed delivery history with `pnpm weekly-brief:qa`.
 4. Configure App Store Connect products and Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Configure Congress.gov values, then run `pnpm congress:check` before building live civic-data upserts.
-6. Add provider-backed or edge-backed persistent rate limiting before launch if the deployment target needs protection across multiple server instances.
+6. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in the intended deployed environment, then run the rate-limit contract and deployed stress QA. The source path is implemented, but provider configuration and live multi-instance evidence remain required before launch clearance.
 7. Decide whether `/impact`, `/badges`, and subscription management should also require account sessions or remain demo-accessible.
 8. Run `pnpm production-auth:qa` after database and email provider setup.
 9. QA district setup, notification preferences, notification read state, party affiliation, gamification snapshots, and browser-saved data migration with a real database.

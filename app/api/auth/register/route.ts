@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "First name, last name, email, and password are required." }, { status: 400 });
   }
 
-  const guard = guardMutationRequest(request, "auth-register", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "auth-register", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
   const result = await createCredentialAccount({

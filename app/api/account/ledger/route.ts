@@ -30,7 +30,7 @@ async function getLedger() {
 }
 
 async function updateLedger(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-ledger");
+  const guard = await guardMutationRequest(request, "account-ledger");
   if (guard) return guard;
 
   const user = await readSession();

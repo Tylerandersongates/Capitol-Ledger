@@ -40,7 +40,7 @@ async function getGamification() {
 }
 
 async function updateGamification(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-gamification");
+  const guard = await guardMutationRequest(request, "account-gamification");
   if (guard) return guard;
 
   const user = await readSession();

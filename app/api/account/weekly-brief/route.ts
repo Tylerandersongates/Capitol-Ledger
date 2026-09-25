@@ -51,7 +51,7 @@ async function getWeeklyBrief() {
 }
 
 async function prepareWeeklyBrief(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-weekly-brief", { limit: 8, windowMs: 15 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "account-weekly-brief", { limit: 8, windowMs: 15 * 60 * 1000 });
   if (guard) return guard;
 
   const result = await readWeeklyBrief();

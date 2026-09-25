@@ -28,7 +28,7 @@ async function getPetitions() {
 }
 
 async function signPetition(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-petitions");
+  const guard = await guardMutationRequest(request, "account-petitions");
   if (guard) return guard;
 
   const session = await getCurrentSession();
