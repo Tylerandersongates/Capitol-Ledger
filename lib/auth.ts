@@ -120,6 +120,6 @@ export async function clearCurrentAuthSession(response: NextResponse) {
 export function requireAuthMessage() {
   return {
     error: "Sign in is required to use account-backed storage.",
-    nextStep: `Start a ${publicBrand.name} demo account session, then sync saved records.`
+    nextStep: `Sign in to ${publicBrand.name} or create an account, then try again.`
   };
 }
