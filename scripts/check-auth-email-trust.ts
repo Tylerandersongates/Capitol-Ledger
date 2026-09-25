@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { logAccountPersistenceFailure } from "../lib/account-persistence-safety";
 import { deliverAuthEmail } from "../lib/auth-email";
 
 const environmentKeys = [
@@ -30,6 +31,7 @@ async function main() {
   const authDatabase = await readFile(new URL("../lib/auth-database.ts", import.meta.url), "utf8");
   const resendEmail = await readFile(new URL("../lib/resend-email.ts", import.meta.url), "utf8");
   const authClient = await readFile(new URL("../components/auth-flow-client.tsx", import.meta.url), "utf8");
+  const registerRoute = await readFile(new URL("../app/api/auth/register/route.ts", import.meta.url), "utf8");
 
   assert.doesNotMatch(passwordResetRoute, /deliveryMode\s*:/, "Password-reset responses must not disclose whether an account exists.");
   assert.doesNotMatch(authDatabase, /deliveryMode/, "The password-reset data contract must not carry an account-existence mode.");
@@ -41,6 +43,7 @@ async function main() {
   assert.match(authClient, /Resend verification email/, "The verification screen must expose the authenticated recovery path.");
   assert.match(resendEmail, /AbortSignal\.timeout\(RESEND_TIMEOUT_MS\)/, "Resend delivery needs a bounded provider timeout.");
   assert.match(resendEmail, /redirect: "error"/, "Resend delivery must not forward auth-email payloads across redirects.");
+  assert.match(registerRoute, /logAccountPersistenceFailure\("auth-register", error\)/);
 
   const atomicClaims = authDatabase.match(/RETURNING "userId"/g) ?? [];
   assert.equal(atomicClaims.length, 2, "Verification and reset tokens must each be claimed atomically.");
@@ -68,6 +71,17 @@ async function main() {
   const logs: unknown[][] = [];
   console.info = (...args: unknown[]) => logs.push(args);
   console.error = (...args: unknown[]) => logs.push(args);
+  const persistenceError = Object.assign(new Error("private-person@example.com"), { code: "P2021" });
+  logAccountPersistenceFailure("auth-register", persistenceError);
+  assert.match(JSON.stringify(logs), /auth-register/);
+  assert.match(JSON.stringify(logs), /P2021/);
+  assert.doesNotMatch(JSON.stringify(logs), /private-person|example\.com/i);
+  logs.length = 0;
+  const unsafeNameError = Object.assign(new Error("provider failure"), { name: "private-person@example.com" });
+  logAccountPersistenceFailure("auth-register", unsafeNameError);
+  assert.match(JSON.stringify(logs), /UnknownError/);
+  assert.doesNotMatch(JSON.stringify(logs), /private-person|example\.com|provider failure/i);
+  logs.length = 0;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     calls.push({ init, input });
     return new Response(JSON.stringify({ accepted: true }), { status: 200 });

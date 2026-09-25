@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createCredentialAccount } from "@/lib/auth-database";
 import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
-import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
+import { accountPersistenceUnavailableMessage, logAccountPersistenceFailure } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -32,11 +32,14 @@ export async function POST(request: NextRequest) {
     lastName,
     name,
     password: body.password
-  }).catch(() => ({
-    configured: true as const,
-    error: accountPersistenceUnavailableMessage,
-    status: 503
-  }));
+  }).catch((error: unknown) => {
+    logAccountPersistenceFailure("auth-register", error);
+    return {
+      configured: true as const,
+      error: accountPersistenceUnavailableMessage,
+      status: 503
+    };
+  });
 
   if (!result.configured) {
     return NextResponse.json(

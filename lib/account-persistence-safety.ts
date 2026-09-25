@@ -17,6 +17,21 @@ export function hasConfiguredAccountPersistence() {
   return Boolean(process.env.DATABASE_URL);
 }
 
+export function logAccountPersistenceFailure(scope: string, error: unknown) {
+  const errorName =
+    error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(error.name) ? error.name : "UnknownError";
+  const detail: { code?: string; name: string } = {
+    name: errorName
+  };
+
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === "string" && /^[A-Z0-9_]+$/.test(code)) detail.code = code;
+  }
+
+  console.error(`[account-persistence] ${scope} failed`, detail);
+}
+
 export function throwAccountPersistenceUnavailable(scope: string, cause?: unknown): never {
   if (cause instanceof AccountPersistenceUnavailableError) throw cause;
   console.error(`[account-persistence] ${scope} unavailable`);
