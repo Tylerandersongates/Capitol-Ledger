@@ -24,8 +24,8 @@ export function logAccountPersistenceFailure(scope: string, error: unknown) {
     name: errorName
   };
 
-  if (typeof error === "object" && error !== null && "code" in error) {
-    const code = (error as { code?: unknown }).code;
+  if (typeof error === "object" && error !== null) {
+    const code = "code" in error ? error.code : "errorCode" in error ? error.errorCode : undefined;
     if (typeof code === "string" && /^[A-Z0-9_]+$/.test(code)) detail.code = code;
   }
 

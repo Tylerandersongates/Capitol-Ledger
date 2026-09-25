@@ -77,6 +77,15 @@ async function main() {
   assert.match(JSON.stringify(logs), /P2021/);
   assert.doesNotMatch(JSON.stringify(logs), /private-person|example\.com/i);
   logs.length = 0;
+  const initializationError = Object.assign(new Error("database details must stay private"), {
+    errorCode: "P1000",
+    name: "PrismaClientInitializationError"
+  });
+  logAccountPersistenceFailure("auth-register", initializationError);
+  assert.match(JSON.stringify(logs), /PrismaClientInitializationError/);
+  assert.match(JSON.stringify(logs), /P1000/);
+  assert.doesNotMatch(JSON.stringify(logs), /database details/i);
+  logs.length = 0;
   const unsafeNameError = Object.assign(new Error("provider failure"), { name: "private-person@example.com" });
   logAccountPersistenceFailure("auth-register", unsafeNameError);
   assert.match(JSON.stringify(logs), /UnknownError/);
