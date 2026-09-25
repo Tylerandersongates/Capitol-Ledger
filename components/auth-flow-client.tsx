@@ -333,12 +333,14 @@ export function AuthFlowClient({
 
   async function resendVerificationEmail() {
     setPending(true);
-    const result = await postJson<AuthApiResponse & { message?: string }>("/api/auth/verification-email", {}).catch(
-      (error: unknown) => ({
+    type VerificationEmailResponse = AuthApiResponse & { message?: string };
+    const result: { data: VerificationEmailResponse; ok: boolean } = await postJson<VerificationEmailResponse>(
+      "/api/auth/verification-email",
+      {}
+    ).catch((error: unknown) => ({
         data: { error: error instanceof Error ? error.message : "Verification email could not be sent." },
         ok: false
-      })
-    );
+      }));
     setPending(false);
 
     if (!result.ok) {

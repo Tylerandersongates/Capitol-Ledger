@@ -15,11 +15,12 @@ const originalEnvironment = new Map(environmentKeys.map((key) => [key, process.e
 const originalFetch = globalThis.fetch;
 const originalConsoleError = console.error;
 const originalConsoleInfo = console.info;
+const mutableEnvironment = process.env as Record<string, string | undefined>;
 
 function restoreEnvironment() {
   for (const [key, value] of originalEnvironment) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
+    if (value === undefined) delete mutableEnvironment[key];
+    else mutableEnvironment[key] = value;
   }
 }
 
@@ -56,7 +57,7 @@ async function main() {
     "Issuing a verification token must invalidate the account's older unused verification tokens."
   );
 
-  process.env.NODE_ENV = "production";
+  mutableEnvironment.NODE_ENV = "production";
   process.env.AUTH_EMAIL_DELIVERY = "webhook";
   process.env.AUTH_EMAIL_FROM = "CapitolWonk <accounts@capitolwonk.test>";
   process.env.AUTH_EMAIL_WEBHOOK_URL = "https://provider.example/auth-email";
