@@ -33,26 +33,6 @@ function webhookUrl() {
   return process.env.OFFICIAL_CONTACT_WEBHOOK_URL;
 }
 
-function composeContactBody({
-  memberLabel,
-  message,
-  sender
-}: {
-  memberLabel: string;
-  message: string;
-  sender: string;
-}) {
-  return [
-    `To: ${memberLabel}`,
-    "",
-    message,
-    "",
-    "---",
-    `Sent from ${appName()}`,
-    `Reply to: ${sender}`
-  ].join("\n");
-}
-
 async function prepareOfficialContact(
   request: NextRequest,
   context: { params: Promise<{ bioguideId: string }> }
@@ -78,7 +58,6 @@ async function prepareOfficialContact(
 
   const member = detail.member;
   const session = await getCurrentSession();
-  const memberLabel = `${member.fullName} (${member.chamber === "House" ? "House" : "Senate"}, ${member.state}${member.district ? `-${member.district}` : ""})`;
   const senderEmail = parsed.data.fromEmail || session?.user?.email;
   const senderName = parsed.data.fromName || session?.user?.name || publicBrand.userLabel;
 
@@ -177,14 +156,6 @@ async function prepareOfficialContact(
     });
   }
 
-  const mailtoUrl = `mailto:${encodeURIComponent("")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-    composeContactBody({
-      memberLabel,
-      message: parsed.data.message,
-      sender: `${senderName} <${senderEmail}>`
-    })
-  )}`;
-
   const letter = await recordOfficialContact({
     contactUrl,
     cooldownKey: contactCooldownKey,
@@ -203,9 +174,9 @@ async function prepareOfficialContact(
   });
 
   return NextResponse.json({
+    confirmationMode: session?.user?.id ? "account" : "local",
     contactUrl,
     letter,
-    mailtoUrl,
     message: "Message prepared.",
     mode: "manual",
     status: "prepared"

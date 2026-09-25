@@ -4,7 +4,8 @@ function safeUrl(input?: string | null) {
   if (!input) return null;
 
   try {
-    return new URL(input);
+    const url = new URL(input);
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
   } catch {
     return null;
   }
