@@ -182,6 +182,7 @@ assert.doesNotMatch(
   "Opening a member contact page must not record a completed representative contact"
 );
 assert.ok(gamificationRouteSource.includes('body.operation !== "record-event"'), "The account API must reject aggregate snapshot writes");
+assert.ok(gamificationRouteSource.includes("const event: GamificationEventType = rule.event"), "The validated event rule must provide the typed server event command");
 assert.ok(gamificationRouteSource.includes("recordGamificationEventToDatabase"), "Authenticated awards must use the server credit ledger");
 assert.ok(gamificationRouteSource.includes("authenticated: true"), "Gamification responses must select account-scoped browser storage");
 assert.ok(browserGamificationSource.includes('operation: "record-event"'), "Browser actions must submit one event command");

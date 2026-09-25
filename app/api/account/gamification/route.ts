@@ -59,11 +59,12 @@ async function updateGamification(request: NextRequest) {
     return NextResponse.json({ error: "Gamification writes require one server-credited event." }, { status: 400 });
   }
 
-  const event = body.event as GamificationEventType;
-  const rule = getGamificationEventRule(event);
+  const requestedEvent = body.event as GamificationEventType;
+  const rule = getGamificationEventRule(requestedEvent);
   if (!rule) {
     return NextResponse.json({ error: "Unknown gamification event." }, { status: 400 });
   }
+  const event: GamificationEventType = rule.event;
 
   const targetId = typeof body.targetId === "string" ? body.targetId.trim() : "";
   const idempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
