@@ -196,7 +196,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
       </button>
 
       {expanded ? (
-        <div className="absolute left-1/2 top-full z-40 mt-3 w-[min(19rem,calc(100vw-7rem))] -translate-x-1/2 rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,39,74,0.98)_0%,rgba(5,18,42,0.98)_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_38px_rgba(1,8,24,0.52)] backdrop-blur-xl">
+        <div className="absolute right-0 top-full z-40 mt-3 w-[min(19rem,calc(100vw-2rem))] rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,39,74,0.98)_0%,rgba(5,18,42,0.98)_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_38px_rgba(1,8,24,0.52)] backdrop-blur-xl">
           {isConfirmationStep ? (
             <>
               <div className="grid grid-cols-[34px_minmax(0,1fr)] gap-3 rounded-xl border border-[#43ed74]/18 bg-[#43ed74]/8 px-3 py-3 text-white">

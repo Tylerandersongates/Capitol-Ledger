@@ -20,6 +20,8 @@ async function checkSourceContract() {
   assert.match(component, /Copy subject/, "The manual path must expose an explicit subject-copy action.");
   assert.match(component, /Copy message/, "The manual path must expose an explicit message-copy action.");
   assert.match(component, /I did not send it/, "Abandoned drafts must have a truthful non-sent exit.");
+  assert.match(component, /absolute right-0 top-full/, "The contact form must anchor inside the right edge of the phone viewport.");
+  assert.match(component, /w-\[min\(19rem,calc\(100vw-2rem\)\)\]/, "The contact form must retain phone-width gutters.");
   assert.match(component, /status === "confirmingError"/, "A failed confirmation must keep the prepared confirmation step available.");
   assert.match(route, /confirmationMode: session\?\.user\?\.id \? "account" : "local"/, "Signed-in confirmations must use account persistence.");
   assert.match(nativeWebView, /navigationAction\.navigationType == \.linkActivated/, "The native shell must open user-tapped external links.");
