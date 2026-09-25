@@ -8,6 +8,7 @@ const promptPath = join(process.cwd(), "Capitol Ledger App", "End of Day Handoff
 const beginMarker = "<!-- BEGIN EOD STANDING RULES -->";
 const endMarker = "<!-- END EOD STANDING RULES -->";
 const enforcementStart = "2026-09-13";
+const launchRebaselineDate = "2026-09-25";
 
 function standingBlock(path) {
   const source = readFileSync(path, "utf8");
@@ -21,6 +22,7 @@ function standingBlock(path) {
 }
 
 const expected = standingBlock(templatePath);
+const legacyExpected = standingBlock(join(docsDirectory, "eod-handoff-2026-09-18.md"));
 for (const phrase of [
   "Codex makes routine, in-scope decisions",
   "Only major actions need Tyler's exact, action-time approval",
@@ -37,8 +39,9 @@ for (const phrase of [
   "Keep privacy intake, deletion, retention, operations, monitoring",
   "Do not upload or distribute a build",
   "all unfinished T01–T11/deferred tracks",
-  "October 30, 2026 launch target",
-  "October 2–6 owner-availability buffer",
+  "November 16, 2026 soft-launch target",
+  "January 3, 2027 full 120th Congress launch target",
+  "cutover rehearsal",
 ]) {
   assert(expected.includes(phrase), `template dropped carry-forward rule: ${phrase}`);
 }
@@ -51,7 +54,13 @@ const handoffs = readdirSync(docsDirectory)
 assert(handoffs.length >= 2, "expected September 13 and 14 handoffs");
 for (const { file } of handoffs) {
   const path = join(docsDirectory, file);
-  assert.equal(standingBlock(path), expected, `${file}: Standing Rules differ from the template`);
+  const date = /^eod-handoff-(\d{4}-\d{2}-\d{2})\.md$/.exec(file)?.[1] ?? "";
+  const effectiveRules = date < launchRebaselineDate ? legacyExpected : expected;
+  assert.equal(
+    standingBlock(path),
+    effectiveRules,
+    `${file}: Standing Rules differ from the rules effective on ${date}`
+  );
 }
 
 const prompt = readFileSync(promptPath, "utf8");
