@@ -258,7 +258,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   }}
                   className="inline-flex h-10 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75"
                 >
-                  I didn't send it
+                  I did not send it
                 </button>
               </div>
             </>

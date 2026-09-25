@@ -19,7 +19,7 @@ async function checkSourceContract() {
   assert.match(component, /href=\{pendingContactUrl\}/, "The prepared official URL must be exposed as a real link.");
   assert.match(component, /Copy subject/, "The manual path must expose an explicit subject-copy action.");
   assert.match(component, /Copy message/, "The manual path must expose an explicit message-copy action.");
-  assert.match(component, /I didn't send it/, "Abandoned drafts must have a truthful non-sent exit.");
+  assert.match(component, /I did not send it/, "Abandoned drafts must have a truthful non-sent exit.");
   assert.match(component, /status === "confirmingError"/, "A failed confirmation must keep the prepared confirmation step available.");
   assert.match(route, /confirmationMode: session\?\.user\?\.id \? "account" : "local"/, "Signed-in confirmations must use account persistence.");
   assert.match(nativeWebView, /navigationAction\.navigationType == \.linkActivated/, "The native shell must open user-tapped external links.");
