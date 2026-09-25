@@ -234,7 +234,7 @@ export default async function SearchPage(props: SearchPageProps) {
                         status: tab.value === "bills" || tab.value === "all" ? status : undefined,
                         page: undefined
                       })}
-                      className={`h-10 rounded-xl pt-3 text-[13px] font-semibold leading-none transition ${
+                      className={`h-11 rounded-xl pt-3.5 text-[13px] font-semibold leading-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] ${
                         activeType === tab.value || (!firstSearchParamValue(searchParams.type) && tab.value === "all")
                           ? "bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)]"
                           : "text-white/56 hover:bg-white/[0.035] hover:text-white/78"
@@ -654,7 +654,7 @@ function FilterChip({ active, href, label }: { active?: boolean; href: string; l
   return (
     <Link
       href={href}
-      className={`flex h-9 items-center justify-center rounded-full border px-3 text-[12px] font-semibold ${
+      className={`flex min-h-11 items-center justify-center rounded-full border px-3 text-[12px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] ${
         active ? "border-[#ffb12b]/55 bg-[#ffb12b]/14 text-[#ffb12b]" : "border-white/10 bg-white/[0.035] text-white/58 hover:text-white/78"
       }`}
     >

@@ -410,14 +410,16 @@ export function OnboardingDistrictSetup() {
 
         <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(15,52,99,0.38)_0%,rgba(3,15,34,0.84)_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.3)]">
           <Search className="h-5 w-5 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+          <label htmlFor="district-lookup" className="sr-only">City, ZIP, or district code</label>
           <input
+            id="district-lookup"
             name="district"
             value={districtInput}
             onChange={(event) => setDistrictInput(event.target.value)}
-            className="h-12 min-w-0 bg-transparent text-[16px] font-medium text-white outline-none placeholder:text-white/36"
+            className="h-12 min-w-0 bg-transparent text-[16px] font-medium text-white outline-none placeholder:text-white/36 focus-visible:rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
             placeholder={matchedDistrict.districtCode ? "Search another city, ZIP, or district" : "Enter a city, ZIP, or district code"}
           />
-          <button type="submit" className="h-10 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)]">
+          <button type="submit" className="h-11 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[13px] font-semibold text-[#071225] shadow-[0_8px_20px_rgba(255,177,43,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffdf63]">
             Find
           </button>
         </div>
@@ -427,7 +429,7 @@ export function OnboardingDistrictSetup() {
             type="button"
             onClick={matchCurrentLocation}
             disabled={locationLookupStatus === "locating"}
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/[0.07] disabled:cursor-wait disabled:text-white/46"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/12 bg-white/[0.045] px-3 text-[12px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] disabled:cursor-wait disabled:text-white/46"
           >
             {locationLookupStatus === "locating" ? (
               <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.9} aria-hidden="true" />

@@ -97,20 +97,22 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
       </section>
 
       <section className="rounded-[1.35rem] border border-white/10 bg-[#061a33]/76 px-5 py-5 shadow-[inset_0_0_24px_rgba(43,141,255,0.06),0_18px_42px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <FieldLabel label="Short title" />
+        <FieldLabel htmlFor="feedback-title" label="Short title" />
         <input
+          id="feedback-title"
           autoCapitalize="sentences"
           autoCorrect="on"
           spellCheck={true}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Example: dashboard card is confusing"
-          className="mt-3 h-12 w-full rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70"
+          className="mt-3 h-12 w-full rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
         />
 
         <div className="mt-5">
-          <FieldLabel label="What happened?" />
+          <FieldLabel htmlFor="feedback-message" label="What happened?" />
           <textarea
+            id="feedback-message"
             autoCapitalize="sentences"
             autoCorrect="on"
             spellCheck={true}
@@ -118,32 +120,35 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
             onChange={(event) => setMessage(event.target.value)}
             placeholder="What did you expect, what happened, and how can we reproduce it?"
             rows={7}
-            className="mt-3 w-full resize-none rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 py-3 text-[16px] leading-6 text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70"
+            className="mt-3 w-full resize-none rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 py-3 text-[16px] leading-6 text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
           />
         </div>
 
         <div className="mt-5">
           <div className="flex items-center justify-between gap-3">
-            <FieldLabel label="Contact email" />
-            <span className="text-[12px] font-medium text-white/34">Optional</span>
+            <FieldLabel htmlFor="feedback-contact-email" label="Contact email" />
+            <span id="feedback-contact-email-hint" className="text-[12px] font-medium text-white/34">Optional</span>
           </div>
           <input
+            id="feedback-contact-email"
+            type="email"
             autoCapitalize="none"
             autoComplete="email"
             autoCorrect="off"
             inputMode="email"
             spellCheck={false}
+            aria-describedby="feedback-contact-email-hint"
             value={contactEmail}
             onChange={(event) => setContactEmail(event.target.value)}
             placeholder="Only if you want a follow-up"
-            className="mt-3 h-12 w-full rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70"
+            className="mt-3 h-12 w-full rounded-2xl border border-white/12 bg-[#020b18]/70 px-4 text-[16px] text-white outline-none placeholder:text-white/34 focus:border-[#ffb12b]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
           />
         </div>
 
         <button
           type="submit"
           disabled={!canSubmit}
-          className="mt-6 flex h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#061126] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition disabled:opacity-45"
+          className="mt-6 flex h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#061126] shadow-[0_0_24px_rgba(255,177,43,0.22)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffdf63] disabled:opacity-45"
         >
           {state === "submitting" ? "Sending..." : "Send feedback"}
           {state !== "submitting" ? <ArrowRight className="ml-2 h-5 w-5" strokeWidth={2} aria-hidden="true" /> : null}
@@ -156,7 +161,7 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
         ) : null}
 
         {statusText ? (
-          <div className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-[14px] leading-5 ${state === "error" ? "border-[#ff5b4a]/35 bg-[#ff5b4a]/10 text-[#ff9b90]" : "border-[#43ed74]/24 bg-[#43ed74]/10 text-[#56f18a]"}`}>
+          <div role={state === "error" ? "alert" : "status"} aria-live={state === "error" ? "assertive" : "polite"} className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-[14px] leading-5 ${state === "error" ? "border-[#ff5b4a]/35 bg-[#ff5b4a]/10 text-[#ff9b90]" : "border-[#43ed74]/24 bg-[#43ed74]/10 text-[#56f18a]"}`}>
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
             {statusText}
           </div>
@@ -166,8 +171,8 @@ export function FeedbackForm({ initialSource = "" }: { initialSource?: string })
   );
 }
 
-function FieldLabel({ label }: { label: string }) {
-  return <div className="text-[13px] font-medium uppercase tracking-wide text-white/50">{label}</div>;
+function FieldLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
+  return <label htmlFor={htmlFor} className="block text-[13px] font-medium uppercase tracking-wide text-white/50">{label}</label>;
 }
 
 function normalizeSource(value: string) {

@@ -189,7 +189,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           setPendingContactUrl("");
           setPendingLetter(null);
         }}
-        className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[linear-gradient(180deg,rgba(255,177,43,0.14)_0%,rgba(255,177,43,0.07)_100%)] px-4 py-2 text-[14px] font-semibold text-[#ffb12b] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(1,8,24,0.26)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
       >
         <Mail className="h-4 w-4" />
         Message
@@ -214,7 +214,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                 <button
                   type="button"
                   onClick={() => onCopy("subject", subject)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/18 px-3 text-[13px] font-medium text-white/78"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/18 px-3 text-[13px] font-medium text-white/78 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
                 >
                   <Clipboard className="h-4 w-4" aria-hidden="true" />
                   {copiedField === "subject" ? "Subject copied" : "Copy subject"}
@@ -222,7 +222,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                 <button
                   type="button"
                   onClick={() => onCopy("message", message)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/18 px-3 text-[13px] font-medium text-white/78"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/18 px-3 text-[13px] font-medium text-white/78 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
                 >
                   <Clipboard className="h-4 w-4" aria-hidden="true" />
                   {copiedField === "message" ? "Message copied" : "Copy message"}
@@ -232,7 +232,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                 href={pendingContactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 text-[14px] font-semibold text-[#ffca5a]"
+                className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#ffb12b]/35 bg-[#ffb12b]/10 px-4 text-[14px] font-semibold text-[#ffca5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
               >
                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 Open official form
@@ -242,7 +242,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   type="button"
                   onClick={onConfirmSent}
                   disabled={status === "confirmingSent"}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[14px] font-semibold text-[#071225] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[14px] font-semibold text-[#071225] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffdf63] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {status === "confirmingSent" ? "Saving..." : "I sent it"}
@@ -256,7 +256,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                     setPendingContactUrl("");
                     setPendingLetter(null);
                   }}
-                  className="inline-flex h-10 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75"
+                  className="inline-flex h-11 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
                 >
                   I did not send it
                 </button>
@@ -268,22 +268,24 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                 Write a message for this office. {publicBrandName} opens the official contact path and keeps a record when you mark it sent.
               </p>
 
-              <label className="block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Your email</label>
+              <label htmlFor="official-contact-email" className="block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Your email</label>
               <input
+                id="official-contact-email"
                 type="email"
                 value={fromEmail}
                 onChange={(event) => setFromEmail(event.target.value)}
                 placeholder="you@example.com"
-                className="mt-2 h-11 w-full rounded-xl border border-white/14 bg-[#04142c]/95 px-3 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/38 focus:border-[#ffb12b]/50 focus:outline-none"
+                className="mt-2 h-11 w-full rounded-xl border border-white/14 bg-[#04142c]/95 px-3 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/38 focus:border-[#ffb12b]/50 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
               />
 
-              <label className="mt-3 block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Message</label>
+              <label htmlFor="official-contact-message" className="mt-3 block text-[12px] font-medium uppercase tracking-[0.08em] text-white/55">Message</label>
               <textarea
+                id="official-contact-message"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={5}
                 placeholder="Write your message..."
-                className="mt-2 w-full resize-y rounded-xl border border-white/14 bg-[#04142c]/95 px-3 py-2 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/38 focus:border-[#ffb12b]/50 focus:outline-none"
+                className="mt-2 w-full resize-y rounded-xl border border-white/14 bg-[#04142c]/95 px-3 py-2 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/38 focus:border-[#ffb12b]/50 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
               />
 
               <div className="mt-3 flex items-center gap-2">
@@ -291,7 +293,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                   type="button"
                   onClick={onSend}
                   disabled={status === "sending" || message.trim().length < 10}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[14px] font-semibold text-[#071225] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] px-4 text-[14px] font-semibold text-[#071225] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffdf63] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <Send className="h-4 w-4" />
                   {status === "sending" ? "Preparing..." : "Prepare message"}
@@ -299,7 +301,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
                 <button
                   type="button"
                   onClick={() => setExpanded(false)}
-                  className="inline-flex h-10 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75"
+                  className="inline-flex h-11 items-center rounded-xl border border-white/18 px-4 text-[14px] text-white/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
                 >
                   Cancel
                 </button>
@@ -308,7 +310,7 @@ export function MemberEmailAction({ bioguideId, chamber, className, memberName }
           )}
 
           {statusMessage ? (
-            <p className={`mt-3 text-[13px] ${status === "error" || status === "confirmingError" ? "text-[#ff8d8d]" : "text-[#43e08f]"}`}>{statusMessage}</p>
+            <p role={status === "error" || status === "confirmingError" ? "alert" : "status"} aria-live={status === "error" || status === "confirmingError" ? "assertive" : "polite"} className={`mt-3 text-[13px] ${status === "error" || status === "confirmingError" ? "text-[#ff8d8d]" : "text-[#43e08f]"}`}>{statusMessage}</p>
           ) : null}
         </div>
       ) : null}
