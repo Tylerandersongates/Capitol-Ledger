@@ -23,6 +23,7 @@
 - Scheduled Weekly Brief delivery is exposed through `/api/tasks/weekly-brief` and requires `WEEKLY_BRIEF_CRON_SECRET`, `CAPITOL_LEDGER_TASK_SECRET`, or `CRON_SECRET` in production.
 - Auth and account-changing API routes now reject cross-origin mutation requests.
 - Auth-sensitive routes use atomic Upstash REST counters when both provider values are configured. Local development and branch Preview retain an isolated in-memory fallback; Production fails closed for rate-limited mutations when shared protection is missing or unavailable. Counter identifiers are HMAC-only, and Vercel deployments use `x-vercel-forwarded-for` rather than caller-selected forwarding values.
+- Vercel Preview is connected to the free `capitolwonk-preview-rate-limit` Upstash resource in `iad1`; Production is intentionally not connected. On commit `193b227`, a protected-Preview browser stress check returned the normal invalid-credential response for attempts 1-8 and the rate-limit response on attempt 9. The Upstash REPL reported two live keys, matching the counter and subject-cleanup index written by the shared limiter.
 
 ## New Auth Routes
 
@@ -156,7 +157,7 @@ Use `?dryRun=true` or `{ "dryRun": true }` to preview eligible users without wri
 3. Connect the Weekly Brief webhook to an email/push provider, configure the host scheduler to call `/api/tasks/weekly-brief`, and test sent/failed delivery history with `pnpm weekly-brief:qa`.
 4. Configure App Store Connect products and Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Configure Congress.gov values, then run `pnpm congress:check` before building live civic-data upserts.
-6. Configure either direct `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` values or the Vercel Marketplace `UPSTASH_REDIS_KV_REST_API_URL` / `UPSTASH_REDIS_KV_REST_API_TOKEN` pair in the intended deployed environment, then run the rate-limit contract and deployed stress QA. The source path is implemented, but provider configuration and live multi-instance evidence remain required before launch clearance.
+6. Before Production traffic, connect Production-specific direct `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` values or the Vercel Marketplace `UPSTASH_REDIS_KV_REST_API_URL` / `UPSTASH_REDIS_KV_REST_API_TOKEN` pair, then repeat the deployed stress QA and capture live multi-instance evidence. Preview provider configuration and the sequential threshold check are complete; Production configuration is intentionally still pending.
 7. Decide whether `/impact`, `/badges`, and subscription management should also require account sessions or remain demo-accessible.
 8. Run `pnpm production-auth:qa` after database and email provider setup.
 9. QA district setup, notification preferences, notification read state, party affiliation, gamification snapshots, and browser-saved data migration with a real database.
