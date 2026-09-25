@@ -147,8 +147,23 @@ function distributedRateLimitRequired() {
 }
 
 function rateLimitBackend(): RateLimitBackend {
-  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  const directUrl = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const directToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  const marketplaceUrl = process.env.UPSTASH_REDIS_KV_REST_API_URL?.trim();
+  const marketplaceToken = process.env.UPSTASH_REDIS_KV_REST_API_TOKEN?.trim();
+  const directConfigured = Boolean(directUrl || directToken);
+  const marketplaceConfigured = Boolean(marketplaceUrl || marketplaceToken);
+
+  if (directConfigured && (!directUrl || !directToken)) {
+    return { kind: "unavailable", reason: "Both direct Upstash REST variables are required." };
+  }
+
+  if (!directConfigured && marketplaceConfigured && (!marketplaceUrl || !marketplaceToken)) {
+    return { kind: "unavailable", reason: "Both Vercel Marketplace Upstash REST variables are required." };
+  }
+
+  const url = directConfigured ? directUrl : marketplaceUrl;
+  const token = directConfigured ? directToken : marketplaceToken;
 
   if (url && token) {
     if (!rateLimitHashSecret()) {
@@ -163,10 +178,6 @@ function rateLimitBackend(): RateLimitBackend {
     } catch {
       return { kind: "unavailable", reason: "UPSTASH_REDIS_REST_URL is invalid." };
     }
-  }
-
-  if (url || token) {
-    return { kind: "unavailable", reason: "Both Upstash REST variables are required." };
   }
 
   if (distributedRateLimitRequired()) {

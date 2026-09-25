@@ -156,7 +156,7 @@ Use `?dryRun=true` or `{ "dryRun": true }` to preview eligible users without wri
 3. Connect the Weekly Brief webhook to an email/push provider, configure the host scheduler to call `/api/tasks/weekly-brief`, and test sent/failed delivery history with `pnpm weekly-brief:qa`.
 4. Configure App Store Connect products and Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Configure Congress.gov values, then run `pnpm congress:check` before building live civic-data upserts.
-6. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in the intended deployed environment, then run the rate-limit contract and deployed stress QA. The source path is implemented, but provider configuration and live multi-instance evidence remain required before launch clearance.
+6. Configure either direct `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` values or the Vercel Marketplace `UPSTASH_REDIS_KV_REST_API_URL` / `UPSTASH_REDIS_KV_REST_API_TOKEN` pair in the intended deployed environment, then run the rate-limit contract and deployed stress QA. The source path is implemented, but provider configuration and live multi-instance evidence remain required before launch clearance.
 7. Decide whether `/impact`, `/badges`, and subscription management should also require account sessions or remain demo-accessible.
 8. Run `pnpm production-auth:qa` after database and email provider setup.
 9. QA district setup, notification preferences, notification read state, party affiliation, gamification snapshots, and browser-saved data migration with a real database.

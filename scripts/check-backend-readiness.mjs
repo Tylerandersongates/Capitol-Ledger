@@ -289,14 +289,21 @@ function checkWeeklyBrief() {
 function checkHardening() {
   console.log("\nHardening and observability");
   const aiBillAnalysisProvider = (process.env.CAPITOL_LEDGER_AI_BILL_ANALYSIS_PROVIDER ?? "fallback").toLowerCase();
-  const upstashUrlConfigured = isHttpsUrl(process.env.UPSTASH_REDIS_REST_URL);
-  const upstashTokenConfigured = isLongSecret(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const directUpstashConfigured = isSet(process.env.UPSTASH_REDIS_REST_URL) || isSet(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const upstashUrl = directUpstashConfigured
+    ? process.env.UPSTASH_REDIS_REST_URL
+    : process.env.UPSTASH_REDIS_KV_REST_API_URL;
+  const upstashToken = directUpstashConfigured
+    ? process.env.UPSTASH_REDIS_REST_TOKEN
+    : process.env.UPSTASH_REDIS_KV_REST_API_TOKEN;
+  const upstashUrlConfigured = isHttpsUrl(upstashUrl);
+  const upstashTokenConfigured = isLongSecret(upstashToken);
   if (upstashUrlConfigured && upstashTokenConfigured) {
-    pass("Distributed rate limiting is configured");
+    pass("Distributed rate limiting is configured", directUpstashConfigured ? "direct Upstash variables" : "Vercel Marketplace variables");
   } else if (shouldFailRequired()) {
     fail(
       "Distributed rate limiting is configured",
-      "Set an HTTPS UPSTASH_REDIS_REST_URL and its protected UPSTASH_REDIS_REST_TOKEN."
+      "Set a complete direct Upstash REST pair or connect the Vercel Marketplace Upstash pair."
     );
   } else {
     warn(

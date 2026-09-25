@@ -14,6 +14,8 @@ const environmentKeys = [
   "RATE_LIMIT_TRUSTED_IP_HEADER",
   "UPSTASH_REDIS_REST_TOKEN",
   "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_KV_REST_API_TOKEN",
+  "UPSTASH_REDIS_KV_REST_API_URL",
   "VERCEL",
   "VERCEL_ENV"
 ] as const;
@@ -61,6 +63,8 @@ async function main() {
   delete process.env.RATE_LIMIT_HASH_SECRET;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
   delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_KV_REST_API_TOKEN;
+  delete process.env.UPSTASH_REDIS_KV_REST_API_URL;
   delete process.env.VERCEL_ENV;
 
   process.env.VERCEL = "1";
@@ -109,8 +113,8 @@ async function main() {
   );
   delete process.env.RATE_LIMIT_DISTRIBUTED_REQUIRED;
 
-  process.env.UPSTASH_REDIS_REST_URL = "https://fixture-rate-limit.upstash.io";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "fixture-token-never-log";
+  process.env.UPSTASH_REDIS_KV_REST_API_URL = "https://fixture-rate-limit.upstash.io";
+  process.env.UPSTASH_REDIS_KV_REST_API_TOKEN = "fixture-token-never-log";
   process.env.VERCEL = "1";
 
   delete process.env.AUTH_SECRET;
