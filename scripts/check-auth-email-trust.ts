@@ -86,6 +86,14 @@ async function main() {
   assert.match(JSON.stringify(logs), /P1000/);
   assert.doesNotMatch(JSON.stringify(logs), /database details/i);
   logs.length = 0;
+  const unclassifiedInitializationError = Object.assign(
+    new Error("Authentication failed against database server at private-host.example.com"),
+    { name: "PrismaClientInitializationError" }
+  );
+  logAccountPersistenceFailure("auth-register", unclassifiedInitializationError);
+  assert.match(JSON.stringify(logs), /authentication_failed/);
+  assert.doesNotMatch(JSON.stringify(logs), /private-host|example\.com/i);
+  logs.length = 0;
   const unsafeNameError = Object.assign(new Error("provider failure"), { name: "private-person@example.com" });
   logAccountPersistenceFailure("auth-register", unsafeNameError);
   assert.match(JSON.stringify(logs), /UnknownError/);

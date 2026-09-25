@@ -20,7 +20,7 @@ export function hasConfiguredAccountPersistence() {
 export function logAccountPersistenceFailure(scope: string, error: unknown) {
   const errorName =
     error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(error.name) ? error.name : "UnknownError";
-  const detail: { code?: string; name: string } = {
+  const detail: { code?: string; name: string; reason?: string } = {
     name: errorName
   };
 
@@ -29,7 +29,25 @@ export function logAccountPersistenceFailure(scope: string, error: unknown) {
     if (typeof code === "string" && /^[A-Z0-9_]+$/.test(code)) detail.code = code;
   }
 
+  const reason = classifyAccountPersistenceFailure(error);
+  if (reason) detail.reason = reason;
+
   console.error(`[account-persistence] ${scope} failed`, detail);
+}
+
+function classifyAccountPersistenceFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const patterns: Array<[RegExp, string]> = [
+    [/authentication failed|credentials .* are not valid/i, "authentication_failed"],
+    [/can't reach database server|connection timed out|connect timed out|failed to connect/i, "database_unreachable"],
+    [/database .* (?:does not exist|not found)/i, "database_not_found"],
+    [/environment variable not found/i, "environment_missing"],
+    [/invalid .*connection string|error parsing connection string|invalid database url|url must start/i, "invalid_database_url"],
+    [/certificate|\btls\b|\bssl\b/i, "tls_error"],
+    [/query engine|unable to require|cannot load|\bwasm\b/i, "engine_load_failed"]
+  ];
+
+  return patterns.find(([pattern]) => pattern.test(message))?.[1];
 }
 
 export function throwAccountPersistenceUnavailable(scope: string, cause?: unknown): never {
