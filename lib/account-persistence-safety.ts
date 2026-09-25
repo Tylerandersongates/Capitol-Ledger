@@ -38,12 +38,18 @@ export function logAccountPersistenceFailure(scope: string, error: unknown) {
 function classifyAccountPersistenceFailure(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   const patterns: Array<[RegExp, string]> = [
-    [/authentication failed|credentials .* are not valid/i, "authentication_failed"],
-    [/can't reach database server|connection timed out|connect timed out|failed to connect/i, "database_unreachable"],
+    [/authentication failed|password authentication failed|credentials .* are not valid/i, "authentication_failed"],
+    [/user .* was denied access|access denied to database/i, "database_access_denied"],
     [/database .* (?:does not exist|not found)/i, "database_not_found"],
     [/environment variable not found/i, "environment_missing"],
-    [/invalid .*connection string|error parsing connection string|invalid database url|url must start/i, "invalid_database_url"],
-    [/certificate|\btls\b|\bssl\b/i, "tls_error"],
+    [
+      /provided database string is invalid|invalid .*connection string|error parsing connection string|invalid database url|url must start/i,
+      "invalid_database_url"
+    ],
+    [/certificate|error opening a tls connection|tls settings|\btls\b|\bssl\b/i, "tls_error"],
+    [/prepared statement|pgbouncer/i, "pooler_incompatible"],
+    [/operations timed out|timeout waiting for server|connection timed out|connect timed out/i, "connection_timeout"],
+    [/can't reach database server|failed to connect|connection closed|server has closed the connection/i, "database_unreachable"],
     [/query engine|unable to require|cannot load|\bwasm\b/i, "engine_load_failed"]
   ];
 

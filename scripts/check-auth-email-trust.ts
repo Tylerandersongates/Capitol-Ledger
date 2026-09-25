@@ -94,6 +94,20 @@ async function main() {
   assert.match(JSON.stringify(logs), /authentication_failed/);
   assert.doesNotMatch(JSON.stringify(logs), /private-host|example\.com/i);
   logs.length = 0;
+  const invalidUrlError = Object.assign(new Error("The provided database string is invalid: private details"), {
+    name: "PrismaClientInitializationError"
+  });
+  logAccountPersistenceFailure("auth-register", invalidUrlError);
+  assert.match(JSON.stringify(logs), /invalid_database_url/);
+  assert.doesNotMatch(JSON.stringify(logs), /private details/i);
+  logs.length = 0;
+  const connectionTimeoutError = Object.assign(new Error("Operations timed out after private details"), {
+    name: "PrismaClientInitializationError"
+  });
+  logAccountPersistenceFailure("auth-register", connectionTimeoutError);
+  assert.match(JSON.stringify(logs), /connection_timeout/);
+  assert.doesNotMatch(JSON.stringify(logs), /private details/i);
+  logs.length = 0;
   const unsafeNameError = Object.assign(new Error("provider failure"), { name: "private-person@example.com" });
   logAccountPersistenceFailure("auth-register", unsafeNameError);
   assert.match(JSON.stringify(logs), /UnknownError/);
