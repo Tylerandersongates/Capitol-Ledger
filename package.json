@@ -62,7 +62,7 @@
     "bill-timeline:check": "node scripts/check-bill-timeline.mjs",
     "bill-votes:check": "node scripts/check-bill-vote-history.mjs",
     "vote-positions:check": "node scripts/check-vote-positions-scroll.mjs",
-    "gamification:check": "node scripts/check-gamification-streak.mjs",
+    "gamification:check": "node --import tsx scripts/check-gamification-streak.mjs",
     "election-participation:check": "node scripts/check-election-participation-copy.mjs",
     "backend:check": "node scripts/check-backend-readiness.mjs",
     "ai-policy-lens:check": "tsx scripts/check-ai-policy-lens-fixtures.ts",

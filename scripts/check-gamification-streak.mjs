@@ -2,9 +2,7 @@
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { tsImport } from "tsx/esm/api";
-
-const {
+import {
   calculateAllTimeActionCount,
   calculateConsecutiveActivityStreak,
   calculateGamificationMonthMetrics,
@@ -18,8 +16,8 @@ const {
   getImpactActions,
   getSupportedBadgeCatalog,
   getUnsupportedBadgeCatalog
-} = await tsImport("../lib/gamification.ts", import.meta.url);
-const { applyAccountGamificationEvent, normalizeAccountGamification } = await tsImport("../lib/account-gamification.ts", import.meta.url);
+} from "../lib/gamification.ts";
+import { applyAccountGamificationEvent, normalizeAccountGamification } from "../lib/account-gamification.ts";
 
 const productionAuditCounts = [
   { event: "complete-onboarding", count: 1 },
