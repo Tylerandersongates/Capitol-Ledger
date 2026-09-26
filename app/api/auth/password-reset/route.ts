@@ -1,7 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { requestPasswordReset } from "@/lib/auth-database";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
-import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
+import { accountPersistenceUnavailableMessage, logAccountPersistenceFailure } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -16,10 +16,13 @@ export async function POST(request: NextRequest) {
   const guard = await guardMutationRequest(request, "auth-password-reset", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
-  const result = await requestPasswordReset(body.email).catch(() => ({
-    configured: true as const,
-    error: accountPersistenceUnavailableMessage
-  }));
+  const result = await requestPasswordReset(body.email).catch((error: unknown) => {
+    logAccountPersistenceFailure("auth-password-reset", error);
+    return {
+      configured: true as const,
+      error: accountPersistenceUnavailableMessage
+    };
+  });
 
   if (!result.configured) {
     return NextResponse.json(

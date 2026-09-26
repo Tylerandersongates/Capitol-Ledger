@@ -44,6 +44,7 @@ async function main() {
   assert.match(resendEmail, /AbortSignal\.timeout\(RESEND_TIMEOUT_MS\)/, "Resend delivery needs a bounded provider timeout.");
   assert.match(resendEmail, /redirect: "error"/, "Resend delivery must not forward auth-email payloads across redirects.");
   assert.match(registerRoute, /logAccountPersistenceFailure\("auth-register", error\)/);
+  assert.match(passwordResetRoute, /logAccountPersistenceFailure\("auth-password-reset", error\)/);
 
   const atomicClaims = authDatabase.match(/RETURNING "userId"/g) ?? [];
   assert.equal(atomicClaims.length, 2, "Verification and reset tokens must each be claimed atomically.");
