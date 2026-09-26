@@ -20,9 +20,9 @@ Output in this exact structure:
 - What works now
 - What is partially done
 - What is blocked
-- Reconcile docs/project-timeline.md: carry every unfinished task ID, owner/dependency and next checkpoint forward. Record actual completion dates, remaining effort, prior/revised forecast dates and why they changed. State ahead/on track/behind only against an established baseline; otherwise say not yet measurable.
+- Reconcile docs/project-timeline.md: carry every unfinished T01–T12/deferred task ID, owner/dependency and next checkpoint forward. Record actual completion dates, remaining effort, prior/revised forecast dates and why they changed. State ahead/on track/behind only against an established baseline; otherwise say not yet measurable.
 - Carry forward the owner-availability buffer and adjust dependent approvals, device sessions, uploads and reviews. Keep the personal reason out of tracked notes.
-- Keep the October 30, 2026 user-set launch target and backward-plan checkpoints visible. Record forecast confidence and review/rework contingency; surface any risk to the target and do not move it without Tyler's decision.
+- Keep the November 16, 2026 controlled soft-launch target and January 3, 2027 full 120th Congress launch target visible, with backward-plan checkpoints for both. Record forecast confidence and review/rework contingency; surface any risk and do not move either target without Tyler's decision.
 
 3) Environment And Config Changes
 - Any new/updated environment variables (names only unless I explicitly ask for values)

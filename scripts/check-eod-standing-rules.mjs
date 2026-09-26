@@ -36,8 +36,9 @@ for (const phrase of [
   "T04 certificate/CSR/private-key/Keychain/profile/signing/device freeze",
   "Keep privacy intake, deletion, retention, operations, monitoring",
   "Do not upload or distribute a build",
-  "all unfinished T01–T11/deferred tracks",
-  "October 30, 2026 launch target",
+  "all unfinished T01–T12/deferred tracks",
+  "November 16, 2026 controlled soft-launch target",
+  "January 3, 2027 full 120th Congress launch target",
   "October 2–6 owner-availability buffer",
 ]) {
   assert(expected.includes(phrase), `template dropped carry-forward rule: ${phrase}`);
