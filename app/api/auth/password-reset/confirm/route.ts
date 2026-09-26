@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clearAuthCookies, setAuthSessionCookie } from "@/lib/auth";
+import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { resetPasswordWithToken } from "@/lib/auth-database";
 import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
@@ -42,14 +42,17 @@ export async function POST(request: NextRequest) {
     return response;
   }
 
+  const requiresVerification = !result.user.emailVerifiedAt;
   const response = NextResponse.json({
     authenticated: true,
     mode: "production",
     passwordUpdated: true,
+    requiresVerification,
     user: result.user
   });
   clearAuthCookies(response);
   setAuthSessionCookie(response, result.sessionToken);
+  if (requiresVerification) setPendingEmailVerificationCookie(response);
 
   return response;
 }

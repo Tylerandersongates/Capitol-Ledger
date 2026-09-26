@@ -670,6 +670,17 @@ export function AuthFlowClient({
         return;
       }
 
+      const authData = result.data as AuthApiResponse;
+      if (authData.requiresVerification || !authData.user?.emailVerifiedAt) {
+        if (!completeFreshBrowserAuthentication(false)) return;
+        markBrowserAccountCreated();
+        setAllowAccountCreation(false);
+        setAccountCreated(true);
+        setMode("verify");
+        setStatus("Password updated. Verify your email before continuing.");
+        return;
+      }
+
       if (!completeFreshBrowserAuthentication(true)) return;
       markBrowserAccountCreated();
       setAllowAccountCreation(false);

@@ -27,6 +27,7 @@ function restoreEnvironment() {
 
 async function main() {
   const passwordResetRoute = await readFile(new URL("../app/api/auth/password-reset/route.ts", import.meta.url), "utf8");
+  const passwordResetConfirmRoute = await readFile(new URL("../app/api/auth/password-reset/confirm/route.ts", import.meta.url), "utf8");
   const resendRoute = await readFile(new URL("../app/api/auth/verification-email/route.ts", import.meta.url), "utf8");
   const authDatabase = await readFile(new URL("../lib/auth-database.ts", import.meta.url), "utf8");
   const resendEmail = await readFile(new URL("../lib/resend-email.ts", import.meta.url), "utf8");
@@ -45,6 +46,9 @@ async function main() {
   assert.match(resendEmail, /redirect: "error"/, "Resend delivery must not forward auth-email payloads across redirects.");
   assert.match(registerRoute, /logAccountPersistenceFailure\("auth-register", error\)/);
   assert.match(passwordResetRoute, /logAccountPersistenceFailure\("auth-password-reset", error\)/);
+  assert.match(passwordResetConfirmRoute, /requiresVerification = !result\.user\.emailVerifiedAt/);
+  assert.match(passwordResetConfirmRoute, /if \(requiresVerification\) setPendingEmailVerificationCookie\(response\)/);
+  assert.match(authClient, /Password updated\. Verify your email before continuing\./);
 
   const atomicClaims = authDatabase.match(/RETURNING "userId"/g) ?? [];
   assert.equal(atomicClaims.length, 2, "Verification and reset tokens must each be claimed atomically.");
