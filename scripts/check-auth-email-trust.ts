@@ -50,6 +50,12 @@ async function main() {
   assert.equal(atomicClaims.length, 2, "Verification and reset tokens must each be claimed atomically.");
   const issuanceLocks = authDatabase.match(/pg_advisory_xact_lock\(hashtextextended/g) ?? [];
   assert.equal(issuanceLocks.length, 2, "Concurrent verification and reset issuance must serialize per account.");
+  const prismaCompatibleIssuanceLocks = authDatabase.match(/pg_advisory_xact_lock\(hashtextextended\([^\n]+\)\)::text/g) ?? [];
+  assert.equal(
+    prismaCompatibleIssuanceLocks.length,
+    2,
+    "Advisory-lock results must be cast from PostgreSQL void before Prisma deserializes them."
+  );
   assert.match(
     authDatabase,
     /UPDATE "PasswordResetToken"[\s\S]*WHERE "userId" = \$\{user\.id\}[\s\S]*AND "usedAt" IS NULL[\s\S]*INSERT INTO "PasswordResetToken"/,

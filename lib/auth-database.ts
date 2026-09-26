@@ -210,7 +210,7 @@ async function createVerificationToken(userId: string) {
 
   await prisma.$transaction(async (transaction) => {
     await transaction.$queryRaw`
-      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))::text
     `;
     await transaction.$executeRaw`
       UPDATE "EmailVerificationToken"
@@ -375,7 +375,7 @@ export async function requestPasswordReset(email: string) {
 
   await prisma.$transaction(async (transaction) => {
     await transaction.$queryRaw`
-      SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))
+      SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))::text
     `;
     await transaction.$executeRaw`
       UPDATE "PasswordResetToken"
