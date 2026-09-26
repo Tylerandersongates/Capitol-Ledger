@@ -23,8 +23,16 @@ assert.ok(
   "Dashboard must not present seeded reference votes as customer activity."
 );
 assert.ok(
-  dashboard.includes("Live bill data is unavailable"),
-  "Dashboard must explain when no live bill data is available."
+  dashboard.includes("Stored bill data is unavailable"),
+  "Dashboard must explain when no stored bill data is available."
+);
+assert.ok(
+  dashboard.includes("Stored activity · sync evidence unavailable"),
+  "Dashboard must not imply source freshness when sync evidence is unavailable."
+);
+assert.ok(
+  !dashboard.includes("Today’s bills"),
+  "Dashboard must not describe stored bill rows as today's activity."
 );
 assert.ok(
   dashboard.includes("Bill totals will appear after the live congressional feed updates."),

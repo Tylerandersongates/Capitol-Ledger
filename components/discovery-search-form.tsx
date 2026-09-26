@@ -30,6 +30,10 @@ const suggestionKindLabel: Record<SuggestionKind, string> = {
   votes: "Vote"
 };
 
+const searchInputId = "discovery-search-query";
+const searchHintId = "discovery-search-hint";
+const searchSuggestionsId = "discovery-search-suggestions";
+
 export function DiscoverySearchForm({ activeType, chamber, focus, party, query, status, state }: DiscoverySearchFormProps) {
   const [inputValue, setInputValue] = useState(query);
   const [isFocused, setIsFocused] = useState(false);
@@ -104,25 +108,34 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
   );
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onBlurCapture={(event) => {
+        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+        blurTimeoutRef.current = window.setTimeout(() => setIsFocused(false), 120);
+      }}
+      onFocusCapture={() => {
+        if (blurTimeoutRef.current) window.clearTimeout(blurTimeoutRef.current);
+        setIsFocused(true);
+      }}
+    >
       <form action="/search" className="flex items-center gap-3 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,rgba(29,83,145,0.22)_0%,rgba(7,23,50,0.76)_100%)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_24px_rgba(2,10,28,0.24)]">
         <Search className="h-6 w-6 shrink-0 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
+        <label htmlFor={searchInputId} className="sr-only">Search bills, officials, and votes</label>
         <input
+          id={searchInputId}
+          type="search"
           name="q"
           value={inputValue}
-          onBlur={() => {
-            blurTimeoutRef.current = window.setTimeout(() => setIsFocused(false), 120);
-          }}
           onChange={(event) => setInputValue(event.target.value)}
-          onFocus={() => {
-            if (blurTimeoutRef.current) window.clearTimeout(blurTimeoutRef.current);
-            setIsFocused(true);
-          }}
           placeholder="Search bills, officials, votes..."
-          className="min-w-0 flex-1 bg-transparent text-[17px] text-white outline-none placeholder:text-white/42"
+          aria-controls={showDropdown ? searchSuggestionsId : undefined}
+          aria-describedby={searchHintId}
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-[17px] text-white outline-none placeholder:text-white/42 focus-visible:rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
           autoComplete="off"
           spellCheck={false}
         />
+        <span id={searchHintId} className="sr-only">Type at least two characters for suggestion links, then use Tab to move through them.</span>
         <input type="hidden" name="type" value={activeType} />
         {focus ? <input type="hidden" name="focus" value={focus} /> : null}
         {status ? <input type="hidden" name="status" value={status} /> : null}
@@ -133,35 +146,37 @@ export function DiscoverySearchForm({ activeType, chamber, focus, party, query, 
           : state
             ? <input type="hidden" name="state" value={state} />
             : null}
-        <button type="submit" className="rounded-xl bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] px-4 py-2 text-[14px] font-semibold text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)] transition hover:brightness-105">
+        <button type="submit" className="min-h-11 rounded-xl bg-[linear-gradient(180deg,#ffe06a_0%,#ffb12b_100%)] px-4 py-2 text-[14px] font-semibold text-[#061126] shadow-[0_8px_20px_rgba(255,177,43,0.18)] transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffdf63]">
           Search
         </button>
       </form>
 
       {showDropdown ? (
-        <div className="absolute inset-x-0 top-full z-30 mt-2 rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,39,74,0.98)_0%,rgba(5,18,42,0.98)_100%)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_38px_rgba(1,8,24,0.52)] backdrop-blur-xl">
+        <div id={searchSuggestionsId} className="absolute inset-x-0 top-full z-30 mt-2 rounded-[1.15rem] border border-white/12 bg-[linear-gradient(180deg,rgba(12,39,74,0.98)_0%,rgba(5,18,42,0.98)_100%)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_38px_rgba(1,8,24,0.52)] backdrop-blur-xl">
           {loading ? (
-            <div className="px-3 py-2 text-[13px] text-white/52">Finding matches...</div>
+            <div role="status" aria-live="polite" className="px-3 py-2 text-[13px] text-white/52">Finding matches...</div>
           ) : (
-            <ul className="space-y-1" role="listbox" aria-label="Closest search suggestions">
-              {suggestions.map((suggestion) => (
-                <li key={`${suggestion.kind}-${suggestion.id}`}>
-                  <Link
-                    href={suggestion.href}
-                    onMouseDown={(event) => event.preventDefault()}
-                    className="flex items-start justify-between gap-3 rounded-xl border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/[0.05]"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[14px] font-medium text-white">{suggestion.label}</span>
-                      <span className="mt-1 block truncate text-[12px] text-white/50">{suggestion.subtitle}</span>
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#ffb12b]">
-                      {suggestionKindLabel[suggestion.kind]}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <nav aria-label="Search suggestions">
+              <ul className="space-y-1">
+                {suggestions.map((suggestion) => (
+                  <li key={`${suggestion.kind}-${suggestion.id}`}>
+                    <Link
+                      href={suggestion.href}
+                      onMouseDown={(event) => event.preventDefault()}
+                      className="flex min-h-11 items-start justify-between gap-3 rounded-xl border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/[0.05] focus-visible:border-[#ffb12b]/55 focus-visible:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[14px] font-medium text-white">{suggestion.label}</span>
+                        <span className="mt-1 block truncate text-[12px] text-white/50">{suggestion.subtitle}</span>
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#ffb12b]">
+                        {suggestionKindLabel[suggestion.kind]}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           )}
         </div>
       ) : null}

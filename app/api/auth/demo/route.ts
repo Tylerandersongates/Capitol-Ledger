@@ -26,7 +26,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const guard = guardMutationRequest(request, "auth-demo", { limit: 30, windowMs: 15 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "auth-demo", { limit: 30, windowMs: 15 * 60 * 1000 });
   if (guard) return guard;
   if (!demoAuthEnabled()) {
     return NextResponse.json(
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const guard = guardMutationRequest(request, "auth-demo-sign-out");
+  const guard = await guardMutationRequest(request, "auth-demo-sign-out");
   if (guard) return guard;
 
   const response = NextResponse.json({

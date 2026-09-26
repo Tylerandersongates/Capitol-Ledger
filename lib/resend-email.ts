@@ -10,6 +10,7 @@ type ResendSendResult = {
 };
 
 const RESEND_API_URL = "https://api.resend.com/emails";
+const RESEND_TIMEOUT_MS = 10_000;
 
 function resendApiKey() {
   return process.env.RESEND_API_KEY?.trim();
@@ -30,11 +31,14 @@ export async function sendEmailWithResend(input: ResendSendInput): Promise<Resen
       text: input.text,
       to: [input.to]
     }),
+    cache: "no-store",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json"
     },
-    method: "POST"
+    method: "POST",
+    redirect: "error",
+    signal: AbortSignal.timeout(RESEND_TIMEOUT_MS)
   });
 
   if (!response.ok) {

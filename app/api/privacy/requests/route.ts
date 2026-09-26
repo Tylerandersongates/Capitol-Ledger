@@ -49,7 +49,7 @@ async function createPrivacyRequest(request: NextRequest) {
   if (!isPrivacyRequestIntakeEnabled()) return privacyRequestDisabledResponse();
   if (!hasDatabaseUrl()) return privacyRequestUnavailableResponse();
 
-  const originGuard = guardMutationRequest(request, "privacy-request-intake");
+  const originGuard = await guardMutationRequest(request, "privacy-request-intake");
   if (originGuard) return originGuard;
 
   const session = await getProductionSession({ includeUnverified: true });
@@ -57,7 +57,7 @@ async function createPrivacyRequest(request: NextRequest) {
     return NextResponse.json(requireAuthMessage(), { headers: noStoreHeaders, status: 401 });
   }
 
-  const rateLimitGuard = guardMutationRequest(request, "privacy-request-intake", {
+  const rateLimitGuard = await guardMutationRequest(request, "privacy-request-intake", {
     key: session.user.id,
     limit: 5,
     windowMs: 24 * 60 * 60 * 1000

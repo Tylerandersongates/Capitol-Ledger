@@ -28,6 +28,8 @@ export type OfficialContactMessageRecord = {
 };
 
 type StoredOfficialContactMessageRecord = OfficialContactMessageRecord & {
+  cooldownKey?: string;
+  senderKey?: string;
   userId?: string;
 };
 
@@ -146,7 +148,7 @@ function normalizeOfficialContactRecord(record: DbOfficialContactMessage): Offic
 }
 
 function toPublicOfficialContactRecord(record: StoredOfficialContactMessageRecord): OfficialContactMessageRecord {
-  const { userId: _userId, ...publicRecord } = record;
+  const { cooldownKey: _cooldownKey, senderKey: _senderKey, userId: _userId, ...publicRecord } = record;
   return publicRecord;
 }
 
@@ -209,11 +211,12 @@ export async function readMostRecentOfficialContact(memberBioguideId: string, se
     return runAccountPersistenceOperation("readMostRecentOfficialContact", async () => {
       const prisma = getPrisma();
       const rows = await prisma.$queryRaw<DbOfficialContactSentAt[]>`
-        SELECT "sentAt"
+        SELECT COALESCE("confirmedAt", "sentAt") AS "sentAt"
         FROM "OfficialContactMessage"
         WHERE "memberBioguideId" = ${normalizeMemberBioguideId(memberBioguideId)}
           AND "senderKey" = ${normalizeSenderKey(senderKey)}
-        ORDER BY "sentAt" DESC
+          AND "deliveryStatus" = 'sent'
+        ORDER BY COALESCE("confirmedAt", "sentAt") DESC
         LIMIT 1
       `;
       return rows[0]?.sentAt?.getTime() ?? null;
@@ -292,7 +295,7 @@ export async function recordOfficialContact({
     });
   } else {
     assertAccountMemoryPersistenceAllowed("recordOfficialContact");
-    officialContactCooldownStore.set(cooldownKey, Date.now());
+    if (deliveryStatus === "sent") officialContactCooldownStore.set(cooldownKey, Date.now());
   }
 
   const sentAt = new Date().toISOString();
@@ -313,7 +316,7 @@ export async function recordOfficialContact({
     subject
   };
 
-  if (!usesDatabase) officialContactMessageStore.unshift({ ...record, userId });
+  if (!usesDatabase) officialContactMessageStore.unshift({ ...record, cooldownKey, senderKey: normalizedSenderKey, userId });
   return record;
 }
 
@@ -355,6 +358,10 @@ export async function confirmOfficialContactForUser(id: string, userId: string) 
   const confirmedAt = new Date().toISOString();
   existing.deliveryStatus = "sent";
   existing.confirmedAt = existing.confirmedAt ?? confirmedAt;
+  officialContactCooldownStore.set(
+    existing.cooldownKey ?? cooldownKeyFor(existing.memberBioguideId, existing.senderKey ?? `user:${userId}`),
+    new Date(existing.confirmedAt).getTime()
+  );
   return toPublicOfficialContactRecord(existing);
 }
 

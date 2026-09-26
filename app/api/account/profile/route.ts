@@ -30,7 +30,7 @@ async function getProfile() {
 }
 
 async function updateProfile(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-profile");
+  const guard = await guardMutationRequest(request, "account-profile");
   if (guard) return guard;
 
   const user = await readSession();

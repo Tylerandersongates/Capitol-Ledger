@@ -24,10 +24,14 @@ assert.ok(!/href="\/search\?[^"]*"[\s\S]{0,260}View bills to watch/.test(dashboa
 
 assert.ok(priorityPage.includes('mode="priority"'), "Priority Feed page should render the priority mode");
 assert.ok(priorityPage.includes("personalPriorityOnly"), "Priority Feed should filter to personal positive/actionable bills");
-assert.ok(priorityPage.includes('searchRecordsWithLiveData({ type: "bills" })'), "Priority Feed should consider all bills before applying personal priority rules");
+assert.ok(priorityPage.includes("bypassCache: true"), "Priority Feed should read current-Congress rows without stale dashboard cache coupling");
+assert.ok(priorityPage.includes("mergeRecentAndSavedDocketBills"), "Priority Feed should include saved bills outside the recent search page");
+assert.ok(priorityPage.includes("buildDocketSponsorNames"), "Priority Feed should use the live member sponsor map");
 assert.ok(!priorityPage.includes('status: "in-committee"'), "Priority Feed should not be only a generic in-committee feed");
 assert.ok(riskPage.includes('mode="risk"'), "Risk Watch page should render the risk mode");
-assert.ok(riskPage.includes('searchRecordsWithLiveData({ type: "bills" })'), "Risk Watch should consider all bills before applying personal stance filters");
+assert.ok(riskPage.includes("bypassCache: true"), "Risk Watch should read current-Congress rows without stale dashboard cache coupling");
+assert.ok(riskPage.includes("mergeRecentAndSavedDocketBills"), "Risk Watch should include saved bills outside the recent search page");
+assert.ok(riskPage.includes("buildDocketSponsorNames"), "Risk Watch should use the live member sponsor map");
 assert.ok(riskPage.includes("personalRiskOnly"), "Risk Watch should filter to personal opposed/watching bills");
 assert.ok(!riskPage.includes('status: "in-progress"'), "Risk Watch should not be triggered by generic in-progress status");
 assert.ok(sharedFeed.includes("isRiskWatchBillStance"), "Risk Watch feed should read opposed/watching bill stances");
@@ -49,6 +53,9 @@ assert.ok(
   "Policy Edge bill rows should render inside the shared scrollable region"
 );
 assert.ok(sharedFeed.includes("Priority Feed") && sharedFeed.includes("Risk Watch"), "Dedicated policy edge feed labels should render");
+assert.ok(sharedFeed.includes("freshness.label"), "Policy edge routes should display persisted source-sync evidence");
+assert.ok(sharedFeed.includes("Sponsor unavailable"), "Policy edge routes should expose an explicit missing-sponsor state");
+assert.ok(!sharedFeed.includes(">Live</span>"), "Policy edge routes should not label stored records as live");
 assert.ok(!priorityPage.includes("redirect(\"/search") && !riskPage.includes("redirect(\"/search"), "Policy edge routes should not redirect to Search");
 
 console.log("Policy edge route check passed.");

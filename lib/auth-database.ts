@@ -4,7 +4,8 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 
 const scrypt = promisify(nodeScrypt);
 const sessionDays = 30;
-const tokenHours = 24;
+export const emailVerificationTokenHours = 24;
+export const passwordResetTokenMinutes = 60;
 
 type DbAuthUser = {
   email: string;
@@ -205,14 +206,41 @@ async function createSessionForUser(userId: string) {
 async function createVerificationToken(userId: string) {
   const prisma = getPrisma();
   const token = newToken();
-  const expiresAt = new Date(Date.now() + tokenHours * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + emailVerificationTokenHours * 60 * 60 * 1000);
 
-  await prisma.$executeRaw`
-    INSERT INTO "EmailVerificationToken" ("id", "userId", "tokenHash", "expiresAt", "createdAt")
-    VALUES (${randomUUID()}, ${userId}, ${tokenHash(token)}, ${expiresAt}, NOW())
-  `;
+  await prisma.$transaction(async (transaction) => {
+    await transaction.$queryRaw`
+      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))::text
+    `;
+    await transaction.$executeRaw`
+      UPDATE "EmailVerificationToken"
+      SET "usedAt" = NOW()
+      WHERE "userId" = ${userId}
+        AND "usedAt" IS NULL
+    `;
+    await transaction.$executeRaw`
+      INSERT INTO "EmailVerificationToken" ("id", "userId", "tokenHash", "expiresAt", "createdAt")
+      VALUES (${randomUUID()}, ${userId}, ${tokenHash(token)}, ${expiresAt}, NOW())
+    `;
+  });
 
   return token;
+}
+
+export async function requestEmailVerification(userId: string) {
+  if (!(await ensureProductionAuthSchema())) {
+    return { configured: false, error: "Production auth needs DATABASE_URL before email verification can be used." };
+  }
+
+  const user = await readUserById(userId);
+  if (!user) return { configured: true, error: "Account session is no longer available.", status: 401 };
+  if (user.emailVerifiedAt) return { configured: true, error: "Email is already verified.", status: 409 };
+
+  return {
+    configured: true,
+    user: toAuthUser(user),
+    verificationToken: await createVerificationToken(user.id)
+  };
 }
 
 export async function createCredentialAccount({
@@ -339,18 +367,29 @@ export async function requestPasswordReset(email: string) {
   }
 
   const user = await readUserByEmail(email);
-  if (!user) return { configured: true, deliveryMode: "silent", resetToken: null };
+  if (!user) return { configured: true, resetToken: null };
 
   const prisma = getPrisma();
   const resetToken = newToken();
-  const expiresAt = new Date(Date.now() + tokenHours * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + passwordResetTokenMinutes * 60 * 1000);
 
-  await prisma.$executeRaw`
-    INSERT INTO "PasswordResetToken" ("id", "userId", "tokenHash", "expiresAt", "createdAt")
-    VALUES (${randomUUID()}, ${user.id}, ${tokenHash(resetToken)}, ${expiresAt}, NOW())
-  `;
+  await prisma.$transaction(async (transaction) => {
+    await transaction.$queryRaw`
+      SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))::text
+    `;
+    await transaction.$executeRaw`
+      UPDATE "PasswordResetToken"
+      SET "usedAt" = NOW()
+      WHERE "userId" = ${user.id}
+        AND "usedAt" IS NULL
+    `;
+    await transaction.$executeRaw`
+      INSERT INTO "PasswordResetToken" ("id", "userId", "tokenHash", "expiresAt", "createdAt")
+      VALUES (${randomUUID()}, ${user.id}, ${tokenHash(resetToken)}, ${expiresAt}, NOW())
+    `;
+  });
 
-  return { configured: true, deliveryMode: "manual_until_email_provider", resetToken };
+  return { configured: true, resetToken };
 }
 
 export async function resetPasswordWithToken({ password, token }: { password: string; token: string }): Promise<AuthResult> {
@@ -366,39 +405,44 @@ export async function resetPasswordWithToken({ password, token }: { password: st
     return { configured: true, error: "Use at least 8 characters for the password.", status: 400 };
   }
 
+  const passwordHash = await hashPassword(password);
   const prisma = getPrisma();
-  const resetTokens = await prisma.$queryRaw<Array<{ id: string; userId: string }>>`
-    SELECT "id", "userId"
-    FROM "PasswordResetToken"
-    WHERE "tokenHash" = ${tokenHash(token)}
-      AND "usedAt" IS NULL
-      AND "expiresAt" > NOW()
-    LIMIT 1
-  `;
-  const resetToken = resetTokens[0];
-  if (!resetToken) {
+  const resetUserId = await prisma.$transaction(async (transaction) => {
+    const claimedTokens = await transaction.$queryRaw<Array<{ userId: string }>>`
+      UPDATE "PasswordResetToken"
+      SET "usedAt" = NOW()
+      WHERE "tokenHash" = ${tokenHash(token)}
+        AND "usedAt" IS NULL
+        AND "expiresAt" > NOW()
+      RETURNING "userId"
+    `;
+    const userId = claimedTokens[0]?.userId;
+    if (!userId) return null;
+
+    await transaction.$executeRaw`
+      UPDATE "User"
+      SET "passwordHash" = ${passwordHash}, "updatedAt" = NOW()
+      WHERE "id" = ${userId}
+    `;
+    await transaction.$executeRaw`
+      UPDATE "PasswordResetToken"
+      SET "usedAt" = NOW()
+      WHERE "userId" = ${userId}
+        AND "usedAt" IS NULL
+    `;
+    await transaction.$executeRaw`
+      DELETE FROM "AuthSession"
+      WHERE "userId" = ${userId}
+    `;
+
+    return userId;
+  });
+
+  if (!resetUserId) {
     return { configured: true, error: "Password reset token is invalid or expired.", status: 400 };
   }
 
-  const passwordHash = await hashPassword(password);
-  await prisma.$transaction([
-    prisma.$executeRaw`
-      UPDATE "User"
-      SET "passwordHash" = ${passwordHash}, "updatedAt" = NOW()
-      WHERE "id" = ${resetToken.userId}
-    `,
-    prisma.$executeRaw`
-      UPDATE "PasswordResetToken"
-      SET "usedAt" = NOW()
-      WHERE "id" = ${resetToken.id}
-    `,
-    prisma.$executeRaw`
-      DELETE FROM "AuthSession"
-      WHERE "userId" = ${resetToken.userId}
-    `
-  ]);
-
-  const user = await readUserById(resetToken.userId);
+  const user = await readUserById(resetUserId);
   if (!user) {
     return { configured: true, error: "Password reset failed.", status: 500 };
   }
@@ -440,29 +484,34 @@ export async function verifyEmailToken({ code, sessionToken, token }: { code?: s
 
   if (!token) return { configured: true, error: "Verification token is missing.", status: 400 };
 
-  const userIds = await prisma.$queryRaw<Array<{ userId: string }>>`
-    SELECT "userId"
-    FROM "EmailVerificationToken"
-    WHERE "tokenHash" = ${tokenHash(token)}
-      AND "usedAt" IS NULL
-      AND "expiresAt" > NOW()
-    LIMIT 1
-  `;
-  const userId = userIds[0]?.userId;
-  if (!userId) return { configured: true, error: "Verification token is invalid or expired.", status: 400 };
-
-  await prisma.$transaction([
-    prisma.$executeRaw`
+  const userId = await prisma.$transaction(async (transaction) => {
+    const claimedTokens = await transaction.$queryRaw<Array<{ userId: string }>>`
       UPDATE "EmailVerificationToken"
       SET "usedAt" = NOW()
       WHERE "tokenHash" = ${tokenHash(token)}
-    `,
-    prisma.$executeRaw`
+        AND "usedAt" IS NULL
+        AND "expiresAt" > NOW()
+      RETURNING "userId"
+    `;
+    const claimedUserId = claimedTokens[0]?.userId;
+    if (!claimedUserId) return null;
+
+    await transaction.$executeRaw`
       UPDATE "User"
       SET "emailVerifiedAt" = NOW(), "updatedAt" = NOW()
-      WHERE "id" = ${userId}
-    `
-  ]);
+      WHERE "id" = ${claimedUserId}
+    `;
+    await transaction.$executeRaw`
+      UPDATE "EmailVerificationToken"
+      SET "usedAt" = NOW()
+      WHERE "userId" = ${claimedUserId}
+        AND "usedAt" IS NULL
+    `;
+
+    return claimedUserId;
+  });
+
+  if (!userId) return { configured: true, error: "Verification token is invalid or expired.", status: 400 };
 
   const user = await readUserById(userId);
   return {

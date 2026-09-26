@@ -98,7 +98,7 @@ assert.ok(!accountDatabase.includes('INSERT INTO "User"'), "an account-data requ
 assert.ok(stripeWebhook.includes("accountPersistenceUserExists"), "Stripe webhooks should verify that the account still exists");
 assert.ok(stripeWebhook.includes("executeAccountDeletionCleanupJob"), "late Stripe events for a deleted account should execute provider cleanup before acknowledgement");
 assert.ok(stripeWebhook.includes("readStripeSubscription"), "mutable Stripe webhook events should reconcile against live provider state");
-assert.ok(requestSecurity.includes('createHash("sha256")'), "rate-limit identities should be one-way hashed in process memory");
+assert.ok(requestSecurity.includes('createHmac("sha256"'), "rate-limit identities should use keyed one-way hashes");
 assert.ok(requestSecurity.includes("pruneExpiredRateLimits"), "expired rate-limit records should be removed");
 assert.ok(requestSecurity.includes("clearRateLimitSubjects"), "account deletion should be able to clear rate-limit subject records");
 assert.ok(route.includes("clearRateLimitSubjects(session.user.id, session.user.email)"), "successful deletion should clear account-linked rate-limit records");

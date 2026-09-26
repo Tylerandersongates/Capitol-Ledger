@@ -21,14 +21,14 @@ async function getFollows() {
   }
 
   return NextResponse.json({
-    mode: "demo",
+    mode: "anonymous",
     follows: [],
-    note: "Browser-based follows are used until a demo account session is started."
+    note: "Sign in or create an account to sync followed records."
   });
 }
 
 async function updateFollow(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-follows");
+  const guard = await guardMutationRequest(request, "account-follows");
   if (guard) return guard;
 
   const session = await getCurrentSession();

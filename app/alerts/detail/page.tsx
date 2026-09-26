@@ -1,6 +1,5 @@
 import { MobileShell } from "@/components/mobile-shell";
 import { BillStanceDetailRow } from "@/components/bill-stance-controls";
-import { GamificationEventLink } from "@/components/gamification-actions";
 import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileBottomNav, MobileCard, mobileIconButtonClass } from "@/components/mobile-ui";
 import { MarkAlertRead } from "@/components/mark-alert-read";
@@ -20,40 +19,57 @@ import {
   Settings
 } from "lucide-react";
 import { getAccountProfile, getDefaultAccountProfile } from "@/lib/account-profile";
-import { canUseDatabasePersistence, getAccountPersistenceUserId, readProfileFromDatabase } from "@/lib/account-database";
+import { getAccountLedger, normalizeAccountLedger } from "@/lib/account-ledger";
+import {
+  canUseDatabasePersistence,
+  getAccountPersistenceUserId,
+  readLedgerFromDatabase,
+  readProfileFromDatabase
+} from "@/lib/account-database";
+import { getCurrentVoteReminder } from "@/lib/alert-rules";
 import { getCurrentSession } from "@/lib/auth";
-import { getAllMembersWithLiveData, getDashboardDataWithLiveData } from "@/lib/data";
-import { getMatchedOfficials } from "@/lib/beta-district-presets";
+import { getCurrentVoteCandidatesForFollowedBills, getDashboardDataWithLiveData } from "@/lib/data";
+import { memberOfficeLabel } from "@/lib/member-display";
 import { formatDate } from "@/lib/utils";
 
-export default async function AlertDetailPage() {
+export default async function AlertDetailPage(props: { searchParams?: Promise<{ voteId?: string }> }) {
+  const searchParams = await props.searchParams;
   const session = await getCurrentSession();
-  if (!session?.user) return <EmptyAlertDetailPage />;
+  if (!session?.user || !searchParams?.voteId) return <EmptyAlertDetailPage />;
 
   const accountUserId = await getAccountPersistenceUserId(session.user).catch(() => session.user.id);
-  const [dashboardData, members, databaseProfile] = await Promise.all([
+  const [dashboardData, databaseProfile, databaseLedger] = await Promise.all([
     getDashboardDataWithLiveData(),
-    getAllMembersWithLiveData(),
-    readProfileFromDatabase(accountUserId).catch(() => null)
+    readProfileFromDatabase(accountUserId).catch(() => null),
+    readLedgerFromDatabase(accountUserId).catch(() => null)
   ]);
-  const profile = databaseProfile ?? (canUseDatabasePersistence() ? getDefaultAccountProfile() : getAccountProfile(accountUserId));
-  const vote = dashboardData.recentVote?.vote;
-  const bill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
-  if (!profile.notificationPreferences.voteReminders || !vote || !bill) return <EmptyAlertDetailPage />;
+  const usesDatabase = canUseDatabasePersistence();
+  const profile = databaseProfile ?? (usesDatabase ? getDefaultAccountProfile() : getAccountProfile(accountUserId));
+  const ledger = databaseLedger ?? (usesDatabase ? normalizeAccountLedger() : getAccountLedger(accountUserId));
+  const followedBillIds = ledger.follows.filter((follow) => follow.type === "bill").map((follow) => follow.id);
+  const voteCandidates = await getCurrentVoteCandidatesForFollowedBills({
+    followedBillIds,
+    voteId: searchParams.voteId
+  });
+  const voteReminder = getCurrentVoteReminder({
+    districtCode: profile.districtCode,
+    enabled: profile.notificationPreferences.voteReminders,
+    followedBillIds: voteCandidates.map((candidate) => candidate.bill.id),
+    members: dashboardData.favoriteTargets.members,
+    voteId: searchParams.voteId,
+    voteFeed: voteCandidates
+  });
+  if (!voteReminder) return <EmptyAlertDetailPage />;
 
-  const preferredChamber = vote?.chamber === "House" || vote?.chamber === "Senate" ? vote.chamber : "House";
-  const districtMembers = profile.districtCode ? getMatchedOfficials(members, profile.districtCode) : [];
-  const districtMember = districtMembers.find((member) => member.chamber === preferredChamber) ?? districtMembers[0];
-  const districtMemberRole = districtMember?.chamber === "Senate" ? "Senator" : "Representative";
-  const districtMemberHref = districtMember ? `/members/${districtMember.bioguideId}#contact` : "/search?type=members";
-  const chamber = vote?.chamber === "House" ? "House of Representatives" : vote?.chamber ?? "Congress";
+  const { bill, contact: districtMember, vote } = voteReminder;
+  const districtMemberRole = memberOfficeLabel(districtMember);
+  const districtMemberHref = `/members/${districtMember.bioguideId}#contact`;
+  const chamber = vote.chamber === "House" ? "House of Representatives" : vote.chamber;
   const alertDetails = [
-    { label: "Bill", value: bill?.displayNumber ?? "Tracked bill", icon: <FileText /> },
+    { label: "Bill", value: bill.displayNumber, icon: <FileText /> },
     { label: "Chamber", value: chamber, icon: <Landmark /> },
-    { label: "Vote date", value: vote ? formatDate(vote.voteDate) : "Date pending", icon: <CalendarDays /> },
-    ...(districtMember
-      ? [{ label: `Your ${districtMemberRole}`, value: districtMember.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, ""), icon: <UserCircle /> }]
-      : [])
+    { label: "Vote date", value: formatDate(vote.voteDate), icon: <CalendarDays /> },
+    { label: `Your ${districtMemberRole}`, value: districtMember.fullName.replace(/^Sen\.\s+|^Rep\.\s+/, ""), icon: <UserCircle /> }
   ];
 
   return (
@@ -62,13 +78,13 @@ export default async function AlertDetailPage() {
       contentClassName="px-8 pb-5 pt-8"
       statusBarClassName="flex items-center justify-between px-3 text-[17px] font-semibold"
     >
-            <MarkAlertRead alertId="system-vote-reminder" />
+            <MarkAlertRead alertId={voteReminder.id} />
             <header className="relative mt-10 flex items-center justify-center">
               <HistoryBackButton className={`absolute left-0 ${mobileIconButtonClass}`}>
                 <ArrowLeft className="h-7 w-7" strokeWidth={2.2} aria-hidden="true" />
               </HistoryBackButton>
               <h1 className="text-[22px] font-medium leading-none text-white">Alert details</h1>
-              <SaveAlertButton alertId={vote?.id ?? bill?.id ?? "tracked-alert"} />
+              <SaveAlertButton alertId={voteReminder.id} />
             </header>
 
             <main className="mt-7 pb-5">
@@ -88,9 +104,9 @@ export default async function AlertDetailPage() {
 
               <div className="-mt-2">
                 <span className="rounded-md bg-white/12 px-3 py-1 text-[13px] font-semibold uppercase tracking-[0.12em] text-white/72">Vote reminder</span>
-                <h2 className="mt-3 text-[28px] font-medium leading-none text-white">{vote ? "Vote recorded" : "Bill update"}</h2>
+                <h2 className="mt-3 text-[28px] font-medium leading-none text-white">Vote recorded</h2>
                 <p className="mt-3 max-w-[420px] text-[18px] leading-snug text-white/64">
-                  {bill?.displayNumber ?? "A tracked bill"} - {bill?.shortTitle ?? "A tracked bill"} {vote ? `recorded a ${vote.result.toLowerCase()} vote in the ${vote.chamber}.` : "has a new legislative update."}
+                  {bill.displayNumber} - {bill.shortTitle} recorded a {vote.result.toLowerCase()} vote in the {vote.chamber}.
                 </p>
               </div>
 
@@ -99,7 +115,7 @@ export default async function AlertDetailPage() {
 	                  {alertDetails.slice(0, 3).map((detail) => (
 	                    <DetailRow key={detail.label} {...detail} />
 	                  ))}
-	                  {bill ? <BillStanceDetailRow billId={bill.id} /> : null}
+                  <BillStanceDetailRow billId={bill.id} />
 	                  {alertDetails.slice(3).map((detail) => (
 	                    <DetailRow key={detail.label} {...detail} />
 	                  ))}
@@ -107,19 +123,13 @@ export default async function AlertDetailPage() {
               </MobileCard>
 
               <div className="mt-4 space-y-3">
-                {districtMember ? (
-                  <GamificationEventLink href={districtMemberHref} event="contact-representative" targetId={districtMember.bioguideId} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
-                    Contact {districtMemberRole}
-                  </GamificationEventLink>
-                ) : (
-                  <Link href={districtMemberHref} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
-                    Find your officials
-                  </Link>
-                )}
+                <Link href={districtMemberHref} className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#ffdf63] via-[#ffb12b] to-[#ff8a00] text-[17px] font-semibold text-[#071225] shadow-[0_0_24px_rgba(255,177,43,0.22)]">
+                  Contact {districtMemberRole}
+                </Link>
                 <Link href="/petitions" className="flex h-12 items-center justify-center rounded-xl border border-[#c08dff]/52 bg-[#c08dff]/14 text-[17px] font-semibold text-[#d5b8ff]">
                   Open civic actions
                 </Link>
-                <Link href={bill ? `/bills/${bill.id}` : "/search?type=bills"} className="flex h-12 items-center justify-center rounded-xl border border-rust/80 bg-transparent text-[17px] font-semibold text-[#ffb12b]">
+                <Link href={`/bills/${bill.id}`} className="flex h-12 items-center justify-center rounded-xl border border-rust/80 bg-transparent text-[17px] font-semibold text-[#ffb12b]">
                   View bill
                 </Link>
               </div>

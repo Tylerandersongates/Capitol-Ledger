@@ -48,15 +48,17 @@ function isUsableSecret(value) {
 }
 
 function isLikelyEmail(value) {
-  return typeof value === "string" && value.includes("@");
+  return typeof value === "string" && !/[\r\n]/.test(value) && /(?:^|<)[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+>?$/.test(value.trim());
 }
 
-function isValidUrl(value) {
+function isValidUrl(value, { requireHttps = false } = {}) {
   if (!value) return false;
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || (!productionMode && url.protocol === "http:");
+    if (url.username || url.password) return false;
+    if (requireHttps || productionMode) return url.protocol === "https:";
+    return url.protocol === "https:" || url.protocol === "http:";
   } catch {
     return false;
   }
@@ -80,8 +82,8 @@ function checkDatabase() {
 }
 
 function checkAppUrl() {
-  if (isValidUrl(process.env.NEXT_PUBLIC_APP_URL)) {
-    pass("NEXT_PUBLIC_APP_URL is configured", process.env.NEXT_PUBLIC_APP_URL);
+  if (isValidUrl(process.env.NEXT_PUBLIC_APP_URL, { requireHttps: shouldFailForProduction() })) {
+    pass("NEXT_PUBLIC_APP_URL is configured");
     return;
   }
 
@@ -157,8 +159,8 @@ function checkResend() {
 }
 
 function checkWebhook() {
-  if (isValidUrl(process.env.AUTH_EMAIL_WEBHOOK_URL)) {
-    pass("AUTH_EMAIL_WEBHOOK_URL is configured", process.env.AUTH_EMAIL_WEBHOOK_URL);
+  if (isValidUrl(process.env.AUTH_EMAIL_WEBHOOK_URL, { requireHttps: shouldFailForProduction() })) {
+    pass("AUTH_EMAIL_WEBHOOK_URL is configured");
   } else {
     fail("AUTH_EMAIL_WEBHOOK_URL is configured", "Webhook delivery mode requires a valid provider endpoint.");
   }
@@ -176,7 +178,7 @@ function checkSender() {
   const sender = process.env.AUTH_EMAIL_FROM;
 
   if (isLikelyEmail(sender)) {
-    pass("AUTH_EMAIL_FROM is configured", sender);
+    pass("AUTH_EMAIL_FROM is configured");
     return;
   }
 

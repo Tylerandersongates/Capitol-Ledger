@@ -1,4 +1,8 @@
-import type { AuthUser } from "@/lib/auth-database";
+import {
+  emailVerificationTokenHours,
+  passwordResetTokenMinutes,
+  type AuthUser
+} from "@/lib/auth-database";
 import { publicBrandName } from "@/lib/brand";
 import { sendEmailWithResend } from "@/lib/resend-email";
 
@@ -20,6 +24,8 @@ type AuthEmailPayload = {
 
 type AuthEmailUser = Pick<AuthUser, "email" | "name">;
 
+type AuthEmailProviderMode = "resend" | "webhook";
+
 type AuthEmailDelivery =
   | { delivered: false; mode: "manual_demo" | "silent"; actionUrl?: string }
   | { delivered: true; mode: "resend" | "webhook" };
@@ -34,6 +40,8 @@ type AuthEmailOriginRequest = {
   };
 };
 
+const authEmailProviderTimeoutMs = 10_000;
+
 function isLocalPreviewBaseUrl(value?: string) {
   if (!value) return false;
 
@@ -46,8 +54,20 @@ function isLocalPreviewBaseUrl(value?: string) {
 }
 
 function appBaseUrl(requestBaseUrl?: string) {
+  const deliveryMode = process.env.AUTH_EMAIL_DELIVERY;
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (process.env.NODE_ENV === "production" && (deliveryMode === "resend" || deliveryMode === "webhook")) {
+    if (!configuredBaseUrl) throw new Error("NEXT_PUBLIC_APP_URL is required for production auth email delivery.");
+
+    const configuredUrl = new URL(configuredBaseUrl);
+    if (configuredUrl.protocol !== "https:" || configuredUrl.username || configuredUrl.password) {
+      throw new Error("NEXT_PUBLIC_APP_URL must be a credential-free HTTPS URL for production auth email delivery.");
+    }
+    return configuredUrl.toString().replace(/\/$/, "");
+  }
+
   const localRequestBaseUrl = isLocalPreviewBaseUrl(requestBaseUrl) ? requestBaseUrl : undefined;
-  return (localRequestBaseUrl || process.env.NEXT_PUBLIC_APP_URL || requestBaseUrl || "http://localhost:3000").replace(/\/$/, "");
+  return (localRequestBaseUrl || configuredBaseUrl || requestBaseUrl || "http://localhost:3000").replace(/\/$/, "");
 }
 
 function appName() {
@@ -55,11 +75,61 @@ function appName() {
 }
 
 function sender() {
-  return process.env.AUTH_EMAIL_FROM;
+  const value = process.env.AUTH_EMAIL_FROM?.trim();
+  if (value && /[\r\n]/.test(value)) throw new Error("AUTH_EMAIL_FROM must be a single-line sender identity.");
+  return value || undefined;
 }
 
 function shouldExposeManualLinks() {
-  return process.env.AUTH_EMAIL_DELIVERY === "manual_demo" || process.env.NODE_ENV !== "production";
+  return process.env.NODE_ENV !== "production";
+}
+
+function providerErrorCode(error: unknown) {
+  if (!(error instanceof Error)) return "unknown";
+  if (error.name === "AbortError" || error.name === "TimeoutError") return "timeout";
+  const status = error.message.match(/status (\d{3})/i)?.[1];
+  if (status) return `http_${status[0]}xx`;
+  if (error instanceof TypeError) return "network";
+  return error.name || "error";
+}
+
+function logDelivery(kind: AuthEmailKind, mode: AuthEmailProviderMode, outcome: "delivered" | "failed", error?: unknown) {
+  const detail = {
+    kind,
+    mode,
+    outcome,
+    ...(error ? { errorCode: providerErrorCode(error) } : {})
+  };
+
+  if (outcome === "failed") {
+    console.error("[auth-email] delivery failed", detail);
+  } else {
+    console.info("[auth-email] delivery completed", detail);
+  }
+}
+
+function webhookEndpoint() {
+  const value = process.env.AUTH_EMAIL_WEBHOOK_URL?.trim();
+  if (!value) throw new Error("AUTH_EMAIL_WEBHOOK_URL is required when AUTH_EMAIL_DELIVERY=webhook.");
+
+  const url = new URL(value);
+  if (url.username || url.password) throw new Error("AUTH_EMAIL_WEBHOOK_URL must not contain credentials.");
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error("AUTH_EMAIL_WEBHOOK_URL must use HTTPS in production.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("AUTH_EMAIL_WEBHOOK_URL must use HTTP or HTTPS.");
+  }
+
+  return url.toString();
+}
+
+function webhookSecret() {
+  const secret = process.env.AUTH_EMAIL_WEBHOOK_SECRET?.trim();
+  if (process.env.NODE_ENV === "production" && (!secret || secret.length < 24 || secret === "replace_me")) {
+    throw new Error("AUTH_EMAIL_WEBHOOK_SECRET must be a long secret in production.");
+  }
+  return secret;
 }
 
 export function authEmailRequestBaseUrl(request: AuthEmailOriginRequest) {
@@ -103,7 +173,7 @@ function buildEmailPayload({
       from: sender(),
       kind,
       subject: `${product} password reset`,
-      text: `Hi ${name},\n\nUse this secure link to reset your ${product} password:\n${actionUrl}\n\nThis link expires soon. If you did not request this, you can ignore this email.`,
+      text: `Hi ${name},\n\nUse this secure link to reset your ${product} password:\n${actionUrl}\n\nThis link expires in ${passwordResetTokenMinutes} minutes and can be used once. If you did not request this, you can ignore this email.`,
       to: user.email,
       user: {
         email: user.email,
@@ -118,7 +188,7 @@ function buildEmailPayload({
     from: sender(),
     kind,
     subject: `Verify your ${product} account`,
-    text: `Hi ${name},\n\nUse this secure link to verify your ${product} account:\n${actionUrl}\n\nThis link expires soon.`,
+    text: `Hi ${name},\n\nUse this secure link to verify your ${product} account:\n${actionUrl}\n\nThis link expires in ${emailVerificationTokenHours} hours and can be used once.`,
     to: user.email,
     user: {
       email: user.email,
@@ -142,40 +212,63 @@ export async function deliverAuthEmail({
 }): Promise<AuthEmailDelivery> {
   if (!token) return { delivered: false, mode: "silent" };
 
-  const payload = buildEmailPayload({ kind, requestBaseUrl, returnTo, token, user });
   const deliveryMode = process.env.AUTH_EMAIL_DELIVERY;
+  let payload: AuthEmailPayload;
+  try {
+    payload = buildEmailPayload({ kind, requestBaseUrl, returnTo, token, user });
+  } catch (error) {
+    if (deliveryMode === "resend" || deliveryMode === "webhook") {
+      logDelivery(kind, deliveryMode, "failed", error);
+    }
+    throw error;
+  }
 
   if (deliveryMode === "resend") {
-    if (!payload.from) throw new Error("AUTH_EMAIL_FROM is required when AUTH_EMAIL_DELIVERY=resend.");
+    try {
+      if (!payload.from) throw new Error("AUTH_EMAIL_FROM is required when AUTH_EMAIL_DELIVERY=resend.");
 
-    await sendEmailWithResend({
-      from: payload.from,
-      subject: payload.subject,
-      text: payload.text,
-      to: payload.to
-    });
-
-    return { delivered: true, mode: "resend" };
+      await sendEmailWithResend({
+        from: payload.from,
+        subject: payload.subject,
+        text: payload.text,
+        to: payload.to
+      });
+      logDelivery(kind, deliveryMode, "delivered");
+      return { delivered: true, mode: "resend" };
+    } catch (error) {
+      logDelivery(kind, deliveryMode, "failed", error);
+      throw error;
+    }
   }
 
   if (deliveryMode === "webhook") {
-    const webhookUrl = process.env.AUTH_EMAIL_WEBHOOK_URL;
-    if (!webhookUrl) throw new Error("AUTH_EMAIL_WEBHOOK_URL is required when AUTH_EMAIL_DELIVERY=webhook.");
+    try {
+      const secret = webhookSecret();
+      const response = await fetch(webhookEndpoint(), {
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          ...(secret ? { "X-Capitol-Ledger-Secret": secret } : {})
+        },
+        method: "POST",
+        redirect: "error",
+        signal: AbortSignal.timeout(authEmailProviderTimeoutMs)
+      });
 
-    const response = await fetch(webhookUrl, {
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.AUTH_EMAIL_WEBHOOK_SECRET ? { "X-Capitol-Ledger-Secret": process.env.AUTH_EMAIL_WEBHOOK_SECRET } : {})
-      },
-      method: "POST"
-    });
-
-    if (!response.ok) {
-      throw new Error(`Auth email webhook failed with status ${response.status}.`);
+      if (!response.ok) {
+        throw new Error(`Auth email webhook failed with status ${response.status}.`);
+      }
+      logDelivery(kind, deliveryMode, "delivered");
+      return { delivered: true, mode: "webhook" };
+    } catch (error) {
+      logDelivery(kind, deliveryMode, "failed", error);
+      throw error;
     }
+  }
 
-    return { delivered: true, mode: "webhook" };
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Auth email delivery is not configured.");
   }
 
   return {

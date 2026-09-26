@@ -56,7 +56,7 @@ async function getSubscription(request: NextRequest) {
 }
 
 async function updateSubscription(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-subscription");
+  const guard = await guardMutationRequest(request, "account-subscription");
   if (guard) return guard;
 
   const user = await readSession();

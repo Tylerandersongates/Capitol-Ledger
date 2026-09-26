@@ -22,7 +22,9 @@
 - Weekly Brief generation uses the account session to combine profile, saved ledger, subscription, and unread alert state for `/brief` and `/api/account/weekly-brief`, and now records delivery history for prepared/queued/sent/failed/paused brief states.
 - Scheduled Weekly Brief delivery is exposed through `/api/tasks/weekly-brief` and requires `WEEKLY_BRIEF_CRON_SECRET`, `CAPITOL_LEDGER_TASK_SECRET`, or `CRON_SECRET` in production.
 - Auth and account-changing API routes now reject cross-origin mutation requests.
-- Auth-sensitive routes now include in-memory rate limits for sign-in, account creation, password reset, email verification, demo session start, App Store subscription account sync, and weekly brief preparation.
+- Auth-sensitive routes use atomic Upstash REST counters when both provider values are configured. Local development and branch Preview retain an isolated in-memory fallback; Production fails closed for rate-limited mutations when shared protection is missing or unavailable. Counter identifiers are HMAC-only, and Vercel deployments use `x-vercel-forwarded-for` rather than caller-selected forwarding values.
+- Vercel Preview is connected to the free `capitolwonk-preview-rate-limit` Upstash resource in `iad1`; Production is intentionally not connected. On commit `193b227`, a protected-Preview browser stress check returned the normal invalid-credential response for attempts 1-8 and the rate-limit response on attempt 9. The Upstash REPL reported two live keys, matching the counter and subject-cleanup index written by the shared limiter.
+- Auth email now keeps password-reset responses account-neutral, moves provider latency after the public reset response, uses 60-minute reset links and 24-hour verification links, atomically consumes tokens, invalidates older unused links, bounds provider calls to 10 seconds without redirects, and emits delivery metadata without recipient or token data. Signed-in unverified users can request a new verification link up to three times per hour.
 
 ## New Auth Routes
 
@@ -32,6 +34,7 @@
 - `GET /api/auth/session`
 - `POST /api/auth/password-reset`
 - `POST /api/auth/password-reset/confirm`
+- `POST /api/auth/verification-email`
 - `POST /api/auth/verify-email`
 
 ## Data Model Added
@@ -104,6 +107,7 @@ Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on accoun
 - `AUTH_COOKIE_SECURE=true` in deployed HTTPS production
 - `NEXT_PUBLIC_APP_URL` for email links such as `/sign-in?resetToken=...`
 - `AUTH_EMAIL_DELIVERY=webhook` when an email provider/webhook bridge is connected
+- `AUTH_EMAIL_DELIVERY=resend` with `RESEND_API_KEY` for direct Resend delivery
 - `AUTH_EMAIL_WEBHOOK_URL` for the provider/webhook endpoint
 - `AUTH_EMAIL_WEBHOOK_SECRET` when the webhook bridge should validate CapitolWonk requests
 - `AUTH_EMAIL_FROM` for the sending identity shown in auth messages
@@ -123,7 +127,7 @@ Use `BILLING_REQUIRE_APP_STORE=true pnpm billing:check` before relying on accoun
 
 ## Auth Email Delivery
 
-When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk sends a JSON payload to `AUTH_EMAIL_WEBHOOK_URL` for verification and password reset emails. The payload includes:
+When `AUTH_EMAIL_DELIVERY=resend`, CapitolWonk sends the same plain-text verification and reset content directly through Resend. When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk sends a JSON payload to `AUTH_EMAIL_WEBHOOK_URL`. The payload includes:
 
 - `kind`: `verify_email` or `password_reset`
 - `to`
@@ -134,7 +138,7 @@ When `AUTH_EMAIL_DELIVERY=webhook`, CapitolWonk sends a JSON payload to `AUTH_EM
 - `appName`
 - `from`
 
-The webhook request includes `X-Capitol-Ledger-Secret` when `AUTH_EMAIL_WEBHOOK_SECRET` is configured. When email delivery is disabled, auth still prepares tokens for demo/manual testing but does not send email.
+The webhook request includes `X-Capitol-Ledger-Secret`; production readiness requires that secret to be at least 24 characters. Production provider calls require a credential-free HTTPS app URL and webhook URL, time out after 10 seconds, and do not follow redirects. When email delivery is disabled, auth still prepares tokens for local testing but does not send email or expose manual links from production-mode builds.
 
 ## Weekly Brief Delivery
 
@@ -152,11 +156,11 @@ Use `?dryRun=true` or `{ "dryRun": true }` to preview eligible users without wri
 ## Remaining Auth Work
 
 1. Apply the checked-in Prisma migration against the production database and run `pnpm production-auth:check`.
-2. Connect the auth email webhook to an email provider, run `AUTH_EMAIL_REQUIRE_PROVIDER=true pnpm auth-email:check`, and test verification links, reset links, expiry, and invalid-token states.
+2. Connect direct Resend delivery or the auth email webhook, run `AUTH_EMAIL_REQUIRE_PROVIDER=true pnpm auth-email:check`, and test delivery, resend, provider failure, enumeration resistance, expiry, replacement, reused-token, and concurrent-token states.
 3. Connect the Weekly Brief webhook to an email/push provider, configure the host scheduler to call `/api/tasks/weekly-brief`, and test sent/failed delivery history with `pnpm weekly-brief:qa`.
 4. Configure App Store Connect products and Server API values, then run `BILLING_REQUIRE_APP_STORE=true pnpm billing:check`.
 5. Configure Congress.gov values, then run `pnpm congress:check` before building live civic-data upserts.
-6. Add provider-backed or edge-backed persistent rate limiting before launch if the deployment target needs protection across multiple server instances.
+6. Before Production traffic, connect Production-specific direct `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` values or the Vercel Marketplace `UPSTASH_REDIS_KV_REST_API_URL` / `UPSTASH_REDIS_KV_REST_API_TOKEN` pair, then repeat the deployed stress QA and capture live multi-instance evidence. Preview provider configuration and the sequential threshold check are complete; Production configuration is intentionally still pending.
 7. Decide whether `/impact`, `/badges`, and subscription management should also require account sessions or remain demo-accessible.
 8. Run `pnpm production-auth:qa` after database and email provider setup.
 9. QA district setup, notification preferences, notification read state, party affiliation, gamification snapshots, and browser-saved data migration with a real database.

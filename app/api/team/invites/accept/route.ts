@@ -11,7 +11,7 @@ async function acceptTeamInvite(request: NextRequest) {
     inviteId?: string;
     token?: string;
   };
-  const guard = guardMutationRequest(request, "team-invite-accept", {
+  const guard = await guardMutationRequest(request, "team-invite-accept", {
     key: body.inviteId ?? body.token,
     limit: 10,
     windowMs: 15 * 60 * 1000

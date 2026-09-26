@@ -130,7 +130,7 @@ export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsP
           <button
             type="button"
             onClick={() => setEditing((current) => !current)}
-            className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+            className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] ${
               editing ? "border-[#43ed74]/30 bg-[#43ed74]/10 text-[#43ed74]" : "border-white/10 bg-white/[0.045] text-[#ffb12b]"
             }`}
             aria-pressed={editing}
@@ -150,7 +150,7 @@ export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsP
               id="officials-state"
               value={officialState}
               onChange={(event) => selectOfficialState(event.target.value)}
-              className="mt-2 h-10 w-full rounded-xl border border-white/12 bg-[#071a38] px-3 text-[13px] font-semibold text-white outline-none focus:border-[#ffb12b]/55"
+              className="mt-2 h-11 w-full rounded-xl border border-white/12 bg-[#071a38] px-3 text-[13px] font-semibold text-white outline-none focus:border-[#ffb12b]/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]"
             >
               <option value="all">All</option>
               {officialStateOptions.map((option) => (
@@ -170,7 +170,7 @@ export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsP
                   key={interest}
                   type="button"
                   onClick={() => toggleInterest(interest)}
-                  className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition ${
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] ${
                     active ? "border-[#ffb12b]/40 bg-[#ffb12b]/12 text-[#ffb12b]" : "border-white/12 bg-white/5 text-white/58 hover:border-[#ffb12b]/35 hover:text-white/78"
                   }`}
                   aria-pressed={active}
@@ -190,7 +190,7 @@ export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsP
                 <Link
                   key={chip.id}
                   href={chip.href}
-                  className={`flex h-9 items-center rounded-full border px-3 text-[12px] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition ${
+                  className={`flex min-h-11 items-center rounded-full border px-3 text-[12px] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b] ${
                     chip.tone === "district"
                       ? "border-[#43ed74]/28 bg-[#43ed74]/10 text-[#74f49a] hover:border-[#43ed74]/45 hover:bg-[#43ed74]/14"
                       : "border-[#ffb12b]/24 bg-[#ffb12b]/7 text-white/66 hover:border-[#ffb12b]/38 hover:bg-[#ffb12b]/12 hover:text-white"

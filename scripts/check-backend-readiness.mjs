@@ -37,7 +37,19 @@ function isValidUrl(value) {
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || (!productionMode && url.protocol === "http:");
+    if (url.username || url.password) return false;
+    if (shouldFailRequired()) return url.protocol === "https:";
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function isHttpsUrl(value) {
+  if (!value) return false;
+
+  try {
+    return new URL(value).protocol === "https:";
   } catch {
     return false;
   }
@@ -69,7 +81,7 @@ function checkCore() {
   required("DATABASE_URL", process.env.DATABASE_URL, "Needed for real accounts, saved ledger, subscriptions, gamification, alerts, and Weekly Brief history.");
 
   if (isValidUrl(process.env.NEXT_PUBLIC_APP_URL)) {
-    pass("NEXT_PUBLIC_APP_URL is configured", process.env.NEXT_PUBLIC_APP_URL);
+    pass("NEXT_PUBLIC_APP_URL is configured");
   } else if (shouldFailRequired()) {
     fail("NEXT_PUBLIC_APP_URL is configured", "Set the deployed HTTPS app URL.");
   } else {
@@ -111,7 +123,7 @@ function checkAuthEmail() {
     }
   } else if (mode === "webhook" || shouldFailRequired()) {
     if (isValidUrl(process.env.AUTH_EMAIL_WEBHOOK_URL)) {
-      pass("AUTH_EMAIL_WEBHOOK_URL is configured", process.env.AUTH_EMAIL_WEBHOOK_URL);
+      pass("AUTH_EMAIL_WEBHOOK_URL is configured");
     } else {
       (mode === "webhook" || requireProduction ? fail : warn)(
         "AUTH_EMAIL_WEBHOOK_URL is configured",
@@ -279,8 +291,36 @@ function checkWeeklyBrief() {
 function checkHardening() {
   console.log("\nHardening and observability");
   const aiBillAnalysisProvider = (process.env.CAPITOL_LEDGER_AI_BILL_ANALYSIS_PROVIDER ?? "fallback").toLowerCase();
-  optional("UPSTASH_REDIS_REST_URL", process.env.UPSTASH_REDIS_REST_URL, "Recommended for persistent rate limiting across deployed instances.");
-  optional("UPSTASH_REDIS_REST_TOKEN", process.env.UPSTASH_REDIS_REST_TOKEN, "Recommended with UPSTASH_REDIS_REST_URL.");
+  const directUpstashConfigured = isSet(process.env.UPSTASH_REDIS_REST_URL) || isSet(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const upstashUrl = directUpstashConfigured
+    ? process.env.UPSTASH_REDIS_REST_URL
+    : process.env.UPSTASH_REDIS_KV_REST_API_URL;
+  const upstashToken = directUpstashConfigured
+    ? process.env.UPSTASH_REDIS_REST_TOKEN
+    : process.env.UPSTASH_REDIS_KV_REST_API_TOKEN;
+  const upstashUrlConfigured = isHttpsUrl(upstashUrl);
+  const upstashTokenConfigured = isLongSecret(upstashToken);
+  if (upstashUrlConfigured && upstashTokenConfigured) {
+    pass("Distributed rate limiting is configured", directUpstashConfigured ? "direct Upstash variables" : "Vercel Marketplace variables");
+  } else if (shouldFailRequired()) {
+    fail(
+      "Distributed rate limiting is configured",
+      "Set a complete direct Upstash REST pair or connect the Vercel Marketplace Upstash pair."
+    );
+  } else {
+    warn(
+      "Distributed rate limiting is configured",
+      "Required before Production; local and branch Preview use an isolated in-memory fallback."
+    );
+  }
+  const rateLimitHashSecret = process.env.RATE_LIMIT_HASH_SECRET || process.env.AUTH_SECRET;
+  if (isLongSecret(rateLimitHashSecret)) {
+    pass("Rate-limit HMAC secret is configured", process.env.RATE_LIMIT_HASH_SECRET ? "dedicated secret" : "AUTH_SECRET fallback");
+  } else if (shouldFailRequired()) {
+    fail("Rate-limit HMAC secret is configured", "Set a long AUTH_SECRET or dedicated RATE_LIMIT_HASH_SECRET.");
+  } else {
+    warn("Rate-limit HMAC secret is configured", "Set a long AUTH_SECRET or dedicated RATE_LIMIT_HASH_SECRET before deployment.");
+  }
   if (aiBillAnalysisProvider === "openai") {
     if (isLongSecret(process.env.OPENAI_API_KEY)) {
       pass("OPENAI_API_KEY is configured");

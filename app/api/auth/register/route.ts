@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createCredentialAccount } from "@/lib/auth-database";
 import { clearAuthCookies, setAuthSessionCookie, setPendingEmailVerificationCookie } from "@/lib/auth";
 import { authEmailRequestBaseUrl, deliverAuthEmail } from "@/lib/auth-email";
-import { accountPersistenceUnavailableMessage } from "@/lib/account-persistence-safety";
+import { accountPersistenceUnavailableMessage, logAccountPersistenceFailure } from "@/lib/account-persistence-safety";
 import { guardMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "First name, last name, email, and password are required." }, { status: 400 });
   }
 
-  const guard = guardMutationRequest(request, "auth-register", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
+  const guard = await guardMutationRequest(request, "auth-register", { key: body.email, limit: 5, windowMs: 60 * 60 * 1000 });
   if (guard) return guard;
 
   const result = await createCredentialAccount({
@@ -32,11 +32,14 @@ export async function POST(request: NextRequest) {
     lastName,
     name,
     password: body.password
-  }).catch(() => ({
-    configured: true as const,
-    error: accountPersistenceUnavailableMessage,
-    status: 503
-  }));
+  }).catch((error: unknown) => {
+    logAccountPersistenceFailure("auth-register", error);
+    return {
+      configured: true as const,
+      error: accountPersistenceUnavailableMessage,
+      status: 503
+    };
+  });
 
   if (!result.configured) {
     return NextResponse.json(
@@ -62,17 +65,19 @@ export async function POST(request: NextRequest) {
     user: result.user
   }).catch(() => ({
     delivered: false as const,
-    error: "Verification email delivery failed.",
-    mode: "manual_demo" as const
+    mode: "failed" as const
   }));
-  const response = NextResponse.json({
-    authenticated: true,
-    emailDelivery: emailDelivery.mode,
-    mode: "production",
-    user: result.user,
-    verificationLink: "actionUrl" in emailDelivery ? emailDelivery.actionUrl : undefined,
-    verificationPrepared: true
-  });
+  const response = NextResponse.json(
+    {
+      authenticated: true,
+      emailDelivery: emailDelivery.mode,
+      mode: "production",
+      user: result.user,
+      verificationLink: "actionUrl" in emailDelivery ? emailDelivery.actionUrl : undefined,
+      verificationPrepared: true
+    },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
   clearAuthCookies(response);
   setAuthSessionCookie(response, result.sessionToken);
   setPendingEmailVerificationCookie(response);

@@ -28,7 +28,7 @@ async function getLetters() {
 }
 
 async function confirmLetter(request: NextRequest) {
-  const guard = guardMutationRequest(request, "account-letters");
+  const guard = await guardMutationRequest(request, "account-letters");
   if (guard) return guard;
 
   const session = await getCurrentSession();

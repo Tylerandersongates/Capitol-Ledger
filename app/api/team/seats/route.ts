@@ -89,7 +89,7 @@ async function releaseTeamSeat(request: NextRequest) {
     seatId?: string;
     seatType?: string;
   };
-  const guard = guardMutationRequest(request, "team-seats", {
+  const guard = await guardMutationRequest(request, "team-seats", {
     key: body.seatId,
     limit: 24,
     windowMs: 60 * 1000

@@ -36,6 +36,7 @@ export type GamificationEventRule = {
     badgeId: string;
     threshold: number;
   }>;
+  countLabel: string;
   dedupe: "daily" | "once" | "once-per-target" | "repeatable";
   event: GamificationEventType;
   impactActionId?: ImpactActionId;
@@ -47,6 +48,10 @@ export type GamificationEventRule = {
 export type GamificationEventCount = {
   count: number;
   event: GamificationEventType;
+};
+
+export type DatedGamificationEventCount = GamificationEventCount & {
+  dateKey: string;
 };
 
 export type GamificationBadge = {
@@ -85,11 +90,44 @@ export const civicLevelTiers: CivicLevelTier[] = [
   { level: 10, minScore: 7500, title: "Civic Luminary" }
 ];
 
+export const civicActivityMetricContract = {
+  allTimeActions: {
+    label: "Recorded actions",
+    source: "accepted aggregate event counts",
+    supportedByAccountSnapshot: true,
+    window: "all-time"
+  },
+  allTimePoints: {
+    label: "Activity score",
+    source: "accepted aggregate event counts multiplied by event points",
+    supportedByAccountSnapshot: true,
+    window: "all-time"
+  },
+  consecutiveDayStreak: {
+    label: "Consecutive activity days",
+    source: "distinct account-time-zone activity date keys",
+    supportedByAccountSnapshot: false,
+    window: "current"
+  },
+  currentMonth: {
+    label: "Current-month activity",
+    source: "dated account-time-zone event counts",
+    supportedByAccountSnapshot: false,
+    window: "calendar-month"
+  },
+  impactBreakdown: {
+    label: "Selected action breakdown",
+    source: "tracked bills, vote records and legacy election entries, representative contacts, and public comments",
+    supportedByAccountSnapshot: true,
+    window: "all-time"
+  }
+} as const;
+
 const impactActionDisplay: Record<ImpactActionId, Omit<ImpactAction, "id" | "value">> = {
-  "letters-sent": { label: "Letters sent", color: "#49c878" },
+  "letters-sent": { label: "Representative contacts", color: "#49c878" },
   "bills-tracked": { label: "Bills tracked", color: "#ffad1e" },
-  "votes-cast": { label: "Vote activity", color: "#5e83df" },
-  "comments-completed": { label: "Comments completed", color: "#9563d5" }
+  "votes-cast": { label: "Vote records + election entries", color: "#5e83df" },
+  "comments-completed": { label: "Public comments completed", color: "#9563d5" }
 };
 
 const impactActionOrder: ImpactActionId[] = ["letters-sent", "bills-tracked", "votes-cast", "comments-completed"];
@@ -98,6 +136,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "complete-onboarding",
     label: "Complete district setup",
+    countLabel: "District setups completed",
     points: 100,
     streakCredit: true,
     dedupe: "once",
@@ -109,6 +148,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "complete-voter-registration",
     label: "Complete voter registration form",
+    countLabel: "Registration forms completed",
     points: 75,
     streakCredit: true,
     dedupe: "once",
@@ -117,6 +157,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "track-bill",
     label: "Track a bill",
+    countLabel: "Bills tracked",
     points: 40,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -129,6 +170,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "save-official",
     label: "Save an official",
+    countLabel: "Officials saved",
     points: 15,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -136,7 +178,8 @@ export const gamificationEventRules: GamificationEventRule[] = [
   },
   {
     event: "read-alert",
-    label: "Read an alert",
+    label: "Open an alert",
+    countLabel: "Alerts opened",
     points: 10,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -148,6 +191,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "open-official-source",
     label: "Open an official source",
+    countLabel: "Official sources opened",
     points: 10,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -159,6 +203,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "complete-public-comment",
     label: "Complete a public comment",
+    countLabel: "Public comments marked complete",
     points: 25,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -171,6 +216,7 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "review-vote",
     label: "Review a vote record",
+    countLabel: "Vote records reviewed",
     points: 35,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -181,20 +227,18 @@ export const gamificationEventRules: GamificationEventRule[] = [
   },
   {
     event: "participate-election",
-    label: "Log election participation",
+    label: "Record a legacy election entry",
+    countLabel: "Legacy election entries recorded",
     points: 60,
     streakCredit: true,
     dedupe: "once-per-target",
     impactActionId: "votes-cast",
-    badgeProgress: [
-      { badgeId: "voter", threshold: 4 },
-      { badgeId: "ballot-veteran", threshold: 5 },
-      { badgeId: "super-voter", threshold: 6 }
-    ]
+    badgeProgress: []
   },
   {
     event: "watch-speech-video",
-    label: "Watch speech or floor video",
+    label: "Open a speech or floor video",
+    countLabel: "Speech or floor videos opened",
     points: 15,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -202,7 +246,8 @@ export const gamificationEventRules: GamificationEventRule[] = [
   },
   {
     event: "contact-representative",
-    label: "Contact a representative",
+    label: "Record a representative contact",
+    countLabel: "Representative contacts recorded",
     points: 25,
     streakCredit: true,
     dedupe: "once-per-target",
@@ -216,13 +261,11 @@ export const gamificationEventRules: GamificationEventRule[] = [
   {
     event: "sign-petition",
     label: "Record legacy civic action",
+    countLabel: "Legacy civic actions recorded",
     points: 25,
     streakCredit: true,
     dedupe: "once-per-target",
-    badgeProgress: [
-      { badgeId: "campaign-ally", threshold: 15 },
-      { badgeId: "change-maker", threshold: 50 }
-    ]
+    badgeProgress: []
   }
 ];
 
@@ -320,8 +363,8 @@ export const badgeCatalog: GamificationBadge[] = [
   },
   {
     id: "civic-streak",
-    label: "Civic Streak",
-    description: "Keep a 14-day streak",
+    label: "Alert Reader",
+    description: "Open 14 alerts",
     icon: "flame",
     status: "earned",
     tone: "gold"
@@ -337,7 +380,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "public-records",
     label: "Public Records",
-    description: "Review 20 bill records",
+    description: "Track 20 bills",
     icon: "file",
     status: "earned",
     tone: "green"
@@ -393,7 +436,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "change-maker",
     label: "Change Maker",
-    description: "Complete 50 civic actions",
+    description: "Record 50 of one action type: comments or representative contacts",
     icon: "building",
     status: "locked",
     tone: "purple"
@@ -409,7 +452,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "floor-watch",
     label: "Floor Watch",
-    description: "Watch 10 floor updates",
+    description: "Open 10 speech or floor videos",
     icon: "vote",
     status: "locked",
     tone: "gold"
@@ -441,7 +484,7 @@ export const badgeCatalog: GamificationBadge[] = [
   {
     id: "rapid-response",
     label: "Rapid Response",
-    description: "Respond to 10 alerts",
+    description: "Open 10 alerts",
     icon: "bell",
     status: "locked",
     tone: "gold"
@@ -479,14 +522,85 @@ function getGamificationRule(event: GamificationEventType) {
 }
 
 function countGamificationEvents(event: GamificationEventType, eventCounts = demoGamificationEventCounts) {
-  return eventCounts.find((record) => record.event === event)?.count ?? 0;
+  return eventCounts.reduce(
+    (total, record) => record.event === event ? total + toNonNegativeInteger(record.count) : total,
+    0
+  );
+}
+
+function toNonNegativeInteger(value: number) {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }
 
 export function calculateGamificationScore(eventCounts = demoGamificationEventCounts) {
   return eventCounts.reduce((score, record) => {
     const rule = getGamificationRule(record.event);
-    return score + (rule?.points ?? 0) * record.count;
+    return score + (rule?.points ?? 0) * toNonNegativeInteger(record.count);
   }, 0);
+}
+
+export function calculateAllTimeActionCount(eventCounts = demoGamificationEventCounts) {
+  return eventCounts.reduce((total, record) => {
+    if (!getGamificationRule(record.event)) return total;
+    return total + toNonNegativeInteger(record.count);
+  }, 0);
+}
+
+function parseDateKey(dateKey: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const timestamp = Date.UTC(year, month - 1, day);
+  return new Date(timestamp).toISOString().slice(0, 10) === dateKey ? timestamp : null;
+}
+
+function previousDateKey(dateKey: string) {
+  const timestamp = parseDateKey(dateKey);
+  if (timestamp === null) return null;
+  return new Date(timestamp - 86_400_000).toISOString().slice(0, 10);
+}
+
+export function calculateGamificationMonthMetrics(
+  datedEventCounts: DatedGamificationEventCount[],
+  monthKey: string
+) {
+  const validMonth = /^\d{4}-\d{2}$/.test(monthKey) && parseDateKey(`${monthKey}-01`) !== null;
+  if (!validMonth) return { actionCount: 0, points: 0 };
+
+  const monthEventCounts = datedEventCounts.filter(
+    (record) => parseDateKey(record.dateKey) !== null && record.dateKey.startsWith(`${monthKey}-`)
+  );
+
+  return {
+    actionCount: calculateAllTimeActionCount(monthEventCounts),
+    points: calculateGamificationScore(monthEventCounts)
+  };
+}
+
+export function calculateConsecutiveActivityStreak(activityDateKeys: string[], asOfDateKey: string) {
+  const asOfTimestamp = parseDateKey(asOfDateKey);
+  if (asOfTimestamp === null) return 0;
+
+  const eligibleDates = new Set(
+    activityDateKeys.filter((dateKey) => {
+      const timestamp = parseDateKey(dateKey);
+      return timestamp !== null && timestamp <= asOfTimestamp;
+    })
+  );
+  const yesterdayKey = previousDateKey(asOfDateKey);
+  let cursor = eligibleDates.has(asOfDateKey)
+    ? asOfDateKey
+    : yesterdayKey && eligibleDates.has(yesterdayKey)
+      ? yesterdayKey
+      : null;
+  let streak = 0;
+
+  while (cursor && eligibleDates.has(cursor)) {
+    streak += 1;
+    cursor = previousDateKey(cursor);
+  }
+
+  return streak;
 }
 
 export function getImpactActions(eventCounts = demoGamificationEventCounts): ImpactAction[] {
@@ -521,16 +635,31 @@ export function getGamificationEventRule(event: GamificationEventType) {
   return getGamificationRule(event);
 }
 
+function getBadgeIdsWithEarningPaths() {
+  return new Set(gamificationEventRules.flatMap((rule) => rule.badgeProgress.map((progress) => progress.badgeId)));
+}
+
+export function getSupportedBadgeCatalog() {
+  const supportedBadgeIds = getBadgeIdsWithEarningPaths();
+  return badgeCatalog.filter((badge) => supportedBadgeIds.has(badge.id));
+}
+
+export function getUnsupportedBadgeCatalog() {
+  const supportedBadgeIds = getBadgeIdsWithEarningPaths();
+  return badgeCatalog.filter((badge) => !supportedBadgeIds.has(badge.id));
+}
+
 export function getEarnedBadges() {
-  return badgeCatalog.filter((badge) => badge.status === "earned");
+  return getSupportedBadgeCatalog().filter((badge) => badge.status === "earned");
 }
 
 export function getBadgeCollections(earnedBadgeIds?: string[]) {
+  const supportedBadges = getSupportedBadgeCatalog();
   const earnedIds = new Set((earnedBadgeIds ?? getEarnedBadges().map((badge) => badge.id)).filter(Boolean));
-  const earnedBadges = badgeCatalog
+  const earnedBadges = supportedBadges
     .filter((badge) => earnedIds.has(badge.id))
     .map((badge) => ({ ...badge, status: "earned" as const }));
-  const lockedBadges = badgeCatalog
+  const lockedBadges = supportedBadges
     .filter((badge) => !earnedIds.has(badge.id))
     .map((badge) => ({ ...badge, status: "locked" as const }));
   const featuredEarnedBadges = earnedBadges.filter((badge) => badge.featured);
@@ -539,8 +668,8 @@ export function getBadgeCollections(earnedBadgeIds?: string[]) {
     earnedBadges,
     featuredEarnedBadges,
     lockedBadges,
-    progressPercent: Math.round((earnedBadges.length / Math.max(1, badgeCatalog.length)) * 100),
-    totalBadges: badgeCatalog.length
+    progressPercent: Math.round((earnedBadges.length / Math.max(1, supportedBadges.length)) * 100),
+    totalBadges: supportedBadges.length
   };
 }
 
@@ -549,17 +678,18 @@ export function getFeaturedEarnedBadges() {
 }
 
 export function getLockedBadges() {
-  return badgeCatalog.filter((badge) => badge.status === "locked");
+  return getSupportedBadgeCatalog().filter((badge) => badge.status === "locked");
 }
 
 export function getRecentAchievements() {
+  const supportedBadgeIds = getBadgeIdsWithEarningPaths();
   return recentAchievementIds
     .map((id) => badgeCatalog.find((badge) => badge.id === id))
-    .filter((badge): badge is GamificationBadge => Boolean(badge));
+    .filter((badge): badge is GamificationBadge => Boolean(badge && supportedBadgeIds.has(badge.id)));
 }
 
 export function getCivicLevelProgress(civicScore: number) {
-  const safeScore = Math.max(0, Math.floor(civicScore));
+  const safeScore = Number.isFinite(civicScore) ? Math.max(0, Math.floor(civicScore)) : 0;
   let activeTierIndex = 0;
 
   for (let index = 0; index < civicLevelTiers.length; index += 1) {
@@ -574,7 +704,9 @@ export function getCivicLevelProgress(civicScore: number) {
   const activeTier = civicLevelTiers[activeTierIndex];
   const nextTier = civicLevelTiers[activeTierIndex + 1];
   const nextLevelScore = nextTier?.minScore ?? Math.max(activeTier.minScore, safeScore);
-  const xpProgress = nextTier ? Math.round((safeScore / Math.max(1, nextLevelScore)) * 100) : 100;
+  const pointsIntoLevel = safeScore - activeTier.minScore;
+  const pointsInLevel = nextTier ? nextTier.minScore - activeTier.minScore : 0;
+  const xpProgress = nextTier ? Math.floor((pointsIntoLevel / Math.max(1, pointsInLevel)) * 100) : 100;
 
   return {
     level: activeTier.level,
@@ -585,22 +717,20 @@ export function getCivicLevelProgress(civicScore: number) {
 }
 
 export function getGamificationSummary(eventCounts = demoGamificationEventCounts, earnedBadgeIds?: string[]) {
-  const earnedBadges = earnedBadgeIds?.length ?? getEarnedBadges().length;
-  const totalBadges = badgeCatalog.length;
+  const badgeCollections = getBadgeCollections(earnedBadgeIds);
   const civicScore = calculateGamificationScore(eventCounts);
-  const impactActions = getImpactActions(eventCounts);
   const levelProgress = getCivicLevelProgress(civicScore);
 
   return {
     civicScore,
-    dayStreak: 16,
-    earnedBadges,
+    dayStreak: 0,
+    earnedBadges: badgeCollections.earnedBadges.length,
     level: levelProgress.level,
     levelTitle: levelProgress.levelTitle,
-    monthlyGain: 75,
+    monthlyGain: 0,
     nextLevelScore: levelProgress.nextLevelScore,
-    totalActions: impactActions.reduce((total, action) => total + action.value, 0),
-    totalBadges,
+    totalActions: calculateAllTimeActionCount(eventCounts),
+    totalBadges: badgeCollections.totalBadges,
     xpProgress: levelProgress.xpProgress
   };
 }

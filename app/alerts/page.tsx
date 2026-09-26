@@ -7,11 +7,23 @@ import {
 import { HistoryBackButton } from "@/components/history-back-button";
 import { MobileShell } from "@/components/mobile-shell";
 import { mobileIconButtonClass } from "@/components/mobile-ui";
-import { getAccountPersistenceUserId } from "@/lib/account-database";
-import { getAlertGroupFromDate, systemVoteReminderAlertId } from "@/lib/alert-rules";
+import { getAccountLedger, normalizeAccountLedger } from "@/lib/account-ledger";
+import { getAccountProfile, getDefaultAccountProfile } from "@/lib/account-profile";
+import {
+  canUseDatabasePersistence,
+  getAccountPersistenceUserId,
+  readLedgerFromDatabase,
+  readProfileFromDatabase
+} from "@/lib/account-database";
+import { getAlertGroupFromDate, getCurrentVoteReminder } from "@/lib/alert-rules";
 import { getAlertNotificationPreference, isActionNeededAlertEvent } from "@/lib/alert-summary";
 import { getCurrentSession } from "@/lib/auth";
-import { getDashboardDataWithLiveData, getRecentUpdates, getRecentUpdatesWithLiveData } from "@/lib/data";
+import {
+  getCurrentVoteCandidatesForFollowedBills,
+  getDashboardDataWithLiveData,
+  getRecentUpdates,
+  getRecentUpdatesWithLiveData
+} from "@/lib/data";
 import { getCurrentEffectiveAccountSubscription } from "@/lib/effective-account-subscription";
 import { readPendingTeamWorkspaceInvitesForEmail, type TeamWorkspacePendingInvite } from "@/lib/team-workspace";
 import { formatDate } from "@/lib/utils";
@@ -72,13 +84,28 @@ export default async function AlertsPage(props: { searchParams?: Promise<{ filte
     getCurrentSession(),
     getRecentUpdatesWithLiveData()
   ]);
-  const pendingTeamInvites = session?.user
-    ? await readPendingTeamWorkspaceInvitesForEmail({
-        email: session.user.email,
-        userId: await getAccountPersistenceUserId(session.user).catch(() => session.user.id)
-      }).catch(() => [])
-    : [];
-  const voteAlertBill = dashboardData.recentVote?.bill ?? dashboardData.trackedBill;
+  const accountUserId = session?.user
+    ? await getAccountPersistenceUserId(session.user).catch(() => session.user.id)
+    : null;
+  const [pendingTeamInvites, databaseProfile, databaseLedger] = accountUserId && session?.user
+    ? await Promise.all([
+        readPendingTeamWorkspaceInvitesForEmail({ email: session.user.email, userId: accountUserId }).catch(() => []),
+        readProfileFromDatabase(accountUserId).catch(() => null),
+        readLedgerFromDatabase(accountUserId).catch(() => null)
+      ])
+    : [[], null, null];
+  const usesDatabase = canUseDatabasePersistence();
+  const profile = databaseProfile ?? (accountUserId && !usesDatabase ? getAccountProfile(accountUserId) : getDefaultAccountProfile());
+  const ledger = databaseLedger ?? (accountUserId && !usesDatabase ? getAccountLedger(accountUserId) : normalizeAccountLedger());
+  const followedBillIds = ledger.follows.filter((follow) => follow.type === "bill").map((follow) => follow.id);
+  const voteCandidates = await getCurrentVoteCandidatesForFollowedBills({ followedBillIds });
+  const voteReminder = getCurrentVoteReminder({
+    districtCode: profile.districtCode,
+    enabled: profile.notificationPreferences.voteReminders,
+    followedBillIds: voteCandidates.map((candidate) => candidate.bill.id),
+    members: dashboardData.favoriteTargets.members,
+    voteFeed: voteCandidates
+  });
   const billsById = new Map(dashboardData.favoriteTargets.bills.map((bill) => [bill.id, bill]));
   const membersById = new Map(dashboardData.favoriteTargets.members.map((member) => [member.bioguideId, member]));
   const notifications: AlertsInboxItem[] = recentUpdates.map((event) => {
@@ -105,19 +132,19 @@ export default async function AlertsPage(props: { searchParams?: Promise<{ filte
     };
   });
   const teamInviteAlerts = pendingTeamInvites.map(teamInviteAlert);
-  const systemAlerts: AlertsInboxItem[] = voteAlertBill
+  const systemAlerts: AlertsInboxItem[] = voteReminder
     ? [
         {
-          id: systemVoteReminderAlertId,
-          title: "Vote reminder",
-          body: `${voteAlertBill.displayNumber} - ${voteAlertBill.shortTitle} needs your attention.`,
+          id: voteReminder.id,
+          title: "Recent bill vote",
+          body: `${voteReminder.bill.displayNumber} - ${voteReminder.bill.shortTitle} has a recent ${voteReminder.vote.chamber} vote on record.`,
           categoryLabel: "Vote reminder",
           preference: "voteReminders",
           actionNeeded: true,
           action: "View details",
-          href: "/alerts/detail",
-          group: "today",
-          time: "Today",
+          href: `/alerts/detail?voteId=${encodeURIComponent(voteReminder.vote.id)}`,
+          group: voteReminder.group,
+          time: formatDate(voteReminder.vote.voteDate),
           icon: "bell",
           defaultUnread: true
         }

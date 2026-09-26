@@ -24,16 +24,26 @@ const badgeFilters: Array<{ label: string; value: BadgeFilter }> = [
   { label: "Locked", value: "locked" }
 ];
 
-const activitySignals: Array<{ event: GamificationEventType; href: string; label: string; tone: string }> = [
-  { event: "complete-voter-registration", href: "/impact#voter-registration", label: "Registration form", tone: "#9fc4ff" },
-  { event: "track-bill", href: "/search?type=bills&focus=results", label: "Bills tracked", tone: "#ffbd39" },
-  { event: "review-vote", href: "/search?type=votes&focus=results", label: "Vote records", tone: "#79a8ff" },
-  { event: "participate-election", href: "/impact#election-participation", label: "Elections logged", tone: "#ffd45c" },
-  { event: "read-alert", href: "/alerts", label: "Alerts read", tone: "#4fdb89" },
-  { event: "contact-representative", href: "/search?type=members&focus=results", label: "Letters sent", tone: "#d18bff" },
-  { event: "complete-public-comment", href: "/petitions", label: "Comments completed", tone: "#c08dff" },
-  { event: "open-official-source", href: "/search?focus=results", label: "Sources checked", tone: "#74dbff" }
-];
+const activitySignalDisplay: Record<GamificationEventType, { href: string; tone: string }> = {
+  "complete-onboarding": { href: "/onboarding", tone: "#ffd45c" },
+  "complete-public-comment": { href: "/petitions", tone: "#c08dff" },
+  "complete-voter-registration": { href: "/impact#voter-registration", tone: "#9fc4ff" },
+  "contact-representative": { href: "/letters#letters", tone: "#d18bff" },
+  "open-official-source": { href: "/search?focus=results", tone: "#74dbff" },
+  "participate-election": { href: "/impact#election-participation", tone: "#ffd45c" },
+  "read-alert": { href: "/alerts", tone: "#4fdb89" },
+  "review-vote": { href: "/search?type=votes&focus=results", tone: "#79a8ff" },
+  "save-official": { href: "/search?type=members&focus=results", tone: "#77d6bc" },
+  "sign-petition": { href: "/petitions", tone: "#d6a4ff" },
+  "track-bill": { href: "/search?type=bills&focus=results", tone: "#ffbd39" },
+  "watch-speech-video": { href: "/brief", tone: "#ff8e78" }
+};
+
+const activitySignals = getGamificationEventRules().map((rule) => ({
+  event: rule.event,
+  label: rule.countLabel,
+  ...activitySignalDisplay[rule.event]
+}));
 
 function normalizeBadgeFilter(filter?: string): BadgeFilter {
   return filter === "earned" || filter === "locked" ? filter : "all";
@@ -43,28 +53,13 @@ function badgeFilterHref(filter: BadgeFilter) {
   return filter === "all" ? "/badges" : `/badges?filter=${filter}`;
 }
 
-const fallbackBadgeTargets: Record<string, number> = {
-  "coalition-builder": 1,
-  "committee-pro": 20,
-  "committee-watcher": 10,
-  "constitution-champion": 10,
-  "local-builder": 1,
-  "policy-architect": 5,
-  "policy-expert": 15,
-  "transparency-ally": 10
-};
-
 function getLockedBadgeProgressLabel({
   badge,
-  eventCountMap,
-  level
+  eventCountMap
 }: {
   badge: GamificationBadge;
   eventCountMap: Map<GamificationEventType, number>;
-  level: number;
 }) {
-  if (badge.id === "civic-luminary") return `${Math.min(level, 10)}/10`;
-
   const ruleProgress = getGamificationEventRules()
     .flatMap((rule) =>
       rule.badgeProgress
@@ -78,14 +73,7 @@ function getLockedBadgeProgressLabel({
 
   const progress = ruleProgress[0];
   if (progress) return `${progress.current}/${progress.target}`;
-
-  const fallbackTarget = fallbackBadgeTargets[badge.id];
-  if (fallbackTarget) return `0/${fallbackTarget}`;
-
-  const parsedTarget = Number(badge.description.match(/\d+/)?.[0]);
-  if (Number.isFinite(parsedTarget) && parsedTarget > 0) return `0/${parsedTarget}`;
-
-  return "0/1";
+  return undefined;
 }
 
 export default function BadgesPage() {
@@ -214,7 +202,7 @@ function BadgesContent() {
                 <LockedBadgeTile
                   key={badge.id}
                   badge={badge}
-                  progressLabel={getLockedBadgeProgressLabel({ badge, eventCountMap, level: snapshot.level })}
+                  progressLabel={getLockedBadgeProgressLabel({ badge, eventCountMap })}
                   showDescription
                 />
               ))}

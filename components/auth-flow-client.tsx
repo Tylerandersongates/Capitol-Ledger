@@ -28,7 +28,6 @@ import {
   markBrowserAccountCreated,
   setBrowserSessionAuthenticated
 } from "@/lib/browser-auth-state";
-import { readLocalGamificationSnapshot } from "@/lib/browser-gamification";
 import { publicBrand } from "@/lib/brand";
 import type { AccountLedgerSnapshot, AccountProfileSnapshot, AccountSubscriptionSnapshot, SavedFollowRecord } from "@/types/capitol";
 
@@ -332,6 +331,32 @@ export function AuthFlowClient({
     setStatus("");
   }
 
+  async function resendVerificationEmail() {
+    setPending(true);
+    type VerificationEmailResponse = AuthApiResponse & { message?: string };
+    const result: { data: VerificationEmailResponse; ok: boolean } = await postJson<VerificationEmailResponse>(
+      "/api/auth/verification-email",
+      {}
+    ).catch((error: unknown) => ({
+        data: { error: error instanceof Error ? error.message : "Verification email could not be sent." },
+        ok: false
+      }));
+    setPending(false);
+
+    if (!result.ok) {
+      setStatus(result.data.error ?? "Verification email could not be sent. Please try again shortly.");
+      return;
+    }
+
+    setStatus(
+      result.data.emailDelivery === "resend" || result.data.emailDelivery === "webhook"
+        ? "Verification email sent. Open the newest link in your inbox."
+        : result.data.verificationLink
+          ? `Verification prepared. Open this link: ${result.data.verificationLink}`
+          : result.data.message ?? "Verification link prepared."
+    );
+  }
+
   const postAuthReturnTo = setupComplete && returnTo === "/onboarding" && !userRequestedAccountCreation ? "/dashboard" : returnTo;
 
   const syncLocalAccountData = useCallback(async () => {
@@ -359,13 +384,6 @@ export function AuthFlowClient({
       body: JSON.stringify(readLocalAccountProfile())
     }).catch(() => null);
 
-    await fetch("/api/account/gamification", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(readLocalGamificationSnapshot())
-    }).catch(() => null);
   }, []);
 
   const finishProductionAuth = useCallback(
@@ -459,13 +477,6 @@ export function AuthFlowClient({
       body: JSON.stringify(readLocalAccountProfile())
     }).catch(() => null);
 
-    await fetch("/api/account/gamification", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(readLocalGamificationSnapshot())
-    }).catch(() => null);
   }
 
   async function startDemoAccount(href = postAuthReturnTo) {
@@ -601,6 +612,8 @@ export function AuthFlowClient({
           ? "Verification email sent. Open the link in your inbox to continue."
           : authData.emailDelivery === "webhook"
             ? "Verification link sent."
+            : authData.emailDelivery === "failed"
+              ? "Your account was created, but the verification email could not be sent. Use Resend verification email to try again."
             : authData.verificationLink
               ? `Verification prepared. Open this link: ${authData.verificationLink}`
               : "Verification prepared. Open the verification link to continue."
@@ -654,6 +667,17 @@ export function AuthFlowClient({
 
       if (!result.ok) {
         setStatus(result.data.error ?? "Password reset failed.");
+        return;
+      }
+
+      const authData = result.data as AuthApiResponse;
+      if (authData.requiresVerification || !authData.user?.emailVerifiedAt) {
+        if (!completeFreshBrowserAuthentication(false)) return;
+        markBrowserAccountCreated();
+        setAllowAccountCreation(false);
+        setAccountCreated(true);
+        setMode("verify");
+        setStatus("Password updated. Verify your email before continuing.");
         return;
       }
 
@@ -901,6 +925,16 @@ export function AuthFlowClient({
                 {mode === "create" ? "Create account" : mode === "forgot" ? "Send reset" : mode === "reset" ? "Update password" : mode === "verify" ? "Verify" : "Sign in"}
                 <ArrowRight className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
               </button>
+              {mode === "verify" ? (
+                <button
+                  type="button"
+                  onClick={() => void resendVerificationEmail()}
+                  disabled={pending}
+                  className="flex h-11 w-full items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[14px] font-semibold text-white/72 disabled:opacity-60"
+                >
+                  Resend verification email
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -1034,7 +1068,7 @@ function Field({
 
 function PasswordVisibilityButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/54 transition hover:bg-white/8 hover:text-white">
+    <button type="button" onClick={onClick} aria-label={label} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/54 transition hover:bg-white/8 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb12b]">
       {active ? <Eye className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" /> : <EyeOff className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />}
     </button>
   );

@@ -2,6 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 
 const pendingEmailVerificationCookie = "capitol-ledger-email-verification-pending";
 
+const privateApiPrefixes = [
+  "/api/account",
+  "/api/alerts/summary",
+  "/api/auth",
+  "/api/billing",
+  "/api/follows",
+  "/api/privacy/requests",
+  "/api/tasks",
+  "/api/team"
+];
+
+export function isPrivateApiPath(pathname: string) {
+  return (
+    privateApiPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    /^\/api\/members\/[^/]+\/email\/?$/.test(pathname)
+  );
+}
+
+export function protectPrivateResponse(response: NextResponse) {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Surrogate-Control", "no-store");
+
+  const varyValues = new Set(
+    (response.headers.get("Vary") ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+  varyValues.add("Cookie");
+  varyValues.add("Authorization");
+  response.headers.set("Vary", Array.from(varyValues).join(", "));
+
+  return response;
+}
+
+function finalizeResponse(pathname: string, response: NextResponse) {
+  return isPrivateApiPath(pathname) ? protectPrivateResponse(response) : response;
+}
+
 function isVerificationAllowedPath(pathname: string) {
   return (
     pathname === "/sign-in" ||
@@ -23,7 +63,7 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!verificationPending || isVerificationAllowedPath(pathname)) {
-    return NextResponse.next();
+    return finalizeResponse(pathname, NextResponse.next());
   }
 
   const redirectUrl = request.nextUrl.clone();
@@ -32,7 +72,7 @@ export function middleware(request: NextRequest) {
   redirectUrl.searchParams.set("mode", "verify");
   redirectUrl.searchParams.set("returnTo", `${pathname}${search}`);
 
-  return NextResponse.redirect(redirectUrl);
+  return finalizeResponse(pathname, NextResponse.redirect(redirectUrl));
 }
 
 export const config = {

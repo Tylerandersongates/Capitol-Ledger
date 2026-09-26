@@ -103,7 +103,7 @@ async function getTeamInvites() {
 }
 
 async function createTeamInvite(request: NextRequest) {
-  const guard = guardMutationRequest(request, "team-invites", {
+  const guard = await guardMutationRequest(request, "team-invites", {
     key: "workspace",
     limit: 18,
     windowMs: 60 * 1000

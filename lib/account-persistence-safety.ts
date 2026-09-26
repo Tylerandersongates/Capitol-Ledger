@@ -17,6 +17,82 @@ export function hasConfiguredAccountPersistence() {
   return Boolean(process.env.DATABASE_URL);
 }
 
+export function logAccountPersistenceFailure(scope: string, error: unknown) {
+  const errorName =
+    error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(error.name) ? error.name : "UnknownError";
+  const detail: { code?: string; name: string; reason?: string; signals?: string[] } = {
+    name: errorName
+  };
+
+  if (typeof error === "object" && error !== null) {
+    const code = "code" in error ? error.code : "errorCode" in error ? error.errorCode : undefined;
+    if (typeof code === "string" && /^[A-Z0-9_]+$/.test(code)) detail.code = code;
+  }
+
+  const reason = classifyAccountPersistenceFailure(error);
+  if (reason) detail.reason = reason;
+  else {
+    const signals = collectAccountPersistenceFailureSignals(error);
+    if (signals.length > 0) detail.signals = signals;
+  }
+
+  console.error(`[account-persistence] ${scope} failed`, detail);
+}
+
+function classifyAccountPersistenceFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const patterns: Array<[RegExp, string]> = [
+    [
+      /authentication failed|password authentication failed|credentials .* are not valid|tenant or user not found|role .* does not exist/i,
+      "authentication_failed"
+    ],
+    [/user .* was denied access|access denied to database|no pg_hba\.conf entry/i, "database_access_denied"],
+    [/database .* (?:does not exist|not found)/i, "database_not_found"],
+    [/environment variable not found/i, "environment_missing"],
+    [
+      /provided database string is invalid|invalid .*connection string|error parsing connection string|invalid database url|url must start/i,
+      "invalid_database_url"
+    ],
+    [/certificate|error opening a tls connection|tls settings|\btls\b|\bssl\b/i, "tls_error"],
+    [/prepared statement|pgbouncer/i, "pooler_incompatible"],
+    [
+      /operations timed out|timeout waiting for server|connection timed out|connect timed out|reached but timed out/i,
+      "connection_timeout"
+    ],
+    [
+      /can't reach database server|failed to connect|connection (?:closed|refused|reset)|server has closed the connection|unexpected eof|unknown host|dns/i,
+      "database_unreachable"
+    ],
+    [/query engine|unable to require|cannot load|could not locate|\bwasm\b|\bpanic\b/i, "engine_load_failed"]
+  ];
+
+  return patterns.find(([pattern]) => pattern.test(message))?.[1];
+}
+
+function collectAccountPersistenceFailureSignals(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const signals: Array<[RegExp, string]> = [
+    [/authentication|password|credential/i, "authentication"],
+    [/database|datasource/i, "database"],
+    [/server/i, "server"],
+    [/connection|connect/i, "connection"],
+    [/timeout|timed out/i, "timeout"],
+    [/invalid|malformed|parse/i, "invalid"],
+    [/url|scheme/i, "url"],
+    [/tls|ssl|certificate/i, "tls"],
+    [/pool|pgbouncer|prepared statement/i, "pooler"],
+    [/tenant/i, "tenant"],
+    [/role|user/i, "role_or_user"],
+    [/not found|does not exist|missing/i, "not_found"],
+    [/denied|permission|access/i, "access"],
+    [/closed|refused|reset|unreachable/i, "unreachable"],
+    [/query engine|binary|library|wasm|panic/i, "engine"],
+    [/unsupported|unknown|unrecognized/i, "unsupported"]
+  ];
+
+  return signals.filter(([pattern]) => pattern.test(message)).map(([, signal]) => signal);
+}
+
 export function throwAccountPersistenceUnavailable(scope: string, cause?: unknown): never {
   if (cause instanceof AccountPersistenceUnavailableError) throw cause;
   console.error(`[account-persistence] ${scope} unavailable`);

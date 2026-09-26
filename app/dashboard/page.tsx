@@ -2,6 +2,12 @@ import { DashboardClient } from "@/components/dashboard-client";
 import { getAccountLedger } from "@/lib/account-ledger";
 import { getAccountPersistenceUserId, readLedgerFromDatabase } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
+import {
+  getConfiguredCongressDocketCongress,
+  readCongressDocketFreshness,
+  readStoredDocketBillsByIds,
+  withCongressDocketContext
+} from "@/lib/congress-docket";
 import { getDashboardDataWithLiveData } from "@/lib/data";
 import { getEffectiveSubscriptionForAccountUser } from "@/lib/effective-account-subscription";
 import { getSubscriptionForAccountUser } from "@/lib/server-account-subscription";
@@ -31,10 +37,19 @@ async function getDashboardAccountData() {
 }
 
 export default async function DashboardPage() {
-  const [data, { accountLedger, effectiveSubscription, initialTeamAccess }] = await Promise.all([
-    getDashboardDataWithLiveData(),
+  const congress = getConfiguredCongressDocketCongress();
+  // Read evidence first, then uncached rows. If a sync commits between these
+  // reads, the rows can only be newer than the displayed evidence—not older.
+  const freshness = await readCongressDocketFreshness(new Date(), congress);
+  const [baseData, { accountLedger, effectiveSubscription, initialTeamAccess }] = await Promise.all([
+    getDashboardDataWithLiveData({ bypassCache: true, congress }),
     getDashboardAccountData()
   ]);
+  const savedBillIds = accountLedger?.follows
+    .filter((follow) => follow.type === "bill")
+    .map((follow) => follow.id) ?? [];
+  const savedBills = await readStoredDocketBillsByIds(savedBillIds);
+  const data = withCongressDocketContext(baseData, savedBills, freshness);
 
   return <DashboardClient data={data} initialLedger={accountLedger} initialSubscription={effectiveSubscription} initialTeamAccess={initialTeamAccess} />;
 }
