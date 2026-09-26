@@ -1,5 +1,37 @@
 # CapitolWonk listing metadata and capture-state draft — September 16, 2026
 
+## September 26 two-stage listing reconciliation
+
+The [accepted transition plan](../launch-transition-plan-2026-09-25.md) now governs this draft: **November 16, 2026 is the controlled soft launch on explicitly labeled 119th Congress data**, and **January 3, 2027 is the separately approved full launch and 120th Congress cutover**. This is a source-only proposal. No App Store Connect field, screenshot, build, questionnaire answer, submission, or release was changed.
+
+### November 16 soft-launch metadata delta
+
+These proposed values narrow the older copy to the actual soft-launch scope. They deliberately omit alerts, scores, video, AI, subscription offers, in-app deletion, first-party privacy operations, and real-time freshness claims because those capabilities do not yet have release evidence.
+
+| Field | Proposed soft-launch value | Evidence boundary |
+| --- | --- | --- |
+| App name | CapitolWonk | Retains the accepted public name. |
+| Subtitle | Follow Congress with clarity | Editorial proposal; confirm the exact remote value and character limit before any edit. |
+| Promotional text | Explore bills, votes, and members from the 119th Congress through public legislative records. | Names the Congress shown by the November candidate and limits the claim to public legislative records. |
+| Description | CapitolWonk brings bills, votes, and members from the 119th Congress into a clear mobile view. Search available public records, open bill and member details, and follow links to the underlying sources. | Requires exact-candidate checks of search, bill/member details, links, source labels, and 119th Congress labeling. |
+| Keywords | congress,bills,legislation,votes,senators,representatives,civic | Draft for remote inventory and editorial review; contains no ranking or freshness claim. |
+| What's New / release notes | Early access to source-linked bills, votes, and member records from the 119th Congress. | Use only after the selected build demonstrates these paths on a signed device and the remote version/build context is known. |
+
+“Soft launch” or “Early access” may describe the release phase where useful, but it must not imply a beta entitlement, invitation workflow, or feature that is absent from the selected build. Retain the existing support and privacy URLs only after the exact candidate verifies their public wording and the mailbox procedure.
+
+### January 3 full-launch delta
+
+Prepare a separate 120th Congress copy change only after the constitutional cutover boundary and the source-backed roster, district, current-Congress, saved-identity, sparse-state, migration, and rollback evidence pass. Do not relabel November screenshots or replace “119th” with “120th” in copy before those checks. Re-audit all product claims if the January candidate adds or activates alerts, scoring, video, AI, purchases, analytics, deletion, or first-party privacy operations.
+
+### Capture wording rules
+
+- Every November screenshot must visibly or contextually match the 119th Congress candidate and record its route, state, source SHA, dimensions, color mode, and hash in the capture manifest.
+- Avoid “live,” “real time,” “today,” “current,” or equivalent freshness captions unless the selected screen exposes a verified source-sync timestamp and the candidate passes its freshness evidence.
+- Keep account data, private queries, reviewer credentials, mailbox contents, and conditional purchase or privacy flows out of marketing captures.
+- Use the corrected `CAPITOLWONK` wordmark without the retired `CE` suffix. Keep the historical images quarantined.
+
+**Next T09 listing step:** inventory the exact current App Store Connect metadata read-only and compare each remote field with the November proposal above. Then bind the accepted copy and four-screen rehearsal to one pinned native/web candidate; publication and asset upload remain separate exact approvals.
+
 ## September 18 candidate-state update
 
 The source `93795c7` and PR #31 references in the original status below are historical. T04 now has a locally signed version 1.0 build `2` archive installed/launched on Tyler's iPhone, while later web changes through [PR #44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44) are live at Production merge `617a474`. No exact combined native/web release candidate or final screenshot set has been selected. The signed archive does not validate later web content or App Store listing copy by itself. T03 verifier processing remains off; T05–T07 device/provider/sandbox evidence and T09 privacy evidence remain open.
