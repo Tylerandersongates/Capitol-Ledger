@@ -1,5 +1,53 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 25 trust-repair completion and two-stage launch rebaseline
+
+This is the active schedule boundary. It supersedes the former October 30 launch target and any older "next task" instructions below, which remain only as dated evidence.
+
+- **Trust repair complete:** [PR #49](https://github.com/Tylerandersongates/Capitol-Ledger/pull/49) merged into `main` at `26190cd2cb953a875380f077b5b2d76c1566ac51` with all three required checks passing and no merge conflict. The matching Vercel Production deployment `CNGPiVFrqx6XmdQdvGtrcANsiBsi` reached Ready, and anonymous `/sign-in`, `/dashboard`, and `/privacy` smoke passed.
+- **Auth QA complete:** Preview-only disposable-account QA passed password-reset delivery and completion, the post-reset unverified-account gate, verification-email delivery and verification, dashboard access, sign-out, and fresh sign-in with the new password. The repair covers privacy-safe database diagnostics, text-safe Prisma advisory locks, Preview sender configuration, and the pending-verification boundary.
+- **QA boundary preserved:** Production account data was not mutated during auth QA. Branch-scoped Preview `DATABASE_URL` and `AUTH_EMAIL_FROM` overrides remain cleanup-only follow-up; the temporary Neon child was scheduled to auto-delete. Do not recreate, reveal, or copy any credential, token, link, or disposable-user data.
+- **Launch dates changed by Tyler:** controlled soft launch is **November 16, 2026**, after the election; full application launch aligned to the 120th Congress is **January 3, 2027**.
+- **Schedule effect of today's exceeded benchmark:** post-merge trust stabilization finished about one working day earlier than the daily benchmark. Preserve that gain as regression/rework contingency instead of expanding launch scope.
+- **Weekend and availability boundary:** no planned project work September 26–27 beyond passive production monitoring. Resume hands-on work Monday, September 28. Tyler is unavailable October 2–6; schedule no required approvals, device sessions, uploads, or submissions during that window.
+
+### Active backward plan
+
+| Window | Benchmark and exit condition |
+| --- | --- |
+| September 26–27 | No scheduled work. Passive monitoring only; respond only to a material production incident. |
+| September 28–October 1 | Close the post-merge packet; verify Production health; review and, only with exact action-time confirmation, remove obsolete branch-scoped Preview overrides; confirm the temporary Neon child expired; inventory every remaining launch gate; freeze a clean pre-absence baseline. |
+| October 2–6 | Protected owner-absence buffer. No required approvals, device work, uploads, submissions, or launch-critical changes. |
+| October 7–16 | Whole-app regression, accessibility and browser review, civic-data freshness/source checks, trusted-user cohort preparation, and blocker triage. |
+| October 19–30 | Soft-launch operations: support and privacy-mailbox readiness, monitoring, content readiness, rollback/runbook rehearsal, cohort definition, and reserved rework. |
+| November 2–6 | Election-week change discipline. Monitor civic-data and source behavior; avoid avoidable high-risk changes. |
+| November 9–13 | Final soft-launch regression, evidence review, and go/no-go packet. |
+| November 16 | Controlled soft launch. Keep incomplete or unverified paths gated off. |
+| November 17–December 11 | Wider-use stabilization: fix observed issues, improve reliability/support/account recovery, and verify data freshness. |
+| December 14–23 | T12 120th Congress transition rehearsal: roster, district, bill, vote, source/sync, copy, and metadata updates. |
+| December 24–January 1 | Holiday/rework contingency; only launch-critical fixes. |
+| January 2 | Full-launch go/no-go review. |
+| January 3, 2027 | Full application launch for the 120th Congress, subject to the evidence-based go/no-go review. |
+
+### Active T01–T12 reconciliation
+
+| Track | Current state and launch implication |
+| --- | --- |
+| T01 — Brand and listing assets | Core brand work is complete. Recapture listing assets only if they are used for a native submission or materially changed UI. |
+| T02 — Sentry geography | Complete. |
+| T03 — Dependency/security | Web dependency graph is closed for the controlled soft launch. Apple verifier/OCSP work remains open with processing off; it is not a web soft-launch blocker but must close before native verification is enabled. |
+| T04 — Signing/device | Blocked on supported Apple guidance; keep the signing/device freeze. |
+| T05 — Native monitoring | Starts only after a valid signed candidate exists. |
+| T06 — App QA | Browser, navigation, bill, and auth trust coverage advanced through PRs #32–#49. Physical-device QA remains pending. |
+| T07 — Subscriptions | Source exists; signed-device and App Store sandbox proof remain pending. Processing stays off. |
+| T08 — Daily Brief/video | Content, player, and launch-scope decisions remain open. |
+| T09 — Privacy and trust | Mailbox fallback and auth trust repair are ready. App Privacy/listing/provider evidence and Preview cleanup remain open; first-party privacy processing stays off. |
+| T10 — Release execution | Split into T10a controlled web soft launch on November 16 and T10b native/TestFlight release only when its separate gates pass. |
+| T11 — Go/no-go | Separate evidence-based reviews for November 16 and January 3. Neither calendar date is automatic release authorization. |
+| T12 — 120th Congress transition | New active track covering congressional roster/district/bill/vote/source/sync/copy/metadata validation for the January 3 full launch. |
+
+**Forecast:** November 16 soft-launch confidence is moderate-high, with roughly 6–10 hands-on days remaining before launch excluding wider-use rework. January 3 full-launch confidence is moderate, with another 6–12 hands-on days plus any Apple-controlled wait if native/App Store distribution is included. The project is ahead of the September 25 daily benchmark, not broadly ahead of the full launch plan while Apple/device/sandbox, App Privacy, Daily Brief, and T12 work remain open.
+
 ## September 15 launch-priority and credential-containment correction
 
 This section supersedes the earlier September 15 principal-ACL next-dependency instruction.
