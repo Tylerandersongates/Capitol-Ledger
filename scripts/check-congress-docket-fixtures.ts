@@ -361,6 +361,25 @@ async function main() {
     "saved-bill vote labeling must use the same stable alias as account follows"
   );
 
+  const databaseBill120 = { ...databaseBill, congress: 120, id: "database-row-120-4" };
+  const notRetargetedAcrossCongresses = withStableSavedDocketBillId(databaseBill120, ["live-119-hr-4"]);
+  assert.equal(
+    notRetargetedAcrossCongresses.id,
+    databaseBill120.id,
+    "a saved 119th-Congress alias must never retarget a same-number 120th-Congress bill"
+  );
+  const stableSavedBill120 = withStableSavedDocketBillId(
+    databaseBill120,
+    ["live-119-hr-4", "live-120-hr-4"]
+  );
+  assert.equal(stableSavedBill120.id, "live-120-hr-4");
+  const crossCongressMerged = mergeRecentAndSavedDocketBills([databaseBill120], [stableSavedBill]);
+  assert.equal(crossCongressMerged.length, 2, "same-number bills from different Congresses must remain distinct");
+  assert.deepEqual(
+    crossCongressMerged.map((bill) => [bill.congress, bill.id]),
+    [[120, "database-row-120-4"], [119, "live-119-hr-4"]]
+  );
+
   assert.equal(parseCongressDocketSyncLimit(undefined), 25);
   assert.equal(parseCongressDocketSyncLimit("1"), 1);
   assert.equal(parseCongressDocketSyncLimit(congressDocketSyncMaximumLimit), 50);
@@ -433,6 +452,23 @@ async function main() {
     /already bound to different sync bounds/
   );
   assert.equal(idempotentFetches, 1, "mismatched idempotency replays must be rejected before fetching");
+
+  const earlySparseCongress = memoryDependencies({
+    fetchRecentBills: async (congress) => {
+      assert.equal(congress, 120);
+      return [];
+    }
+  });
+  await assert.rejects(
+    runCongressDocketSync(
+      { congress: 120, idempotencyKey: "docket:fixture:120:sparse", limit: 2 },
+      earlySparseCongress.dependencies
+    ),
+    /empty docket batch/
+  );
+  assert.equal(earlySparseCongress.runs.get("docket:fixture:120:sparse")?.status, "failed");
+  assert.equal(earlySparseCongress.getPersistCalls(), 0, "an empty early-120th feed must not publish a successful batch");
+  assert.equal(earlySparseCongress.getVisibleBillWrites(), 0, "an empty early-120th feed must not expose bill rows");
 
   let sponsorDetailFetches = 0;
   let sponsorMemberFetches = 0;

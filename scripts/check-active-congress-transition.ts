@@ -56,4 +56,15 @@ const member120 = normalizeCongressMember({
 assert.equal(member120?.term, "120th Congress");
 assert.equal(normalizeCongressBillSponsor(bill120)?.term, "120th Congress");
 
+const member119 = normalizeCongressMember({
+  bioguideId: "T000120",
+  district: 1,
+  name: "Transition Member",
+  partyName: "Independent",
+  state: "CA"
+}, 119);
+assert.equal(member119?.bioguideId, member120?.bioguideId, "A continuing member must retain the same follow target across Congresses.");
+assert.equal(member119?.term, "119th Congress");
+assert.notEqual(member119?.term, member120?.term, "The stable member identity must not preserve a stale Congress label.");
+
 console.log("Active Congress transition fixtures passed.");
