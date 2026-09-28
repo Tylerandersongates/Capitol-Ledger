@@ -7,7 +7,8 @@ This is a preparation artifact. It does **not** authorize a merge, deployment, p
 ## Frozen operating boundary
 
 - Production remains on `main` at `26190cd2cb953a875380f077b5b2d76c1566ac51` unless separately verified and recorded.
-- Truthful disabled privacy-request copy is exact commit `49997c706da2ed8e7d70f6e9bcadc50c5bff1265` in [PR #50](https://github.com/Tylerandersongates/Capitol-Ledger/pull/50). Local targeted validation is green. The PR is not treated as merged or deployed until those states are separately verified.
+- Truthful disabled privacy-request copy is exact commit `49997c706da2ed8e7d70f6e9bcadc50c5bff1265` in [PR #50](https://github.com/Tylerandersongates/Capitol-Ledger/pull/50). Its three remote checks and branch Preview are green. The PR is not merged, in Production, or active.
+- The 120th-Congress source slice is exact head `8befc533e39cbf9b522af4169cebcdeeccce2049` in [PR #51](https://github.com/Tylerandersongates/Capitol-Ledger/pull/51). Its three remote checks and branch Preview are green, but the PR is not merged, in Production, or authorized to flip the active Congress.
 - First-party privacy intake, privacy operations, account deletion, App Store server verification, and Notifications V2 remain off.
 - The current Daily Brief planning baseline is the honest channel-only/no-player state.
 - October 2–6 requires no owner action. The privacy mailbox is a recorded single-owner closure with no continuous-coverage claim; review the oldest unreviewed item first on return.
@@ -24,7 +25,7 @@ This is a preparation artifact. It does **not** authorize a merge, deployment, p
 | T09 — Privacy/listing | PR #50 is the exact truthful-copy candidate; absence mailbox rule is frozen. | PR review/merge/deploy and any App Store/provider mutation remain separate. |
 | T10 — Release execution | Web soft-launch and native/TestFlight checklists are separated below. | Each deployment, upload, distribution, submission, and release needs its own approval. |
 | T11 — Go/no-go | Evidence criteria for November 16 and January 2/3 are drafted below. | Tyler owns the final go/no-go and release decision. |
-| T12 — 120th Congress | The 119th-dependent inventory and transition invariants are recorded below; local commit `5601286` implements the first source-only slice with a green full build and focused fixture suite. | Review and any push/PR remain separate; isolated-data rehearsals and the eventual Production Congress switch remain later gates. |
+| T12 — 120th Congress | The inventory and invariants are recorded below; PR #51 at `8befc53` implements the source-only transition boundary, sparse-feed failure, and saved-state continuity with green full diagnostics. | Review/merge remain separate; isolated-data rehearsals and the eventual Production Congress switch remain later gates. |
 
 ## T05 — bounded native Sentry event packet
 
@@ -198,16 +199,30 @@ In addition to a stable controlled cohort, require the T12 rehearsal and authori
 
 ### Completed source-only T12 slice
 
-Local commit `560128665160935fff0c3abc7d2f33b9c545e695` on isolated branch `codex/congress-transition` centralizes the validated active-Congress resolver; routes runtime bill, docket, House-vote, and Senate-vote defaults through it; makes member and sponsor labels use the explicit target Congress; and adds transition assertions for fallback, invalid configuration, 119/120 selection, labels, source URLs, and non-colliding bill IDs.
+Open PR #51 at exact head `8befc533e39cbf9b522af4169cebcdeeccce2049` on isolated branch `codex/congress-transition` centralizes the validated active-Congress resolver; routes runtime bill, docket, House-vote, and Senate-vote defaults through it; makes member and sponsor labels use the explicit target Congress; and adds transition assertions for fallback, invalid configuration, 119/120 selection, labels, source URLs, and non-colliding bill IDs.
 
-The transition, docket, vote, member, bill, alert, readiness, and backend fixtures; targeted ESLint; strict TypeScript; `git diff --check`; and the full optimized Next.js production build passed. The commit retains an explicit 119 fallback, changes no Production configuration or data, and is local/unpushed with no PR. Early sparse-feed, saved-state continuity, and isolated 119th-plus-120th data rehearsals remain later evidence work.
+The follow-up coverage proves that an empty early-120th feed fails without persistence or visible rows, a saved 119th bill cannot retarget a same-number 120th bill, cross-Congress bill records remain distinct, and a continuing member retains its Bioguide follow identity while receiving the correct target-Congress label. The PR retains an explicit 119 fallback, changes no Production configuration/data, and does not flip the active Congress. Isolated 119th-plus-120th database rehearsal remains later evidence work.
+
+## Pulled-ahead unattended diagnostic
+
+Exact source: PR #51 head `8befc533e39cbf9b522af4169cebcdeeccce2049`.
+
+- Full `release-source:check` passed, including billing, privacy, deletion, native, TestFlight-prep, copy, blank-state, alert, docket, transition, policy, auth-email, rate-limit, response, and accessibility contracts. Expected protected-readiness warnings remain open and were not relabeled as proof.
+- Full ESLint and strict TypeScript with unused-symbol enforcement passed.
+- Prisma generation and the optimized Next.js production build passed; all 57 pages generated.
+- `git diff --check` passed; the dependency lock is unchanged.
+- Cookie-isolated anonymous desktop routes passed for sign-in, privacy, disabled privacy requests, support, dashboard, docket, priority/risk surfaces, Brief, upgrade, Team missing-token handling, and the expected `/`, `/bills`, and `/team` redirects.
+- The 390x844 mobile pass covered the critical public and sparse-state surfaces with no horizontal overflow.
+- Browser console collection reported no warnings or errors across either matrix.
+- The Daily Brief made no YouTube resource request and exposed only the approved outbound channel link.
+- The Ready PR #51 branch Preview rendered the honest no-record docket/dashboard states. No account, email, feedback, follow, purchase, provider, configuration, database, or Production mutation was used.
 
 ## Recovery-time preservation
 
 If recovery after surgery takes longer than expected, the safe project state is:
 
 - PR #50 can wait without making intake active.
-- The local T12 commit can wait without changing Production defaults or data.
+- PR #51 can wait without changing Production defaults or data.
 - October 2–6 has no required device, provider, Apple, cleanup, upload, or release action.
 - The privacy mailbox closure is recorded honestly.
 - The no-player Daily Brief baseline avoids a content/provider deadline.
