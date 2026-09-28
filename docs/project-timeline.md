@@ -1,5 +1,16 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 28 post-merge health and cleanup review
+
+The first September 28–October 1 benchmark is complete as a read-only checkpoint; it changes no Production, provider, database, or protected configuration.
+
+- **Production health passed:** the current Vercel Production deployment remains `CNGPiVFrqx6XmdQdvGtrcANsiBsi`, Ready on `main` at `26190cd2cb953a875380f077b5b2d76c1566ac51`. Fresh anonymous requests to `https://www.capitolwonk.com/sign-in`, `/dashboard`, and `/privacy` each returned HTTP 200.
+- **Temporary Neon cleanup confirmed:** the CapitolWonk Neon project now reports exactly one branch, confirming the temporary PR #49 QA child expired. Do not recreate it for cleanup proof.
+- **Exact Vercel cleanup scope corrected:** five variables remain restricted to Preview branch `codex/sept19-trust-repair`: `AUTH_EMAIL_FROM`, `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `AUTH_EMAIL_DELIVERY`, and `RESEND_API_KEY`. Values stayed masked and were not accessed. The separate Upstash variables are Preview-wide integration configuration without that branch restriction and are not part of this cleanup proposal.
+- **Documentation checkpoint:** remote branch `codex/sept25-eod-launch-rebaseline` remains at `7770d55ee19086ff1c6e1e343ce6ec6859537775`, one commit ahead of `main`; GitHub reports it able to merge with both available commit checks passing. No PR, merge, or deployment was created by this checkpoint.
+- **Launch forecast:** unchanged. November 16 remains moderate-high confidence and January 3 remains moderate confidence. Today's read-only benchmark is on plan and consumes none of the preserved regression/rework contingency.
+- **Next dependency-ready item:** finish the whole-app T01–T12 launch-gate inventory and clean pre-absence baseline by October 1. The five branch-scoped Vercel overrides may be removed only after exact action-time approval; the bounded action must stop if any target is no longer restricted solely to `codex/sept19-trust-repair`. Recovery is to re-add only an explicitly required QA override if a later approved Preview exercise needs it.
+
 ## September 25 trust-repair completion and two-stage launch rebaseline
 
 This is the active schedule boundary. It supersedes the former October 30 launch target and any older "next task" instructions below, which remain only as dated evidence.
