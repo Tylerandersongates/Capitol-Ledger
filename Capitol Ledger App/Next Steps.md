@@ -2,11 +2,13 @@
 
 ## September 28, 2026 active queue
 
-The read-only post-merge health and cleanup review passed. Production remains Ready at PR #49's merge commit, all three public routes returned HTTP 200, and Neon confirms only the protected CapitolWonk branch remains. No configuration changed.
+The read-only post-merge health review and unified T01–T12 pre-absence inventory are complete. Production remains Ready at PR #49's merge commit, all three public routes returned HTTP 200, Neon confirms only the protected CapitolWonk branch remains, and no configuration changed. T04's older blocked wording is superseded by the completed September 16 local signed archive/install evidence; T05–T07 and the remaining device matrix stay open.
 
 The exact obsolete QA scope is five masked Vercel variables restricted to Preview branch `codex/sept19-trust-repair`: `AUTH_EMAIL_FROM`, `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `AUTH_EMAIL_DELIVERY`, and `RESEND_API_KEY`. Do not include the Preview-wide Upstash integration variables. Removing any of the five is a protected-configuration change and still requires exact action-time approval. Stop if a target is not restricted solely to that branch; recovery is to re-add only an explicitly required QA override for a later approved Preview exercise.
 
-**Single safest next action:** complete the whole-app T01–T12 launch-gate inventory and clean pre-absence baseline by October 1. Keep the November 16 controlled soft launch and January 3 full 120th Congress launch visible, preserve October 2–6 as a no-required-action buffer, and leave every gated privacy/App Store path off. See the [September 28 ledger checkpoint](../docs/project-timeline.md#september-28-post-merge-health-and-cleanup-review). The September 25 queue below is historical where this section supersedes it.
+The October 2–6 baseline has no required owner action. First-party privacy intake stays off; the sole-owner mailbox uses the recorded closure/no-continuous-coverage/oldest-first-return rule. Device, native-event, sandbox, purchase, deletion, cleanup, App Store, upload, submission, and release actions wait until Tyler is available outside the protected window.
+
+**Single safest next action:** restore the frozen current-main dependency environment in the isolated `codex/privacy-request-truth` worktree and rerun targeted ESLint plus the privacy intake fixture for exact commit `49997c7`. If both complete cleanly, present that source-only commit for review. Do not push, open a deployment-producing PR, merge, deploy, change configuration, or activate intake from this checkpoint. See the [unified September 28 inventory](../docs/project-timeline.md#september-28-unified-pre-absence-gate-inventory-and-t09-integration-review). The September 25 queue below is historical where this section supersedes it.
 
 ## September 25, 2026 active queue
 
