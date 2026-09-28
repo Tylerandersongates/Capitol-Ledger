@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getConfiguredCongress } from "@/lib/congress/active-congress";
 import { CongressApiError, fetchBills } from "@/lib/congress/client";
 import { buildBillSourceLinks, normalizeCongressBill } from "@/lib/congress/normalizers";
 
@@ -13,9 +14,10 @@ function readPageParams(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const congress = Number(request.nextUrl.searchParams.get("congress") ?? "119");
+  const congressParam = request.nextUrl.searchParams.get("congress");
+  const congress = congressParam === null ? getConfiguredCongress() : Number(congressParam);
 
-  if (!Number.isInteger(congress) || congress < 1) {
+  if (!Number.isInteger(congress) || congress < 1 || congress > 999) {
     return NextResponse.json({ error: "Invalid congress parameter." }, { status: 400 });
   }
 

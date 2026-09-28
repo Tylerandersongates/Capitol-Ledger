@@ -6,6 +6,7 @@ import {
   fetchMember,
   type CongressBillListItem
 } from "@/lib/congress/client";
+import { getConfiguredCongress } from "@/lib/congress/active-congress";
 import {
   normalizeCongressBill,
   normalizeCongressMemberDetail
@@ -89,7 +90,7 @@ export type CongressDocketSyncDependencies = {
   ) => Promise<void>;
   fetchBillDetail: (bill: CongressBillListItem) => Promise<CongressBillListItem | null>;
   fetchRecentBills: (congress: number, limit: number) => Promise<CongressBillListItem[]>;
-  fetchSponsorMember: (bioguideId: string) => Promise<Member | null>;
+  fetchSponsorMember: (bioguideId: string, congress: number) => Promise<Member | null>;
   now: () => Date;
   persistBatchAndComplete: (input: {
     attemptCount: number;
@@ -213,11 +214,6 @@ export function authorizeCongressDocketSyncTask({
     ok: true as const,
     status: 200
   };
-}
-
-function readConfiguredCongress() {
-  const congress = Number(process.env.CONGRESS_SYNC_CONGRESS ?? 119);
-  return Number.isInteger(congress) && congress >= 1 && congress <= 999 ? congress : 119;
 }
 
 async function claimDatabaseRun({
@@ -444,9 +440,9 @@ const defaultDependencies: CongressDocketSyncDependencies = {
     const response = await fetchBills(congress, { limit, timeoutMs: 15_000 });
     return (response.bills ?? []).slice(0, limit);
   },
-  fetchSponsorMember: async (bioguideId) => {
+  fetchSponsorMember: async (bioguideId, congress) => {
     const response = await fetchMember(bioguideId, { timeoutMs: 8_000 });
-    return response.member ? normalizeCongressMemberDetail(response.member) : null;
+    return response.member ? normalizeCongressMemberDetail(response.member, congress) : null;
   },
   now: () => new Date(),
   persistBatchAndComplete: persistDatabaseBatchAndComplete
@@ -507,7 +503,7 @@ function syncFailureCode(error: unknown) {
 
 export async function runCongressDocketSync(
   {
-    congress = readConfiguredCongress(),
+    congress = getConfiguredCongress(),
     idempotencyKey,
     limit
   }: {
@@ -593,7 +589,7 @@ export async function runCongressDocketSync(
     const sponsors = (
       await mapWithConcurrency(uniqueSponsorBioguideIds(rawBills), 5, async (bioguideId) => {
         try {
-          return await dependencies.fetchSponsorMember(bioguideId);
+          return await dependencies.fetchSponsorMember(bioguideId, congress);
         } catch {
           // A member-detail miss must not manufacture an active member. An
           // existing authoritative member may still satisfy the bill upsert;

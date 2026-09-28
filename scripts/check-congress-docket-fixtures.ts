@@ -281,9 +281,10 @@ async function main() {
   assert.match(syncSource, /transaction\.member\.findMany/, "missing-sponsor evidence must use post-upsert authoritative member state");
   assert.match(
     syncSource,
-    /response\.member \? normalizeCongressMemberDetail\(response\.member\) : null/,
+    /response\.member \? normalizeCongressMemberDetail\(response\.member, congress\) : null/,
     "bill sponsor list data must not manufacture an active member without authoritative detail"
   );
+  assert.match(syncSource, /dependencies\.fetchSponsorMember\(bioguideId, congress\)/, "sponsor normalization must use the requested Congress");
   assert.match(docketSource, /savedDocketBillReadChunkSize = 100/, "saved bills should be read in bounded chunks");
   assert.doesNotMatch(docketSource, /uniqueTargetIds[\s\S]{0,80}slice\(0, 100\)/, "saved bill inclusion must not truncate the account ledger");
   assert.match(docketSource, /AND "congress" = \$\{congress\}/, "freshness evidence must be scoped to the displayed Congress");

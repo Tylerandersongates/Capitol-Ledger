@@ -6,6 +6,7 @@ import {
   readLedgerFromDatabase
 } from "@/lib/account-database";
 import { getCurrentSession } from "@/lib/auth";
+import { getConfiguredCongress } from "@/lib/congress/active-congress";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import type { Bill, Member, Vote } from "@/types/capitol";
 
@@ -53,8 +54,7 @@ type CongressDocketSyncRunRow = {
 };
 
 export function getConfiguredCongressDocketCongress(value = process.env.CONGRESS_SYNC_CONGRESS) {
-  const congress = Number(value ?? 119);
-  return Number.isInteger(congress) && congress >= 1 && congress <= 999 ? congress : 119;
+  return getConfiguredCongress(value);
 }
 
 function formatEvidenceDate(value: string) {
