@@ -1,5 +1,13 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 28 EOD — safe pull-ahead benchmark closed
+
+The [September 28 EOD handoff](eod-handoff-2026-09-28.md) closes the pre-surgery safe pull-ahead block. Production remains on `main` at `26190cd2cb953a875380f077b5b2d76c1566ac51`; closing `/sign-in`, `/dashboard`, and `/privacy` smoke returned HTTP 200. Open PR #50 at `49997c7` and open PR #51 at `8befc53` each retain three green remote checks and a Ready branch Preview, but neither is merged or in Production. PR #51's full release-source, lint, strict TypeScript, optimized 57-page build, cookie-isolated desktop, and 390x844 mobile diagnostics passed.
+
+The device baseline is now explicit: the newest signed direct-install iPhone candidate is version `1.0`, build `2`; the newest TestFlight-distributed build is version `1.0`, build `1`. Both shells load the Production web target dynamically. Force-quit/reopen before live testing. A phone session therefore includes the PR #49 Production trust repair but not unmerged PR #50 or PR #51. Do not repurchase to establish entitlement state; use Restore Purchases once only if the existing baseline is inconsistent.
+
+The one-working-day pull-ahead benchmark is complete and preserved as recovery/rework contingency. November 16 remains moderate-high confidence with roughly 6–10 hands-on days remaining before controlled soft launch, excluding wider-use rework. January 3 remains moderate confidence with another 6–12 hands-on days plus any Apple-controlled wait if native/App Store distribution is included. October 2–6 remains a no-required-action owner absence. The single next safe action is to triage any new phone-testing defect against exact Production source; if no defect exists, review PR #50 and PR #51 independently without merging their scopes or activating any gated path.
+
 ## September 28 unified pre-absence gate inventory and pre-surgery acceleration
 
 This is the current pre-absence baseline and supersedes the shorter T01–T12 snapshot under the September 25 section. The controlled soft-launch target remains **November 16, 2026** at moderate-high confidence; the full 120th Congress launch target remains **January 3, 2027** at moderate confidence. Neither date authorizes a release.
