@@ -690,7 +690,8 @@ function ResultSection({
       {shouldScroll ? (
         <MobileGlassScrollFrame
           heightClassName="h-[15.75rem]"
-          frameClassName="mt-5 mobile-search-results-scroll"
+          containedOnMobile
+          mobileHeight="15.75rem"
           className="space-y-3"
           ariaLabel={`${title} search results`}
         >

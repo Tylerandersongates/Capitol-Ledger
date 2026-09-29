@@ -24,8 +24,10 @@ type MobileGlassScrollFrameProps = {
   ariaLabel?: string;
   children: ReactNode;
   className?: string;
+  containedOnMobile?: boolean;
   frameClassName?: string;
   heightClassName?: string;
+  mobileHeight?: string;
 };
 
 export function MobileGlassScrollFrame({
@@ -33,8 +35,10 @@ export function MobileGlassScrollFrame({
   ariaLabel,
   children,
   className = "",
+  containedOnMobile = false,
   frameClassName = "mt-5",
-  heightClassName
+  heightClassName,
+  mobileHeight = "15.75rem"
 }: MobileGlassScrollFrameProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [thumb, setThumb] = useState({ size: 64, offset: 0, visible: true });
@@ -82,6 +86,10 @@ export function MobileGlassScrollFrame({
   const resolvedHeightClassName = heightClassName ?? (axis === "vertical" ? "max-h-[250px]" : "");
   const scrollPanelBaseClass = axis === "vertical" ? verticalScrollPanelBaseClass : horizontalScrollPanelBaseClass;
   const railClass = axis === "vertical" ? verticalRailClass : horizontalRailClass;
+  const mobileContainedClass = axis === "vertical" && containedOnMobile ? "mobile-glass-scroll-frame--contained-mobile" : "";
+  const frameStyle = axis === "vertical" && containedOnMobile
+    ? ({ "--mobile-scroll-height": mobileHeight } as CSSProperties)
+    : undefined;
   const thumbStyle: CSSProperties =
     axis === "vertical"
       ? {
@@ -96,7 +104,10 @@ export function MobileGlassScrollFrame({
         };
 
   return (
-    <div className={`${frameBaseClass} mobile-glass-scroll-frame mobile-glass-scroll-frame--${axis} ${frameClassName}`}>
+    <div
+      className={`${frameBaseClass} mobile-glass-scroll-frame mobile-glass-scroll-frame--${axis} ${mobileContainedClass} ${frameClassName}`}
+      style={frameStyle}
+    >
       <div
         ref={scrollRef}
         className={`${resolvedHeightClassName} ${scrollPanelBaseClass} mobile-glass-scroll-panel mobile-glass-scroll-panel--${axis} ${className}`}

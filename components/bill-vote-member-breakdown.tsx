@@ -177,7 +177,14 @@ export function BillVoteMemberBreakdown({ chamber, positions, showPinnedSection 
             </button>
           ))}
         </div>
-        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[21rem]" className="px-3 py-1" ariaLabel="All member votes">
+        <MobileGlassScrollFrame
+          frameClassName="mt-3"
+          heightClassName="max-h-[21rem]"
+          containedOnMobile
+          mobileHeight="21rem"
+          className="px-3 py-1"
+          ariaLabel="All member votes"
+        >
           {filteredPositions.length ? (
             <div className="divide-y divide-white/8">
               {filteredPositions.map((record) => (
