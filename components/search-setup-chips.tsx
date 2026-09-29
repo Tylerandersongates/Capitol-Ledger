@@ -141,7 +141,13 @@ export function SearchSetupChips({ activeType, focus, state }: SearchSetupChipsP
       </div>
 
       {editing ? (
-        <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[220px]">
+        <MobileGlassScrollFrame
+          ariaLabel="Saved topic editor"
+          containedOnMobile
+          frameClassName="mt-3"
+          heightClassName="max-h-[220px]"
+          mobileHeight="13.75rem"
+        >
           <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
             <label htmlFor="officials-state" className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-white/46">
               Officials state

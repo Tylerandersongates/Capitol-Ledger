@@ -1093,7 +1093,13 @@ function TimelineTab({
           </span>
         </div>
         {billActions.length ? (
-          <MobileGlassScrollFrame heightClassName="max-h-[520px]" className="space-y-3" ariaLabel="Bill timeline updates">
+          <MobileGlassScrollFrame
+            ariaLabel="Bill timeline updates"
+            className="space-y-3"
+            containedOnMobile={billActions.length > 4}
+            heightClassName="max-h-[520px]"
+            mobileHeight="24rem"
+          >
             {billActions.map((action) => (
               <BillActionRow key={action.id} action={action} />
             ))}

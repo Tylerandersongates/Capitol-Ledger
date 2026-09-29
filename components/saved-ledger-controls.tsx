@@ -499,7 +499,13 @@ export function PolicyInterestsEditor({
           })}
         </div>
       ) : (
-        <MobileGlassScrollFrame heightClassName="max-h-[168px]" className="p-3 pb-4">
+        <MobileGlassScrollFrame
+          ariaLabel="Saved interests"
+          className="p-3 pb-4"
+          containedOnMobile
+          heightClassName="max-h-[168px]"
+          mobileHeight="10.5rem"
+        >
           <div className="flex flex-wrap gap-2">
             {interests.map((interest) => {
               const active = selected.includes(interest);
