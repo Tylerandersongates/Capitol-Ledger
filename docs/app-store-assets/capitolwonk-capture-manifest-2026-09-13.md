@@ -1,5 +1,41 @@
 # CapitolWonk App Store Capture Manifest — September 13, 2026
 
+## September 29 two-stage capture reconciliation
+
+The [accepted transition plan](../launch-transition-plan-2026-09-25.md) supersedes the older October schedule below. This manifest now serves two separately approved release decisions: a **November 16, 2026 soft launch** on explicitly identified 119th Congress data and a **January 3, 2027 full launch and 120th Congress cutover**. No final capture, App Store Connect replacement, upload, submission, or release is approved by this reconciliation.
+
+### November soft-launch capture contract
+
+Use one pinned native/web candidate for all four primary listing slots. Each image must identify the actual candidate and route in its manifest row, use the corrected `CAPITOLWONK` wordmark, and present 119th Congress context wherever a viewer could otherwise mistake the record set for the incoming Congress.
+
+| Slot | Required November state | Claim boundary |
+| ---: | --- | --- |
+| 1 Dashboard | Honest public/blank state or an explicitly assigned sanitized account state from the pinned candidate. | Do not use “Today,” “live,” or freshness captions unless the screen shows a verified source-sync timestamp. |
+| 2 Bill search/results | Reproducible public Bills results from the 119th Congress, with the query/state recorded. | Do not include private search history, demo fallback records, or an unlabeled historical Congress. |
+| 3 Bill detail | One verified public 119th Congress bill opened from the captured results. | Show only source-backed summary, sponsor, status, and action claims that pass exact-candidate QA. |
+| 4 Member detail | One verified public member profile with corroborated fields and no account-specific data. | Keep scores or evidence claims out of the capture unless the selected candidate has a reviewed, reachable methodology and complete source coverage. |
+
+For every November image, record both the native shell/build identity and the web source SHA when they differ. A current website inside an older signed shell is not one combined release identity until that pairing is selected and tested. Captions must avoid “live,” “real time,” “today,” “current,” or equivalent freshness wording unless the displayed state and candidate evidence support the claim.
+
+### January full-launch reconciliation
+
+Prepare a separate capture delta only after the 120th Congress cutover passes its source-backed roster, district, current-Congress, saved-identity, sparse-state, migration, regression, and rollback evidence. Recapture every screen whose Congress label, records, copy, navigation, or visible state changes. A November image may be reused only if its exact visible content remains truthful for the January candidate; never relabel a 119th Congress image as 120th Congress art or fill a sparse new-Congress state with unlabeled historical data.
+
+### Candidate naming and review state
+
+Add the release phase to new local candidate filenames so November and January evidence cannot be confused:
+
+```text
+listing/candidate-<source-short-sha>-nov-soft-iphone-6.5-<slot>-rgb.png
+listing/candidate-<source-short-sha>-nov-soft-ipad-13-<slot>-rgb.png
+listing/candidate-<source-short-sha>-jan-full-iphone-6.5-<slot>-rgb.png
+listing/candidate-<source-short-sha>-jan-full-ipad-13-<slot>-rgb.png
+```
+
+Every new per-image row must include a `Release phase / Congress` value and keep `Upload approval` at **Not approved** until Tyler reviews that exact asset set and remote action.
+
+**Next T09 asset step:** after the November candidate is pinned, rehearse these four states locally at both required dimensions, then record filenames, route/state provenance, native/web identities, color mode, byte counts, hashes, corrected-wordmark review, privacy scan, and limitations. Keep the historical assets below quarantined.
+
 **September 18 supersession:** T04's local signed version 1.0 build `2` archive and iPhone install/launch are complete; the earlier signing/device freeze language below describes the September 13 state. The archive is local and predates later live web changes through [PR #44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44), Production merge `617a474`. The four-slot [listing draft update](capitolwonk-listing-draft-2026-09-16.md) identifies present rehearsal candidates and remaining T06 checks. Do not label build `2` plus current Production as one approved release candidate without recording both exact source states and their test evidence. The three historical assets remain quarantined. No final screenshot, subscription review image, remote replacement or upload is approved.
 
 Historical September 13 status: **local preparation only; no replacement asset was approved, uploaded, distributed, or device-verified.** The Apple certificate/profile/Keychain/signing/device freeze was in force at that checkpoint. Use this manifest after an exact release candidate, sanitized capture state, subscription configuration, and signed/device path are approved.
@@ -69,10 +105,10 @@ Do not claim a seven-day trial until eligibility and configuration are evidenced
 Use a non-final local suffix until approval:
 
 ```text
-listing/candidate-<source-short-sha>-iphone-6.5-<slot>-rgb.png
-listing/candidate-<source-short-sha>-ipad-13-<slot>-rgb.png
-review/candidate-<source-short-sha>-subscription-review-rgb.jpg
-review/candidate-<source-short-sha>-product-config-redacted.png
+listing/candidate-<source-short-sha>-<nov-soft|jan-full>-iphone-6.5-<slot>-rgb.png
+listing/candidate-<source-short-sha>-<nov-soft|jan-full>-ipad-13-<slot>-rgb.png
+review/candidate-<source-short-sha>-<nov-soft|jan-full>-subscription-review-rgb.jpg
+review/candidate-<source-short-sha>-<nov-soft|jan-full>-product-config-redacted.png
 ```
 
 Never overwrite the historical files. “Candidate” means local review only, not App Store approval or device verification.
@@ -82,6 +118,7 @@ Never overwrite the historical files. “Candidate” means local review only, n
 | Field | Value |
 | --- | --- |
 | Filename |  |
+| Release phase / Congress |  |
 | Slot / route / state |  |
 | Source SHA / build |  |
 | Surface / OS / viewport |  |
