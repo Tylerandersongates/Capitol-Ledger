@@ -63,6 +63,18 @@ textarea {
   .mobile-glass-scroll-rail--vertical {
     display: none;
   }
+
+  .mobile-glass-scroll-frame--contained-mobile .mobile-glass-scroll-panel--vertical {
+    height: var(--mobile-scroll-height, 15.75rem) !important;
+    max-height: var(--mobile-scroll-height, 15.75rem) !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    padding-right: 1.25rem !important;
+  }
+
+  .mobile-glass-scroll-frame--contained-mobile .mobile-glass-scroll-rail--vertical {
+    display: block;
+  }
 }
 
 .auth-field-input {

@@ -124,7 +124,9 @@ export function districtNumberFromCode(code?: string) {
 }
 
 export function getMatchedOfficials(members: Member[], districtCode?: string) {
-  const stateCode = stateCodeFromDistrictCode(districtCode) ?? "TX";
+  const stateCode = stateCodeFromDistrictCode(districtCode);
+  if (!stateCode) return [];
+
   const districtNumber = districtNumberFromCode(districtCode);
   const stateMembers = members.filter((member) => memberStateCode(member.state) === stateCode);
   const exactRepresentative = districtNumber
@@ -135,9 +137,6 @@ export function getMatchedOfficials(members: Member[], districtCode?: string) {
     ...(exactRepresentative ? [exactRepresentative] : []),
     ...stateMembers
       .filter((member) => member.chamber === "Senate")
-      .sort((a, b) => a.lastName.localeCompare(b.lastName)),
-    ...stateMembers
-      .filter((member) => member.chamber === "House" && member.bioguideId !== exactRepresentative?.bioguideId)
       .sort((a, b) => a.lastName.localeCompare(b.lastName))
   ];
 }

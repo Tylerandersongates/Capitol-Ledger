@@ -31,7 +31,7 @@
     "billing-legacy:audit": "tsx scripts/audit-legacy-billing-state.ts",
     "billing-transition:check": "node --import tsx scripts/check-billing-transition-fixtures.mjs",
     "ios-native:check": "node scripts/check-ios-native-bridge.mjs",
-    "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs",
+    "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs && node --import tsx scripts/check-district-official-matching.ts",
     "launch-copy:check": "node scripts/check-launch-copy-tone.mjs",
     "brand:check": "tsx scripts/check-public-brand.ts",
     "eod:check": "node scripts/check-eod-standing-rules.mjs",
