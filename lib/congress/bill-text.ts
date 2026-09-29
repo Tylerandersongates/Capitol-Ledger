@@ -65,15 +65,36 @@ function decodeHtmlEntities(value: string) {
     })[entity] ?? entity);
 }
 
+function stripGovInfoBillMarkup(value: string) {
+  return value
+    // Reported/engrossed printings can include the superseded language inside
+    // encoded GPO change-tracking tags. Keep the current printing readable by
+    // omitting struck text and retaining inserted text without the control tags.
+    .replace(/(?:<|&lt;)DELETED(?:\s[^<>]*?)?(?:>|&gt;)[\s\S]*?(?:<|&lt;)\/DELETED(?:>|&gt;)/gi, "")
+    .replace(/(?:<|&lt;)\/?(?:ADDED|INSERTED)(?:\s[^<>]*?)?(?:>|&gt;)/gi, "")
+    .replace(/(?:<|&lt;)\/?(?:DOC|TEXT|BILL|ALL)(?:\s[^<>]*?)?(?:>|&gt;)/gi, "\n");
+}
+
+function stripGovInfoArchiveHeader(value: string) {
+  const lines = value.split("\n");
+  while (lines.length && !lines[0].trim()) lines.shift();
+  if (!/^\[Congressional Bills\b/i.test(lines[0]?.trim() ?? "")) return value;
+
+  while (lines.length && /^\[[^\]]+\]$/.test(lines[0].trim())) lines.shift();
+  while (lines.length && !lines[0].trim()) lines.shift();
+  return lines.join("\n");
+}
+
 export function plainTextFromOfficialHtml(html: string) {
   const pre = html.match(/<pre\b[^>]*>([\s\S]*?)<\/pre>/i)?.[1];
   const content = pre ?? html.replace(/^[\s\S]*?<body\b[^>]*>/i, "").replace(/<\/body>[\s\S]*$/i, "");
-  return decodeHtmlEntities(content
+  const text = decodeHtmlEntities(stripGovInfoBillMarkup(content)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<\/(?:p|div|section|h[1-6]|li)>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, ""))
+    .replace(/<[^>]+>/g, ""));
+  return stripGovInfoArchiveHeader(text)
     .replace(/\r\n?/g, "\n")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
