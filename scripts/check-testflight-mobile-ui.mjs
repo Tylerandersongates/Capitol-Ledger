@@ -12,11 +12,16 @@ const accountProfile = read("components/account-profile-controls.tsx");
 const billDetail = read("app/bills/[billId]/page.tsx");
 const billVoteBreakdown = read("components/bill-vote-member-breakdown.tsx");
 const dashboard = read("components/dashboard-client.tsx");
+const gamification = read("components/gamification-live-stats.tsx");
 const globals = read("app/globals.css");
 const ledger = read("components/saved-ledger-controls.tsx");
+const memberDetail = read("app/members/[bioguideId]/page.tsx");
+const policyEdge = read("components/policy-edge-feed.tsx");
 const search = read("app/search/page.tsx");
+const searchSetup = read("components/search-setup-chips.tsx");
 const scrollFrame = read("components/mobile-glass-scroll-frame.tsx");
 const shell = read("components/mobile-shell.tsx");
+const savedVotePositions = read("components/vote-saved-official-positions.tsx");
 
 assert.ok(shell.includes("min-h-[100dvh]"), "The mobile shell should fill the real device viewport");
 assert.ok(shell.includes("sm:rounded-[3.35rem]"), "The decorative phone bezel should be desktop-only");
@@ -42,6 +47,32 @@ assert.ok(
     && billDetail.includes('mobileHeight="16rem"'),
   "Long official bill text should retain a labeled bounded scroll panel on phones"
 );
+assert.ok(
+  billDetail.includes('ariaLabel="Official source records"\n        containedOnMobile\n        heightClassName="h-[248px]"\n        mobileHeight="21rem"'),
+  "Official source records should retain a labeled bounded scroll panel on phones"
+);
+const explicitlyBoundedListSources = {
+  "bill detail": billDetail,
+  dashboard,
+  gamification,
+  "member detail": memberDetail,
+  "policy edge": policyEdge,
+  "saved ledger": ledger,
+  "saved vote positions": savedVotePositions,
+  "search setup": searchSetup
+};
+
+for (const [sourceName, source] of Object.entries(explicitlyBoundedListSources)) {
+  const fixedVerticalFrames = [...source.matchAll(/<MobileGlassScrollFrame\b[\s\S]*?\n\s*>/g)]
+    .map((match) => match[0])
+    .filter((tag) => tag.includes("heightClassName") && !tag.includes('axis="horizontal"'));
+
+  assert.ok(fixedVerticalFrames.length > 0, `${sourceName} should include at least one explicitly bounded vertical list`);
+  assert.ok(
+    fixedVerticalFrames.every((tag) => tag.includes("containedOnMobile")),
+    `${sourceName} explicitly bounded vertical lists should retain containment on phones`
+  );
+}
 assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll frames should expose responsive axis hooks");
 
 assert.ok(auth.includes('htmlFor={id}') && auth.includes('name={name}'), "Auth inputs should have stable label and form identities");

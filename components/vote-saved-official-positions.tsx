@@ -82,7 +82,13 @@ export function VoteSavedOfficialPositions({ memberPositions }: VoteSavedOfficia
         <UsersRound className="h-7 w-7 text-[#ffb12b]" strokeWidth={1.8} aria-hidden="true" />
       </div>
       {savedPositions.length ? (
-        <MobileGlassScrollFrame heightClassName="h-[169px]" className="divide-y divide-white/8" ariaLabel="Saved official vote positions">
+        <MobileGlassScrollFrame
+          ariaLabel="Saved official vote positions"
+          className="divide-y divide-white/8"
+          containedOnMobile
+          heightClassName="h-[169px]"
+          mobileHeight="10.5625rem"
+        >
           {savedPositions.map((record) => {
             if (!record.member) return null;
 

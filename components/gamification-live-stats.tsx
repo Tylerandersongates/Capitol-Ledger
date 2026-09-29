@@ -258,7 +258,14 @@ export function RecentAchievementsList() {
   return (
     <div className="mt-4">
       <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/42">Recently earned</div>
-      <MobileGlassScrollFrame frameClassName="mt-3" heightClassName="max-h-[172px]" className="space-y-2">
+      <MobileGlassScrollFrame
+        ariaLabel="Recently earned badges"
+        className="space-y-2"
+        containedOnMobile={recentBadges.length > 2}
+        frameClassName="mt-3"
+        heightClassName="max-h-[172px]"
+        mobileHeight="10.75rem"
+      >
         {recentBadges.map((achievement) => (
           <RecentAchievementRow key={achievement.id} badge={achievement} />
         ))}
@@ -372,7 +379,13 @@ function MobileLevelPathShell({
         {nextLevel ? <span> · {pointsToNext.toLocaleString()} points to Level {nextLevel}</span> : null}
       </div>
 
-      <MobileGlassScrollFrame frameClassName="mt-4" heightClassName="max-h-[126px]">
+      <MobileGlassScrollFrame
+        ariaLabel="Civic level tiers"
+        containedOnMobile
+        frameClassName="mt-4"
+        heightClassName="max-h-[126px]"
+        mobileHeight="12rem"
+      >
         <div className="divide-y divide-white/8">
           {civicLevelTiers.map((tier) => {
             const active = tier.level === currentLevel;

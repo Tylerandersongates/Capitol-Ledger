@@ -520,7 +520,14 @@ export function DashboardClient({
                   </div>
                   {visibleFavorites.length ? (
                     shouldScrollFavorites ? (
-                      <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="max-h-[13.25rem]" className="grid gap-1.5" ariaLabel="Saved officials and bills">
+                      <MobileGlassScrollFrame
+                        ariaLabel="Saved officials and bills"
+                        className="grid gap-1.5"
+                        containedOnMobile
+                        frameClassName="mt-0"
+                        heightClassName="max-h-[13.25rem]"
+                        mobileHeight="13.25rem"
+                      >
                         <FavoriteRows favorites={visibleFavorites} favoriteRecords={favoriteRecords} onToggleFavorite={toggleFavorite} />
                       </MobileGlassScrollFrame>
                     ) : (

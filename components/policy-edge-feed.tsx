@@ -227,7 +227,14 @@ export function PolicyEdgeFeed({
         ) : null}
 
         {!locked && !isLoadingPersonalFeed && visibleBills.length ? (
-          <MobileGlassScrollFrame frameClassName="mt-0" heightClassName="h-[340px] sm:h-[420px]" className="space-y-3 pb-4" ariaLabel={`${config.title} bills`}>
+          <MobileGlassScrollFrame
+            ariaLabel={`${config.title} bills`}
+            className="space-y-3 pb-4"
+            containedOnMobile
+            frameClassName="mt-0"
+            heightClassName="h-[340px] sm:h-[420px]"
+            mobileHeight="21.25rem"
+          >
             {visibleBills.slice(0, 12).map((bill, index) => (
               <PolicyEdgeBillRow key={bill.id} actionLabel={config.actionLabel} bill={bill} index={index} mode={mode} sponsorName={sponsorNamesByBillId[bill.id]} />
             ))}

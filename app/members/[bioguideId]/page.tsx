@@ -743,8 +743,10 @@ function OverviewTab({
             <MobileGlassScrollFrame
               ariaLabel="Issue evidence by saved topic"
               className="grid gap-2"
+              containedOnMobile={sortedIssueTopics.length > 3}
               frameClassName="mt-3"
               heightClassName="max-h-[176px]"
+              mobileHeight="11rem"
             >
               {sortedIssueTopics.map((topic) => (
                 <OverviewTopicChip key={topic.topic} topic={topic} />
@@ -916,7 +918,13 @@ function VotesTab({ member, memberVotes }: { member: Member; memberVotes: Member
         eyebrow="Recent roll calls"
         title="Vote record"
       />
-      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member vote activity">
+      <MobileGlassScrollFrame
+        ariaLabel="Member vote activity"
+        className="space-y-3"
+        containedOnMobile={records.length > 3}
+        heightClassName="max-h-[430px]"
+        mobileHeight="21rem"
+      >
         {records.map((record) => {
           const vote = record.vote;
           if (!vote) return null;
@@ -984,7 +992,13 @@ function BillsTab({ cosponsoredBills, sponsoredBills }: { cosponsoredBills: Bill
         eyebrow="Legislative activity"
         title="Bill activity"
       />
-      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3" ariaLabel="Member bill activity">
+      <MobileGlassScrollFrame
+        ariaLabel="Member bill activity"
+        className="space-y-3"
+        containedOnMobile={visibleRecords.length > 3}
+        heightClassName="max-h-[430px]"
+        mobileHeight="21rem"
+      >
         {visibleRecords.map(({ bill, label }) => (
           <BillActivityRow key={`${label}-${bill.id}`} bill={bill} label={label} />
         ))}
@@ -1049,7 +1063,13 @@ function CommitteesTab({
         eyebrow="Current roles"
         title="Roles and assignments"
       />
-      <MobileGlassScrollFrame heightClassName="max-h-[430px]" className="space-y-3">
+      <MobileGlassScrollFrame
+        ariaLabel="Member roles and assignments"
+        className="space-y-3"
+        containedOnMobile={caucusMemberships.length > 3}
+        heightClassName="max-h-[430px]"
+        mobileHeight="21rem"
+      >
         {caucusMemberships.map((membership) => (
           <a
             key={`${membership.caucusName}-${membership.role}`}
