@@ -839,18 +839,18 @@ export function DashboardClient({
                     />
                   </div>
                   <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-white/46">Top activity</div>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  <div className="mt-1.5 grid grid-cols-1 gap-1.5 min-[480px]:grid-cols-2">
                     {impactCategories.map((category) => (
                       <Link
                         key={category.id}
                         href={impactCategoryHrefs[category.id]}
-                        className="flex items-center justify-between rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-[11px] transition hover:bg-white/[0.07]"
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-[11px] transition hover:bg-white/[0.07]"
                       >
-                        <span className="flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
-                          <span className="truncate text-white/68">{category.label}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
+                          <span className="min-w-0 truncate text-white/68">{category.label}</span>
                         </span>
-                        <span className="font-medium text-white/82">{category.value}</span>
+                        <span className="ml-2 shrink-0 font-medium text-white/82">{category.value}</span>
                       </Link>
                     ))}
                   </div>
