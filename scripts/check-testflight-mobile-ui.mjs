@@ -48,6 +48,12 @@ assert.ok(
   "Long official bill text should retain a labeled bounded scroll panel on phones"
 );
 assert.ok(
+  billDetail.includes('ariaLabel="Bill timeline updates"')
+    && billDetail.includes("containedOnMobile={billActions.length > 4}")
+    && billDetail.includes('mobileHeight="24rem"'),
+  "Long bill timelines should retain a labeled bounded scroll panel on phones"
+);
+assert.ok(
   billDetail.includes('ariaLabel="Official source records"\n        containedOnMobile\n        heightClassName="h-[248px]"\n        mobileHeight="21rem"'),
   "Official source records should retain a labeled bounded scroll panel on phones"
 );
