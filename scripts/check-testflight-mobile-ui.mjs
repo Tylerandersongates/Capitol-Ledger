@@ -9,6 +9,7 @@ function read(path) {
 
 const auth = read("components/auth-flow-client.tsx");
 const accountProfile = read("components/account-profile-controls.tsx");
+const dashboard = read("components/dashboard-client.tsx");
 const globals = read("app/globals.css");
 const ledger = read("components/saved-ledger-controls.tsx");
 const scrollFrame = read("components/mobile-glass-scroll-frame.tsx");
@@ -33,6 +34,22 @@ assert.ok(
   "District lookup should distinguish changing a saved district from the initial search"
 );
 assert.ok(!accountProfile.includes("Austin, 78701, or TX-10"), "District lookup should not imply a specific location");
+
+assert.ok(
+  dashboard.includes('className="mt-1.5 grid grid-cols-1 gap-1.5 min-[480px]:grid-cols-2"'),
+  "Dashboard Top Activity rows should stack on phone-width viewports"
+);
+assert.ok(
+  dashboard.includes('className="grid grid-cols-[minmax(0,1fr)_auto] items-center'),
+  "Dashboard Top Activity rows should reserve a bounded label column and a separate count column"
+);
+assert.ok(
+  dashboard.includes('className="flex min-w-0 items-center gap-1.5"')
+    && dashboard.includes('className="h-2 w-2 shrink-0 rounded-full"')
+    && dashboard.includes('className="min-w-0 truncate text-white/68"')
+    && dashboard.includes('className="ml-2 shrink-0 font-medium text-white/82"'),
+  "Dashboard Top Activity labels should shrink or truncate without crossing their count boundary"
+);
 
 assert.ok(ledger.includes("accountSyncQueue"), "Account ledger writes should be serialized");
 assert.ok(ledger.includes("latestLedgerRevisionByKey.get(key) !== revision"), "Stale account responses should be ignored");
