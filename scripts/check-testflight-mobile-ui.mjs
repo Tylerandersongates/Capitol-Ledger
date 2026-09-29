@@ -42,6 +42,10 @@ assert.ok(
     && billDetail.includes('mobileHeight="16rem"'),
   "Long official bill text should retain a labeled bounded scroll panel on phones"
 );
+assert.ok(
+  billDetail.includes('ariaLabel="Official source records"\n        containedOnMobile\n        heightClassName="h-[248px]"\n        mobileHeight="21rem"'),
+  "Official source records should retain a labeled bounded scroll panel on phones"
+);
 assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll frames should expose responsive axis hooks");
 
 assert.ok(auth.includes('htmlFor={id}') && auth.includes('name={name}'), "Auth inputs should have stable label and form identities");

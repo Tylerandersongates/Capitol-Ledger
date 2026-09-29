@@ -1321,7 +1321,13 @@ function SourceMapCard({ sourceMatches }: { sourceMatches: BillSourceMatch[] }) 
           <ShieldCheck className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <MobileGlassScrollFrame heightClassName="h-[248px]" className="flex flex-col gap-3">
+      <MobileGlassScrollFrame
+        ariaLabel="Official source records"
+        containedOnMobile
+        heightClassName="h-[248px]"
+        mobileHeight="21rem"
+        className="flex flex-col gap-3"
+      >
         {sourceMatches.map((match) => (
           <SourceMatchRow key={match.id} match={match} />
         ))}
