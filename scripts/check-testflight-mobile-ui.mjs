@@ -48,6 +48,12 @@ assert.ok(
   "Long official bill text should retain a labeled bounded scroll panel on phones"
 );
 assert.ok(
+  billDetail.includes('ariaLabel="Bill timeline updates"')
+    && billDetail.includes("containedOnMobile={billActions.length > 4}")
+    && billDetail.includes('mobileHeight="24rem"'),
+  "Long bill timelines should retain a labeled bounded scroll panel on phones"
+);
+assert.ok(
   billDetail.includes('ariaLabel="Official source records"\n        containedOnMobile\n        heightClassName="h-[248px]"\n        mobileHeight="21rem"'),
   "Official source records should retain a labeled bounded scroll panel on phones"
 );
@@ -74,6 +80,14 @@ for (const [sourceName, source] of Object.entries(explicitlyBoundedListSources))
   );
 }
 assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll frames should expose responsive axis hooks");
+assert.ok(
+  scrollFrame.includes("touch-pan-y overflow-x-hidden overflow-y-auto overscroll-x-none overscroll-y-contain"),
+  "Vertical scroll panels should stay locked to their frame while retaining vertical touch scrolling"
+);
+assert.ok(
+  billDetail.includes('max-w-full whitespace-pre-line break-words [overflow-wrap:anywhere]'),
+  "Long official bill-text separators should wrap without creating horizontal drift"
+);
 
 assert.ok(auth.includes('htmlFor={id}') && auth.includes('name={name}'), "Auth inputs should have stable label and form identities");
 assert.ok(auth.includes('autoComplete="given-name"') && auth.includes('autoComplete="family-name"'), "Name fields should expose iOS autofill semantics");

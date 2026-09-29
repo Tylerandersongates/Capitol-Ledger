@@ -909,7 +909,7 @@ function ScrollableTextBox({
       mobileHeight={mobileHeight}
       className={`px-4 py-4 leading-6 ${className}`}
     >
-      <p className="whitespace-pre-line">{children}</p>
+      <p className="max-w-full whitespace-pre-line break-words [overflow-wrap:anywhere]">{children}</p>
     </MobileGlassScrollFrame>
   );
 }

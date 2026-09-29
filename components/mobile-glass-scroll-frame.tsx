@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 const frameBaseClass =
   "relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/14 bg-white/[0.028] p-[1px] shadow-[0_16px_34px_rgba(1,8,24,0.3),inset_0_1px_0_rgba(255,255,255,0.12)]";
 const verticalScrollPanelBaseClass =
-  "w-full min-w-0 max-w-full overflow-y-auto overscroll-contain rounded-[1rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,31,67,0.86)_0%,rgba(3,15,36,0.94)_100%)] p-2 pb-3 pr-5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_18px_rgba(44,123,210,0.035)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+  "w-full min-w-0 max-w-full touch-pan-y overflow-x-hidden overflow-y-auto overscroll-x-none overscroll-y-contain rounded-[1rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,31,67,0.86)_0%,rgba(3,15,36,0.94)_100%)] p-2 pb-3 pr-5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_18px_rgba(44,123,210,0.035)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 const horizontalScrollPanelBaseClass =
   "w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-[1rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,31,67,0.86)_0%,rgba(3,15,36,0.94)_100%)] p-2 pb-5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_0_18px_rgba(44,123,210,0.035)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 const glassOverlayClass =
