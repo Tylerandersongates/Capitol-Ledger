@@ -33,4 +33,21 @@ assert.equal(deriveGovInfoTextUrl("https://example.com/BILLS-119hr7008eh.htm", b
 const html = "<html><head><style>ignore</style></head><body><pre>SECTION 1. TEST.\nA &amp; B &lt; C.\nSECTION 2. PHOTO IDENTIFICATION.</pre></body></html>";
 assert.equal(plainTextFromOfficialHtml(html), "SECTION 1. TEST.\nA & B < C.\nSECTION 2. PHOTO IDENTIFICATION.");
 
+const govInfoPrinting = `<html><body><pre>
+[Congressional Bills 119th Congress]
+[From the U.S. Government Publishing Office]
+[S. 4723 Reported in Senate (RS)]
+
+&lt;DOC&gt;
+
+Calendar No. 518
+&lt;DELETED&gt;Superseded language from the introduced version.&lt;/DELETED&gt;
+SECTION 1. CURRENT TEXT.
+&lt;ADDED&gt;A &amp; B &lt; C.&lt;/ADDED&gt;</pre></body></html>`;
+assert.equal(
+  plainTextFromOfficialHtml(govInfoPrinting),
+  "Calendar No. 518\n\nSECTION 1. CURRENT TEXT.\nA & B < C.",
+  "GovInfo archive headers and control tags should not leak into the reader view"
+);
+
 console.log("Bill text freshness checks passed.");

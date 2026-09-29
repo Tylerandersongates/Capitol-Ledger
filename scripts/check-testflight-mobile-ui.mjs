@@ -9,6 +9,7 @@ function read(path) {
 
 const auth = read("components/auth-flow-client.tsx");
 const accountProfile = read("components/account-profile-controls.tsx");
+const billDetail = read("app/bills/[billId]/page.tsx");
 const billVoteBreakdown = read("components/bill-vote-member-breakdown.tsx");
 const dashboard = read("components/dashboard-client.tsx");
 const globals = read("app/globals.css");
@@ -34,6 +35,12 @@ assert.ok(
 assert.ok(
   billVoteBreakdown.includes("containedOnMobile") && billVoteBreakdown.includes('mobileHeight="21rem"'),
   "Bill member votes should retain their bounded vertical scroll panel on phones"
+);
+assert.ok(
+  billDetail.includes('ariaLabel={hasLongOfficialBillText ? "Official bill text" : undefined}')
+    && billDetail.includes("containedOnMobile={hasLongOfficialBillText}")
+    && billDetail.includes('mobileHeight="16rem"'),
+  "Long official bill text should retain a labeled bounded scroll panel on phones"
 );
 assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll frames should expose responsive axis hooks");
 

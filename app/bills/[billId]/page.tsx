@@ -737,6 +737,7 @@ function compactProgressDate(date: string) {
 }
 
 function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string; summary: BillSummaryResolution }) {
+  const hasLongOfficialBillText = summary.source === "bill-text" && summary.label === "Latest official bill text";
   const sourceTone =
     summary.source === "official"
       ? "border-emerald-400/26 bg-emerald-400/10 text-[#59ee83]"
@@ -771,7 +772,13 @@ function BillSummaryCard({ bill, status, summary }: { bill: Bill; status: string
           <FileText className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <ScrollableTextBox className="text-[16px] text-white/70" heightClassName={summary.source === "bill-text" && summary.label === "Latest official bill text" ? "max-h-64" : undefined}>
+      <ScrollableTextBox
+        ariaLabel={hasLongOfficialBillText ? "Official bill text" : undefined}
+        className="text-[16px] text-white/70"
+        containedOnMobile={hasLongOfficialBillText}
+        heightClassName={hasLongOfficialBillText ? "max-h-64" : undefined}
+        mobileHeight="16rem"
+      >
         {summary.text}
       </ScrollableTextBox>
       {(summary.sourceUrl ?? (summary.source === "pending" ? bill.sourceUrl : "")).startsWith("https://") ? (
@@ -879,9 +886,29 @@ function AiPointGroup({ points, title, tone }: { points: string[]; title: string
   );
 }
 
-function ScrollableTextBox({ children, className = "", heightClassName = "max-h-32" }: { children: ReactNode; className?: string; heightClassName?: string }) {
+function ScrollableTextBox({
+  ariaLabel,
+  children,
+  className = "",
+  containedOnMobile = false,
+  heightClassName = "max-h-32",
+  mobileHeight
+}: {
+  ariaLabel?: string;
+  children: ReactNode;
+  className?: string;
+  containedOnMobile?: boolean;
+  heightClassName?: string;
+  mobileHeight?: string;
+}) {
   return (
-    <MobileGlassScrollFrame heightClassName={heightClassName} className={`px-4 py-4 leading-6 ${className}`}>
+    <MobileGlassScrollFrame
+      ariaLabel={ariaLabel}
+      containedOnMobile={containedOnMobile}
+      heightClassName={heightClassName}
+      mobileHeight={mobileHeight}
+      className={`px-4 py-4 leading-6 ${className}`}
+    >
       <p className="whitespace-pre-line">{children}</p>
     </MobileGlassScrollFrame>
   );
