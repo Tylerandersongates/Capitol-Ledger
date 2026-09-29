@@ -688,7 +688,12 @@ function ResultSection({
         {shouldScroll ? <span className={premiumPillClass}>Scroll</span> : null}
       </div>
       {shouldScroll ? (
-        <MobileGlassScrollFrame heightClassName="h-[15.75rem]" className="space-y-3" ariaLabel={`${title} search results`}>
+        <MobileGlassScrollFrame
+          heightClassName="h-[15.75rem]"
+          frameClassName="mt-5 mobile-search-results-scroll"
+          className="space-y-3"
+          ariaLabel={`${title} search results`}
+        >
           {children}
         </MobileGlassScrollFrame>
       ) : (

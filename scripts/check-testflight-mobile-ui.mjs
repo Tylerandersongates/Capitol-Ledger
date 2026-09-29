@@ -12,6 +12,7 @@ const accountProfile = read("components/account-profile-controls.tsx");
 const dashboard = read("components/dashboard-client.tsx");
 const globals = read("app/globals.css");
 const ledger = read("components/saved-ledger-controls.tsx");
+const search = read("app/search/page.tsx");
 const scrollFrame = read("components/mobile-glass-scroll-frame.tsx");
 const shell = read("components/mobile-shell.tsx");
 
@@ -23,6 +24,12 @@ assert.ok(shell.includes('<div className="hidden sm:block">'), "The simulated st
 assert.ok(globals.includes(".mobile-shell-content") && globals.includes("env(safe-area-inset-top)"), "Mobile content should respect device safe areas");
 assert.ok(globals.includes(".mobile-glass-scroll-panel--vertical") && globals.includes("overflow-y: visible !important"), "Vertical cards should flow with the page on phones");
 assert.ok(globals.includes(".mobile-glass-scroll-rail--vertical") && globals.includes("display: none"), "Hidden mobile scroll rails should not consume card width");
+assert.ok(
+  search.includes('frameClassName="mt-5 mobile-search-results-scroll"')
+    && globals.includes(".mobile-search-results-scroll .mobile-glass-scroll-panel--vertical")
+    && globals.includes("overflow-y: auto !important"),
+  "Search results should retain their bounded vertical scroll panel on phones"
+);
 assert.ok(scrollFrame.includes("mobile-glass-scroll-panel--${axis}"), "Scroll frames should expose responsive axis hooks");
 
 assert.ok(auth.includes('htmlFor={id}') && auth.includes('name={name}'), "Auth inputs should have stable label and form identities");
