@@ -12,7 +12,9 @@ The [accepted transition plan](launch-transition-plan-2026-09-25.md) supersedes 
 | Listing screenshots | Rehearse the four honest public screens against one pinned November native/web candidate; record route/state provenance, dimensions, flattened sRGB RGB mode, hashes, brand/privacy review, and visible 119th Congress context where ambiguity would matter. Historical `CE`, double-chrome, and unconditional-trial images remain quarantined. | Recapture only screens materially changed by the 120th Congress candidate. Treat sparse new-Congress states as valid and never fill them with unlabeled historical data. |
 | Subscription-review evidence | Keep separate from marketing screenshots and bind conditional offer copy to redacted product configuration plus T07 sandbox evidence. | Repeat only if the product, offer, price, eligibility, territory, or review build changes. |
 
-**Next T09 ledger step:** prepare the exact field-by-field App Store Connect comparison sheet using the current remote answers as the baseline, without publishing them. Then reconcile the selected archive privacy report, real native Sentry payload evidence, enabled server/provider paths, and mailbox operating procedure into that sheet. Screenshot rehearsal follows after the November candidate and its public states are pinned.
+The [September 30 field-by-field comparison worksheet](app-store-connect-privacy-comparison-2026-09-30.md) now records the last repository snapshot, all fourteen provisional rows, conditional negative answers, evidence gates, and explicit `Pending re-read` cells. It is a source-only scaffold and does not claim that the current remote questionnaire was re-read.
+
+**Next T09 ledger step:** complete the worksheet's current App Store Connect column from a fresh read-only session, without publishing it. Then reconcile the selected archive privacy report, real native Sentry payload evidence, enabled server/provider paths, and mailbox operating procedure into that sheet. Screenshot rehearsal follows after the November candidate and its public states are pinned.
 
 ## September 18 continuation — read-only privacy evidence
 
