@@ -4,6 +4,7 @@ import { fetchBill, fetchBillActions, fetchBillCosponsors, fetchBillSummaries, f
 import type { CongressBillListItem } from "@/lib/congress/client";
 import { fetchOfficialBillText, isReviewedHr7008TextVersion, selectLatestBillTextVersion, textVersionIsNewer } from "@/lib/congress/bill-text";
 import { unstable_cache } from "next/cache";
+import { getCongressLabel } from "@/lib/congress/active-congress";
 import { mergeLatestOfficialBillAction, mergeOfficialBillBasics, normalizeCongressBill, normalizeCongressBillAction, normalizeCongressBillCosponsor, normalizeCongressBillSponsor, normalizeCongressMemberDetail, normalizeCongressMemberLegislation, selectLatestCongressBillSummary } from "@/lib/congress/normalizers";
 import { publicBrandName } from "@/lib/brand";
 import { fetchHouseMemberVotes } from "@/lib/house-votes";
@@ -14,7 +15,6 @@ import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { matchBillSources } from "@/lib/source-matching";
 import { isOfficialSearchParty, normalizeSearchPartyFilter } from "@/lib/party-affiliations";
 import { fetchSenateMemberVotes } from "@/lib/senate-votes";
-import { currentCongressLabel } from "@/lib/utils";
 import {
   chunkFollowedBillIds,
   currentFollowedVoteWindowStart,
@@ -739,7 +739,7 @@ function deriveElectionDatesFromRaw(_rawTerms: RawMemberTermRecord[], _chamber: 
 function mapDatabaseMember(member: PrismaMember): Member {
   const rawTerms = readRawMemberTerms(member.rawJson ?? null);
   const chamber = dbChamberMap[member.chamber];
-  const termLabel = currentCongressLabel();
+  const termLabel = getCongressLabel();
   const serviceFallback = memberServiceFallbacks[member.bioguideId];
   const rawService = readRawMemberService(member.rawJson ?? null);
   const termsInOffice = serviceFallback?.termsInOffice ?? rawService.termsInOffice ?? (rawTerms.length ? deriveTermsFromRaw(rawTerms, chamber) : undefined);
@@ -1691,7 +1691,9 @@ async function fetchLiveBillSponsor(bill: Bill, fallback?: Member) {
     timeoutMs: memberLegislationFetchTimeoutMs
   }).catch(() => null);
 
-  return response?.member ? (normalizeCongressMemberDetail(response.member) ?? fallback) : fallback;
+  return response?.member
+    ? (normalizeCongressMemberDetail(response.member, bill.congress) ?? fallback)
+    : fallback;
 }
 
 async function fetchLiveBillCosponsors(bill: Bill, fallback: Member[]) {

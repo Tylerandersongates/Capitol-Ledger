@@ -11,7 +11,7 @@ import type {
   CongressMemberListItem
 } from "./client";
 import { publicBrandName } from "../brand";
-import { currentCongressLabel } from "../utils";
+import { getConfiguredCongress, getCongressLabel } from "./active-congress";
 import type { Bill, BillAction, BillActionKind, CapitolSourceLink, Chamber, CommitteeRecord, Member, Party, VotePosition } from "../../types/capitol";
 
 const VERIFIED_AT = "2026-05-19";
@@ -333,7 +333,7 @@ function deriveMemberServiceFromTerms(
   };
 }
 
-export function normalizeCongressMember(raw: CongressMemberListItem): Member | null {
+export function normalizeCongressMember(raw: CongressMemberListItem, congress = getConfiguredCongress()): Member | null {
   if (!raw.bioguideId) return null;
 
   const terms = raw.terms?.item ?? [];
@@ -354,7 +354,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
     district: typeof raw.district === "number" ? String(raw.district) : undefined,
     chamber,
     active: Boolean(activeTerm && !activeTerm.endYear),
-    term: currentCongressLabel(),
+    term: getCongressLabel(congress),
     termsInOffice: service.termsInOffice,
     firstElectedDate: service.firstElectedDate,
     nextElectionDate: service.nextElectionDate,
@@ -365,7 +365,7 @@ export function normalizeCongressMember(raw: CongressMemberListItem): Member | n
   };
 }
 
-export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Member | null {
+export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem, congress = getConfiguredCongress()): Member | null {
   if (!raw.bioguideId) return null;
 
   const terms = raw.terms ?? [];
@@ -405,7 +405,7 @@ export function normalizeCongressMemberDetail(raw: CongressMemberDetailItem): Me
     photoUrl: raw.depiction?.imageUrl,
     sourceUrl: memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
     state,
-    term: currentCongressLabel(),
+    term: getCongressLabel(congress),
     termsInOffice: service.termsInOffice
   };
 }
@@ -487,7 +487,7 @@ export function normalizeCongressBillSponsor(raw?: CongressBillListItem | null):
     name,
     partyName: sponsor.party,
     state: sponsor.state
-  });
+  }, raw.congress);
   if (!member) return undefined;
 
   const chamber = chamberFromBillType(raw.type);
@@ -652,7 +652,7 @@ export function normalizeCongressBillCosponsor(raw: CongressBillCosponsorItem, b
     photoUrl: undefined,
     sourceUrl: raw.url ?? memberSourceUrl({ bioguideId: raw.bioguideId, firstName, lastName }),
     state,
-    term: currentCongressLabel()
+    term: getCongressLabel(bill.congress)
   };
 
   return {
@@ -715,7 +715,7 @@ export function normalizeCongressHouseMemberVote(
     photoUrl: undefined,
     sourceUrl: memberSourceUrl({ bioguideId, firstName, lastName }),
     state,
-    term: currentCongressLabel()
+    term: getCongressLabel(vote.congress)
   };
 
   return {

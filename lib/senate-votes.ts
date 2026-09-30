@@ -1,5 +1,6 @@
 import type { Member, Vote, VotePosition } from "@/types/capitol";
 import { publicBrandName } from "@/lib/brand";
+import { getCongressFromTerm } from "@/lib/congress/active-congress";
 import { memberStateCode } from "@/lib/member-display";
 import { senateVoteSnapshotGeneratedAt, senateVoteSnapshots } from "@/lib/senate-vote-snapshot";
 
@@ -68,13 +69,6 @@ function normalizeMemberSnapshotKey(member: Pick<Member, "lastName" | "state">) 
     .toLowerCase()
     .replace(/[^a-z]/g, "");
   return `${lastName}:${memberStateCode(member.state).toUpperCase()}`;
-}
-
-function readCongressFromTerm(term?: string) {
-  const congress = Number(term?.match(/\d+/)?.[0]);
-  if (Number.isInteger(congress) && congress > 0) return congress;
-  const configuredCongress = Number(process.env.CONGRESS_SYNC_CONGRESS ?? 119);
-  return Number.isInteger(configuredCongress) && configuredCongress > 0 ? configuredCongress : 119;
 }
 
 function currentSessionForCongress(congress: number) {
@@ -258,7 +252,7 @@ function getFreshCachedMemberVotes(cacheKey: string) {
 export async function fetchSenateMemberVotes(member: Member, limit = 12, timeoutMs = 5_000) {
   if (member.chamber !== "Senate") return [];
 
-  const congress = readCongressFromTerm(member.term);
+  const congress = getCongressFromTerm(member.term);
   const currentSession = currentSessionForCongress(congress);
   const cacheKey = `${member.bioguideId}:${congress}:${currentSession}:${limit}`;
   const cached = getFreshCachedMemberVotes(cacheKey);

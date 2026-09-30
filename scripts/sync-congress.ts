@@ -248,14 +248,14 @@ async function fetchResolvedTargetBillDetails(targets: TargetBillKey[]) {
   return records;
 }
 
-async function fetchResolvedBillSponsors(bills: Bill[]) {
+async function fetchResolvedBillSponsors(bills: Bill[], congress: number) {
   const sponsorIds = Array.from(new Set(bills.map((bill) => bill.sponsorBioguideId).filter((value): value is string => Boolean(value))));
   const records: Member[] = [];
 
   for (const sponsorId of sponsorIds) {
     try {
       const response = await fetchMember(sponsorId);
-      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      const member = response.member ? normalizeCongressMemberDetail(response.member, congress) : null;
       if (member) records.push(member);
     } catch (error) {
       if (!(error instanceof CongressApiError)) throw error;
@@ -265,13 +265,13 @@ async function fetchResolvedBillSponsors(bills: Bill[]) {
   return records;
 }
 
-async function fetchResolvedSupplementalMembers(memberIds: string[]) {
+async function fetchResolvedSupplementalMembers(memberIds: string[], congress: number) {
   const records: ResolvedSupplementalMemberRecord[] = [];
 
   for (const memberId of memberIds) {
     try {
       const response = await fetchMember(memberId);
-      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      const member = response.member ? normalizeCongressMemberDetail(response.member, congress) : null;
       if (member && response.member) {
         records.push({
           member,
@@ -421,7 +421,7 @@ async function fetchCompleteVoteCatalog({
 
   const currentMemberIds = new Set(currentMembers.map((member) => member.bioguideId));
   const allMemberRecords = allCongressMembers.flatMap<HistoricalVoteMemberRecord>((raw) => {
-    const member = normalizeCongressMember(raw);
+    const member = normalizeCongressMember(raw, congress);
     if (!member) return [];
     return [
       {
@@ -447,7 +447,7 @@ async function fetchCompleteVoteCatalog({
     Math.min(concurrency, 3),
     async (memberBioguideId): Promise<HistoricalVoteMemberRecord> => {
       const response = await fetchMember(memberBioguideId, { timeoutMs });
-      const member = response.member ? normalizeCongressMemberDetail(response.member) : null;
+      const member = response.member ? normalizeCongressMemberDetail(response.member, congress) : null;
       if (!member) {
         throw new Error("An official House vote member could not be resolved through Congress.gov.");
       }
@@ -706,15 +706,15 @@ async function main() {
   const bills = Array.from(new Map([...listedBills, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
   const enrichedBills = Array.from(new Map([...listedBillsForEnrichment, ...detailedBills].map((bill) => [billSyncKey(bill), bill])).values());
   const rawBills = [...billCatalog.bills, ...billDetails];
-  const listedMembers = memberRoster.members.map(normalizeCongressMember).filter((member) => member !== null);
+  const listedMembers = memberRoster.members.map((member) => normalizeCongressMember(member, congress)).filter((member) => member !== null);
   const rosterValidation = shouldSyncFullMemberRoster || shouldSyncFullVoteCatalog
     ? validateCurrentMemberRoster(listedMembers, { minimumMemberCount: memberMinimumCount })
     : null;
-  const supplementalMembers = await fetchResolvedSupplementalMembers(supplementalMemberIds);
+  const supplementalMembers = await fetchResolvedSupplementalMembers(supplementalMemberIds, congress);
   const members = uniqueMembers([...listedMembers, ...supplementalMembers.map((record) => record.member)]);
   const rawMembers: Array<CongressMemberListItem | CongressMemberDetailItem> = [...memberRoster.members, ...supplementalMembers.map((record) => record.raw)];
   const committees = (committeesResponse.committees ?? []).map(normalizeCongressCommittee).filter((committee) => committee !== null);
-  const sponsorMembers = await fetchResolvedBillSponsors(enrichedBills);
+  const sponsorMembers = await fetchResolvedBillSponsors(enrichedBills, congress);
   const billCosponsors = shouldSyncCosponsors ? await fetchResolvedBillCosponsors(enrichedBills, cosponsorLimit) : [];
   const cosponsorMembers = uniqueMembers(billCosponsors.map((cosponsor) => cosponsor.member));
   const completeVoteCatalog = shouldSyncFullVoteCatalog

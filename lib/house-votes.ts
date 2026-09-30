@@ -1,4 +1,5 @@
 import { fetchHouseVoteMembers, fetchHouseVotes, type CongressHouseVoteMemberItem } from "@/lib/congress/client";
+import { getCongressFromTerm } from "@/lib/congress/active-congress";
 import { normalizeCongressHouseMemberVote, normalizeCongressHouseVote, type NormalizedCongressVote } from "@/lib/congress/normalizers";
 import type { Member, Vote, VotePosition } from "@/types/capitol";
 
@@ -14,13 +15,6 @@ const houseMemberVoteCache = new Map<string, { cachedAt: number; records: HouseM
 const houseMemberVoteCacheMaxAgeMs = 10 * 60 * 1000;
 const houseVoteDetailBatchSize = 3;
 const houseVoteMemberLimit = 500;
-
-function readCongressFromTerm(term?: string) {
-  const congress = Number(term?.match(/\d+/)?.[0]);
-  if (Number.isInteger(congress) && congress > 0) return congress;
-  const configuredCongress = Number(process.env.CONGRESS_SYNC_CONGRESS ?? 119);
-  return Number.isInteger(configuredCongress) && configuredCongress > 0 ? configuredCongress : 119;
-}
 
 function currentSessionForCongress(congress: number) {
   const startYear = 1789 + (congress - 1) * 2;
@@ -105,7 +99,7 @@ async function fetchMemberVoteForRollCall(vote: NormalizedCongressVote, member: 
 export async function fetchHouseMemberVotes(member: Member, limit = 12, timeoutMs = 5_000): Promise<HouseMemberVoteRecord[]> {
   if (member.chamber !== "House") return [];
 
-  const congress = readCongressFromTerm(member.term);
+  const congress = getCongressFromTerm(member.term);
   const currentSession = currentSessionForCongress(congress);
   const cacheKey = `${member.bioguideId}:${congress}:${currentSession}:${limit}`;
   const cached = getFreshCachedMemberVotes(cacheKey);
