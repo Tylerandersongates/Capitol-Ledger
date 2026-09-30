@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { activeCongressFallback, getConfiguredCongress, getCongressFromTerm, getCongressLabel } from "@/lib/congress/active-congress";
 import type { CongressBillListItem } from "@/lib/congress/client";
 import { normalizeCongressBill, normalizeCongressBillSponsor, normalizeCongressMember } from "@/lib/congress/normalizers";
@@ -66,5 +67,12 @@ const member119 = normalizeCongressMember({
 assert.equal(member119?.bioguideId, member120?.bioguideId, "A continuing member must retain the same follow target across Congresses.");
 assert.equal(member119?.term, "119th Congress");
 assert.notEqual(member119?.term, member120?.term, "The stable member identity must not preserve a stale Congress label.");
+
+const dataSource = readFileSync("lib/data.ts", "utf8");
+assert.match(
+  dataSource,
+  /normalizeCongressMemberDetail\(response\.member, bill\.congress\)/,
+  "A live sponsor-detail fallback must keep the Congress of the bill being viewed."
+);
 
 console.log("Active Congress transition fixtures passed.");

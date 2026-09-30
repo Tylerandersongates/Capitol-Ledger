@@ -1691,7 +1691,9 @@ async function fetchLiveBillSponsor(bill: Bill, fallback?: Member) {
     timeoutMs: memberLegislationFetchTimeoutMs
   }).catch(() => null);
 
-  return response?.member ? (normalizeCongressMemberDetail(response.member) ?? fallback) : fallback;
+  return response?.member
+    ? (normalizeCongressMemberDetail(response.member, bill.congress) ?? fallback)
+    : fallback;
 }
 
 async function fetchLiveBillCosponsors(bill: Bill, fallback: Member[]) {
