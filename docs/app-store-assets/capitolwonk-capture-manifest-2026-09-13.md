@@ -1,5 +1,26 @@
 # CapitolWonk App Store Capture Manifest — September 13, 2026
 
+## October 1 pre-blackout asset reconciliation
+
+This source-only checkpoint satisfies the T09 handoff needed before the October 2–5 owner blackout. No App Store Connect asset, build, questionnaire answer, provider setting, or release state changed.
+
+The local asset inventory contains only this manifest, the listing-copy draft, and the three historical image files below. There is no November or January candidate image to review, and no file is eligible for upload. Fresh local checks on October 1 reproduced the recorded technical evidence exactly:
+
+| Historical file | October 1 verification | Disposition |
+| --- | --- | --- |
+| `listing/capitolwonk-iphone-6.5-dashboard.png` | 1284 × 2778 PNG, RGB color space with alpha; SHA-256 `c5a8d918a3582162a2f06070e120df2229b52125af3ffbbdfcefcbd745b50007` | Quarantined: retired `CE` wordmark and alpha remain. |
+| `listing/capitolwonk-ipad-13-dashboard.png` | 2064 × 2752 PNG, RGB color space with alpha; SHA-256 `893f9d310610a690f5d061025005891194bb655d5fa9369b0d06920c859b281f` | Quarantined: retired `CE`, phone framing/double chrome, gutters, and alpha remain. |
+| `review/capitolwonk-pro-monthly-review.jpg` | 2736 × 1260 JPEG, RGB with no alpha; SHA-256 `73a06cfaa6340c42981d9c36d80b377d49441b15122ac82a5c4f560dce7b2939` | Quarantined: unconditional trial copy and no matching redacted product-configuration evidence. |
+
+### October 2–5 safe T09 queue
+
+- Keep the historical files unchanged and excluded from any candidate or upload set.
+- Continue source-only claim, route, and manifest preparation if the November candidate changes during the blackout.
+- Review any new local candidate only when its native/web identities, release phase, route/state provenance, dimensions, color mode, hash, corrected `CAPITOLWONK` wordmark, and privacy scan are recorded in a completed per-image row.
+- Do not depend on Tyler for a device session, protected access, asset selection, upload, or release decision during the blackout.
+
+The first owner-dependent asset step after recovery is to confirm the exact November native/web candidate and sanitized capture state. Then rehearse the four primary screens locally and present the completed manifest rows for review. Upload remains a later, separate exact approval.
+
 ## September 29 two-stage capture reconciliation
 
 The [accepted transition plan](../launch-transition-plan-2026-09-25.md) supersedes the older October schedule below. This manifest now serves two separately approved release decisions: a **November 16, 2026 soft launch** on explicitly identified 119th Congress data and a **January 3, 2027 full launch and 120th Congress cutover**. No final capture, App Store Connect replacement, upload, submission, or release is approved by this reconciliation.
