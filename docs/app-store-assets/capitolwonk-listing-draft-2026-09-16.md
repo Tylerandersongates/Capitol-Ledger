@@ -32,6 +32,8 @@ Prepare a separate 120th Congress copy change only after the constitutional cuto
 
 **Next T09 listing step:** inventory the exact current App Store Connect metadata read-only and compare each remote field with the November proposal above. Then bind the accepted copy and four-screen rehearsal to one pinned native/web candidate; publication and asset upload remain separate exact approvals.
 
+The [October 2 field-by-field comparison worksheet](../app-store-connect-listing-comparison-2026-10-02.md) now provides the read-only remote inventory table, Apple field limits, exact local character/byte counts, claim-evidence gates, and `Pending re-read` stop markers. Complete its remote column after the owner blackout before proposing any listing change.
+
 ## September 18 candidate-state update
 
 The source `93795c7` and PR #31 references in the original status below are historical. T04 now has a locally signed version 1.0 build `2` archive installed/launched on Tyler's iPhone, while later web changes through [PR #44](https://github.com/Tylerandersongates/Capitol-Ledger/pull/44) are live at Production merge `617a474`. No exact combined native/web release candidate or final screenshot set has been selected. The signed archive does not validate later web content or App Store listing copy by itself. T03 verifier processing remains off; T05–T07 device/provider/sandbox evidence and T09 privacy evidence remain open.
