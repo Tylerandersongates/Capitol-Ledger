@@ -117,12 +117,13 @@ async function checkDisabledSurface() {
     delete process.env.PRIVACY_REQUEST_INTAKE_ENABLED;
     delete process.env.PRIVACY_REQUEST_EMAIL;
     runtimeGlobals.React = await import("react");
-    const [{ NextRequest }, { renderToStaticMarkup }, route, { default: PrivacyRequestPage }] = await Promise.all([
+    const [{ NextRequest }, { renderToStaticMarkup }, route, privacyRequestPage] = await Promise.all([
       import("next/server"),
       import("react-dom/server"),
       import("@/app/api/privacy/requests/route"),
       import("@/app/privacy/request/page")
     ]);
+    const PrivacyRequestPage = privacyRequestPage.default;
 
     const expectedPayload = {
       code: "PRIVACY_REQUEST_INTAKE_DISABLED",
@@ -144,9 +145,20 @@ async function checkDisabledSurface() {
 
     const markup = renderToStaticMarkup(await PrivacyRequestPage());
     assert.ok(markup.includes("First-party intake is not active"));
+    assert.ok(markup.includes("Privacy request guidance"));
     assert.ok(markup.includes("verified fallback privacy mailbox has not been published"));
     assert.ok(!markup.includes("Submit privacy request"));
+    assert.ok(!markup.includes("Minimized and account-linked"));
+    assert.ok(!markup.includes("uses your existing account identity"));
     assert.ok(!markup.includes("mailto:"));
+    assert.ok(!privacyRequestPage.metadata.description.includes("Submit and track"));
+
+    process.env.PRIVACY_REQUEST_EMAIL = "privacy@capitolwonk.example";
+    const mailboxMarkup = renderToStaticMarkup(await PrivacyRequestPage());
+    assert.ok(mailboxMarkup.includes("Verified privacy mailbox"));
+    assert.ok(mailboxMarkup.includes("Send your privacy request to:"));
+    assert.ok(mailboxMarkup.includes("mailto:privacy@capitolwonk.example"));
+    assert.ok(!mailboxMarkup.includes("Unable to sign in?"));
   } finally {
     if (originalGate === undefined) delete process.env.PRIVACY_REQUEST_INTAKE_ENABLED;
     else process.env.PRIVACY_REQUEST_INTAKE_ENABLED = originalGate;

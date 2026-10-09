@@ -9,7 +9,7 @@ import { getPrivacyRequestFallbackEmail, isPrivacyRequestIntakeEnabled } from "@
 
 export const metadata = {
   title: `Privacy requests | ${publicBrand.name}`,
-  description: `Submit and track a minimized ${publicBrand.name} privacy request.`
+  description: `Review the available options for a minimized ${publicBrand.name} privacy request.`
 };
 
 export const dynamic = "force-dynamic";
@@ -48,9 +48,13 @@ export default async function PrivacyRequestPage() {
               <LockKeyhole className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div>
-              <h2 className="text-[21px] font-medium leading-tight text-white">Minimized and account-linked</h2>
+              <h2 className="text-[21px] font-medium leading-tight text-white">
+                {intakeEnabled ? "Minimized and account-linked" : "Privacy request guidance"}
+              </h2>
               <p className="mt-2 text-[13px] leading-5 text-white/54">
-                The signed-in lane uses your existing account identity. It does not ask for a password, payment receipt, government ID, or diagnostic report, and it does not send the request to Sentry.
+                {intakeEnabled
+                  ? "The signed-in lane uses your existing account identity. It does not ask for a password, payment receipt, government ID, or diagnostic report, and it does not send the request to Sentry."
+                  : "This page explains which privacy request channel is available in this build. It does not ask for a password, payment receipt, government ID, or diagnostic report, and it does not send the request to Sentry."}
               </p>
             </div>
           </div>
@@ -62,7 +66,13 @@ export default async function PrivacyRequestPage() {
             <p className="mt-2 text-[14px] leading-6 text-white/58">
               The database-backed request form is disabled in this build, so no request can be submitted through it.
             </p>
-            {fallbackEmail ? <EmailFallback email={fallbackEmail} /> : (
+            {fallbackEmail ? (
+              <EmailFallback
+                email={fallbackEmail}
+                heading="Verified privacy mailbox"
+                introduction="Send your privacy request to:"
+              />
+            ) : (
               <p className="mt-3 text-[13px] leading-5 text-[#ffd77a]">
                 A verified fallback privacy mailbox has not been published. This release is not ready to advertise a privacy-request intake channel.
               </p>
@@ -98,14 +108,22 @@ export default async function PrivacyRequestPage() {
   );
 }
 
-function EmailFallback({ email }: { email: string }) {
+function EmailFallback({
+  email,
+  heading = "Unable to sign in?",
+  introduction = "Use the verified privacy mailbox:"
+}: {
+  email: string;
+  heading?: string;
+  introduction?: string;
+}) {
   return (
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
       <div className="flex items-center gap-2 text-[13px] font-semibold text-white">
         <Mail className="h-4 w-4 text-[#ffb12b]" aria-hidden="true" />
-        Unable to sign in?
+        {heading}
       </div>
-      <p className="mt-2 text-[13px] leading-5 text-white/52">Use the verified privacy mailbox:</p>
+      <p className="mt-2 text-[13px] leading-5 text-white/52">{introduction}</p>
       <a href={`mailto:${email}`} className="mt-2 inline-flex break-all text-[14px] font-semibold text-[#ffb12b] underline underline-offset-4">
         {email}
       </a>
