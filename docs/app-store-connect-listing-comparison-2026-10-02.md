@@ -1,6 +1,14 @@
 # CapitolWonk App Store Connect Listing Comparison — October 2, 2026
 
-Status: **source-only comparison worksheet; remote metadata not re-read in this pass.** This worksheet prepares the November 16 soft-launch listing during the October 2–5 owner blackout. Every `Pending re-read` cell is an intentional stop marker. Nothing here changes App Store Connect, approves copy, selects a build, replaces an image, or authorizes upload, submission, or release.
+Status: **source-only comparison worksheet; remote metadata not re-read.** This worksheet originated during the October 2–5 owner blackout and remains the preparation surface for the November 16 soft-launch listing. Every `Pending re-read` cell is an intentional stop marker. Nothing here changes App Store Connect, approves copy, selects a build, replaces an image, or authorizes upload, submission, or release.
+
+## October 10 read-only inventory checkpoint
+
+A fresh read-only navigation to App Store Connect reached the signed-out failure page (`authResult=FAILED`). No app record, localization, listing field, screenshot inventory, tag, or current-version value was visible. No credential or verification code was entered, and no remote setting was saved or changed. The `Current remote value` column therefore remains `Pending re-read` throughout; do not substitute the repository snapshot or proposed copy for the unavailable remote baseline.
+
+Repository review also found the focused disabled-intake copy correction already open as [PR #50](https://github.com/Tylerandersongates/Capitol-Ledger/pull/50). Do not duplicate that implementation in this packet. PR #50 is mergeable but its successful checks are from September 28 against an older base. A new quality run on current `main` reported high-severity transitive audit findings in `brace-expansion@5.0.9`, `source-map-js@1.2.1`, and `sharp@0.35.4`. Dependency remediation and a fresh exact-head run are separate release work; this source-only listing packet does not change the dependency graph.
+
+**Next T09 ledger step:** restore an authenticated App Store Connect session, perform only the checklist below without saving, and record the exact observed values with the read date. Then reconcile that baseline with PR #50's final disposition, the selected November native/web candidate, the privacy comparison, and the capture manifest. The November 16 soft-launch gate remains at risk until the remote baseline, exact candidate, corrected screenshots, and clean release checks are evidenced.
 
 The proposed copy is limited to source-linked 119th Congress bills, votes, and member records. It excludes alerts, official scores, Daily Brief video, AI, subscription offers, in-app deletion, first-party privacy operations, and real-time freshness claims until the exact candidate proves those capabilities and their release evidence closes.
 
