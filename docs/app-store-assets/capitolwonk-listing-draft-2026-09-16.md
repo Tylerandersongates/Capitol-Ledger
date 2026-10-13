@@ -68,7 +68,7 @@ PR #30 corrected support copy for the dedicated privacy mailbox and revised the 
 | Support URL | `https://www.capitolwonk.com/support` | Canonical domain from project context; verify the live response and copy again before remote publication. |
 | Privacy Policy URL | `https://www.capitolwonk.com/privacy` | Verify the live response, policy, mailbox procedure, and App Privacy evidence before remote publication. |
 | What's New / release notes | Pending exact build and verified changes | Do not reuse historical TestFlight or feature claims. |
-| App Review notes | Pending exact signed/device, purchase, privacy, and deletion evidence | The older setup packet includes claims that are not launch-verified under the current default-off boundary. |
+| App Review notes | Assemble from the [October 12 review-information worksheet](../app-store-review-information-worksheet-2026-10-12.md) after exact signed/device, purchase, privacy, and deletion evidence closes | The worksheet keeps protected contact and demo-account values out of tracked source and preserves explicit stop markers until exact-candidate evidence is available. |
 
 Privacy-rights assistance should point to `/privacy/request`, which exposes the configured dedicated mailbox. Do not put the mailbox address, a private support case, or reviewer credentials in tracked listing copy. The provisional fourteen-type App Privacy matrix is in the [release-assets packet](../app-privacy-release-assets-prep-2026-09-12.md); these copy drafts do not approve its answers.
 
