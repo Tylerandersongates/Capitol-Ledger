@@ -16,6 +16,8 @@ The [September 30 field-by-field comparison worksheet](app-store-connect-privacy
 
 The [October 1 asset reconciliation](app-store-assets/capitolwonk-capture-manifest-2026-09-13.md#october-1-pre-blackout-asset-reconciliation) revalidated the three historical image hashes and technical properties, confirmed that no November or January candidate image exists locally, and records the owner-independent T09 queue for the October 2–5 blackout. All three historical images remain quarantined.
 
+The [October 13 corrected-wordmark reconciliation](app-store-assets/corrected-wordmark-asset-reconciliation-2026-10-13.md) extends that quarantine across repository image surfaces. It confirms that the active runtime and native icon paths use the corrected `CapitolWonk` identity while five unreferenced public mockups still contain the retired `CAPITOL LEDGER` name and old promotional claims. Those public mockups, the beta-tester guide images, and the historical App Store images are excluded from listing and reviewer evidence unless a later exact-candidate review admits them.
+
 **Next T09 ledger step:** complete the worksheet's current App Store Connect column from a fresh read-only session, without publishing it. Then reconcile the selected archive privacy report, real native Sentry payload evidence, enabled server/provider paths, and mailbox operating procedure into that sheet. Screenshot rehearsal follows after the November candidate and its public states are pinned.
 
 ## September 18 continuation — read-only privacy evidence

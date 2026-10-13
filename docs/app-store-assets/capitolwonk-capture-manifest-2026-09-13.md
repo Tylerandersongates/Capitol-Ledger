@@ -1,5 +1,9 @@
 # CapitolWonk App Store Capture Manifest — September 13, 2026
 
+## October 13 corrected-wordmark asset reconciliation
+
+The [repository-wide corrected-wordmark reconciliation](corrected-wordmark-asset-reconciliation-2026-10-13.md) records the active code-rendered `CapitolWonk` identity, runtime logo, native AppIcon set, and non-listing image surfaces. It also quarantines five unreferenced public mockups that retain the retired `CAPITOL LEDGER` name and old promotional claims. No image was changed, selected, deleted, or uploaded. Apply that admission rule before adding any November or January candidate row below.
+
 ## October 1 pre-blackout asset reconciliation
 
 This source-only checkpoint satisfies the T09 handoff needed before the October 2–5 owner blackout. No App Store Connect asset, build, questionnaire answer, provider setting, or release state changed.
