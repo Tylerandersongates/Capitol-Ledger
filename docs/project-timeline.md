@@ -1,5 +1,18 @@
 # CapitolWonk — Current Timeline and Task Ledger
 
+## September 25 launch rebaseline — November 16 soft launch, January 3 full launch
+
+Tyler replaced the October 30 single-launch target with a two-stage release: **November 16, 2026 is the controlled post-election soft launch**, and **January 3, 2027 is the full public launch and 120th Congress cutover**. The November date is thirteen days after the November 3 federal general election. The interval after soft launch is for observed issue repair, operational hardening, and source-backed 120th Congress preparation. It is not permission to bypass current trust defects or expand scope indiscriminately. The full phase contract and cutover rules are in the [September 25 transition plan](launch-transition-plan-2026-09-25.md).
+
+The September 18 audit still defines the immediate repair baseline: Alerts truth first, then Live Docket freshness/sponsor/sync integrity, then Civic Activity truth and persistence, followed by the remaining official-contact, search, browser/API security, accessibility, and release evidence. The extra calendar time lowers schedule compression; it does not convert an unverified candidate into a releasable one. T03/T05/T07/T09–T11, account deletion, privacy, billing, signed-device, App Review, and exact release approvals remain open as previously recorded unless later evidence closes them.
+
+| Target | Meaning | Go/no-go boundary |
+| --- | --- | --- |
+| **November 16, 2026** | Soft launch / early access on truthful 119th Congress data, with wider feedback and operational observation. | Exact build/audience approval, current P0/P1 closure, signed-device and release evidence, support/monitoring/rollback readiness, and explicit 119th Congress labeling. |
+| **January 3, 2027** | Full launch and 120th Congress cutover, with the active-Congress flip no earlier than the constitutional noon Eastern term boundary. | Separate exact approval after official feeds are observable and source-backed roster/district/congress data, saved-identity continuity, empty-state behavior, migration/cutover rehearsal, freeze, regression, and rollback evidence pass. |
+
+**Revised working sequence:** now–November 15 closes release gates and rehearses the new-Congress transition; November 16 is the soft-launch decision; November 17–December 13 is stabilization; December 14–23 is 120th Congress readiness; December 24–January 2 is cutover freeze; January 3 is the separately approved full-launch decision. Older October 30 schedules remain historical evidence only.
+
 ## September 15 launch-priority and credential-containment correction
 
 This section supersedes the earlier September 15 principal-ACL next-dependency instruction.
