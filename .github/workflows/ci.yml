@@ -63,8 +63,8 @@ jobs:
       - name: Production dependency audit
         run: pnpm run audit:prod
 
-      - name: Audit exception enforcement regression tests
-        run: node --test scripts/check-braces-audit-exception.test.mjs
+      - name: Audit and billing CI gate regression tests
+        run: node --test scripts/check-braces-audit-exception.test.mjs scripts/check-billing-ci-coverage.test.mjs
 
       - name: Verify approved braces mitigation and development scope
         run: node scripts/check-braces-audit-exception.mjs --preflight "${{ runner.temp }}/capitolwonk-braces-audit"
