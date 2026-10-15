@@ -4,6 +4,8 @@ Status: **source-only comparison worksheet; remote answers not re-read in this p
 
 This worksheet applies to the **November 16, 2026 soft-launch candidate**. Re-run it for the January 3, 2027 full-launch candidate only if the selected archive, SDKs, providers, data purposes, account behavior, or runtime collection changes. A 119th-to-120th Congress data cutover alone does not require a privacy-answer change.
 
+The [October 15 read-only access checkpoint](app-store-connect-read-only-inventory-gate-2026-10-15.md) reached App Store Connect's login route and exposed no questionnaire values. The remote-answer cells remain `Pending re-read`; complete them during the checkpoint's single read-only inventory after Tyler restores the session interactively.
+
 ## Evidence boundary
 
 - The [September 10 correction packet](app-store-privacy-correction-2026-09-10.md) records the nine-type remote snapshot and the provisional five additions.

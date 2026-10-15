@@ -6,6 +6,8 @@ Apple treats App Review information as required version metadata and requires re
 
 Repository planning anchor: `main` at `7ca64a1e95bbcdcb645166746f39d3be268fff12`. This source anchor is not the November release candidate and does not represent signed-device or purchase proof.
 
+The [October 15 read-only access checkpoint](app-store-connect-read-only-inventory-gate-2026-10-15.md) reached App Store Connect's login route and exposed no review-information fields. Inventory the existing remote state during the checkpoint's single read-only pass after Tyler restores the session interactively; keep every protected value out of tracked evidence.
+
 ## Protected values boundary
 
 Do not place any reviewer name, phone number, email address, demo-account username, password, Apple identifier, transaction identifier, private support reference, or attachment containing protected values in Git, a pull request, a screenshot manifest, or chat. Enter those values only in the protected App Store Connect fields after the exact candidate and submission are approved.
