@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "CW-EVIDENCE-CI475-2026-10-15",
+  "exceptionId": "CW-SEC-2026-10-BRACES",
+  "purpose": "Historical Linux evidence and read-only artifact review. This document does not alter exception policy, approve a later commit, or authorize merge, deployment or protected runtime activation.",
+  "pullRequest": {
+    "url": "https://github.com/Tylerandersongates/Capitol-Ledger/pull/60",
+    "stateAtReview": "open draft; unmerged; auto-merge disabled",
+    "validatedHead": "a1d58fede94c273ae1f8113911a35b7fd7491382",
+    "validatedBase": "7ca64a1e95bbcdcb645166746f39d3be268fff12",
+    "reviewedChangedPaths": 11
+  },
+  "linuxRun": {
+    "url": "https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/38809829645",
+    "runId": 38809829645,
+    "runNumber": 475,
+    "attempt": 1,
+    "jobId": 116679954766,
+    "event": "pull_request",
+    "platform": "Linux; Ubuntu hosted runner",
+    "conclusion": "success",
+    "testedSyntheticMergeCommit": "a43c53f22f9ed5e102489a9bfb5e03c7a45ba61d",
+    "treeSharedWithValidatedHead": "b2b6c474d02597f4fbf62cf0aaa15f1cf79c8739",
+    "syntheticCommitMeaning": "GitHub's test merge ref had the same tree as the validated head; it is not a merge of PR #60 into main.",
+    "regressions": { "tests": 163, "passed": 163, "failed": 0, "skipped": 0 },
+    "staticPagesBuilt": 57,
+    "otherPassedSteps": [
+      "Frozen dependency installation and local runtime check",
+      "Strict TypeScript, member history, brand, lint and feedback checks",
+      "Production dependency audit",
+      "Installed mitigation/development-scope preflight",
+      "Release-source safeguards and pre-migration Stripe compatibility",
+      "Final unfiltered full audit with temporary exception enforcement",
+      "Evidence artifact upload"
+    ]
+  },
+  "retainedArtifact": {
+    "url": "https://github.com/Tylerandersongates/Capitol-Ledger/actions/runs/38809829645/artifacts/12006984144",
+    "artifactId": 12006984144,
+    "name": "braces-audit-38809829645-1",
+    "sizeBytes": 5198,
+    "sha256": "13c94ed11bd6580b4bb5f3e5ada684b2e4808d62972a82eec1b539059196bb0b",
+    "createdAtUtc": "2026-10-15T21:28:50Z",
+    "expiresAtUtc": "2026-11-14T21:28:50Z",
+    "files": [
+      "braces-latest.raw.json",
+      "braces-latest.stderr.txt",
+      "decision.json",
+      "full-audit.raw.json",
+      "full-audit.stderr.txt",
+      "preflight.json"
+    ],
+    "review": "The ZIP was retrieved and inspected in memory during the read-only PR #60 review. Its SHA-256 matched GitHub's artifact digest; all six files were inspected. No artifact data was used as executable instructions."
+  },
+  "preflightEvidence": {
+    "startedAtUtc": "2026-10-15T21:26:52.127Z",
+    "scopeFingerprint": "b02f4a90940679b06f67c0f24f18c1bb4f8b490c64bc107fa800832c05f91c02",
+    "reviewedDevelopmentPaths": 4,
+    "productionDependencyPaths": "The unchanged gate independently required zero braces production paths; audit metadata alone was not used to establish scope.",
+    "mitigationProbeCases": 31,
+    "ordinarySyntax": "pass",
+    "independentReview": "All 11 changed Git blob IDs matched the local candidate. A read-only recomputation of the application-source, exception-record and enforcement fingerprint matched the retained preflight."
+  },
+  "auditDecision": {
+    "checkedAtUtc": "2026-10-15T21:28:50.004Z",
+    "rawCounts": { "info": 0, "low": 0, "moderate": 4, "high": 1, "critical": 0 },
+    "acceptedHigh": 1,
+    "acceptedAdvisory": "GHSA-vfj7-8cjw-p6xm",
+    "unacceptedHigh": 0,
+    "critical": 0,
+    "mutedFindings": 0,
+    "disposition": "mitigated-still-flagged",
+    "rawFullAuditExit": "The successful unchanged enforcement accepts exit 1 only after validating the unfiltered findings; the raw command exit is not a separate artifact field.",
+    "productionAudit": "The separate job log reported three moderate findings and no high/critical; production audit JSON is not part of this artifact.",
+    "upstreamLatestAtRun": "3.0.3",
+    "upstreamObservationLimit": "This is the retained npm observation at run time, not a fresh registry lookup or a claim that no newer release exists today.",
+    "remainingModerateAdvisories": [
+      { "module": "fast-uri", "advisory": "GHSA-hrr3-gc8f-f4qj" },
+      { "module": "postcss-selector-parser", "advisory": "GHSA-rj75-hqrm-r3gf" },
+      { "module": "next", "advisory": "GHSA-4jqv-mc3x-m676" },
+      { "module": "next", "advisory": "GHSA-mcj8-r9mp-w47p" }
+    ],
+    "cleanAudit": false
+  },
+  "traceEvidence": {
+    "tracesCheckedByFinalGate": 80,
+    "gateRequirements": "The unchanged final gate required fresh Linux build evidence and rejected reviewed build tools in production trace entries.",
+    "rawTraceFilesRetained": false,
+    "independentRawTraceReinspectionPossibleFromThisArtifact": false,
+    "limitation": "decision.json retains the count and successful gate disposition, not the 80 underlying trace files. The read-only review confirmed the enforcement code and job success; it did not independently re-enumerate absent raw traces. No additional trace-retention implementation is proposed here."
+  },
+  "unchangedBoundaries": {
+    "exceptionReviewByUtc": "2026-10-23T07:00:00.000Z",
+    "exceptionExpiresAtUtc": "2026-10-30T07:00:00.000Z",
+    "deadlineMeaning": "Mandatory review by end of October 22 Pacific; absolute expiry end of October 29 Pacific. No automatic renewal or extension. The artifact retention expiry is unrelated to exception validity.",
+    "ciSecurityGate": "Keep the fail-closed, exception-aware CI gate unchanged, including graph/installed-byte checks, fresh traces, upstream check, unfiltered audit, approval window and unrelated high/critical rejection.",
+    "releaseCandidateSecurityGate": "Keep raw audit:prod, audit:full and strict release-candidate:check unchanged. Raw audit:full remains a release-candidate blocker while the high finding remains; CI exception acceptance is not release clearance.",
+    "deployment": "Keep the branch-only Vercel no-deploy rule and draft/unmerged state. No production deployment-state re-audit was performed during the retained-evidence review."
+  },
+  "remainingWork": [
+    "Review the temporary exception by its existing deadline and replace it with validated official remediation or a separately reviewed alternative; never silently renew or broaden it.",
+    "Triage the four moderate findings under a separate bounded proposal; do not expand this documentation patch into dependency changes.",
+    "Any later application/publication of this narrative reconciliation needs its own approval and fresh CI because the exception record is fingerprinted. CI #475 remains historical evidence for a1d58fe only.",
+    "Merge, deployment, protected runtime activation and release remain separately gated."
+  ]
+}
