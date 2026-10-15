@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "fs";
+import { hasBillingCiCoverage } from "./check-billing-ci-coverage.mjs";
 
 loadLocalEnv();
 
@@ -506,13 +507,7 @@ function checkAppStoreTestCoverage() {
     stateFixtures.includes("Notification receipts must accept only normalized SHA-256 hashes") &&
     verifierFixtures.includes("A fifth verifier operation must fail retryably without entering an in-memory queue") &&
     verifierFixtures.includes("Missing or malformed nested App Store status data must fail closed");
-  const ciCoverage =
-    packageManifest.includes('"release-source:check"') &&
-    packageManifest.includes('"release-candidate:check"') &&
-    packageManifest.includes("pnpm run audit:prod && pnpm run audit:full && BILLING_REQUIRE_APP_STORE=true TESTFLIGHT_REQUIRE_READY=true pnpm run release-source:check") &&
-    workflow.includes("pnpm run audit:prod") &&
-    workflow.includes("pnpm run audit:full") &&
-    workflow.includes("pnpm run release-source:check");
+  const ciCoverage = hasBillingCiCoverage(packageManifest, workflow);
   const executionCoverage =
     qaMatrix.includes("Purchase and identity") &&
     qaMatrix.includes("Lifecycle and current-state reconciliation") &&
