@@ -126,6 +126,9 @@
     "typescript": "^5.4.5"
   },
   "pnpm": {
+    "patchedDependencies": {
+      "braces@3.0.3": "patches/braces@3.0.3.patch"
+    },
     "overrides": {
       "next@15.5.25>postcss": "8.5.25",
       "brace-expansion@1.1.18": "1.1.21",

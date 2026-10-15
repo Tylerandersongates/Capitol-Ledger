@@ -63,8 +63,11 @@ jobs:
       - name: Production dependency audit
         run: pnpm run audit:prod
 
-      - name: Full dependency audit
-        run: pnpm run audit:full
+      - name: Audit exception enforcement regression tests
+        run: node --test scripts/check-braces-audit-exception.test.mjs
+
+      - name: Verify approved braces mitigation and development scope
+        run: node scripts/check-braces-audit-exception.mjs --preflight "${{ runner.temp }}/capitolwonk-braces-audit"
 
       - name: Release source safeguards
         run: pnpm run release-source:check
@@ -74,3 +77,15 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      - name: Full raw audit with narrowly scoped temporary exception
+        run: node scripts/check-braces-audit-exception.mjs --finish "${{ runner.temp }}/capitolwonk-braces-audit"
+
+      - name: Retain raw audit and exception evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: braces-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/capitolwonk-braces-audit/
+          if-no-files-found: warn
+          retention-days: 30
