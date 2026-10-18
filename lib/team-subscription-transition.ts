@@ -7,7 +7,6 @@ import {
 } from "@/lib/account-database";
 import {
   assertAccountMemoryPersistenceAllowed,
-  fallbackUnlessAccountPersistenceUnavailable,
   isAccountPersistenceUnavailableError,
   throwAccountPersistenceUnavailable
 } from "@/lib/account-persistence-safety";
@@ -23,13 +22,7 @@ import {
   readAppStoreSubscriptionState
 } from "@/lib/billing/app-store-state";
 import { completedAppStoreTeamSeatReleaseResult } from "@/lib/billing/team-seat-release-result";
-import {
-  cancelStripeSubscriptionAtPeriodEnd,
-  readStripeSubscriptionDetails,
-  resumeStripeSubscriptionFromPeriodEnd
-} from "@/lib/billing/stripe";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
-import { syncStripeSubscriptionForAccount } from "@/lib/server-account-subscription";
 import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
@@ -109,10 +102,6 @@ function isActivePaidSubscription(subscription: Pick<AccountSubscriptionSnapshot
   return isActiveProSubscription(subscription) || isActiveTeamSubscription(subscription);
 }
 
-function canUpdateStripeSubscription(subscription: AccountSubscriptionSnapshot) {
-  return subscription.provider === "stripe" && Boolean(subscription.providerSubscriptionId?.startsWith("sub_"));
-}
-
 function pausedPersonalSubscription(previous: AccountSubscriptionSnapshot): AccountSubscriptionSnapshot {
   return normalizeAccountSubscription({
     cycle: previous.cycle,
@@ -122,7 +111,7 @@ function pausedPersonalSubscription(previous: AccountSubscriptionSnapshot): Acco
     providerEntitlementId: teamPausedProEntitlementId,
     providerSubscriptionId: previous.providerSubscriptionId,
     seatCount: undefined,
-    status: previous.provider === "stripe" ? "canceled" : "active",
+    status: "active",
     updatedAt: new Date().toISOString()
   });
 }
@@ -136,7 +125,7 @@ function checkoutRequiredSubscription(previous: AccountSubscriptionSnapshot): Ac
     providerEntitlementId: "capitol-ledger-free",
     providerSubscriptionId: previous.providerSubscriptionId,
     seatCount: undefined,
-    status: previous.provider === "stripe" ? "canceled" : "active",
+    status: "active",
     updatedAt: new Date().toISOString()
   });
 }
@@ -182,7 +171,9 @@ async function ensurePauseSchema() {
 async function readActivePauseRecord(userId: string): Promise<PauseRecord | null> {
   if (!hasDatabaseUrl()) {
     assertAccountMemoryPersistenceAllowed("readActiveTeamSubscriptionPause");
-    return pauseStore.get(userId) ?? null;
+    const record = pauseStore.get(userId) ?? null;
+    if (record) normalizeAccountSubscription(record.previousSubscription);
+    return record;
   }
 
   await ensurePauseSchema();
@@ -218,6 +209,7 @@ async function readActivePauseRecord(userId: string): Promise<PauseRecord | null
 }
 
 async function writeActivePauseRecord(userId: string, email: string, input: PauseRecord) {
+  normalizeAccountSubscription(input.previousSubscription);
   if (!hasDatabaseUrl()) {
     assertAccountMemoryPersistenceAllowed("writeActiveTeamSubscriptionPause");
     pauseStore.set(userId, input);
@@ -291,9 +283,7 @@ async function readPersonalSubscription(userId: string) {
   const subscription = hasDatabaseUrl()
     ? ((await readSubscriptionFromDatabase(userId)) ?? normalizeAccountSubscription())
     : getAccountSubscription(userId);
-  return syncStripeSubscriptionForAccount(userId, subscription).catch((error) =>
-    fallbackUnlessAccountPersistenceUnavailable(error, subscription)
-  );
+  return subscription;
 }
 
 async function persistSubscription(userId: string, subscription: AccountSubscriptionSnapshot) {
@@ -349,8 +339,6 @@ async function pauseDatabasePersonalProSubscriptionForTeamSeat(
 ): Promise<TeamSubscriptionPauseResult> {
   await ensurePauseSchema();
 
-  let stripeCancellationAttempted: string | null = null;
-  let stripeCancellationError: unknown;
   try {
     return await getPrisma().$transaction(async (transaction) => {
       const lockedRows = await transaction.$queryRaw<Array<{ userId: string; workspaceId: string }>>`
@@ -412,16 +400,6 @@ async function pauseDatabasePersonalProSubscriptionForTeamSeat(
         };
       }
 
-      if (!existingPause && canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
-        stripeCancellationAttempted = previousSubscription.providerSubscriptionId;
-        try {
-          await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId);
-        } catch (error) {
-          stripeCancellationError = error;
-          throw error;
-        }
-      }
-
       const previousSubscriptionJson = JSON.stringify(previousSubscription);
       await transaction.$executeRaw`
         WITH updated AS (
@@ -475,12 +453,6 @@ async function pauseDatabasePersonalProSubscriptionForTeamSeat(
       };
     });
   } catch (error) {
-    if (stripeCancellationAttempted) {
-      await resumeStripeSubscriptionFromPeriodEnd(stripeCancellationAttempted).catch(() => {
-        console.error("[team-subscription] failed to compensate an uncommitted Stripe pause.");
-      });
-    }
-    if (stripeCancellationError) throw stripeCancellationError;
     throwAccountPersistenceUnavailable("pauseDatabasePersonalProSubscriptionForTeamSeat", error);
   }
 }
@@ -506,10 +478,6 @@ export async function rememberPersonalProSubscriptionForTeamOwnerUpgrade({
     };
   }
 
-  if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
-    await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId).catch(() => null);
-  }
-
   await writeActivePauseRecord(userId, email, {
     previousSubscription,
     status: "active",
@@ -530,10 +498,6 @@ export async function cancelPreviousTeamSubscriptionForProCheckout({
       paused: false,
       subscription: previousSubscription ?? undefined
     };
-  }
-
-  if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
-    await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId).catch(() => null);
   }
 
   return {
@@ -560,10 +524,6 @@ export async function pausePersonalProSubscriptionForTeamSeat(input: PauseInput)
       paused: false,
       subscription: personalSubscription
     };
-  }
-
-  if (!existingPause && canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
-    await cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId);
   }
 
   await writeActivePauseRecord(accountUserId, input.email, {
@@ -600,49 +560,6 @@ export async function restorePausedPersonalSubscriptionForReleasedTeamSeat({
   }
 
   const previousSubscription = pauseRecord.previousSubscription;
-
-  if (canUpdateStripeSubscription(previousSubscription) && previousSubscription.providerSubscriptionId) {
-    let stripeSubscription;
-    try {
-      stripeSubscription = await resumeStripeSubscriptionFromPeriodEnd(previousSubscription.providerSubscriptionId);
-    } catch {
-      await persistSubscription(userId, checkoutRequiredSubscription(previousSubscription));
-      await markPauseRecordStatus(userId, "checkout_required");
-      return {
-        checkoutRequired: true,
-        restored: false
-      };
-    }
-
-    const details = readStripeSubscriptionDetails(stripeSubscription);
-
-    if (details.plan !== "pro" || !isActiveProSubscription(details)) {
-      await persistSubscription(userId, checkoutRequiredSubscription(previousSubscription));
-      await markPauseRecordStatus(userId, "checkout_required");
-      return {
-        checkoutRequired: true,
-        restored: false
-      };
-    }
-
-    const restoredSubscription = await persistSubscription(
-      userId,
-      normalizeAccountSubscription({
-        ...previousSubscription,
-        cycle: details.cycle,
-        plan: "pro",
-        seatCount: undefined,
-        status: details.status
-      })
-    );
-    await markPauseRecordStatus(userId, "restored");
-
-    return {
-      checkoutRequired: false,
-      restored: true,
-      subscription: restoredSubscription
-    };
-  }
 
   if (previousSubscription.provider === "app-store") {
     for (let attempt = 0; attempt < 3; attempt += 1) {

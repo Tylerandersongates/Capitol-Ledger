@@ -1,13 +1,5 @@
 import { clearAccountSubscriptionMemory, normalizeAccountSubscription } from "@/lib/account-subscription";
 import {
-  detachStripeSubscriptionFromDeletedAccount,
-  isStripeResourceMissingError,
-  isTerminalStripeSubscriptionError,
-  readStripeCustomerSubscriptionIds,
-  readStripeSubscriptionDetails,
-  resumeStripeSubscriptionFromPeriodEnd
-} from "@/lib/billing/stripe";
-import {
   reconcileAppStoreSubscription,
   type CanonicalAppStoreSubscription
 } from "@/lib/billing/app-store-server";
@@ -22,7 +14,6 @@ import { runPrivacyRetentionSweep, type PrivacyRetentionRun } from "@/lib/privac
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 export const accountDeletionCleanupKinds = {
-  cancelDeletedAccountStripeSubscription: "cancel_deleted_account_stripe_subscription",
   restoreTeamMemberSubscription: "restore_team_member_subscription"
 } as const;
 
@@ -37,23 +28,13 @@ type CleanupJobRow = {
   payload: unknown;
 };
 
-type CleanupStripeDetails = Pick<AccountSubscriptionSnapshot, "cycle" | "plan" | "status">;
-
 export type AccountDeletionCleanupDependencies = {
   accountExists: (userId: string) => Promise<boolean>;
-  detachStripeSubscription: (subscriptionId: string) => Promise<unknown>;
   persistMemberSubscription: (userId: string, subscription: AccountSubscriptionSnapshot) => Promise<void>;
-  readStripeCustomerSubscriptionIds: (customerId: string) => Promise<string[]>;
   reconcileAppStoreSubscriptionForMember: (userId: string) => Promise<void>;
-  resumeStripeSubscription: (subscriptionId: string) => Promise<CleanupStripeDetails>;
 };
 
 export type AccountDeletionCleanupJobInput = Pick<CleanupJobRow, "kind" | "payload">;
-
-type DeletedAccountStripePayload = {
-  customerId?: string;
-  subscriptionId?: string;
-};
 
 type TeamMemberRestorePayload = {
   previousSubscription: Partial<AccountSubscriptionSnapshot>;
@@ -69,19 +50,6 @@ export type AccountDeletionCleanupRun = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readDeletedAccountStripePayload(value: unknown): DeletedAccountStripePayload | null {
-  if (!isRecord(value)) return null;
-  const subscriptionId = typeof value.subscriptionId === "string" && value.subscriptionId.startsWith("sub_")
-    ? value.subscriptionId
-    : undefined;
-  const customerId = typeof value.customerId === "string" && value.customerId.startsWith("cus_")
-    ? value.customerId
-    : undefined;
-  if (!subscriptionId && !customerId) return null;
-
-  return { customerId, subscriptionId };
 }
 
 function readTeamMemberRestorePayload(value: unknown): TeamMemberRestorePayload | null {
@@ -101,7 +69,7 @@ function checkoutRequiredSubscription(previous: AccountSubscriptionSnapshot): Ac
     providerCustomerId: previous.providerCustomerId,
     providerEntitlementId: "capitol-ledger-free",
     providerSubscriptionId: previous.providerSubscriptionId,
-    status: previous.provider === "stripe" ? "canceled" : "active"
+    status: "active"
   });
 }
 
@@ -207,33 +175,6 @@ async function restoreTeamMemberSubscription(
     return;
   }
 
-  if (previous.provider === "stripe" && previous.providerSubscriptionId?.startsWith("sub_")) {
-    let details: CleanupStripeDetails;
-    try {
-      details = await dependencies.resumeStripeSubscription(previous.providerSubscriptionId);
-    } catch (error) {
-      if (!isTerminalStripeSubscriptionError(error)) throw error;
-      await dependencies.persistMemberSubscription(payload.userId, checkoutRequiredSubscription(previous));
-      return;
-    }
-    if (details.plan !== "pro" || details.status === "canceled") {
-      await dependencies.persistMemberSubscription(payload.userId, checkoutRequiredSubscription(previous));
-      return;
-    }
-
-    await dependencies.persistMemberSubscription(
-      payload.userId,
-      normalizeAccountSubscription({
-        ...previous,
-        cycle: details.cycle,
-        plan: "pro",
-        seatCount: undefined,
-        status: details.status
-      })
-    );
-    return;
-  }
-
   await dependencies.persistMemberSubscription(
     payload.userId,
     checkoutRequiredSubscription(previous)
@@ -242,40 +183,14 @@ async function restoreTeamMemberSubscription(
 
 const defaultCleanupDependencies: AccountDeletionCleanupDependencies = {
   accountExists,
-  detachStripeSubscription: detachStripeSubscriptionFromDeletedAccount,
   persistMemberSubscription,
-  readStripeCustomerSubscriptionIds,
-  reconcileAppStoreSubscriptionForMember,
-  resumeStripeSubscription: async (subscriptionId) => {
-    const stripeSubscription = await resumeStripeSubscriptionFromPeriodEnd(subscriptionId);
-    return readStripeSubscriptionDetails(stripeSubscription);
-  }
+  reconcileAppStoreSubscriptionForMember
 };
 
 export async function executeAccountDeletionCleanupJob(
   job: AccountDeletionCleanupJobInput,
   dependencies: AccountDeletionCleanupDependencies = defaultCleanupDependencies
 ) {
-  if (job.kind === accountDeletionCleanupKinds.cancelDeletedAccountStripeSubscription) {
-    const payload = readDeletedAccountStripePayload(job.payload);
-    if (!payload) throw new Error("Invalid deleted-account Stripe cleanup payload.");
-    const customerSubscriptionIds = payload.customerId
-      ? await dependencies.readStripeCustomerSubscriptionIds(payload.customerId)
-      : [];
-    const subscriptionIds = Array.from(new Set([
-      ...(payload.subscriptionId ? [payload.subscriptionId] : []),
-      ...customerSubscriptionIds
-    ]));
-    for (const subscriptionId of subscriptionIds) {
-      try {
-        await dependencies.detachStripeSubscription(subscriptionId);
-      } catch (error) {
-        if (!isStripeResourceMissingError(error)) throw error;
-      }
-    }
-    return;
-  }
-
   if (job.kind === accountDeletionCleanupKinds.restoreTeamMemberSubscription) {
     const payload = readTeamMemberRestorePayload(job.payload);
     if (!payload) throw new Error("Invalid Team-member restoration payload.");

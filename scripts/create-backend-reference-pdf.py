@@ -166,7 +166,7 @@ def main():
     )
 
     recommendation = Table(
-        [[p("Recommended Starter Stack", styles["Callout"])], [p("Vercel + Neon Postgres + Resend + Stripe + Vercel Cron + Upstash Redis + OpenAI API + Congress.gov API + Vercel Observability.", styles["Body"])]],
+        [[p("Recommended Starter Stack", styles["Callout"])], [p("Vercel + Neon Postgres + Resend + App Store in-app purchase + Vercel Cron + Upstash Redis + OpenAI API + Congress.gov API + Vercel Observability.", styles["Body"])]],
         colWidths=[7.25 * inch],
     )
     recommendation.setStyle(
@@ -191,7 +191,7 @@ def main():
         ["Database alternative", "Supabase Postgres", "Good dashboard and backup tooling if you want a broader backend platform."],
         ["Auth email", "Resend", "Simple developer email API for verification, reset links, and future briefs."],
         ["Email alternative", "Postmark", "Strong transactional reliability if deliverability becomes the top priority."],
-        ["Subscriptions", "Stripe", "Already matches CapitolWonk checkout and webhook architecture."],
+        ["Subscriptions", "App Store in-app purchase", "Use the native store billing path; no web checkout."],
         ["Weekly Brief schedule", "Vercel Cron", "Simplest if hosting the app on Vercel."],
         ["Rate limiting", "Upstash Redis", "Good fit for auth, password reset, checkout, AI, and public API abuse protection."],
         ["AI analysis", "OpenAI API", "Best fit for bill summaries, policy lens, and plain-language pros/cons."],
@@ -310,8 +310,6 @@ def main():
                 "Supabase backups: https://supabase.com/docs/guides/platform/backups",
                 "Resend docs: https://resend.com/docs",
                 "Postmark webhooks: https://postmarkapp.com/developer/api/webhooks-api",
-                "Stripe Checkout Sessions: https://docs.stripe.com/api/checkout/sessions",
-                "Stripe subscription webhooks: https://docs.stripe.com/billing/subscriptions/webhooks",
                 "Congress.gov API: https://api.congress.gov/",
                 "Upstash rate limiting: https://upstash.com/docs/oss/sdks/ts/ratelimit/overview",
                 "OpenAI API pricing: https://openai.com/api/pricing/",

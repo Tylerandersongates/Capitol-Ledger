@@ -125,3 +125,15 @@ for (const [name, edit] of [
     assert.ok(result.stdout.includes(`FAIL ${gate}`));
   });
 }
+
+test("retirement regression command cannot be omitted", () => {
+  assert.equal(hasBillingCiCoverage(editedManifest(m => delete m.scripts["stripe-retirement:check"]), workflow), false);
+  assert.equal(hasBillingCiCoverage(editedManifest(m => { m.scripts["billing:check"] = m.scripts["billing:check"].replace(" && pnpm run stripe-retirement:check", ""); }), workflow), false);
+});
+
+test("retirement fixtures have exactly one release-source entry", () => {
+  const scripts = JSON.parse(manifest).scripts;
+  assert.equal(scripts["release-source:check"].split(" && ").filter(command => command === "pnpm run billing:check").length, 1);
+  assert.equal(scripts["billing:check"].split(" && ").filter(command => command === "pnpm run stripe-retirement:check").length, 1);
+  assert.equal(workflow.includes("run: pnpm run stripe-retirement:check"), false);
+});

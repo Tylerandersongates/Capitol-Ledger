@@ -6,7 +6,6 @@ import {
 } from "@/lib/account-persistence-safety";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 import { normalizeAccountSubscription } from "@/lib/account-subscription";
-import { syncStripeSubscriptionForAccount } from "@/lib/server-account-subscription";
 import { normalizeTeamSeatCount } from "@/lib/subscription-seat-count";
 import {
   pausePersonalProSubscriptionForTeamSeat,
@@ -324,17 +323,16 @@ function normalizeOwnerSubscription(record: DbOwnerSubscription | undefined) {
 
   if (!record) return fallback;
 
-  return {
+  return normalizeAccountSubscription({
     ...fallback,
     plan: record.plan === "team" || record.plan === "pro" ? record.plan : "free",
-    provider:
-      record.provider === "stripe" || record.provider === "revenuecat" || record.provider === "app-store" ? record.provider : "demo",
+    provider: record.provider as AccountSubscriptionSnapshot["provider"],
     providerCustomerId: record.providerCustomerId ?? undefined,
     providerEntitlementId: record.providerEntitlementId ?? undefined,
     providerSubscriptionId: record.providerSubscriptionId ?? undefined,
     seatCount: record.seatCount ?? undefined,
     status: record.status === "trialing" || record.status === "past_due" || record.status === "canceled" ? record.status : "active"
-  } satisfies AccountSubscriptionSnapshot;
+  });
 }
 
 function sortMembers(members: TeamWorkspaceMember[]) {
@@ -596,9 +594,7 @@ async function readOwnerTeamSeatCount(ownerUserId: string, client: RawQueryClien
     LIMIT 1
   `;
   const ownerSubscription = normalizeOwnerSubscription(records[0]);
-  const subscription = await syncStripeSubscriptionForAccount(ownerUserId, ownerSubscription).catch((error) =>
-    fallbackUnlessAccountPersistenceUnavailable(error, ownerSubscription)
-  );
+  const subscription = ownerSubscription;
 
   if (!hasActiveTeamAccess(subscription)) {
     throw new TeamWorkspaceError("The workspace owner needs an active Team subscription before this seat can be used.", 403);

@@ -553,7 +553,6 @@ function formatStatusLabel(status: AccountSubscriptionSnapshot["status"]) {
 }
 
 function formatProviderLabel(provider: AccountSubscriptionSnapshot["provider"]) {
-  if (provider === "stripe") return "Stripe";
   if (provider === "revenuecat") return "RevenueCat";
   if (provider === "app-store") return "App Store";
   return "Demo";

@@ -159,7 +159,7 @@ export function AccountDeletionControl({
               If you own a Team workspace, its member and invitation records are also deleted. Your memberships and invitations in other Team workspaces are removed.
             </p>
             <p className="mt-2">
-              Deleting CapitolWonk does not cancel an Apple subscription. An active referenced legacy web plan is queued to stop renewal and detach CapitolWonk account metadata where the provider permits; an already-ended or missing plan requires no renewal action and may no longer permit metadata changes. A limited provider-cleanup record remains only while cleanup is pending or retrying and is erased after it succeeds; the completion audit remains deidentified.
+              Deleting CapitolWonk does not cancel an Apple subscription. A limited provider-cleanup record remains only while cleanup is pending or retrying and is erased after it succeeds; the completion audit remains deidentified.
             </p>
             <p className="mt-2">
               If you later create a new CapitolWonk account, Apple access is not restored automatically. You must choose Restore Purchases so CapitolWonk can verify and relink a current eligible purchase.

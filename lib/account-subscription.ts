@@ -1,5 +1,5 @@
 import type { AccountSubscriptionSnapshot } from "../types/capitol";
-import { assertAccountMemoryPersistenceAllowed } from "./account-persistence-safety";
+import { assertAccountMemoryPersistenceAllowed, throwAccountPersistenceUnavailable } from "./account-persistence-safety";
 import { normalizeOptionalTeamSeatCount } from "./subscription-seat-count";
 
 const defaultSubscription = (): AccountSubscriptionSnapshot => ({
@@ -23,9 +23,12 @@ const subscriptionStore = globalThis.__capitolLedgerSubscriptionStore ?? new Map
 globalThis.__capitolLedgerSubscriptionStore = subscriptionStore;
 
 export function normalizeAccountSubscription(value: Partial<AccountSubscriptionSnapshot> = {}): AccountSubscriptionSnapshot {
+  if (value.provider !== undefined && value.provider !== "demo" && value.provider !== "revenuecat" && value.provider !== "app-store") {
+    throwAccountPersistenceUnavailable("unsupportedSubscriptionProvider");
+  }
   const plan = value.plan === "pro" || value.plan === "team" ? value.plan : "free";
   const cycle = value.cycle === "annual" ? "annual" : "monthly";
-  const provider = value.provider === "stripe" || value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
+  const provider = value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
   const status = value.status === "trialing" || value.status === "past_due" || value.status === "canceled" ? value.status : "active";
 
   return {
@@ -44,6 +47,7 @@ export function normalizeAccountSubscription(value: Partial<AccountSubscriptionS
 export function getAccountSubscription(userId: string) {
   assertAccountMemoryPersistenceAllowed("getAccountSubscription");
   const subscription = subscriptionStore.get(userId) ?? defaultSubscription();
+  normalizeAccountSubscription(subscription); // Reject unsupported cached providers without rewriting them.
   subscriptionStore.set(userId, subscription);
   return subscription;
 }

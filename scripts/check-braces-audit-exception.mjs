@@ -19,7 +19,7 @@ export const SPEC = {
   expires: "2026-10-30T07:00:00.000Z",
   patch: "patches/braces@3.0.3.patch",
   pins: {
-    "package.json": "e757ce3ca377877504d65c0f3736110a6c8935c22adacdc8a36087b84d9b2b21",
+    "package.json": "e8b0f862d288951a02f2716b74c1db32c2956c3ec64ccd9771b48ec4f8648b42",
     "pnpm-lock.yaml": "826540359c68b4e88192cd09c6fcf4722ae2ff80c4ad22a147c0ab2c140d9161",
     "patches/braces@3.0.3.patch": "b898113166cec1ce5ab45fbffa452d66bdd1d82f0e42f7547c35664da4644d56",
     "tailwind.config.ts": "62dad03af9194471d06f672dd6bf3d5dae02a72e95521cc69cc65f7daf84708f",

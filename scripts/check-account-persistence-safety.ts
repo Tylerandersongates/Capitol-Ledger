@@ -14,10 +14,8 @@ const guardedRoutePaths = [
   "app/api/account/profile/route.ts",
   "app/api/account/subscription/app-store/account-token/route.ts",
   "app/api/account/subscription/app-store/route.ts",
-  "app/api/account/subscription/portal/route.ts",
   "app/api/account/subscription/route.ts",
   "app/api/account/weekly-brief/route.ts",
-  "app/api/billing/stripe/webhook/route.ts",
   "app/api/follows/route.ts",
   "app/api/members/[bioguideId]/email/route.ts",
   "app/api/tasks/weekly-brief/route.ts",
@@ -87,12 +85,6 @@ assert.doesNotMatch(
   /if\s*\(\s*!\(await ensureTeamWorkspaceSchema\(\)\)\s*\)\s*return\s+\w*Memory/,
   "Database Team helpers must not route schema failures into memory."
 );
-assert.doesNotMatch(
-  teamWorkspaceSource,
-  /syncStripeSubscriptionForAccount\([^\n]+\.catch\(\(\) =>/,
-  "Team subscription reconciliation must preserve account-persistence outages."
-);
-
 const teamTransitionSource = await readSource("lib/team-subscription-transition.ts");
 assert.doesNotMatch(
   teamTransitionSource,

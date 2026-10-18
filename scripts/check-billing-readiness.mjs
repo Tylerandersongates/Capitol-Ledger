@@ -3,18 +3,6 @@ import { hasBillingCiCoverage } from "./check-billing-ci-coverage.mjs";
 
 loadLocalEnv();
 
-const retiredStripeEnvNames = [
-  "STRIPE_SECRET_KEY",
-  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_LIVE_MODE",
-  "BILLING_REQUIRE_STRIPE",
-  "CAPITOL_LEDGER_STRIPE_PRO_MONTHLY_PRICE_ID",
-  "CAPITOL_LEDGER_STRIPE_PRO_ANNUAL_PRICE_ID",
-  "CAPITOL_LEDGER_STRIPE_TEAM_MONTHLY_PRICE_ID",
-  "CAPITOL_LEDGER_STRIPE_TEAM_ANNUAL_PRICE_ID"
-];
-
 const requiredProductIds = [
   "com.capitolwonk.pro.monthly",
   "com.capitolwonk.pro.annual",
@@ -533,21 +521,8 @@ function checkAppStoreTestCoverage() {
   );
 }
 
-function checkRetiredStripeConfig() {
-  const configured = retiredStripeEnvNames.filter((name) => process.env[name]);
-  if (!configured.length) {
-    pass("Stripe launch config is absent", "App-only launch path is Apple in-app purchase.");
-    return;
-  }
-
-  warn("Stripe launch config is present", "Keep Stripe disabled for App Store launch unless a web checkout path is deliberately reintroduced.");
-}
-
 function checkRetiredWebCheckout() {
   const route = readIfPresent("app/api/account/subscription/checkout/route.ts");
-  const stripeAdapter = readIfPresent("lib/billing/stripe.ts");
-  const stripeWebhook = readIfPresent("app/api/billing/stripe/webhook/route.ts");
-  const stripeEventGuard = readIfPresent("lib/billing/subscription-event-guards.ts");
   const forbiddenPaths = [
     "@/lib/account-database",
     "@/lib/account-persistence-safety",
@@ -565,16 +540,10 @@ function checkRetiredWebCheckout() {
   const retiredMarker = route.includes('"APP_STORE_ONLY_CHECKOUT_RETIRED"');
   const retiredStatus = /status:\s*410/.test(route);
 
-  const checkoutCreatorRemoved = !stripeAdapter.includes("/checkout/sessions") && !stripeAdapter.includes("createStripeCheckoutSession");
-  const legacyWebhookQuarantined =
-    stripeWebhook.includes("checkoutRetired: true") &&
-    !stripeWebhook.includes("metadata.userId ??") &&
-    /provider\s*!==\s*["']stripe["']\)\s*return true/.test(stripeEventGuard);
-
-  if (retiredMarker && retiredStatus && !forbiddenPath && checkoutCreatorRemoved && legacyWebhookQuarantined) {
+  if (retiredMarker && retiredStatus && !forbiddenPath) {
     pass(
       "Legacy web checkout is fail-closed",
-      "POST and checkout-completion webhooks cannot create or replace an entitlement; legacy updates require matching Stripe state."
+      "The retired checkout cannot create or replace an entitlement; billing:check separately enforces complete provider retirement."
     );
     return;
   }
@@ -583,11 +552,7 @@ function checkRetiredWebCheckout() {
     "Legacy web checkout is fail-closed",
     forbiddenPath
       ? `Remove the retired Stripe/demo checkout path: ${forbiddenPath}.`
-      : !checkoutCreatorRemoved
-        ? "Remove the Stripe checkout-session creator from the legacy maintenance adapter."
-        : !legacyWebhookQuarantined
-          ? "Ignore checkout completions and require matching legacy Stripe state before webhook persistence."
-          : "Expected the stable APP_STORE_ONLY_CHECKOUT_RETIRED response with HTTP 410."
+      : "Expected the stable APP_STORE_ONLY_CHECKOUT_RETIRED response with HTTP 410."
   );
 }
 
@@ -629,7 +594,6 @@ function main() {
   checkAppStoreEndpoint();
   checkAppStoreNotificationEndpoint();
   checkAppStoreTestCoverage();
-  checkRetiredStripeConfig();
   checkRetiredWebCheckout();
   checkProductionCookie();
 

@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 // The reviewed workflow runs production audit, both regression suites, braces
 // preflight, release-source checks, Build, then the final raw-audit gate.
 // Any workflow edit (even formatting) requires explicit review and a new pin.
-const reviewedWorkflowSha256 = "61c4e0a3534e121176e494435578f3bdf8b1cf14ede7cdabe5a0acd5b561f66f";
+const reviewedWorkflowSha256 = "d0b2a8a77805330f468566d1e2b7d3ce632c1fccba5582f43c915fba9363e309";
 const strictCandidate = "pnpm run audit:prod && pnpm run audit:full && BILLING_REQUIRE_APP_STORE=true TESTFLIGHT_REQUIRE_READY=true pnpm run release-source:check";
 
 export function hasBillingCiCoverage(packageManifest, workflow) {
@@ -30,5 +30,7 @@ export function hasBillingCiCoverage(packageManifest, workflow) {
     scripts["release-source:check"].split(" && ").includes("pnpm run billing:check") &&
     typeof scripts["billing:check"] === "string" &&
     scripts["billing:check"].startsWith("node scripts/check-billing-readiness.mjs && ") &&
+    scripts["billing:check"].split(" && ").includes("pnpm run stripe-retirement:check") &&
+    scripts["stripe-retirement:check"] === "node scripts/check-stripe-retirement.mjs && node --import tsx scripts/check-stripe-retirement-fixtures.ts" &&
     createHash("sha256").update(workflow, "utf8").digest("hex") === reviewedWorkflowSha256;
 }

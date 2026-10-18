@@ -83,9 +83,9 @@ async function main() {
     "free App Store state should not require the Pro acknowledgement"
   );
   assert.equal(
-    hasActivePersonalAppStorePro({ plan: "pro", provider: "stripe", status: "active" }),
+    hasActivePersonalAppStorePro({ plan: "pro", provider: "demo", status: "active" }),
     false,
-    "legacy Stripe Pro should not be described as Apple billing"
+    "demo Pro should not be described as Apple billing"
   );
   assert.equal(hasActivePersonalAppStorePro(null), false, "missing subscription state should not be classified as active Apple Pro");
   assert.equal(appleSubscriptionManagementUrl, "https://apps.apple.com/account/subscriptions");
@@ -147,7 +147,7 @@ async function main() {
     assert.equal(terminal.acceptCalls, 1, `terminal Apple status ${appleStatus} should accept without acknowledgement`);
   }
 
-  const nonApple = await exerciseAcceptanceGate({ subscription: subscription("stripe") });
+  const nonApple = await exerciseAcceptanceGate({ subscription: subscription("demo") });
   assert.equal(nonApple.outcome.kind, "accepted");
   assert.equal(nonApple.acceptCalls, 1, "non-Apple subscriptions should accept without Apple acknowledgement");
 
@@ -218,7 +218,7 @@ async function main() {
   assert.doesNotMatch(controls, /target="_blank"/, "the native WebView must not depend on target-blank navigation");
   assert.doesNotMatch(
     controls,
-    /\/api\/account\/subscription\/(?:app-store|portal)|pausePersonalProSubscription|cancelStripeSubscription/,
+    /\/api\/account\/subscription\/(?:app-store|portal)|pausePersonalProSubscription/,
     "the client acceptance control must not call provider mutation or transition helpers"
   );
   assert.match(route, /acceptTeamInviteWithBillingGate\(body, session\.user\)/, "the API must use the executable server-side billing gate");

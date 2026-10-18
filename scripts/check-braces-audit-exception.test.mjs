@@ -213,3 +213,9 @@ for (const [name, response] of [
   ["registry failure", { status: 1, stdout: "", stderr: "registry unavailable" }],
   ["timeout", { status: null, error: new Error("timeout"), stdout: "", stderr: "" }]
 ]) test(`upstream metadata fails closed: ${name}`, t => assert.throws(() => checkUpstream(root, temporary(t), () => response)));
+
+test("manifest source pins must agree with the reviewed enforcer", () => {
+  const record = approved();
+  record.pins["package.json"] = "0".repeat(64);
+  assert.throws(() => checkRecord(record, now));
+});

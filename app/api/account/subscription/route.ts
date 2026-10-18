@@ -16,9 +16,9 @@ async function readSession() {
 
 function isClientWritableSubscription(value: Partial<AccountSubscriptionSnapshot>) {
   const plan = value.plan === "pro" || value.plan === "team" ? value.plan : "free";
-  const provider = value.provider === "stripe" || value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
+  const provider = value.provider;
 
-  return plan === "free" && provider === "demo";
+  return plan === "free" && (provider === undefined || provider === "demo");
 }
 
 async function getSubscription(request: NextRequest) {
