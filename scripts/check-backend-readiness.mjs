@@ -237,11 +237,6 @@ function checkBilling() {
   optional("APP_STORE_CONNECT_KEY_ID", process.env.APP_STORE_CONNECT_KEY_ID, "Needed before App Store Server API account-sync QA.");
   optional("APP_STORE_CONNECT_PRIVATE_KEY", process.env.APP_STORE_CONNECT_PRIVATE_KEY, "Needed before App Store Server API account-sync QA.");
 
-  if (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_WEBHOOK_SECRET) {
-    warn("Stripe launch config", "Present but not part of the app-only Apple in-app purchase launch path.");
-  } else {
-    pass("Stripe launch config", "Absent from the app-only launch path.");
-  }
 }
 
 function checkWeeklyBrief() {

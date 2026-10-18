@@ -13,7 +13,6 @@ const service = read("lib/account-deletion.ts");
 const accountDatabase = read("lib/account-database.ts");
 const cleanupService = read("lib/account-deletion-cleanup.ts");
 const cleanupRoute = read("app/api/tasks/account-deletion-cleanup/route.ts");
-const stripeWebhook = read("app/api/billing/stripe/webhook/route.ts");
 const requestSecurity = read("lib/request-security.ts");
 const control = read("components/account-deletion-control.tsx");
 const result = read("components/account-deletion-result.tsx");
@@ -95,9 +94,6 @@ assert.ok(packageJson.includes("check-account-deletion-activation-fixtures.ts"),
 assert.ok(packageJson.includes("check-account-persistence-safety.ts"), "account deletion checks should cover fail-closed persistence behavior");
 assert.ok(accountDatabase.includes('WHERE "id" = ${user.id}'), "account persistence should resolve only the authenticated immutable user ID");
 assert.ok(!accountDatabase.includes('INSERT INTO "User"'), "an account-data request must never recreate a deleted User row");
-assert.ok(stripeWebhook.includes("accountPersistenceUserExists"), "Stripe webhooks should verify that the account still exists");
-assert.ok(stripeWebhook.includes("executeAccountDeletionCleanupJob"), "late Stripe events for a deleted account should execute provider cleanup before acknowledgement");
-assert.ok(stripeWebhook.includes("readStripeSubscription"), "mutable Stripe webhook events should reconcile against live provider state");
 assert.ok(requestSecurity.includes('createHmac("sha256"'), "rate-limit identities should use keyed one-way hashes");
 assert.ok(requestSecurity.includes("pruneExpiredRateLimits"), "expired rate-limit records should be removed");
 assert.ok(requestSecurity.includes("clearRateLimitSubjects"), "account deletion should be able to clear rate-limit subject records");
@@ -174,7 +170,6 @@ assert.ok(
 );
 assert.ok(privacy.includes("Settings > Your data"), "privacy copy should point users to the in-app deletion flow");
 assert.ok(privacy.includes("completed during the confirmed in-app action"), "privacy copy should accurately describe immediate deletion");
-assert.ok(privacy.includes("where Stripe permits") && privacy.includes("already-ended or missing"), "public privacy copy should not promise metadata changes for a terminal or missing Stripe subscription");
 assert.ok(!privacy.includes("targeted for completion within 7 days"), "privacy copy should not describe the superseded request-only workflow");
 
 console.log("Account deletion readiness check passed.");

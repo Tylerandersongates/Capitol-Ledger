@@ -1,3 +1,5 @@
+> Stripe retirement source candidate (October 17, 2026): see [the retirement boundary](../docs/stripe-retirement-source-candidate-2026-10-17.md). Stripe is not a supported purchase or subscription-management channel. Older Stripe/web-billing instructions below are historical and must not be executed. This source candidate is unapplied/unvalidated; it is not deployment, data-cleanup or configuration-removal evidence.
+
 # Billing Readiness Guide
 
 ## Purpose

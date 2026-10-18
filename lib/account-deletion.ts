@@ -63,11 +63,6 @@ type TeamSubscriptionPauseDeletionRow = {
   userId: string;
 };
 
-type StripeCleanupReference = {
-  customerId?: string;
-  subscriptionId?: string;
-};
-
 type RemainingAccountRows = {
   accountDeletionRequests: number;
   accountGamification: number;
@@ -284,48 +279,14 @@ async function enqueueCleanupJob(
   }
 }
 
-function stripeCleanupReference(value: unknown): StripeCleanupReference | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const record = value as Record<string, unknown>;
-  if (record.provider !== "stripe") return null;
-
-  const subscriptionId = typeof record.providerSubscriptionId === "string" && record.providerSubscriptionId.startsWith("sub_")
-    ? record.providerSubscriptionId
-    : undefined;
-  const customerId = typeof record.providerCustomerId === "string" && record.providerCustomerId.startsWith("cus_")
-    ? record.providerCustomerId
-    : undefined;
-  if (!subscriptionId && !customerId) return null;
-  return { customerId, subscriptionId };
-}
-
 function isRestorableTeamSubscription(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
   return (
     record.plan === "pro" &&
     (record.cycle === "monthly" || record.cycle === "annual") &&
-    (record.provider === "stripe" || record.provider === "app-store" || record.provider === "revenuecat" || record.provider === "demo") &&
+    (record.provider === "app-store" || record.provider === "revenuecat" || record.provider === "demo") &&
     (record.status === "active" || record.status === "trialing" || record.status === "past_due" || record.status === "canceled")
-  );
-}
-
-async function enqueueStripeCleanupJob(
-  transaction: AccountDeletionTransactionClient,
-  deletionRequestId: string,
-  reference: StripeCleanupReference,
-  now: Date
-) {
-  const providerKey = reference.subscriptionId ?? reference.customerId;
-  await enqueueCleanupJob(
-    transaction,
-    {
-      dedupeKey: `${deletionRequestId}:stripe:${providerKey}`,
-      deletionRequestId,
-      kind: accountDeletionCleanupKinds.cancelDeletedAccountStripeSubscription,
-      payload: reference
-    },
-    now
   );
 }
 
@@ -349,9 +310,8 @@ async function snapshotPostCommitCleanupJobs(
     `,
     userId
   );
-  const subscriptionReference = stripeCleanupReference(subscriptions[0]);
-  if (subscriptionReference) {
-    await enqueueStripeCleanupJob(transaction, deletionRequestId, subscriptionReference, now);
+  if (subscriptions[0] && !["demo", "app-store", "revenuecat"].includes(subscriptions[0].provider)) {
+    throw new AccountDeletionUnavailableError();
   }
 
   if (!tables.teamSubscriptionPause) return;
@@ -365,9 +325,8 @@ async function snapshotPostCommitCleanupJobs(
     userId
   );
   for (const pause of deletingAccountPauses) {
-    const pauseReference = stripeCleanupReference(pause.previousSubscription);
-    if (pauseReference) {
-      await enqueueStripeCleanupJob(transaction, deletionRequestId, pauseReference, now);
+    if (!isRestorableTeamSubscription(pause.previousSubscription)) {
+      throw new AccountDeletionUnavailableError();
     }
   }
 

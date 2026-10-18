@@ -2,13 +2,9 @@ import { getAccountSubscription, normalizeAccountSubscription } from "@/lib/acco
 import {
   canUseDatabasePersistence,
   getAccountPersistenceUserId,
-  readSubscriptionFromDatabase,
-  writeSubscriptionToDatabase
+  readSubscriptionFromDatabase
 } from "@/lib/account-database";
-import { fallbackUnlessAccountPersistenceUnavailable } from "@/lib/account-persistence-safety";
 import { getCurrentSession } from "@/lib/auth";
-import { readStripeCustomerSubscription, readStripeSubscription, readStripeSubscriptionDetails } from "@/lib/billing/stripe";
-import { teamPausedProEntitlementId } from "@/lib/team-subscription-constants";
 import type { AccountSubscriptionSnapshot } from "@/types/capitol";
 
 type AccountSubscriptionUser = {
@@ -17,81 +13,12 @@ type AccountSubscriptionUser = {
   name?: string;
 };
 
-type PersistedSubscriptionState = Omit<AccountSubscriptionSnapshot, "updatedAt">;
-
-function canSyncStripeSubscription(subscription: AccountSubscriptionSnapshot) {
-  if (subscription.providerEntitlementId === teamPausedProEntitlementId) return false;
-  return (
-    subscription.provider === "stripe" &&
-    (Boolean(subscription.providerSubscriptionId?.startsWith("sub_")) || Boolean(subscription.providerCustomerId?.startsWith("cus_")))
-  );
-}
-
-function hasSamePersistedSubscriptionState(left: AccountSubscriptionSnapshot, right: PersistedSubscriptionState) {
-  return (
-    left.cycle === right.cycle &&
-    left.plan === right.plan &&
-    left.provider === right.provider &&
-    left.providerCustomerId === right.providerCustomerId &&
-    left.providerEntitlementId === right.providerEntitlementId &&
-    left.providerSubscriptionId === right.providerSubscriptionId &&
-    left.seatCount === right.seatCount &&
-    left.status === right.status
-  );
-}
-
-async function readStripeSubscriptionForSnapshot(subscription: AccountSubscriptionSnapshot) {
-  if (subscription.providerSubscriptionId?.startsWith("sub_")) {
-    return readStripeSubscription(subscription.providerSubscriptionId).catch((error: unknown) => {
-      if (!subscription.providerCustomerId?.startsWith("cus_")) throw error;
-      return readStripeCustomerSubscription(subscription.providerCustomerId);
-    });
-  }
-
-  if (subscription.providerCustomerId?.startsWith("cus_")) {
-    return readStripeCustomerSubscription(subscription.providerCustomerId);
-  }
-
-  return null;
-}
-
-export async function syncStripeSubscriptionForAccount(userId: string, subscription: AccountSubscriptionSnapshot) {
-  if (!canSyncStripeSubscription(subscription)) return subscription;
-
-  const stripeSubscription = await readStripeSubscriptionForSnapshot(subscription);
-  if (!stripeSubscription?.id) return subscription;
-
-  const details = readStripeSubscriptionDetails(stripeSubscription);
-  const nextSubscription = {
-    cycle: details.cycle,
-    plan: details.plan,
-    provider: "stripe" as const,
-    providerCustomerId: stripeSubscription.customer ?? subscription.providerCustomerId,
-    providerEntitlementId: `capitol-ledger-${details.plan}`,
-    providerSubscriptionId: stripeSubscription.id,
-    seatCount: details.seatCount,
-    status: details.status
-  };
-
-  if (hasSamePersistedSubscriptionState(subscription, nextSubscription)) return subscription;
-
-  const fallbackSubscription = {
-    ...subscription,
-    ...nextSubscription,
-    updatedAt: new Date().toISOString()
-  } satisfies AccountSubscriptionSnapshot;
-
-  return (await writeSubscriptionToDatabase(userId, nextSubscription)) ?? fallbackSubscription;
-}
-
 export async function getSubscriptionForAccountUser(user: AccountSubscriptionUser): Promise<AccountSubscriptionSnapshot> {
   const accountUserId = await getAccountPersistenceUserId(user);
   const databaseSubscription = await readSubscriptionFromDatabase(accountUserId);
   const subscription = databaseSubscription ??
     (canUseDatabasePersistence() ? normalizeAccountSubscription() : getAccountSubscription(accountUserId));
-  return syncStripeSubscriptionForAccount(accountUserId, subscription).catch((error) =>
-    fallbackUnlessAccountPersistenceUnavailable(error, subscription)
-  );
+  return subscription;
 }
 
 export async function getCurrentAccountSubscription(): Promise<AccountSubscriptionSnapshot | null> {

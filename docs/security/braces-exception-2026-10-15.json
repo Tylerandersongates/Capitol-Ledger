@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "CW-SEC-2026-10-BRACES",
+  "status": "approved",
+  "riskOwner": "Tyler",
+  "approval": {
+    "approvedBy": "Tyler",
+    "approvedAtUtc": "2026-10-18T00:34:49.671Z",
+    "decisionReference": "Tyler's explicit current-candidate approval in CapitolWonk recovery chat 01a140c5-9929-7903-805a-90f67d679ff8: continued acceptance of the existing documented temporary development-only residual risk for the candidate hashes in sourcePinReconciliation. No renewal, extension or backdating; no build/audit/CI execution, publication, data/configuration change, merge or deployment."
+  },
+  "approvalHistory": [
+    {
+      "approvedBy": "Tyler",
+      "approvedAtUtc": "2026-10-15T20:46:10.000Z",
+      "decisionReference": "Tyler's explicit approval in CapitolWonk recovery chat 01a140c5-9929-7903-805a-90f67d679ff8 on 2026-10-15: apply reviewed seven-file patch SHA-256 11d5437b0134658277edee0da7b9c1b2513fee84461c7a79886c680a0a526bc8, accept the documented temporary exception and run Linux CI; stop on unrelated drift; no merge or deployment."
+    }
+  ],
+  "validFromUtc": "2026-10-15T00:00:00.000Z",
+  "reviewByUtc": "2026-10-23T07:00:00.000Z",
+  "expiresAtUtc": "2026-10-30T07:00:00.000Z",
+  "scope": {
+    "package": "braces",
+    "version": "3.0.3",
+    "advisory": "GHSA-vfj7-8cjw-p6xm",
+    "cve": "CVE-2026-93687",
+    "disposition": "mitigated-still-flagged",
+    "developmentOnly": true
+  },
+  "pins": {
+    "package.json": "e8b0f862d288951a02f2716b74c1db32c2956c3ec64ccd9771b48ec4f8648b42",
+    "pnpm-lock.yaml": "826540359c68b4e88192cd09c6fcf4722ae2ff80c4ad22a147c0ab2c140d9161",
+    "patches/braces@3.0.3.patch": "b898113166cec1ce5ab45fbffa452d66bdd1d82f0e42f7547c35664da4644d56",
+    "tailwind.config.ts": "62dad03af9194471d06f672dd6bf3d5dae02a72e95521cc69cc65f7daf84708f",
+    "next.config.mjs": "acebbeb9496dd783757947e8e4978ffb8944f4df883a801dc8d38b6fc0cb4357",
+    "postcss.config.mjs": "2147573f4053310e348ad9d722882426c884376f42a354daea89bcd663b33b25",
+    ".eslintrc.json": "c42575f830bb5003bb7be58fbec13d0ca65a6188155067e98076a7f3977e7472"
+  },
+  "installedSha256": {
+    "index.js": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4",
+    "package.json": "56f08b888a4f30dc7cf8a7dbb36ffe92b737912ba36abe9d069d32167c957ac7",
+    "lib/compile.js": "88cf20f18b59c9b2741c2d9b0f0ac6b2967d8e174667edf817133ca57d76809e",
+    "lib/constants.js": "8d0bfdb50bb1e5267facef720ba09179634761165e3d6e13ad512ed10d6c180c",
+    "lib/expand.js": "46a259d3f23c0cd441fa370f16d5d48fa71060dfe918eeba84f6e95d3a94d368",
+    "lib/parse.js": "adf3c108a16afaabe5379298d2227881e88f536cc7345b7df780a80d38dd01f9",
+    "lib/stringify.js": "a3b8b5e7567ff9bfdbe155479fbdd92d5a924c3919adf05316f8f0c4f6330332",
+    "lib/utils.js": "bbdfdad69da36c1994a19006af254659586a20d2c00b2a936926b7905cfb3aaf"
+  },
+  "allowedPaths": [
+    "devDependencies>eslint-config-next@15.5.25>@next/eslint-plugin-next@15.5.25>fast-glob@3.3.1>micromatch@4.0.8>braces@3.0.3",
+    "devDependencies>tailwindcss@3.4.19>chokidar@3.6.0>braces@3.0.3",
+    "devDependencies>tailwindcss@3.4.19>fast-glob@3.3.3>micromatch@4.0.8>braces@3.0.3",
+    "devDependencies>tailwindcss@3.4.19>micromatch@4.0.8>braces@3.0.3"
+  ],
+  "rationale": "No published fixed version exists in the reviewed advisory. The locally pinned depth guard mitigates tested excessive-depth string and AST-nodes recursion for the reviewed build-tool consumers. Current globs are fixed configuration strings; no deployed request path was identified. This is conditional residual-risk acceptance, not a false-positive claim or a clean audit.",
+  "evidence": {
+    "baselineCommit": "3636f968c0564e2482d3f58cd7d4339b70863ca8",
+    "upstreamProposal": "https://github.com/micromatch/braces/pull/78",
+    "upstreamProposalHead": "97308a01d091b211cf015314a2d0696da28a5392",
+    "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+    "advisoryUpdatedUtc": "2026-10-02T22:36:34.000Z",
+    "sandboxResults": "36 depth cases rejected; 764 upstream tests passed; 12950 differential comparisons matched; identical Tailwind CSS; application lint and 57-page build passed on macOS arm64 with Node 22.22.3/pnpm 9.15.9.",
+    "auditResults": "Authorized unfiltered full audit: exit 1, one high (this advisory), four moderate, zero critical. Audit path/dev metadata is not used as proof of development-only scope.",
+    "linuxCandidateValidation": "Historical validation completed: Linux CI #475 attempt 1 passed for PR #60 head a1d58fede94c273ae1f8113911a35b7fd7491382. It passed 163 regressions, installed mitigation/development-scope verification, a fresh 57-page build and final raw-audit exception enforcement. Retained evidence and limits are documented in docs/security/braces-linux-ci-475-evidence-2026-10-15.json. The audit still reports one accepted high and four moderate findings; this is not release clearance. This narrative reconciliation changes the record fingerprint and requires fresh CI if applied; #475 does not validate a later documentation commit."
+  },
+  "residualRisks": [
+    "Malformed caller-supplied AST parent cycles and deeply array-valued text remain unsafe; reviewed consumers supply strings, not those ASTs.",
+    "The guard is not an expansion-cardinality, general AST-width, getter, CPU or memory bound.",
+    "Controlled SyntaxError may fail a build when propagated; this does not promise acceptance of malicious input.",
+    "No automated scan proves all possible dataflow safe. Relevant source, configuration and trust-boundary changes require human review.",
+    "The local guard is not an upstream-maintainer-approved security release."
+  ],
+  "controls": [
+    "Frozen installation; exact manifest/lock/config/patch hashes; installed library hashes; exactly four reviewed development paths; no production graph path.",
+    "Fresh Linux build traces must exclude braces, micromatch, fast-glob, chokidar and tailwindcss; application imports of those tools require reassessment.",
+    "Keep production audit and manual audit:full unchanged; no pnpm ignore list or raised severity threshold. Full raw JSON and explicit accepted-high disposition are retained in CI artifacts.",
+    "Every unrelated high/critical, registry/parse/transport failure, missing mitigation, schema change, expiry, review deadline or scope drift fails closed. The final gate queries npm's public latest braces version; any change from 3.0.3 requires reassessment even before the advisory database catches up.",
+    "Keep pull-request builds unprivileged (contents: read), no production-secret injection, and the existing 25-minute job timeout. No privileged pull_request_target trigger is introduced."
+  ],
+  "reviewAndRemoval": "Review by the end of October 22 Pacific; the first following midnight blocks CI. Absolute expiry is the end of October 29 Pacific. No automatic renewal. A changed advisory, published patched version, production path, dependency/config change or different patch invalidates the exception. Replace with a validated official release and explicitly remove the local patch/exception machinery in a separately reviewed change; a disappearing finding fails closed to prompt that cleanup.",
+  "approvalBoundary": "Current approval applies only to the candidate hashes below. approvalHistory preserves the October 15 approval object unchanged. SV1 is pre-amendment offline evidence, not acceptance of this amended record. The record fingerprint changes: fresh same-session scope/preflight/build/traces/raw-audit/Linux-CI evidence requires separate execution approval. Advisory scope, mitigation, both raw audit gates, strict candidate wrapper and UTC cutoffs stay unchanged. No runtime activation, protected data/configuration change, publication, merge or deployment is authorized.",
+  "recovery": "The guard/enforcement changes are applied on the isolated review branch; no merge or deployment was performed in this workflow. To withdraw the temporary exception, revert the guard and accepting enforcement together in a separately authorized change to restore the raw full-audit blocker; never remove the guard while leaving an accepting exception. Reverting only the billing-readiness compatibility correction restores its prior fail-closed CI-coverage blocker without removing the braces guard. No production rollback follows automatically.",
+  "sourcePinReconciliation": {
+    "status": "approved",
+    "baselineHead": "6c63e1779fe3bafead2ece423ea5c02335ad6d54",
+    "originalPackageSha256": "e757ce3ca377877504d65c0f3736110a6c8935c22adacdc8a36087b84d9b2b21",
+    "proposedPackageSha256": "e8b0f862d288951a02f2716b74c1db32c2956c3ec64ccd9771b48ec4f8648b42",
+    "reason": "Reconcile the applied Stripe source cleanup and exact fixture fix. The manifest change is scripts-only; dependency declarations, lockfile, mitigation, development paths, residual-risk scope and UTC cutoffs stay unchanged. Current approval is separate from the preserved original decision.",
+    "candidate": {
+      "stripeRetirementPatchSha256": "39aecc8310160ed7011b278cf1ca954992fa1dc2931bfa96a8da38fd01090168",
+      "fixtureSha256": "242a5744ca6d8ea8115189e91ec379bb09a1ffbeb5c0713a00efd79902080bbf",
+      "enforcerSha256": "8f6b31e425e53c8bd241b799eaee07aa5cff6d269cc80eba3588acd7bf585c38"
+    },
+    "offlineEvidence": {
+      "sv1CompletedAtUtc": "2026-10-18T00:27:22.348Z",
+      "sv1CommandsPassed": 10,
+      "selectedBracesRegressionsPassed": 57,
+      "selectedBillingRegressionsPassed": 53,
+      "sv1HandoffSha256": "c0c8a9ab261874ef2ebb7272dcaa35fe457b13168885d697527c04924c044222",
+      "scope": "Retained offline SV1 evidence for the pre-amendment candidate only; not fresh build/audit/Linux-CI or release acceptance."
+    }
+  }
+}

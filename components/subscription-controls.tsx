@@ -112,9 +112,12 @@ const defaultSubscription: AccountSubscriptionSnapshot = {
 };
 
 function normalizeSubscription(value: Partial<AccountSubscriptionSnapshot> = {}): AccountSubscriptionSnapshot {
+  if (value.provider !== undefined && value.provider !== "demo" && value.provider !== "revenuecat" && value.provider !== "app-store") {
+    return { ...defaultSubscription };
+  }
   const plan = value.plan === "pro" || value.plan === "team" ? value.plan : "free";
   const cycle = value.cycle === "annual" ? "annual" : "monthly";
-  const provider = value.provider === "stripe" || value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
+  const provider = value.provider === "revenuecat" || value.provider === "app-store" ? value.provider : "demo";
   const status = value.status === "trialing" || value.status === "past_due" || value.status === "canceled" ? value.status : "active";
 
   return {

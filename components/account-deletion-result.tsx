@@ -68,7 +68,7 @@ export function AccountDeletionResult() {
           Your CapitolWonk account and linked data were erased, all sessions were ended, and CapitolWonk data on this device was cleared.
         </p>
         <p className="mt-3 text-[14px] leading-6 text-white/54">
-          Apple billing was not canceled. An active referenced legacy web plan was queued to stop renewal and detach CapitolWonk account metadata where the provider permits; an already-ended or missing plan requires no renewal action and may no longer permit metadata changes. A limited provider-cleanup record remains only while cleanup is pending or retrying and is erased after it succeeds; only a deidentified completion audit remains.
+          Apple billing was not canceled. A limited provider-cleanup record remains only while cleanup is pending or retrying and is erased after it succeeds; only a deidentified completion audit remains.
         </p>
       </div>
 

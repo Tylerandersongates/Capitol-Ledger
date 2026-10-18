@@ -26,9 +26,7 @@
     "weekly-brief:in-app-check": "node scripts/check-weekly-brief-in-app.mjs && node --import tsx scripts/check-daily-brief-video.ts && node --import tsx scripts/check-weekly-brief-editorial-fixtures.ts && node --import tsx scripts/check-weekly-brief-daily-editions.ts",
     "weekly-brief:qa": "node scripts/qa-weekly-brief-task.mjs",
     "app-store-verifier:check": "node --import tsx scripts/check-app-store-verifier-hardening.ts",
-    "billing:check": "node scripts/check-billing-readiness.mjs && pnpm run app-store-verifier:check && node --import tsx scripts/check-app-store-subscription-fixtures.ts && node --import tsx scripts/check-app-store-state-fixtures.ts && node --import tsx scripts/check-app-store-relink-fixtures.ts",
-    "pre-migration-stripe-compatibility:check": "node scripts/check-pre-migration-stripe-compatibility.mjs && node --import tsx scripts/check-pre-migration-stripe-compatibility-fixtures.ts",
-    "billing-legacy:audit": "tsx scripts/audit-legacy-billing-state.ts",
+    "billing:check": "node scripts/check-billing-readiness.mjs && pnpm run app-store-verifier:check && node --import tsx scripts/check-app-store-subscription-fixtures.ts && node --import tsx scripts/check-app-store-state-fixtures.ts && node --import tsx scripts/check-app-store-relink-fixtures.ts && pnpm run stripe-retirement:check",
     "billing-transition:check": "node --import tsx scripts/check-billing-transition-fixtures.mjs",
     "ios-native:check": "node scripts/check-ios-native-bridge.mjs",
     "testflight-ui:check": "node scripts/check-testflight-mobile-ui.mjs && node --import tsx scripts/check-district-official-matching.ts",
@@ -98,7 +96,8 @@
     "congress-bills:check": "tsx scripts/check-congress-bill-catalog.ts",
     "congress-votes:check": "tsx scripts/check-congress-vote-catalog.ts",
     "db:seed": "prisma db seed",
-    "sync:congress": "tsx scripts/sync-congress.ts"
+    "sync:congress": "tsx scripts/sync-congress.ts",
+    "stripe-retirement:check": "node scripts/check-stripe-retirement.mjs && node --import tsx scripts/check-stripe-retirement-fixtures.ts"
   },
   "dependencies": {
     "@apple/app-store-server-library": "3.1.0",
@@ -126,8 +125,15 @@
     "typescript": "^5.4.5"
   },
   "pnpm": {
+    "patchedDependencies": {
+      "braces@3.0.3": "patches/braces@3.0.3.patch"
+    },
     "overrides": {
-      "next@15.5.25>postcss": "8.5.25"
+      "next@15.5.25>postcss": "8.5.25",
+      "brace-expansion@1.1.18": "1.1.21",
+      "brace-expansion@5.0.9": "5.0.12",
+      "source-map-js@1.2.1": "1.2.2",
+      "sharp@0.35.4": "0.35.5"
     }
   },
   "prisma": {

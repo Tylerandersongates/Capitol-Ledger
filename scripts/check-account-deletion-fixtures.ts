@@ -388,8 +388,8 @@ function fixtureState(): FakeState {
           previousSubscription: {
             cycle: "annual",
             plan: "pro",
-            provider: "stripe",
-            providerSubscriptionId: "sub_target_personal",
+            provider: "app-store",
+            providerSubscriptionId: "original-target-personal",
             status: "canceled"
           },
           userId: "target-user",
@@ -400,8 +400,8 @@ function fixtureState(): FakeState {
           previousSubscription: {
             cycle: "monthly",
             plan: "pro",
-            provider: "stripe",
-            providerSubscriptionId: "sub_member",
+            provider: "app-store",
+            providerSubscriptionId: "original-member",
             status: "active"
           },
           userId: "member-user",
@@ -413,9 +413,9 @@ function fixtureState(): FakeState {
     requests: [],
     subscriptions: [
       {
-        provider: "stripe",
-        providerCustomerId: "cus_target",
-        providerSubscriptionId: "sub_target",
+        provider: "app-store",
+        providerCustomerId: null,
+        providerSubscriptionId: "original-target",
         userId: "target-user"
       }
     ],
@@ -433,6 +433,31 @@ function fixtureState(): FakeState {
 
 async function main() {
 const now = new Date("2026-09-10T18:00:00.000Z");
+
+// Unsupported billing state must abort the entire deletion transaction.
+for (const location of ["subscription", "deleting-account-pause", "surviving-member-pause"] as const) {
+  const state = fixtureState();
+  if (location === "subscription") {
+    state.subscriptions[0].provider = "stripe";
+    state.subscriptions[0].providerSubscriptionId = "sub_retired_fixture";
+  } else {
+    const pause = state.optionalRows.TeamSubscriptionPause.find(row =>
+      row.userId === (location === "deleting-account-pause" ? "target-user" : "member-user")
+    );
+    assert.ok(pause?.previousSubscription);
+    pause.previousSubscription.provider = "stripe";
+    pause.previousSubscription.providerSubscriptionId = "sub_retired_fixture";
+  }
+  const unchanged = cloneState(state);
+  const database = new FakeDeletionDatabase(state);
+  await assert.rejects(
+    runAccountDeletionTransaction(database, { email: "target@example.com", id: "target-user" }, now),
+    /Account deletion could not be completed/
+  );
+  assert.equal(database.transactionCount, 1);
+  assert.deepEqual(database.state, unchanged, location + ": no account, session, Team, audit or cleanup-job mutation may commit");
+}
+
 
 {
   const database = new FakeDeletionDatabase(fixtureState());
@@ -456,12 +481,10 @@ const now = new Date("2026-09-10T18:00:00.000Z");
   assert.ok(database.state.requests[0]?.completedAt);
   assert.equal(database.state.requests[0]?.userId, null);
   assert.equal(database.state.requests[0]?.status, "resolved");
-  assert.equal(database.state.cleanupJobs.length, 3);
+  assert.equal(database.state.cleanupJobs.length, 1);
   assert.deepEqual(
     database.state.cleanupJobs.map((job) => job.kind).sort(),
     [
-      "cancel_deleted_account_stripe_subscription",
-      "cancel_deleted_account_stripe_subscription",
       "restore_team_member_subscription"
     ]
   );

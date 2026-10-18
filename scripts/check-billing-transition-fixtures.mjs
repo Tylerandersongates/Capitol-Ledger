@@ -8,20 +8,6 @@ function read(path) {
   return fs.readFileSync(path, "utf8");
 }
 
-function shouldIgnoreStaleStripeSubscriptionEvent(currentSubscription, eventSubscriptionId) {
-  if (currentSubscription?.provider !== "stripe") return true;
-  if (!currentSubscription.providerSubscriptionId?.startsWith("sub_") || !eventSubscriptionId?.startsWith("sub_")) return true;
-
-  return currentSubscription.providerSubscriptionId !== eventSubscriptionId;
-}
-
-const currentPro = {
-  plan: "pro",
-  provider: "stripe",
-  providerSubscriptionId: "sub_current",
-  status: "active"
-};
-
 const canonicalApplePro = {
   cycle: "monthly",
   plan: "pro",
@@ -73,30 +59,10 @@ assert.deepEqual(
   "a finalized Team-seat restoration may return terminal success"
 );
 
-assert.equal(
-  shouldIgnoreStaleStripeSubscriptionEvent(currentPro, "sub_old_team"),
-  true,
-  "old canceled Team subscription events must not overwrite a newer active Pro subscription"
-);
-assert.equal(
-  shouldIgnoreStaleStripeSubscriptionEvent({ ...currentPro, plan: "team", providerSubscriptionId: "sub_team" }, "sub_team"),
-  false,
-  "matching Team subscription events must still be handled so cancellation can restore previous Pro"
-);
-assert.equal(
-  shouldIgnoreStaleStripeSubscriptionEvent({ ...currentPro, provider: "demo", providerSubscriptionId: "demo-pro" }, "sub_old_team"),
-  true,
-  "Stripe events must not overwrite a non-Stripe entitlement"
-);
-assert.equal(shouldIgnoreStaleStripeSubscriptionEvent(null, "sub_old_team"), true, "missing current state must not accept a Stripe entitlement event");
-
-const guardSource = read("lib/billing/subscription-event-guards.ts");
-const webhookSource = read("app/api/billing/stripe/webhook/route.ts");
 const transitionSource = read("lib/team-subscription-transition.ts");
 const appleRestoreSource = transitionSource.slice(
   transitionSource.indexOf('if (previousSubscription.provider === "app-store")')
 );
-const stripeSource = read("lib/billing/stripe.ts");
 const subscriptionPlansSource = read("lib/subscription-plans.ts");
 const subscriptionControlsSource = read("components/subscription-controls.tsx");
 const dailyBriefProOfferSource = read("components/daily-brief-pro-offer.tsx");
@@ -104,49 +70,8 @@ const checkoutRouteSource = read("app/api/account/subscription/checkout/route.ts
 const supportPageSource = read("app/support/page.tsx");
 const upgradePageSource = read("app/upgrade/page.tsx");
 
-assert.ok(
-  guardSource.includes("currentSubscription.providerSubscriptionId !== eventSubscriptionId"),
-  "stale-event guard should compare current and incoming Stripe subscription ids"
-);
-assert.ok(
-  webhookSource.includes('event.type === "checkout.session.completed"') && webhookSource.includes("checkoutRetired: true"),
-  "legacy checkout-completion webhooks must be acknowledged without granting access"
-);
-assert.ok(
-  webhookSource.includes("restorePausedPersonalSubscriptionForReleasedTeamSeat"),
-  "Team cancellation should restore a remembered previous Pro subscription"
-);
-assert.ok(
-  webhookSource.includes("readStripeCustomerSubscriptionForPlan") && webhookSource.includes("legacyProFallback"),
-  "legacy Team cancellations should look for an active Pro subscription before writing Free"
-);
-assert.ok(webhookSource.includes("staleSubscriptionEvent"), "webhook should expose stale-event ignore path");
-assert.ok(
-  webhookSource.includes("accountPersistenceUserExists") &&
-    webhookSource.includes("cancelDeletedAccountStripeSubscription") &&
-    webhookSource.includes("deletedAccountCleanup"),
-  "late Stripe events for a deleted account must stop renewal and detach account metadata before acknowledgement"
-);
-assert.ok(
-  webhookSource.includes("readStripeSubscription(eventSubscriptionId)") &&
-    webhookSource.includes("const userId = await findSubscriptionUserIdByProvider") &&
-    !webhookSource.includes("metadata.userId ??"),
-  "legacy Stripe updates must reconcile live provider state only after matching an existing provider record"
-);
 assert.ok(transitionSource.includes("team-owner-upgrade"), "owner Team upgrades should be tracked distinctly in the pause table");
-assert.ok(
-  transitionSource.includes("cancelStripeSubscriptionAtPeriodEnd(previousSubscription.providerSubscriptionId)"),
-  "owner Team upgrades should cancel the previous Pro subscription in the background"
-);
-assert.ok(
-  transitionSource.includes("isActiveTeamSubscription") && transitionSource.includes("cancelPreviousTeamSubscriptionForProCheckout"),
-  "owner Pro downgrades should detect and cancel the previous active Team subscription"
-);
-assert.ok(
-  transitionSource.includes("FOR KEY SHARE OF workspace, account") &&
-    transitionSource.includes("failed to compensate an uncommitted Stripe pause"),
-  "member subscription pausing should serialize with workspace/account deletion and compensate a rolled-back provider change"
-);
+assert.ok(transitionSource.includes("FOR KEY SHARE OF workspace, account"), "member pausing must preserve account/workspace deletion locking");
 assert.ok(
   appleRestoreSource.includes("readAppStoreSubscriptionState(userId)") &&
     appleRestoreSource.includes("reconcileAppStoreSubscription") &&
@@ -165,15 +90,6 @@ assert.ok(
     !appleRestoreSource.includes("persistSubscription(userId, canonical.snapshot)"),
   "a stale Apple response must retry without an unfenced entitlement or checkout write"
 );
-assert.ok(
-  stripeSource.includes("toleranceSeconds = 5 * 60") && stripeSource.includes("Math.abs(nowSeconds - timestampSeconds)"),
-  "Stripe signatures should reject replay outside the configured timestamp tolerance"
-);
-assert.ok(
-  !stripeSource.includes("/checkout/sessions") && !stripeSource.includes("createStripeCheckoutSession"),
-  "legacy Stripe maintenance adapter must not create new checkout sessions"
-);
-assert.ok(stripeSource.includes("readStripeCustomerSubscriptionForPlan"), "Stripe helper should expose plan-specific subscription lookup");
 assert.ok(
   subscriptionControlsSource.includes("capitolLedgerPurchase") &&
     subscriptionControlsSource.includes('action: "purchase"') &&
